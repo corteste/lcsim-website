@@ -20,7 +20,7 @@ const teams = [
     ],
   },
   {
-    name: "Thunder United",
+    name: "Mar's Attack",
     players: [
       { name: "Roberto Marroni", role: "POR", rating: 7.3 },
       { name: "Stefano Rosa", role: "DIF", rating: 7.6 },
