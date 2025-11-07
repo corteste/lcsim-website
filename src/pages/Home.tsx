@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, TrendingUp, Users, Award, Target, BarChart3 } from "lucide-react";
+import { Trophy, TrendingUp, Users, Award, Target, BarChart3, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +12,7 @@ const topTeams = [
 
 const stats = [
   { label: "Squadre Totali", value: "8", icon: Users, color: "text-blue-600" },
-  { label: "Giornate Giocate", value: "10", icon: Calendar, color: "text-green-600" },
+  { label: "Giornate Giocate", value: "10", icon: CalendarDays, color: "text-green-600" },
   { label: "Gol Totali", value: "142", icon: Award, color: "text-red-600" },
   { label: "Media Gol/Partita", value: "3.55", icon: TrendingUp, color: "text-purple-600" },
 ];
