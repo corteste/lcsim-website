@@ -19,7 +19,7 @@ const Navbar = () => {
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary hover:opacity-80 transition-opacity">
             <Trophy className="h-6 w-6" />
-            <span>Fantasy League</span>
+            <span>Lega Calcio Simulato</span>
           </Link>
           
           <div className="flex gap-1">
