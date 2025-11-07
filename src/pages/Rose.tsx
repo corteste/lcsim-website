@@ -33,6 +33,20 @@ const teams = [
       { name: "Nicola Blu", role: "ATT", rating: 7.9 },
     ],
   },
+  {
+    name: "AC Denti",
+    players: [
+      { name: "Roberto Marroni", role: "POR", rating: 7.3 },
+      { name: "Stefano Rosa", role: "DIF", rating: 7.6 },
+      { name: "Davide Azzurri", role: "DIF", rating: 7.1 },
+      { name: "Simone Verde", role: "DIF", rating: 7.4 },
+      { name: "Lorenzo Neri", role: "CEN", rating: 7.8 },
+      { name: "Federico Bianchi", role: "CEN", rating: 8.1 },
+      { name: "Riccardo Rossi", role: "CEN", rating: 7.7 },
+      { name: "Gabriele Gialli", role: "ATT", rating: 8.3 },
+      { name: "Nicola Blu", role: "ATT", rating: 7.9 },
+    ],
+  },
 ];
 
 const getRoleColor = (role: string) => {
