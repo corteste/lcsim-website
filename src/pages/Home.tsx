@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 const topTeams = [
   { position: 1, team: "Average Pegiò Drivers", points: 25 },
-  { position: 2, team: "Thunder United", points: 23 },
+  { position: 2, team: "Panormus FC", points: 23 },
   { position: 3, team: "Phoenix Rising", points: 21 },
 ];
 
