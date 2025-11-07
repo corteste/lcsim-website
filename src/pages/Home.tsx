@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, TrendingUp, Users, Award, Target, BarChart3, CalendarDays } from "lucide-react";
+import { Trophy, TrendingUp, Users, Award, BarChart3, CalendarDays} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
