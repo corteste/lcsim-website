@@ -23,8 +23,8 @@ const teams = [
     name: "Mar's Attack",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
-      { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
-      { name: "Davide Azzurri",age: "24", role: "DIF", overall: 83, rating: 7.1 },
+      { name: "Stefano Rosa",age: "24", role: "DIF", overall: 70, rating: 7.6 },
+      { name: "Davide Azzurri",age: "24", role: "DIF", overall: 77, rating: 7.1 },
       { name: "Simone Verde",age: "24", role: "DIF", overall: 83, rating: 7.4 },
       { name: "Lorenzo Neri",age: "24", role: "CEN", overall: 83, rating: 7.8 },
       { name: "Federico Bianchi",age: "24", role: "CEN", overall: 83, rating: 8.1 },
