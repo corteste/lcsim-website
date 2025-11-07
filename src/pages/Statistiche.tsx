@@ -45,13 +45,13 @@ const Statistiche = () => {
   const [teamFilter, setTeamFilter] = useState<string>("all");
 
   const currentStats = allStats[statType];
-  const filteredStats = roleFilter === "all" 
-    ? currentStats 
-    : currentStats.filter(player => player.team === roleFilter);
-  /*const filteredTeam = teamFilter === "all" 
-    ? currentStats 
-    : currentStats.filter(player => player.team === teamFilter);
-*/
+  const filteredStats = currentStats.filter(
+  player =>
+    (teamFilter === "all" || player.team === teamFilter) &&
+    (roleFilter === "all" || player.role === roleFilter)
+);
+
+
   const getStatLabel = () => {
     switch (statType) {
       case "goalscorers": return "Gol";
@@ -142,9 +142,9 @@ const Statistiche = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tutte le Squadre</SelectItem>
-                    <SelectItem value="DGN">FC Dragonslayers</SelectItem>
-                    <SelectItem value="APD">Average Pegiò Drivers</SelectItem>
-                    <SelectItem value="THN">Thunder United</SelectItem>
+                    <SelectItem value="FC Dragonslayers">FC Dragonslayers</SelectItem>
+                    <SelectItem value="Average Pegiò Drivers">Average Pegiò Drivers</SelectItem>
+                    <SelectItem value="Thunder United">Thunder United</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
