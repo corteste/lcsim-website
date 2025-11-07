@@ -25,7 +25,7 @@ const allStats = {
     { name: "Gabriele Gialli", team: "Thunder United", rating: 8.3, role: "ATT" },
     { name: "Giuseppe Gialli", team: "FC Dragonslayers", rating: 8.2, role: "CEN" },
     { name: "Federico Bianchi", team: "Thunder United", rating: 8.1, role: "CEN" },
-    { name: "Matteo Arancio", team: "FC Dragonslayers", rating: 8.0, role: "ATT" },
+    { name: "Andrea Viola", team: "Average Pegiò Drivers", rating: 8.0, role: "ATT" },
   ],
 };
 
@@ -42,12 +42,16 @@ const getRoleColor = (role: string) => {
 const Statistiche = () => {
   const [statType, setStatType] = useState<"goalscorers" | "assists" | "ratings">("goalscorers");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
 
   const currentStats = allStats[statType];
   const filteredStats = roleFilter === "all" 
     ? currentStats 
-    : currentStats.filter(player => player.role === roleFilter);
-
+    : currentStats.filter(player => player.team === roleFilter);
+  /*const filteredTeam = teamFilter === "all" 
+    ? currentStats 
+    : currentStats.filter(player => player.team === teamFilter);
+*/
   const getStatLabel = () => {
     switch (statType) {
       case "goalscorers": return "Gol";
@@ -126,6 +130,21 @@ const Statistiche = () => {
                     <SelectItem value="DIF">Difensori</SelectItem>
                     <SelectItem value="CEN">Centrocampisti</SelectItem>
                     <SelectItem value="ATT">Attaccanti</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Squadra</label>
+                <Select value={teamFilter} onValueChange={setTeamFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutte le Squadre</SelectItem>
+                    <SelectItem value="DGN">FC Dragonslayers</SelectItem>
+                    <SelectItem value="APD">Average Pegiò Drivers</SelectItem>
+                    <SelectItem value="THN">Thunder United</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
