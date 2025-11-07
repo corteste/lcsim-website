@@ -12,7 +12,7 @@ const topTeams = [
 
 const stats = [
   { label: "Squadre Totali", value: "8", icon: Users, color: "text-blue-600" },
-  { label: "Giornate Giocate", value: "10", icon: Calendar-Days, color: "text-green-600" },
+  { label: "Giornate Giocate", value: "10", icon: Calendar, color: "text-green-600" },
   { label: "Gol Totali", value: "142", icon: Award, color: "text-red-600" },
   { label: "Media Gol/Partita", value: "3.55", icon: TrendingUp, color: "text-purple-600" },
 ];
