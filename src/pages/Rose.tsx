@@ -6,7 +6,7 @@ import { Users } from "lucide-react";
 
 const teams = [
   {
-    name: "FC Dragonslayers",
+    name: "Red Mamba",
     players: [
       { name: "Marco Rossi", role: "POR", rating: 7.5 },
       { name: "Luca Bianchi", role: "DIF", rating: 7.2 },
