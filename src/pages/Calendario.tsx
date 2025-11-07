@@ -209,47 +209,110 @@ const Calendario = () => {
 										<h3 className="font-semibold mb-2">Statistiche principali</h3>
 										{(() => {
 											const s = generateStats(selected.match);
+
+											const renderBar = (left: number | string, right: number | string) => {
+												if (typeof left !== "number" || typeof right !== "number") {
+													return <div className="h-3 bg-muted rounded" />;
+												}
+												const total = left + right;
+												const leftPct = total > 0 ? Math.round((left / total) * 100) : 50;
+												const rightPct = 100 - leftPct;
+
+												return (
+													<div className="w-full bg-muted/20 h-3 rounded overflow-hidden flex">
+														<div
+															className="h-full bg-[rgb(73,140,244)]"
+															style={{ width: `${leftPct}%` }}
+														/>
+														<div
+															className="h-full bg-[rgb(80,200,120)]"
+															style={{ width: `${rightPct}%` }}
+														/>
+													</div>
+												);
+											};
+
 											return (
-												<div className="space-y-2 text-sm text-foreground">
-													<div className="flex justify-between">
-														<span>Possesso palla</span>
-														<span>
-															{typeof s.possessionHome === "number"
-																? `${s.possessionHome}% - ${s.possessionAway}%`
-																: "N/D"}
-														</span>
+												<div className="space-y-4 text-sm text-foreground">
+													{/* Possesso palla (percentuali) */}
+													<div>
+														<div className="flex justify-between mb-1">
+															<span>Possesso palla</span>
+															<span>
+																{typeof s.possessionHome === "number"
+																	? `${s.possessionHome}% - ${s.possessionAway}%`
+																	: "N/D"}
+															</span>
+														</div>
+														{typeof s.possessionHome === "number" &&
+														typeof s.possessionAway === "number" ? (
+															<div className="w-full">
+																<div className="w-full bg-muted/20 h-3 rounded overflow-hidden flex">
+																	<div
+																		className="h-full bg-primary"
+																		style={{ width: `${s.possessionHome}%` }}
+																	/>
+																	<div
+																		className="h-full bg-accent"
+																		style={{ width: `${s.possessionAway}%` }}
+																	/>
+																</div>
+															</div>
+														) : (
+															<div className="h-3 bg-muted rounded" />
+														)}
 													</div>
-													<div className="flex justify-between">
-														<span>Tiri</span>
-														<span>
-															{typeof s.shotsHome === "number"
-																? `${s.shotsHome} - ${s.shotsAway}`
-																: "N/D"}
-														</span>
+
+													{/* Tiri */}
+													<div>
+														<div className="flex justify-between mb-1">
+															<span>Tiri</span>
+															<span>
+																{typeof s.shotsHome === "number"
+																	? `${s.shotsHome} - ${s.shotsAway}`
+																	: "N/D"}
+															</span>
+														</div>
+														{renderBar(s.shotsHome, s.shotsAway)}
 													</div>
-													<div className="flex justify-between">
-														<span>Tiri in porta</span>
-														<span>
-															{typeof s.shotsOnTargetHome === "number"
-																? `${s.shotsOnTargetHome} - ${s.shotsOnTargetAway}`
-																: "N/D"}
-														</span>
+
+													{/* Tiri in porta */}
+													<div>
+														<div className="flex justify-between mb-1">
+															<span>Tiri in porta</span>
+															<span>
+																{typeof s.shotsOnTargetHome === "number"
+																	? `${s.shotsOnTargetHome} - ${s.shotsOnTargetAway}`
+																	: "N/D"}
+															</span>
+														</div>
+														{renderBar(s.shotsOnTargetHome, s.shotsOnTargetAway)}
 													</div>
-													<div className="flex justify-between">
-														<span>Calci d'angolo</span>
-														<span>
-															{typeof s.cornersHome === "number"
-																? `${s.cornersHome} - ${s.cornersAway}`
-																: "N/D"}
-														</span>
+
+													{/* Calci d'angolo */}
+													<div>
+														<div className="flex justify-between mb-1">
+															<span>Calci d'angolo</span>
+															<span>
+																{typeof s.cornersHome === "number"
+																	? `${s.cornersHome} - ${s.cornersAway}`
+																	: "N/D"}
+															</span>
+														</div>
+														{renderBar(s.cornersHome, s.cornersAway)}
 													</div>
-													<div className="flex justify-between">
-														<span>Falli</span>
-														<span>
-															{typeof s.foulsHome === "number"
-																? `${s.foulsHome} - ${s.foulsAway}`
-																: "N/D"}
-														</span>
+
+													{/* Falli */}
+													<div>
+														<div className="flex justify-between mb-1">
+															<span>Falli</span>
+															<span>
+																{typeof s.foulsHome === "number"
+																	? `${s.foulsHome} - ${s.foulsAway}`
+																	: "N/D"}
+															</span>
+														</div>
+														{renderBar(s.foulsHome, s.foulsAway)}
 													</div>
 												</div>
 											);
