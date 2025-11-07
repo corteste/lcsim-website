@@ -32,7 +32,7 @@ const Home = () => {
         <div className="mb-8 text-center">
           <h1 className="text-5xl font-bold text-foreground mb-3 flex items-center justify-center gap-3">
             <Trophy className="h-10 w-10 text-primary" />
-            Fantasy League
+            Lega Calcio Simulato
           </h1>
           <p className="text-lg text-muted-foreground">Benvenuto nel tuo campionato manageriale</p>
           <p className="text-sm text-muted-foreground mt-1">Stagione 2024/25</p>
