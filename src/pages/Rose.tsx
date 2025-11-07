@@ -101,6 +101,9 @@ const Rose = () => {
                             {player.role}
                           </Badge>
                           <span className="font-medium">{player.name}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm text-muted-foreground">Età:</span>
                           <span className="font-medium">{player.age}</span>
                         </div>
                         <div className="flex items-center gap-2">
