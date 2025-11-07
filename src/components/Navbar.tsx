@@ -5,8 +5,10 @@ const Navbar = () => {
   const location = useLocation();
   
   const navItems = [
-    { path: "/", label: "Classifica" },
+    { path: "/", label: "Home" },
+    { path: "/classifica", label: "Classifica" },
     { path: "/rose", label: "Rose" },
+    { path: "/statistiche", label: "Statistiche" },
     { path: "/calendario", label: "Calendario" },
     { path: "/mia-squadra", label: "La Mia Squadra" },
   ];
