@@ -8,43 +8,43 @@ const teams = [
   {
     name: "Red Mamba",
     players: [
-      { name: "Marco Rossi", role: "POR", rating: 7.5 },
-      { name: "Luca Bianchi", role: "DIF", rating: 7.2 },
-      { name: "Andrea Verdi", role: "DIF", rating: 7.8 },
-      { name: "Paolo Neri", role: "DIF", rating: 7.0 },
-      { name: "Giuseppe Gialli", role: "CEN", rating: 8.2 },
-      { name: "Francesco Blu", role: "CEN", rating: 7.9 },
-      { name: "Antonio Viola", role: "CEN", rating: 7.4 },
-      { name: "Alessandro Grigi", role: "ATT", rating: 8.5 },
-      { name: "Matteo Arancio", role: "ATT", rating: 8.0 },
+      { name: "Marco Rossi",age: "24", role: "POR", rating: 7.5 },
+      { name: "Luca Bianchi",age: "24", role: "DIF", rating: 7.2 },
+      { name: "Andrea Verdi",age: "24", role: "DIF", rating: 7.8 },
+      { name: "Paolo Neri",age: "24", role: "DIF", rating: 7.0 },
+      { name: "Giuseppe Gialli",age: "24", role: "CEN", rating: 8.2 },
+      { name: "Francesco Blu",age: "24", role: "CEN", rating: 7.9 },
+      { name: "Antonio Viola",age: "24", role: "CEN", rating: 7.4 },
+      { name: "Alessandro Grigi",age: "24", role: "ATT", rating: 8.5 },
+      { name: "Matteo Arancio",age: "24", role: "ATT", rating: 8.0 },
     ],
   },
   {
     name: "Mar's Attack",
     players: [
-      { name: "Roberto Marroni", role: "POR", rating: 7.3 },
-      { name: "Stefano Rosa", role: "DIF", rating: 7.6 },
-      { name: "Davide Azzurri", role: "DIF", rating: 7.1 },
-      { name: "Simone Verde", role: "DIF", rating: 7.4 },
-      { name: "Lorenzo Neri", role: "CEN", rating: 7.8 },
-      { name: "Federico Bianchi", role: "CEN", rating: 8.1 },
-      { name: "Riccardo Rossi", role: "CEN", rating: 7.7 },
-      { name: "Gabriele Gialli", role: "ATT", rating: 8.3 },
-      { name: "Nicola Blu", role: "ATT", rating: 7.9 },
+      { name: "Roberto Marroni",age: "24", role: "POR", rating: 7.3 },
+      { name: "Stefano Rosa",age: "24", role: "DIF", rating: 7.6 },
+      { name: "Davide Azzurri",age: "24", role: "DIF", rating: 7.1 },
+      { name: "Simone Verde",age: "24", role: "DIF", rating: 7.4 },
+      { name: "Lorenzo Neri",age: "24", role: "CEN", rating: 7.8 },
+      { name: "Federico Bianchi",age: "24", role: "CEN", rating: 8.1 },
+      { name: "Riccardo Rossi",age: "24", role: "CEN", rating: 7.7 },
+      { name: "Gabriele Gialli",age: "24", role: "ATT", rating: 8.3 },
+      { name: "Nicola Blu",age: "24", role: "ATT", rating: 7.9 },
     ],
   },
   {
     name: "AC Denti",
     players: [
-      { name: "Roberto Marroni", role: "POR", rating: 7.3 },
-      { name: "Stefano Rosa", role: "DIF", rating: 7.6 },
-      { name: "Davide Azzurri", role: "DIF", rating: 7.1 },
-      { name: "Simone Verde", role: "DIF", rating: 7.4 },
-      { name: "Lorenzo Neri", role: "CEN", rating: 7.8 },
-      { name: "Federico Bianchi", role: "CEN", rating: 8.1 },
-      { name: "Riccardo Rossi", role: "CEN", rating: 7.7 },
-      { name: "Gabriele Gialli", role: "ATT", rating: 8.3 },
-      { name: "Nicola Blu", role: "ATT", rating: 7.9 },
+      { name: "Roberto Marroni",age: "24", role: "POR", rating: 7.3 },
+      { name: "Stefano Rosa",age: "24", role: "DIF", rating: 7.6 },
+      { name: "Davide Azzurri",age: "24", role: "DIF", rating: 7.1 },
+      { name: "Simone Verde",age: "24", role: "DIF", rating: 7.4 },
+      { name: "Lorenzo Neri",age: "24", role: "CEN", rating: 7.8 },
+      { name: "Federico Bianchi",age: "24", role: "CEN", rating: 8.1 },
+      { name: "Riccardo Rossi",age: "24", role: "CEN", rating: 7.7 },
+      { name: "Gabriele Gialli",age: "24", role: "ATT", rating: 8.3 },
+      { name: "Nicola Blu",age: "24", role: "ATT", rating: 7.9 },
     ],
   },
 ];
@@ -101,6 +101,7 @@ const Rose = () => {
                             {player.role}
                           </Badge>
                           <span className="font-medium">{player.name}</span>
+                          <span className="font-medium">{player.age}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Voto medio:</span>
