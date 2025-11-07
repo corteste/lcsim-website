@@ -143,7 +143,7 @@ const Calendario = () => {
 											onClick={() => setSelected({ round: round.round, date: round.date, match })}
 											className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
 										>
-											<div className="flex items-center gap-4 flex-1">
+											<div className="flex items-center gap-4">
 												<span className="font-medium text-right w-48">{match.home}</span>
 												<div className="flex items-center gap-3 min-w-[80px] justify-center">
 													{match.status === "completed" ? (
@@ -336,10 +336,6 @@ const Calendario = () => {
 											<div>
 												<strong>Sede:</strong>{" "}
 												<span className="ml-2">Stadio principale</span>
-											</div>
-											<div>
-												<strong>Note:</strong>{" "}
-												<span className="ml-2 text-muted-foreground">Nessuna</span>
 											</div>
 										</div>
 									</div>
