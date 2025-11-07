@@ -31,7 +31,8 @@ const Home = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
           <h1 className="text-5xl font-bold text-foreground mb-3 flex items-center justify-center gap-3">
-            <Trophy className="h-10 w-10 text-primary" />
+            {/* <Trophy className="h-10 w-10 text-primary" /> */}
+            <img src="/src/images/LCSIM_Logo.png" alt="Custom Trophy" className="h-10 w-10 object-contain" />
             Lega Calcio Simulato
           </h1>
           <p className="text-lg text-muted-foreground">Benvenuto nel tuo campionato manageriale</p>
