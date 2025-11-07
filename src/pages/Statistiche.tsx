@@ -45,13 +45,14 @@ const Statistiche = () => {
   const [teamFilter, setTeamFilter] = useState<string>("all");
 
   const currentStats = allStats[statType];
-  const filteredStats = roleFilter === "all" 
+ /* const filteredStats = roleFilter === "all" 
     ? currentStats 
     : currentStats.filter(player => player.team === roleFilter);
-  /*const filteredTeam = teamFilter === "all" 
+    */
+  const filteredStats = teamFilter === "all" 
     ? currentStats 
     : currentStats.filter(player => player.team === teamFilter);
-*/
+
   const getStatLabel = () => {
     switch (statType) {
       case "goalscorers": return "Gol";
