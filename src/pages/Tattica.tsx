@@ -15,7 +15,7 @@ interface Player {
   number: number;
 }
 
-const MiaSquadra = () => {
+const Tattica = () => {
   const [selected, setSelected] = useState<{ player: Player } | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
   const [dragOverPlayer, setDragOverPlayer] = useState<Player | null>(null);
@@ -433,4 +433,4 @@ const MiaSquadra = () => {
   );
 };
 
-export default MiaSquadra;
+export default Tattica;

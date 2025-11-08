@@ -11,6 +11,10 @@ import Calendario from "./pages/Calendario";
 import MiaSquadra from "./pages/MiaSquadra";
 import NotFound from "./pages/NotFound";
 import ListaGiocatori from "./pages/ListaGiocatori";
+import Roster from "./pages/Roster";
+import Tattica from "./pages/Tattica";
+import Allenamenti from "./pages/Allenamenti";
+import ConfrontoGiocatori from "./pages/ConfrontoGiocatori";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +32,10 @@ const App = () => (
           <Route path="/lista-giocatori" element={<ListaGiocatori />} />
           <Route path="/calendario" element={<Calendario />} />
           <Route path="/mia-squadra" element={<MiaSquadra />} />
+          <Route path="/mia-squadra/roster" element={<Roster />} />
+          <Route path="/mia-squadra/tattica" element={<Tattica />} />
+          <Route path="/mia-squadra/allenamenti" element={<Allenamenti />} />
+          <Route path="/mia-squadra/confronto-giocatori" element={<ConfrontoGiocatori />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,5 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Trophy } from "lucide-react";
+import { Trophy, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const location = useLocation();
@@ -11,8 +17,16 @@ const Navbar = () => {
     { path: "/lista-giocatori", label: "Lista Giocatori" },
     { path: "/statistiche", label: "Statistiche" },
     { path: "/calendario", label: "Calendario" },
-    { path: "/mia-squadra", label: "La Mia Squadra" },
   ];
+
+  const miaSquadraItems = [
+    { path: "/mia-squadra/roster", label: "Roster" },
+    { path: "/mia-squadra/tattica", label: "Tattica" },
+    { path: "/mia-squadra/allenamenti", label: "Allenamenti" },
+    { path: "/mia-squadra/confronto-giocatori", label: "Confronto Giocatori" },
+  ];
+
+  const isMiaSquadraActive = location.pathname.startsWith("/mia-squadra");
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-card shadow-sm backdrop-blur-sm">
@@ -23,7 +37,7 @@ const Navbar = () => {
             <span>Lega Calcio Simulato</span>
           </Link>
           
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -37,6 +51,35 @@ const Navbar = () => {
                 {item.label}
               </Link>
             ))}
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${
+                  isMiaSquadraActive
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-foreground hover:bg-secondary"
+                }`}
+              >
+                La Mia Squadra
+                <ChevronDown className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-card z-50">
+                {miaSquadraItems.map((item) => (
+                  <DropdownMenuItem key={item.path} asChild>
+                    <Link
+                      to={item.path}
+                      className={`cursor-pointer ${
+                        location.pathname === item.path
+                          ? "bg-secondary font-medium"
+                          : ""
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
