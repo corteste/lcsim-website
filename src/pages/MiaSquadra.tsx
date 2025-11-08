@@ -17,7 +17,8 @@ interface Player {
 
 const MiaSquadra = () => {
   const [selected, setSelected] = useState<{ player: Player } | null>(null);
-  const [players] = useState<Player[]>([
+  const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
+  const [players, setPlayers] = useState<Player[]>([
     { id: 1, name: "Marco Rossi", role: "POR", rating: 7.5, position: "POR", number: 1 },
     { id: 2, name: "Luca Bianchi", role: "DIF", rating: 7.2, position: "DIF1", number: 2 },
     { id: 3, name: "Andrea Verdi", role: "DIF", rating: 7.8, position: "DIF2", number: 3 },
@@ -53,6 +54,63 @@ const MiaSquadra = () => {
     toast.success("Formazione salvata con successo!");
   };
 
+  const handleDragStart = (player: Player) => {
+    setDraggedPlayer(player);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDropToTitolari = () => {
+    if (!draggedPlayer) return;
+    
+    const currentTitolari = players.filter(p => p.position !== null);
+    
+    // Se il giocatore è già titolare, non fare nulla
+    if (draggedPlayer.position !== null) {
+      setDraggedPlayer(null);
+      return;
+    }
+    
+    // Verifica limite di 11 giocatori
+    if (currentTitolari.length >= 11) {
+      toast.error("La formazione titolare può avere massimo 11 giocatori!");
+      setDraggedPlayer(null);
+      return;
+    }
+    
+    // Sposta il giocatore in formazione titolare
+    setPlayers(players.map(p => 
+      p.id === draggedPlayer.id 
+        ? { ...p, position: `${p.role}${currentTitolari.filter(t => t.role === p.role).length + 1}` }
+        : p
+    ));
+    
+    setDraggedPlayer(null);
+    toast.success(`${draggedPlayer.name} aggiunto alla formazione titolare`);
+  };
+
+  const handleDropToPanchina = () => {
+    if (!draggedPlayer) return;
+    
+    // Se il giocatore è già in panchina, non fare nulla
+    if (draggedPlayer.position === null) {
+      setDraggedPlayer(null);
+      return;
+    }
+    
+    // Sposta il giocatore in panchina
+    setPlayers(players.map(p => 
+      p.id === draggedPlayer.id 
+        ? { ...p, position: null }
+        : p
+    ));
+    
+    setDraggedPlayer(null);
+    toast.success(`${draggedPlayer.name} spostato in panchina`);
+  };
+
   const titolari = players.filter(p => p.position !== null);
   const panchina = players.filter(p => p.position === null);
 
@@ -70,22 +128,27 @@ const MiaSquadra = () => {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="shadow-lg">
+          <Card 
+            className="shadow-lg"
+            onDragOver={handleDragOver}
+            onDrop={handleDropToTitolari}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Formazione Titolare
               </CardTitle>
-              <CardDescription>Giocatori in campo (3-3-2)</CardDescription>
+              <CardDescription>Giocatori in campo (max 11) - Trascina qui per aggiungere</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-3 min-h-[200px]">
                 {titolari.map((player) => (
-                  
                   <div
                     key={player.id}
+                    draggable
+                    onDragStart={() => handleDragStart(player)}
                     onClick={() => setSelected({ player: player })}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors !cursor-pointer"
+                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-move"
                   >
                     <div className="flex items-center gap-4">
                       <Badge variant="outline" className={getRoleColor(player.role)}>
@@ -99,22 +162,33 @@ const MiaSquadra = () => {
                     </div>
                   </div>
                 ))}
+                {titolari.length === 0 && (
+                  <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                    Trascina qui i giocatori dalla panchina
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg">
+          <Card 
+            className="shadow-lg"
+            onDragOver={handleDragOver}
+            onDrop={handleDropToPanchina}
+          >
             <CardHeader>
               <CardTitle>Panchina</CardTitle>
-              <CardDescription>Giocatori di riserva</CardDescription>
+              <CardDescription>Giocatori di riserva - Trascina qui per rimuovere</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-3 min-h-[200px]">
                 {panchina.map((player) => (
                   <div
                     key={player.id}
+                    draggable
+                    onDragStart={() => handleDragStart(player)}
                     onClick={() => setSelected({ player: player })}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-move"
                   >
                     <div className="flex items-center gap-4">
                       <Badge variant="outline" className={getRoleColor(player.role)}>
@@ -128,6 +202,11 @@ const MiaSquadra = () => {
                     </div>
                   </div>
                 ))}
+                {panchina.length === 0 && (
+                  <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                    Nessun giocatore in panchina
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
