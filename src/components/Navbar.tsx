@@ -8,6 +8,7 @@ const Navbar = () => {
     { path: "/", label: "Home" },
     { path: "/classifica", label: "Classifica" },
     { path: "/rose", label: "Rose" },
+    { path: "/lista-giocatori", label: "Lista Giocatori" },
     { path: "/statistiche", label: "Statistiche" },
     { path: "/calendario", label: "Calendario" },
     { path: "/mia-squadra", label: "La Mia Squadra" },
