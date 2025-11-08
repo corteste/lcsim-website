@@ -6,9 +6,14 @@
 
 ## To Implement
 
+
+**Prompt per Lovable**
+Nella schermata Formazione titolare avere 11 spazi preimpostati per inserire giocatori
+Crea una visualizzazione del campo da calcio con posizioni grafiche dove trascinare 
+
 **Parte fogli comuni**
 
-- Lista giocatori completa con filtri per ruolo età, stato contratto (svincolato o no) e stato sul calciomercato
+- Lista giocatori completa con filtri per ruolo, età, stato contratto (svincolato o no) e stato sul calciomercato
 - Parte separata per il draft con menù a discesa: lista di tutti i rookies, vista sul tabellone draft
 - Pagina degli interessi delle squadre per i ruoli?
 
@@ -17,6 +22,7 @@
 - Lista roster completo con valori
 - Pagina gestione miglioramenti allenamento
 - Pagina confronto rosa e rookies
+
 
 ## How can I edit this code?
 

@@ -220,12 +220,7 @@ const ListaGiocatori = () => {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {statType === "goalscorers" && <Target className="h-5 w-5 text-primary" />}
-              {statType === "assists" && <TrendingUp className="h-5 w-5 text-primary" />}
-              {statType === "ratings" && <Award className="h-5 w-5 text-primary" />}
-              {statType === "goalscorers" && "Classifica Marcatori"}
-              {statType === "assists" && "Classifica Assist"}
-              {statType === "ratings" && "Migliori Voti Medi"}
+              Risultati
             </CardTitle>
             <CardDescription>
               {filteredStats.length} giocatori trovati
