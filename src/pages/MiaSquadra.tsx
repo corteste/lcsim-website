@@ -79,7 +79,6 @@ const MiaSquadra = () => {
       return;
     }
 
-    // Riordina all'interno della stessa lista
     const draggedIsTitolare = draggedPlayer.position !== null;
     const targetIsTitolare = targetPlayer.position !== null;
 
@@ -96,8 +95,21 @@ const MiaSquadra = () => {
       setDraggedPlayer(null);
       setDragOverPlayer(null);
     } else {
-      // Sposta tra le liste mantenendo la logica esistente
-      handleDropToTitolari();
+      // Scambia tra le due liste
+      setPlayers(players.map(p => {
+        if (p.id === draggedPlayer.id) {
+          // Il giocatore trascinato prende la posizione del target
+          return { ...p, position: targetPlayer.position };
+        } else if (p.id === targetPlayer.id) {
+          // Il giocatore target prende la posizione del trascinato
+          return { ...p, position: draggedPlayer.position };
+        }
+        return p;
+      }));
+      
+      setDraggedPlayer(null);
+      setDragOverPlayer(null);
+      toast.success(`${draggedPlayer.name} e ${targetPlayer.name} hanno scambiato posizione`);
     }
   };
 
