@@ -18,6 +18,7 @@ interface Player {
 const MiaSquadra = () => {
   const [selected, setSelected] = useState<{ player: Player } | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
+  const [dragOverPlayer, setDragOverPlayer] = useState<Player | null>(null);
   const [players, setPlayers] = useState<Player[]>([
     { id: 1, name: "Marco Rossi", role: "POR", rating: 7.5, position: "POR", number: 1 },
     { id: 2, name: "Luca Bianchi", role: "DIF", rating: 7.2, position: "DIF1", number: 2 },
@@ -62,6 +63,44 @@ const MiaSquadra = () => {
     e.preventDefault();
   };
 
+  const handleDragOverPlayer = (e: React.DragEvent, player: Player) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverPlayer(player);
+  };
+
+  const handleDropOnPlayer = (e: React.DragEvent, targetPlayer: Player) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedPlayer || draggedPlayer.id === targetPlayer.id) {
+      setDraggedPlayer(null);
+      setDragOverPlayer(null);
+      return;
+    }
+
+    // Riordina all'interno della stessa lista
+    const draggedIsTitolare = draggedPlayer.position !== null;
+    const targetIsTitolare = targetPlayer.position !== null;
+
+    if (draggedIsTitolare === targetIsTitolare) {
+      // Riordina nella stessa lista
+      const newPlayers = [...players];
+      const draggedIndex = newPlayers.findIndex(p => p.id === draggedPlayer.id);
+      const targetIndex = newPlayers.findIndex(p => p.id === targetPlayer.id);
+      
+      // Scambia le posizioni nell'array
+      [newPlayers[draggedIndex], newPlayers[targetIndex]] = [newPlayers[targetIndex], newPlayers[draggedIndex]];
+      
+      setPlayers(newPlayers);
+      setDraggedPlayer(null);
+      setDragOverPlayer(null);
+    } else {
+      // Sposta tra le liste mantenendo la logica esistente
+      handleDropToTitolari();
+    }
+  };
+
   const handleDropToTitolari = () => {
     if (!draggedPlayer) return;
     
@@ -70,6 +109,7 @@ const MiaSquadra = () => {
     // Se il giocatore è già titolare, non fare nulla
     if (draggedPlayer.position !== null) {
       setDraggedPlayer(null);
+      setDragOverPlayer(null);
       return;
     }
     
@@ -77,6 +117,7 @@ const MiaSquadra = () => {
     if (currentTitolari.length >= 11) {
       toast.error("La formazione titolare può avere massimo 11 giocatori!");
       setDraggedPlayer(null);
+      setDragOverPlayer(null);
       return;
     }
     
@@ -88,6 +129,7 @@ const MiaSquadra = () => {
     ));
     
     setDraggedPlayer(null);
+    setDragOverPlayer(null);
     toast.success(`${draggedPlayer.name} aggiunto alla formazione titolare`);
   };
 
@@ -97,6 +139,7 @@ const MiaSquadra = () => {
     // Se il giocatore è già in panchina, non fare nulla
     if (draggedPlayer.position === null) {
       setDraggedPlayer(null);
+      setDragOverPlayer(null);
       return;
     }
     
@@ -108,6 +151,7 @@ const MiaSquadra = () => {
     ));
     
     setDraggedPlayer(null);
+    setDragOverPlayer(null);
     toast.success(`${draggedPlayer.name} spostato in panchina`);
   };
 
@@ -147,8 +191,12 @@ const MiaSquadra = () => {
                     key={player.id}
                     draggable
                     onDragStart={() => handleDragStart(player)}
+                    onDragOver={(e) => handleDragOverPlayer(e, player)}
+                    onDrop={(e) => handleDropOnPlayer(e, player)}
                     onClick={() => setSelected({ player: player })}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-move"
+                    className={`flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-move ${
+                      dragOverPlayer?.id === player.id && draggedPlayer?.id !== player.id ? 'ring-2 ring-primary' : ''
+                    }`}
                   >
                     <div className="flex items-center gap-4">
                       <Badge variant="outline" className={getRoleColor(player.role)}>
@@ -187,8 +235,12 @@ const MiaSquadra = () => {
                     key={player.id}
                     draggable
                     onDragStart={() => handleDragStart(player)}
+                    onDragOver={(e) => handleDragOverPlayer(e, player)}
+                    onDrop={(e) => handleDropOnPlayer(e, player)}
                     onClick={() => setSelected({ player: player })}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-move"
+                    className={`flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-move ${
+                      dragOverPlayer?.id === player.id && draggedPlayer?.id !== player.id ? 'ring-2 ring-primary' : ''
+                    }`}
                   >
                     <div className="flex items-center gap-4">
                       <Badge variant="outline" className={getRoleColor(player.role)}>
