@@ -75,6 +75,8 @@ const Tattica = () => {
     setDragOverPlayer(player);
   };
 
+  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+
   const handleDropOnPlayer = (e: React.DragEvent, targetPlayer: Player) => {
     e.preventDefault();
     e.stopPropagation();
@@ -119,36 +121,53 @@ const Tattica = () => {
     }
   };
 
-  const handleDropToTitolari = () => {
-    if (!draggedPlayer) return;
+  const handleDropOnSlot = (e: React.DragEvent, slotIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    const currentTitolari = players.filter(p => p.position !== null);
-    
-    // Se il giocatore è già titolare, non fare nulla
-    if (draggedPlayer.position !== null) {
-      setDraggedPlayer(null);
-      setDragOverPlayer(null);
+    if (!draggedPlayer) {
+      setDragOverSlot(null);
       return;
     }
+
+    // Trova il giocatore che occupa questo slot
+    const playerInSlot = titolari[slotIndex];
     
-    // Verifica limite di 11 giocatori
-    if (currentTitolari.length >= 11) {
-      toast.error("La formazione titolare può avere massimo 11 giocatori!");
+    if (playerInSlot) {
+      // Slot occupato - scambia
+      handleDropOnPlayer(e, playerInSlot);
+    } else {
+      // Slot vuoto - sposta il giocatore
+      if (draggedPlayer.position === null) {
+        // Da panchina a slot vuoto
+        setPlayers(players.map(p => 
+          p.id === draggedPlayer.id 
+            ? { ...p, position: `SLOT${slotIndex}` }
+            : p
+        ));
+        toast.success(`${draggedPlayer.name} aggiunto alla formazione titolare`);
+      } else {
+        // Da slot a slot vuoto
+        setPlayers(players.map(p => 
+          p.id === draggedPlayer.id 
+            ? { ...p, position: `SLOT${slotIndex}` }
+            : p
+        ));
+      }
       setDraggedPlayer(null);
-      setDragOverPlayer(null);
-      return;
     }
-    
-    // Sposta il giocatore in formazione titolare
-    setPlayers(players.map(p => 
-      p.id === draggedPlayer.id 
-        ? { ...p, position: `${p.role}${currentTitolari.filter(t => t.role === p.role).length + 1}` }
-        : p
-    ));
-    
-    setDraggedPlayer(null);
-    setDragOverPlayer(null);
-    toast.success(`${draggedPlayer.name} aggiunto alla formazione titolare`);
+    setDragOverSlot(null);
+  };
+
+  const handleDragOverSlot = (e: React.DragEvent, slotIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverSlot(slotIndex);
+  };
+
+  const handleDropToTitolari = (e: React.DragEvent) => {
+    // Gestito dai singoli slot
+    e.preventDefault();
   };
 
   const handleDropToPanchina = () => {
@@ -175,6 +194,11 @@ const Tattica = () => {
 
   const titolari = players.filter(p => p.position !== null);
   const panchina = players.filter(p => p.position === null);
+  
+  // Crea array di 11 slot con giocatori o null
+  const formationSlots: (Player | null)[] = Array.from({ length: 11 }, (_, i) => {
+    return titolari[i] || null;
+  });
 
   /* MAIN RENDER */
 
@@ -202,39 +226,48 @@ const Tattica = () => {
                 <Users className="h-5 w-5" />
                 Formazione Titolare
               </CardTitle>
-              <CardDescription>Giocatori in campo - Trascina qui per aggiungere</CardDescription>
+              <CardDescription>11 giocatori in campo - Trascina i giocatori negli slot</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 min-h-[200px]">
-                {titolari.map((player) => (
+              <div className="space-y-3">
+                {formationSlots.map((player, slotIndex) => (
                   <div
-                    key={player.id}
-                    draggable
-                    onDragStart={() => handleDragStart(player)}
-                    onDragOver={(e) => handleDragOverPlayer(e, player)}
-                    onDrop={(e) => handleDropOnPlayer(e, player)}
-                    onClick={() => setSelected({ player: player })}
-                    className={`flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-move ${
-                      dragOverPlayer?.id === player.id && draggedPlayer?.id !== player.id ? 'ring-2 ring-primary' : ''
+                    key={slotIndex}
+                    onDragOver={(e) => handleDragOverSlot(e, slotIndex)}
+                    onDrop={(e) => handleDropOnSlot(e, slotIndex)}
+                    className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                      player 
+                        ? 'bg-card hover:bg-muted/50 cursor-move' 
+                        : 'bg-muted/20 border-dashed'
+                    } ${
+                      dragOverSlot === slotIndex && (!player || draggedPlayer?.id !== player?.id) ? 'ring-2 ring-primary' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <Badge variant="outline" className={getRoleColor(player.role)}>
-                        {player.role}
-                      </Badge>
-                      <span className="font-medium">{player.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Voto:</span>
-                      <span className="font-bold text-primary">{player.rating}</span>
-                    </div>
+                    {player ? (
+                      <>
+                        <div
+                          draggable
+                          onDragStart={() => handleDragStart(player)}
+                          onClick={() => setSelected({ player })}
+                          className="flex items-center gap-4 flex-1 cursor-move"
+                        >
+                          <Badge variant="outline" className={getRoleColor(player.role)}>
+                            {player.role}
+                          </Badge>
+                          <span className="font-medium">{player.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Voto:</span>
+                          <span className="font-bold text-primary">{player.rating}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center w-full text-muted-foreground text-sm">
+                        Slot {slotIndex + 1} - Vuoto
+                      </div>
+                    )}
                   </div>
                 ))}
-                {titolari.length === 0 && (
-                  <div className="flex items-center justify-center h-[200px] text-muted-foreground">
-                    Trascina qui i giocatori dalla panchina
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>

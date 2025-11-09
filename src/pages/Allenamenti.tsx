@@ -184,7 +184,7 @@ const Allenamenti = () => {
 
         <div className="grid grid-cols-12 gap-6">
           {/* left column: selezione e riepilogo XP */}
-          <div className="col-span-12 lg:col-span-3">
+          <div className="col-span-12 lg:col-span-2">
             <Card className="shadow">
               <CardHeader>
                 <CardTitle>Giocatore</CardTitle>
@@ -228,22 +228,22 @@ const Allenamenti = () => {
           </div>
 
           {/* center: griglia principale (ora per gruppi con sotto-attributi) */}
-          <div className="col-span-12 lg:col-span-6">
+          <div className="col-span-12 lg:col-span-8">
             <Card className="shadow">
               <CardHeader>
                 <CardTitle>Dettaglio Attributi</CardTitle>
                 <CardDescription>Pre / Aumento (per gruppo) / Post / Costo</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full table-fixed text-sm">
+                <div>
+                  <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left">
-                        <th className="p-2 w-48">Gruppo</th>
-                        <th className="p-2 w-48">Pre (sotto)</th>
-                        <th className="p-2 w-44">Aumento (gruppo)</th>
-                        <th className="p-2 w-48">Post (sotto)</th>
-                        <th className="p-2 w-24">Costo</th>
+                        <th className="p-2">Gruppo</th>
+                        <th className="p-2">Pre (sotto)</th>
+                        <th className="p-2">Aumento (gruppo)</th>
+                        <th className="p-2">Post (sotto)</th>
+                        <th className="p-2">Costo</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -321,7 +321,7 @@ const Allenamenti = () => {
           </div>
 
           {/* right column: OVR e riepilogo */}
-          <div className="col-span-12 lg:col-span-3">
+          <div className="col-span-12 lg:col-span-2">
             <Card className="shadow">
               <CardHeader>
                 <CardTitle>Riepilogo</CardTitle>

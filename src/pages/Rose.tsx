@@ -179,9 +179,9 @@ const Rose = () => {
         </div>
 
         <Tabs defaultValue="0" className="w-full">
-          <TabsList className="w-full flex-wrap h-auto justify-start gap-2 bg-muted/50 p-2">
+          <TabsList className="w-full h-auto bg-muted/50 p-2 grid grid-cols-5 grid-rows-2 gap-2">
             {teams.map((team, index) => (
-              <TabsTrigger key={index} value={index.toString()} className="flex-1 min-w-[200px]">
+              <TabsTrigger key={index} value={index.toString()}>
                 {team.name}
               </TabsTrigger>
             ))}

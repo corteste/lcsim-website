@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
-import { Trophy, ChevronDown } from "lucide-react";
+import { Trophy, ChevronDown, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +11,7 @@ import {
 
 const Navbar = () => {
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
   
   const navItems = [
     //{ path: "/", label: "Home" }, // disabilitato, se clicco sul logo mi porta alla home
@@ -37,7 +40,17 @@ const Navbar = () => {
             <span>Lega Calcio Simulato</span>
           </Link>
           
-          <div className="flex gap-1 items-center">
+          <div className="flex gap-3 items-center">
+            <div className="flex items-center gap-2">
+              <Sun className="h-4 w-4 text-muted-foreground" />
+              <Switch
+                checked={theme === "dark"}
+                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+              />
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            </div>
+            
+            <div className="flex gap-1 items-center">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -80,6 +93,7 @@ const Navbar = () => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>
