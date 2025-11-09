@@ -381,7 +381,7 @@ const Tattica = () => {
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
                                   <span className="text-sm text-gray-700">Contrasto</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">87</span>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
                                   <span className="text-sm text-gray-700">Scivolata</span>

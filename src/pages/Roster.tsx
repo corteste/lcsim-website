@@ -3,30 +3,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Player } from "../types/player";
+import { supabase } from "../supabaseClient";
+import { PLAYER_TABLE } from "../constants/App";
 
-const teams = [
-  {
-    name: "Average Pegiò Drivers",
-    players: [
-      { name: "Marco Rossi",age: "24", role: "POR", overall: 83, rating: 7.5 },
-      { name: "Luca Bianchi",age: "24", role: "DIF", overall: 83, rating: 7.2 },
-      { name: "Andrea Verdi",age: "24", role: "DIF", overall: 83, rating: 7.8 },
-      { name: "Paolo Neri",age: "24", role: "DIF", overall: 83, rating: 7.0 },
-      { name: "Giuseppe Gialli",age: "24", role: "CEN", overall: 83, rating: 8.2 },
-      { name: "Francesco Blu",age: "24", role: "CEN", overall: 83, rating: 7.9 },
-      { name: "Antonio Viola",age: "24", role: "CEN", overall: 83, rating: 7.4 },
-      { name: "Alessandro Grigi",age: "24", role: "ATT", overall: 83, rating: 8.5 },
-      { name: "Matteo Arancio",age: "24", role: "ATT", overall: 83, rating: 8.0 },
-    ],
-  },
-];
-
+const teamName = "Average Pegiò Drivers";
 
 const getRoleColor = (role: string) => {
   switch (role) {
     case "POR": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-    case "DIF": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
-    case "CEN": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "DC": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
+    case "TS": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
+    case "TD": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
+    case "CDC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "CC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "ED": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "ES": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "COC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "AD": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
+    case "AS": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
+    case "AT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
     case "ATT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
     default: return "bg-muted";
   }
@@ -40,6 +37,18 @@ const getOverallColor = (overall:number) => {
 };
 
 const Roster = () => {
+  const [players, setPlayers] = useState<Player[]>([]);
+  
+    useEffect(() => {
+      async function fetchPlayers() {
+        const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', 'APD'); // filtrare per squadra dell'utente
+        console.log(data);
+        if (error) console.error(error);
+        else setPlayers(data || []);
+      }
+      fetchPlayers();
+    }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -54,39 +63,38 @@ const Roster = () => {
         </div>
 
         <Tabs defaultValue="0" className="w-full">
-          {teams.map((team, teamIndex) => (
-            <TabsContent key={teamIndex} value={teamIndex.toString()}>
+            <TabsContent key={0} value={"0"}>
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle>{team.name}</CardTitle>
-                  <CardDescription>{team.players.length} giocatori</CardDescription>
+                  <CardTitle>{teamName}</CardTitle>
+                  <CardDescription>{players.length} giocatori</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-3">
-                    {team.players.map((player, playerIndex) => (
+                    {players.map((player, playerIndex) => (
                       <div
                         key={playerIndex}
                         className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-center gap-4">
-                          <Badge variant="outline" className={getRoleColor(player.role)}>
-                            {player.role}
+                          <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                            {player.Posiz}
                           </Badge>
-                          <span className="font-medium">{player.name}</span>
+                          <span className="font-medium">{player.Nome} {player.Cognome}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-sm text-muted-foreground">Età:</span>
-                          <span className="font-medium">{player.age}</span>
+                          <span className="font-medium">{player.Età}</span>
                         </div> 
                         <div className="flex items-center gap-1">
                           <span className="text-sm text-muted-foreground">Overall:</span>
-                          <Badge variant="outline" className={getOverallColor(player.overall)}>
-                            {player.overall}
+                          <Badge variant="outline" className={getOverallColor(player.OVR)}>
+                            {player.OVR}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Voto medio:</span>
-                          <span className="font-bold text-primary text-lg">{player.rating}</span>
+                          <span className="font-bold text-primary text-lg">{player.OVR}</span>
                         </div>
                       </div>
                     ))}
@@ -94,7 +102,6 @@ const Roster = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-          ))}
         </Tabs>
       </main>
     </div>

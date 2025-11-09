@@ -3,8 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, TrendingUp, Award, Target } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Player } from "../types/player";
+import { supabase } from "../supabaseClient";
+import { PLAYER_TABLE } from "../constants/App";
 
+
+/*
 interface Player {
   id: number;
   name: string;
@@ -17,6 +22,7 @@ interface Player {
   marketStatus: string | null;
   contractStatus: string;
 }
+  */
 
 const allStats = {
   goalscorers: [
@@ -45,8 +51,17 @@ const allStats = {
 const getRoleColor = (role: string) => {
   switch (role) {
     case "POR": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-    case "DIF": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
-    case "CEN": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "DC": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
+    case "TS": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
+    case "TD": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
+    case "CDC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "CC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "ED": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "ES": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "COC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "AD": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
+    case "AS": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
+    case "AT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
     case "ATT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
     default: return "bg-muted";
   }
@@ -62,66 +77,49 @@ const getMarketStatus = (status: string) => {
   }
 };
 
+const getPosGroup = (pos: string) => {
+switch (pos) {
+    case "POR": return "POR";
+    case "DC": return "DIF";
+    case "TD": return "DIF";
+    case "TS": return "DIF";
+    case "CDC": return "CEN";
+    case "CC": return "CEN";
+    case "ED": return "CEN";
+    case "ES": return "CEN";
+    case "COC": return "CEN";
+    case "AS": return "ATT";
+    case "AD": return "ATT";
+    case "AT": return "ATT";
+    case "ATT": return "ATT";
+    default: return "-";
+  }
+}
+
 const ListaGiocatori = () => {
-  const [statType, setStatType] = useState<"goalscorers" | "assists" | "ratings">("goalscorers");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [contractFilter, setContractFilter] = useState<string>("all");
   const [marketFilter, setMarketFilter] = useState<string>("all");
-  const [players] = useState<Player[]>([
-    { id: 1, name: "Marco Rossi", role: "POR", rating: 7.5, overall: 75, position: "POR", number: 1, team: "FC Dragonslayers", marketStatus: "int", contractStatus: "con"},
-    { id: 2, name: "Luca Bianchi", role: "DIF", rating: 7.2, overall: 72, position: "DIF1", number: 2, team: "Thunder United", marketStatus: "tra", contractStatus: "con" },
-    { id: 3, name: "Andrea Verdi", role: "DIF", rating: 7.8, overall: 78, position: "DIF2", number: 3, team: null, marketStatus: null, contractStatus: "svi" },
-    { id: 4, name: "Paolo Neri", role: "DIF", rating: 7.0, overall: 70, position: "DIF3", number: 4, team: "Thunder United", marketStatus: "ced", contractStatus: "con" },
-    { id: 5, name: "Giuseppe Gialli", role: "CEN", rating: 8.2, overall: 82, position: "CEN1", number: 5, team: "FC Dragonslayers", marketStatus: "int", contractStatus: "con" },
-    { id: 6, name: "Francesco Blu", role: "CEN", rating: 7.9, overall: 79, position: "CEN2", number: 6, team: "Thunder United", marketStatus: "ced", contractStatus: "con" },
-    { id: 7, name: "Antonio Viola", role: "CEN", rating: 7.4, overall: 74, position: "CEN3", number: 7, team: "FC Dragonslayers", marketStatus: "fis", contractStatus: "con" },
-    { id: 8, name: "Alessandro Grigi", role: "ATT", rating: 8.5, overall: 85, position: "ATT1", number: 8, team: null, marketStatus: null, contractStatus: "svi" },
-    { id: 9, name: "Matteo Arancio", role: "ATT", rating: 8.0, overall: 80, position: "ATT2", number: 9, team: "FC Dragonslayers", marketStatus: "tra", contractStatus: "con" },
-    { id: 10, name: "Roberto Marroni", role: "POR", rating: 7.3, overall: 73, position: null, number: 10, team: null, marketStatus: null, contractStatus: "svi" },
-    { id: 11, name: "Stefano Rosa", role: "DIF", rating: 7.6, overall: 76, position: null, number: 11, team: "FC Dragonslayers", marketStatus: "ced", contractStatus: "con" },
-    { id: 12, name: "Davide Azzurri", role: "CEN", rating: 7.1, overall: 71, position: null, number: 12, team: "Average Pegiò Drivers", marketStatus: "int", contractStatus: "con" },
-  ]);
+  const [players, setPlayers] = useState<Player[]>([]);
 
-  const currentStats = allStats[statType];
+  useEffect(() => {
+    async function fetchPlayers() {
+      const { data, error } = await supabase.from(PLAYER_TABLE).select("*");
+      console.log(data);
+      if (error) console.error(error);
+      else setPlayers(data || []);
+    }
+    fetchPlayers();
+  }, []);
+  
   const filteredStats = players.filter(
   player =>
-    (teamFilter === "all" || player.team === teamFilter) &&
-    (roleFilter === "all" || player.role === roleFilter) &&
-    (contractFilter === "all" || player.contractStatus === contractFilter) &&
-    (marketFilter === "all" || player.marketStatus === marketFilter)
+    (teamFilter === "all" || player.Squadra === teamFilter) &&
+    (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) //&&
+    //(contractFilter === "all" || player.contractStatus === contractFilter) &&
+    //(marketFilter === "all" || player.marketStatus === marketFilter)
 );
-
-  /* Gestione delle statistiche: ho una lista di giocatori e una lista di statistiche, potenzialmente potrei avere anche tutto insieme quindi non c'è bisogno dei FOR */
-  const getStatValue = (player: any) => {
-    var goals = 0;
-    var assists = 0; 
-    var rating = 0;
-
-    for (const p of allStats.goalscorers) {
-      if (p.name === player.name) {
-        goals = p.goals;
-        break;
-      }
-    }
-     for (const p of allStats.assists) {
-      if (p.name === player.name) {
-        assists = p.assists; 
-        break;
-      }
-    }
-     for (const p of allStats.ratings) {
-      if (p.name === player.name) {
-        rating = p.rating;
-        break;
-      }
-    }
-    switch (statType) {
-      case "goalscorers": return goals;
-      case "assists": return assists;
-      case "ratings": return rating;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -154,7 +152,7 @@ const ListaGiocatori = () => {
                   <SelectContent>
                     <SelectItem value="all">Tutte le Squadre</SelectItem>
                     <SelectItem value="FC Dragonslayers">FC Dragonslayers</SelectItem>
-                    <SelectItem value="Average Pegiò Drivers">Average Pegiò Drivers</SelectItem>
+                    <SelectItem value="APD">Average Pegiò Drivers</SelectItem>
                     <SelectItem value="Thunder United">Thunder United</SelectItem>
                   </SelectContent>
                 </Select>
@@ -235,28 +233,28 @@ const ListaGiocatori = () => {
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 font-bold text-primary">
-                      {index + 1}
+                      {player.OVR}
                     </div>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{player.name}</span>
-                        <Badge variant="outline" className={getRoleColor(player.role)}>
-                          {player.role}
+                        <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                        <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                          {player.Posiz}
                         </Badge>
                       </div>
-                      <span className="text-sm text-muted-foreground">{player.team}</span>
+                      <span className="text-sm text-muted-foreground">{player.Squadra}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-sm text-muted-foreground">Overall</span>
-                    <span className="font-bold text-primary text-2xl">{player.overall}</span>
+                    <span className="font-bold text-primary text-2xl">{player.OVR ? player.OVR : "-"}</span>
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-sm text-muted-foreground">Market Status</span>
-                    <span className="font-bold text-primary text-2xl">
-                      <Badge variant="outline" className={getMarketStatus(player.marketStatus)}>
+                    <span className="font-bold text-primary text-2xl"> -
+                      {/* <Badge variant="outline" className={getMarketStatus(player.marketStatus)}>
                       {player.marketStatus}
-                    </Badge>
+                    </Badge> */}
                     </span>
                   </div>
                 </div>
