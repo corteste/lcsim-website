@@ -9,22 +9,7 @@ import { Player } from "../types/player";
 import { supabase } from "../supabaseClient";
 import { PLAYER_TABLE } from "../constants/App";
 import { getRoleColor } from "@/utils/functions";
-
-
-/*
-interface Player {
-  id: number;
-  name: string;
-  role: string;
-  rating: number;
-  overall: number;
-  position: string | null;
-  number: number | null;
-  team: string | null;
-  marketStatus: string | null;
-  contractStatus: string;
-}
-  */
+import { getPlayerById, getPlayers } from "@/hooks/rest-select";
 
 const allStats = {
   goalscorers: [
@@ -89,10 +74,11 @@ const ListaGiocatori = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
+  getPlayers(1);
+
   useEffect(() => {
     async function fetchPlayers() {
       const { data, error } = await supabase.from(PLAYER_TABLE).select("*");
-      console.log(data);
       if (error) console.error(error);
       else setPlayers(data || []);
     }

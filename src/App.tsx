@@ -9,7 +9,6 @@ import Classifica from "./pages/Classifica";
 import Rose from "./pages/Rose";
 import Statistiche from "./pages/Statistiche";
 import Calendario from "./pages/Calendario";
-import MiaSquadra from "./pages/MiaSquadra";
 import NotFound from "./pages/NotFound";
 import ListaGiocatori from "./pages/ListaGiocatori";
 import Roster from "./pages/Roster";
@@ -33,7 +32,6 @@ const App = () => (
           <Route path="/statistiche" element={<Statistiche />} />
           <Route path="/lista-giocatori" element={<ListaGiocatori />} />
           <Route path="/calendario" element={<Calendario />} />
-          <Route path="/mia-squadra" element={<MiaSquadra />} />
           <Route path="/mia-squadra/roster" element={<Roster />} />
           <Route path="/mia-squadra/tattica" element={<Tattica />} />
           <Route path="/mia-squadra/allenamenti" element={<Allenamenti />} />

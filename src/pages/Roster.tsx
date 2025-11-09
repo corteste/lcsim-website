@@ -3,11 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Player } from "../types/player";
-import { supabase } from "../supabaseClient";
-import { PLAYER_TABLE } from "../constants/App";
 import { getRoleColor } from "@/utils/functions";
+import { getPlayers } from "@/hooks/use-players";
 
 
 const teamName = "Average Pegiò Drivers";
@@ -20,17 +17,7 @@ const getOverallColor = (overall:number) => {
 };
 
 const Roster = () => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  
-    useEffect(() => {
-      async function fetchPlayers() {
-        const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', 'APD'); // filtrare per squadra dell'utente
-        console.log(data);
-        if (error) console.error(error);
-        else setPlayers(data || []);
-      }
-      fetchPlayers();
-    }, []);
+   const { players, loading, error } = getPlayers("APD");
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,7 +50,9 @@ const Roster = () => {
                           <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                             {player.Posiz}
                           </Badge>
+                          
                           <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                          <img src="/src/images/players/MConti.png" alt="Custom Trophy" className="h-8 w-8 object-contain border rounded-full" />
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-sm text-muted-foreground">Età:</span>

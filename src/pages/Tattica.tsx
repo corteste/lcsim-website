@@ -306,6 +306,7 @@ const Tattica = () => {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <CardTitle className="flex items-center gap-2">
+                            <img src="/src/images/players/MConti.png" alt="Custom Trophy" className="h-16 w-16 object-contain border rounded-full" />
                             {selected.player.Nome} {selected.player.Cognome}
                              <Badge variant="outline" className={getRoleColor(selected.player.Posiz)}>
                                 {selected.player.Posiz}

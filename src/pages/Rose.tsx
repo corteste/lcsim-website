@@ -8,6 +8,7 @@ import { getRoleColor, getValueColor } from "@/utils/functions";
 const teams = [
   {
     name: "Red Mamba",
+    logo: "/src/images/teams/RMB_Logo.png",
     players: [
       { name: "Marco Rossi",age: "24", role: "POR", overall: 83, rating: 7.5 },
       { name: "Luca Bianchi",age: "24", role: "DIF", overall: 83, rating: 7.2 },
@@ -22,6 +23,7 @@ const teams = [
   },
   {
     name: "Mar's Attack",
+    logo: "/src/images/teams/MAR_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 70, rating: 7.6 },
@@ -36,6 +38,7 @@ const teams = [
   },
   {
     name: "AC Denti",
+    logo: "/src/images/teams/ACD_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
@@ -50,6 +53,7 @@ const teams = [
   },
   {
     name: "Average Pegiò Drivers",
+    logo: "/src/images/teams/APD_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
@@ -64,6 +68,7 @@ const teams = [
   },
   {
     name: "Panormus FC",
+    logo: "/src/images/teams/PFC_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
@@ -78,6 +83,7 @@ const teams = [
   },
   {
     name: "Valle FC",
+    logo: "/src/images/teams/VFC_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
@@ -92,6 +98,7 @@ const teams = [
   },
   {
     name: "AS Karalis",
+    logo: "/src/images/teams/ASK_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
@@ -106,6 +113,7 @@ const teams = [
   },
   {
     name: "AC Fantasy",
+    logo: "/src/images/teams/ACF_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
@@ -119,7 +127,8 @@ const teams = [
     ],
   },
   {
-    name: "Old Boys",
+    name: "Old Bois",
+    logo: "/src/images/teams/OLD_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
@@ -134,6 +143,7 @@ const teams = [
   },
   {
     name: "Alvisopoli FC",
+    logo: "/src/images/teams/ALV_Logo.png",
     players: [
       { name: "Roberto Marroni",age: "24", role: "POR", overall: 83, rating: 7.3 },
       { name: "Stefano Rosa",age: "24", role: "DIF", overall: 83, rating: 7.6 },
@@ -167,6 +177,7 @@ const Rose = () => {
             {teams.map((team, index) => (
               <TabsTrigger key={index} value={index.toString()}>
                 {team.name}
+                <img src={team.logo} alt={`${team.name} Logo`} className="h-8 w-8 object-contain" />
               </TabsTrigger>
             ))}
           </TabsList>
@@ -175,7 +186,10 @@ const Rose = () => {
             <TabsContent key={teamIndex} value={teamIndex.toString()}>
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle>{team.name}</CardTitle>
+                  <CardTitle>
+                    {team.name} 
+                    <img src={team.logo} alt={`${team.name} Logo`} className="h-16 w-16 object-contain" />
+                  </CardTitle>
                   <CardDescription>{team.players.length} giocatori</CardDescription>
                 </CardHeader>
                 <CardContent>

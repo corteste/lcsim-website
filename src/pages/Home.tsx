@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Trophy, TrendingUp, Users, Award, BarChart3, CalendarDays} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import PlayersList from "@/hooks/rest-select";
 
 const topTeams = [
   { position: 1, team: "Average Pegiò Drivers", points: 25 },
@@ -24,7 +25,10 @@ const topPlayers = [
 ];
 
 const Home = () => {
+
+  PlayersList();
   return (
+    
     <div className="min-h-screen bg-background">
       <Navbar />
       
