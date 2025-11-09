@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
+import { getRoleColor, getValueColor } from "@/utils/functions";
 
 const teams = [
   {
@@ -147,23 +148,6 @@ const teams = [
   },
 ];
 
-const getRoleColor = (role: string) => {
-  switch (role) {
-    case "POR": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-    case "DIF": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
-    case "CEN": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-    case "ATT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-    default: return "bg-muted";
-  }
-};
-
-const getOverallColor = (overall:number) => {
-
-  if(overall < 70) return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-  if(overall >= 70 && overall < 80) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-  if(overall >= 80) return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-};
-
 const Rose = () => {
   return (
     <div className="min-h-screen bg-background">
@@ -213,7 +197,7 @@ const Rose = () => {
                         </div> 
                         <div className="flex items-center gap-1">
                           <span className="text-sm text-muted-foreground">Overall:</span>
-                          <Badge variant="outline" className={getOverallColor(player.overall)}>
+                          <Badge variant="outline" className={getValueColor(player.overall)}>
                             {player.overall}
                           </Badge>
                         </div>

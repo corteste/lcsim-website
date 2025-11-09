@@ -58,4 +58,5 @@ export type Player = {
     CRIG: number | null;
     MABI: number | null;
     Tratti: string | null;
+    RuoloInCampo: string | null;
 };

@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, TrendingUp, Award, Target } from "lucide-react";
 import { useState } from "react";
+import { getRoleColor } from "@/utils/functions";
 
 const allStats = {
   goalscorers: [
@@ -27,16 +28,6 @@ const allStats = {
     { name: "Federico Bianchi", team: "Thunder United", rating: 8.1, role: "CEN" },
     { name: "Andrea Viola", team: "Average Pegiò Drivers", rating: 8.0, role: "ATT" },
   ],
-};
-
-const getRoleColor = (role: string) => {
-  switch (role) {
-    case "POR": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-    case "DIF": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
-    case "CEN": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-    case "ATT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-    default: return "bg-muted";
-  }
 };
 
 const Statistiche = () => {

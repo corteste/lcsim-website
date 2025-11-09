@@ -9,8 +9,8 @@
 
 
 **Prompt per Lovable**
-Nella schermata Formazione titolare avere 11 spazi preimpostati per inserire giocatori
 Crea una visualizzazione del campo da calcio con posizioni grafiche dove trascinare 
+Cronologia allenamenti?
 
 **Parte fogli comuni**
 
