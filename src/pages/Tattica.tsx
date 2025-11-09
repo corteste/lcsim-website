@@ -2,7 +2,7 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Save, Users } from "lucide-react";
+import { Shield, Save, Users, NotebookTabs } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -32,6 +32,12 @@ const Tattica = () => {
     { id: 10, name: "Roberto Marroni", role: "POR", rating: 7.3, position: null, number: 10 },
     { id: 11, name: "Stefano Rosa", role: "DIF", rating: 7.6, position: null, number: 11 },
     { id: 12, name: "Davide Azzurri", role: "CEN", rating: 7.1, position: null, number: 12 },
+    { id: 13, name: "Davide Violi", role: "ATT", rating: 7.1, position: null, number: 13 },
+    { id: 14, name: "Luca Azzurri", role: "CEN", rating: 7.1, position: null, number: 14 },
+    { id: 15, name: "Marco Azzurri", role: "DIF", rating: 7.1, position: null, number: 15 },
+    { id: 16, name: "Davide Wolf", role: "DIF", rating: 7.1, position: null, number: 16 },
+    { id: 17, name: "Finn Azzurri", role: "ATT", rating: 7.1, position: null, number: 17 },
+    { id: 18, name: "Davide Luca Azzurri", role: "CEN", rating: 7.1, position: null, number: 18 },
   ]);
 
   const getRoleColor = (role: string) => {
@@ -170,6 +176,8 @@ const Tattica = () => {
   const titolari = players.filter(p => p.position !== null);
   const panchina = players.filter(p => p.position === null);
 
+  /* MAIN RENDER */
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -177,8 +185,8 @@ const Tattica = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
-            La Mia Squadra
+            <NotebookTabs className="h-8 w-8 text-primary" />
+            Tattica
           </h1>
           <p className="text-muted-foreground">Gestisci la tua formazione</p>
         </div>
@@ -194,7 +202,7 @@ const Tattica = () => {
                 <Users className="h-5 w-5" />
                 Formazione Titolare
               </CardTitle>
-              <CardDescription>Giocatori in campo (max 11) - Trascina qui per aggiungere</CardDescription>
+              <CardDescription>Giocatori in campo - Trascina qui per aggiungere</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 min-h-[200px]">
@@ -322,65 +330,46 @@ const Tattica = () => {
                       <div className="section space-y-4">
                         {/* Tiri */}
                         <div className="flex justify-between mb-1">
-                          <h3 className="font-semibold mb-2  bg-orange-500/10 p-4 rounded">POR TECNICO</h3>
-                          <table className="w-full table-auto">
-                            <thead>
-                              <tr>
-                                <th className="py-1 text-left">Attributo</th>
-                                <th className="py-1 text-right">Valore</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>  
-                                <td className="py-1">Parate</td>
-                                <td className="py-1 font-medium text-right">
-                                  <Badge variant="outline" className={getOverallColor(90)}>
-                                    90
-                                  </Badge>
-                                </td>
-                              </tr> 
-                              <tr>  
-                                <td className="py-1">Parate2</td>
-                                <td className="py-1 font-medium text-right">
-                                <Badge variant="outline" className={getOverallColor(74)}>
-                                    74
-                                  </Badge>
-                                </td>
-                              </tr> 
-                               <tr>  
-                                <td className="py-1">Parate2</td>
-                                <td className="py-1 font-medium text-right">
-                                  <Badge variant="outline" className={getOverallColor(65)}>
-                                    65
-                                  </Badge>
-                                </td>
-                              </tr> 
-                            </tbody>
-                          </table>
+                          <div className="flex gap-10 p-6">
+                            {/* --- Colonna 1: PORTIERE TECNICO --- */}
+                              <div className="bg-orange-50 rounded-md p-3 w-24 text-center">
+                                <p className="font-bold text-sm">POR</p>
+                                <p className="text-xs">TECNICO</p>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Presa</span>
+                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">83</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Posizionamento</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Rinvio</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-10 p-6">
+                            {/* --- Colonna 2: PORTIERE FISICO --- */}
+                              <div className="bg-orange-50 rounded-md p-3 w-24 text-center">
+                                <p className="font-bold text-sm">POR</p>
+                                <p className="text-xs">FISICO</p>
+                              </div>
 
-                           <h3 className="font-semibold mb-2  bg-orange-500/10 p-4 rounded">POR FISICO</h3>
-                          <table className="w-full table-auto">
-                            <thead>
-                              <tr>
-                                <th className="py-1 text-left">Attributo</th>
-                                <th className="py-1 text-right">Valore</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>  
-                                <td className="py-1">Parate</td>
-                                <td className="py-1 font-medium text-right">85</td>
-                              </tr> 
-                              <tr>  
-                                <td className="py-1">Parate2</td>
-                                <td className="py-1 font-medium text-right">57</td>
-                              </tr> 
-                               <tr>  
-                                <td className="py-1">Parate2</td>
-                                <td className="py-1 font-medium text-right">75</td>
-                              </tr> 
-                            </tbody>
-                          </table>
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Riflessi</span>
+                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Tuffo</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                              </div>
+                            </div>
+
                         </div>
                         <div className="flex justify-between mb-1">
                            <div className="flex gap-10 p-6">
@@ -392,7 +381,7 @@ const Tattica = () => {
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
                                   <span className="text-sm text-gray-700">Contrasto</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">87</span>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
                                   <span className="text-sm text-gray-700">Scivolata</span>
@@ -418,6 +407,96 @@ const Tattica = () => {
                                 </div>
                                 <div className="flex items-center justify-between w-32">
                                   <span className="text-sm text-gray-700">Intercettazioni</span>
+                                  <span className="bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full text-xs">65</span>
+                                </div>
+                              </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-between mb-1">
+                           <div className="flex gap-10 p-6">
+                            {/* --- Colonna 1: CENTROCAMPO PASSAGGI --- */}
+                              <div className="bg-green-50 rounded-md p-3 w-24 text-center">
+                                <p className="font-bold text-sm">CEN</p>
+                                <p className="text-xs">PASSAGGI</p>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Passaggi Corti</span>
+                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Passaggi Lunghi</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Cross</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-10 p-6">
+                            {/* --- Colonna 2: CENTROCAMPO GESTIONE --- */}
+                              <div className="bg-green-50 rounded-md p-3 w-24 text-center">
+                                <p className="font-bold text-sm">CEN</p>
+                                <p className="text-xs">GESTIONE</p>
+                              </div>
+
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Controllo Palla</span>
+                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Visione</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Effetto</span>
+                                  <span className="bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full text-xs">65</span>
+                                </div>
+                              </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-between mb-1">
+                           <div className="flex gap-10 p-6">
+                            {/* --- Colonna 1: ATTACCO TIRI --- */}
+                              <div className="bg-red-50 rounded-md p-3 w-24 text-center">
+                                <p className="font-bold text-sm">ATT</p>
+                                <p className="text-xs">TIRI</p>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Potenza Tiro</span>
+                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Tiri dalla distanza</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Tiri al volo</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-10 p-6">
+                            {/* --- Colonna 2: ATTACCO CONTROLLO --- */}
+                              <div className="bg-red-50 rounded-md p-3 w-24 text-center">
+                                <p className="font-bold text-sm">ATT</p>
+                                <p className="text-xs">CONTROLLO</p>
+                              </div>
+
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Dribbling</span>
+                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Piazzamento</span>
+                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                </div>
+                                <div className="flex items-center justify-between w-32">
+                                  <span className="text-sm text-gray-700">Finalizzazione</span>
                                   <span className="bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full text-xs">65</span>
                                 </div>
                               </div>

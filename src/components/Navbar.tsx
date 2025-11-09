@@ -11,7 +11,7 @@ const Navbar = () => {
   const location = useLocation();
   
   const navItems = [
-    { path: "/", label: "Home" },
+    //{ path: "/", label: "Home" }, // disabilitato, se clicco sul logo mi porta alla home
     { path: "/classifica", label: "Classifica" },
     { path: "/rose", label: "Rose" },
     { path: "/lista-giocatori", label: "Lista Giocatori" },

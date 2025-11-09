@@ -3,20 +3,34 @@
 ## Project info
 
 **URL**: https://lovable.dev/projects/8bd043e1-344a-4a94-85c4-2ff1f4de4315
+**DB Pass**: Mko09ijnbhu87ygv./
 
 ## To Implement
 
+
+**Prompt per Lovable**
+Nella schermata Formazione titolare avere 11 spazi preimpostati per inserire giocatori
+Crea una visualizzazione del campo da calcio con posizioni grafiche dove trascinare 
+
 **Parte fogli comuni**
 
-- Lista giocatori completa con filtri per ruolo età, stato contratto (svincolato o no) e stato sul calciomercato
-- Parte separata per il draft con menù a discesa: lista di tutti i rookies, vista sul tabellone draft
+- Lista giocatori completa con filtri per ruolo, età, stato contratto (svincolato o no) e stato sul calciomercato
+- Parte separata per il draft con menù a discesa: lista di tutti i rookies, vista sul tabellone draft, possibilità di inserire scelta manualmente direttamente sul sito
 - Pagina degli interessi delle squadre per i ruoli?
+- Possiblità di filtrare calendario per le squadre (post login)
+- Statistiche totali giocatori: tabella con associazione giornata - stagione - giocatore e lista valori per le statistiche
 
 **Parte personale squadre**
 
 - Lista roster completo con valori
-- Pagina gestione miglioramenti allenamento
+- Pagina gestione miglioramenti allenamento, salvare con pulsante i nuovi valori in tabella TAB_PLAYER_TRAINING: nella pagina di admin confronto tra questa tabella e AN_PLAYER in modo da far risaltare le modifiche degli attributi
+    Pulsante SALVA per salvare temporaneamente a DB, pulsante CONFERMA che disabilita la possibilità di fare altre modifiche (alternativa disabilitare modifica dopo un certo giorno)
 - Pagina confronto rosa e rookies
+- Nella pagina roster filtro per ogni valore possibile del giocatore
+- Nella pagina delle tattiche nel nome del giocatore aggiungere due pulsanti Attributi e Statistiche
+- Nuova pagina menù a tendina statistiche avanzate (statistiche dei giocatori per propria squadra)
+
+
 
 ## How can I edit this code?
 
