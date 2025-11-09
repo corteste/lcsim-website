@@ -2,7 +2,8 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, Award, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Player } from "../types/player";
 import { supabase } from "../supabaseClient";
@@ -96,12 +97,15 @@ switch (pos) {
   }
 }
 
+const PLAYERS_PER_PAGE = 20;
+
 const ListaGiocatori = () => {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [contractFilter, setContractFilter] = useState<string>("all");
   const [marketFilter, setMarketFilter] = useState<string>("all");
   const [players, setPlayers] = useState<Player[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function fetchPlayers() {
@@ -113,13 +117,28 @@ const ListaGiocatori = () => {
     fetchPlayers();
   }, []);
   
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter, teamFilter, contractFilter, marketFilter]);
+
   const filteredStats = players.filter(
-  player =>
-    (teamFilter === "all" || player.Squadra === teamFilter) &&
-    (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) //&&
-    //(contractFilter === "all" || player.contractStatus === contractFilter) &&
-    //(marketFilter === "all" || player.marketStatus === marketFilter)
-);
+    player =>
+      (teamFilter === "all" || player.Squadra === teamFilter) &&
+      (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) //&&
+      //(contractFilter === "all" || player.contractStatus === contractFilter) &&
+      //(marketFilter === "all" || player.marketStatus === marketFilter)
+  );
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredStats.length / PLAYERS_PER_PAGE);
+  const startIndex = (currentPage - 1) * PLAYERS_PER_PAGE;
+  const endIndex = startIndex + PLAYERS_PER_PAGE;
+  const currentPlayers = filteredStats.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -221,12 +240,12 @@ const ListaGiocatori = () => {
               Risultati
             </CardTitle>
             <CardDescription>
-              {filteredStats.length} giocatori trovati
+              {filteredStats.length} giocatori trovati - Pagina {currentPage} di {totalPages}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {filteredStats.map((player, index) => (
+              {currentPlayers.map((player, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
@@ -260,6 +279,58 @@ const ListaGiocatori = () => {
                 </div>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Precedente
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => goToPage(pageNum)}
+                        className="w-10"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Successiva
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
