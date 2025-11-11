@@ -22,3 +22,23 @@ export const getValueColor = (value:number) => {
   if(value >= 70 && value < 80) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 font-semibold px-2 py-0.5 rounded-full text-xs";
   if(value >= 80) return "bg-green-500/10 text-green-700 dark:text-green-400 font-semibold px-2 py-0.5 rounded-full text-xs";
 };
+
+
+export const getPosGroup = (pos: string) => {
+switch (pos) {
+    case "POR": return "POR";
+    case "DC": return "DIF";
+    case "TD": return "DIF";
+    case "TS": return "DIF";
+    case "CDC": return "CEN";
+    case "CC": return "CEN";
+    case "ED": return "CEN";
+    case "ES": return "CEN";
+    case "COC": return "CEN";
+    case "AS": return "ATT";
+    case "AD": return "ATT";
+    case "AT": return "ATT";
+    case "ATT": return "ATT";
+    default: return "-";
+  }
+}

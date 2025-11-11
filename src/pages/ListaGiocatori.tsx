@@ -5,11 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Player } from "../types/player";
-import { supabase } from "../supabaseClient";
-import { PLAYER_TABLE } from "../constants/App";
-import { getRoleColor } from "@/utils/functions";
-import { getPlayerById, getPlayers } from "@/hooks/rest-select";
+import { getRoleColor, getPosGroup } from "@/utils/functions";
+import { getPlayers } from "@/hooks/use-players";
 
 const allStats = {
   goalscorers: [
@@ -45,24 +42,6 @@ const getMarketStatus = (status: string) => {
   }
 };
 
-const getPosGroup = (pos: string) => {
-switch (pos) {
-    case "POR": return "POR";
-    case "DC": return "DIF";
-    case "TD": return "DIF";
-    case "TS": return "DIF";
-    case "CDC": return "CEN";
-    case "CC": return "CEN";
-    case "ED": return "CEN";
-    case "ES": return "CEN";
-    case "COC": return "CEN";
-    case "AS": return "ATT";
-    case "AD": return "ATT";
-    case "AT": return "ATT";
-    case "ATT": return "ATT";
-    default: return "-";
-  }
-}
 
 const PLAYERS_PER_PAGE = 20;
 
@@ -71,19 +50,8 @@ const ListaGiocatori = () => {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [contractFilter, setContractFilter] = useState<string>("all");
   const [marketFilter, setMarketFilter] = useState<string>("all");
-  const [players, setPlayers] = useState<Player[]>([]);
+  const { players } = getPlayers();
   const [currentPage, setCurrentPage] = useState(1);
-
-  getPlayers(1);
-
-  useEffect(() => {
-    async function fetchPlayers() {
-      const { data, error } = await supabase.from(PLAYER_TABLE).select("*");
-      if (error) console.error(error);
-      else setPlayers(data || []);
-    }
-    fetchPlayers();
-  }, []);
   
   // Reset page when filters change
   useEffect(() => {
