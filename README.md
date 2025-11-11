@@ -9,8 +9,8 @@
 
 
 **Prompt per Lovable**
-Nella schermata Formazione titolare avere 11 spazi preimpostati per inserire giocatori
 Crea una visualizzazione del campo da calcio con posizioni grafiche dove trascinare 
+Cronologia allenamenti?
 
 **Parte fogli comuni**
 
@@ -26,9 +26,10 @@ Crea una visualizzazione del campo da calcio con posizioni grafiche dove trascin
 - Pagina gestione miglioramenti allenamento, salvare con pulsante i nuovi valori in tabella TAB_PLAYER_TRAINING: nella pagina di admin confronto tra questa tabella e AN_PLAYER in modo da far risaltare le modifiche degli attributi
     Pulsante SALVA per salvare temporaneamente a DB, pulsante CONFERMA che disabilita la possibilità di fare altre modifiche (alternativa disabilitare modifica dopo un certo giorno)
 - Pagina confronto rosa e rookies
-- Nella pagina roster filtro per ogni valore possibile del giocatore
+- Nella pagina roster possiblità di ordinamento per età, overall, posizione + possibilità ordinare per attributo che verrebbe mostrato nella riga di recap
 - Nella pagina delle tattiche nel nome del giocatore aggiungere due pulsanti Attributi e Statistiche
 - Nuova pagina menù a tendina statistiche avanzate (statistiche dei giocatori per propria squadra)
+
 
 
 

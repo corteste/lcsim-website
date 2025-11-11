@@ -2,60 +2,29 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Save, Users, NotebookTabs } from "lucide-react";
-import { useState } from "react";
+import { Save, Users, NotebookTabs } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-
-interface Player {
-  id: number;
-  name: string;
-  role: string;
-  rating: number;
-  position: string | null;
-  number: number;
-}
+import { supabase } from "@/supabaseClient";
+import { PLAYER_TABLE } from "../constants/App";
+import { Player } from "../types/player";
+import { getRoleColor, getValueColor } from "@/utils/functions";
 
 const Tattica = () => {
   const [selected, setSelected] = useState<{ player: Player } | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
   const [dragOverPlayer, setDragOverPlayer] = useState<Player | null>(null);
-  const [players, setPlayers] = useState<Player[]>([
-    { id: 1, name: "Marco Rossi", role: "POR", rating: 7.5, position: "POR", number: 1 },
-    { id: 2, name: "Luca Bianchi", role: "DIF", rating: 7.2, position: "DIF1", number: 2 },
-    { id: 3, name: "Andrea Verdi", role: "DIF", rating: 7.8, position: "DIF2", number: 3 },
-    { id: 4, name: "Paolo Neri", role: "DIF", rating: 7.0, position: "DIF3", number: 4 },
-    { id: 5, name: "Giuseppe Gialli", role: "CEN", rating: 8.2, position: "CEN1", number: 5 },
-    { id: 6, name: "Francesco Blu", role: "CEN", rating: 7.9, position: "CEN2", number: 6 },
-    { id: 7, name: "Antonio Viola", role: "CEN", rating: 7.4, position: "CEN3", number: 7 },
-    { id: 8, name: "Alessandro Grigi", role: "ATT", rating: 8.5, position: "ATT1", number: 8 },
-    { id: 9, name: "Matteo Arancio", role: "ATT", rating: 8.0, position: "ATT2", number: 9 },
-    { id: 10, name: "Roberto Marroni", role: "POR", rating: 7.3, position: null, number: 10 },
-    { id: 11, name: "Stefano Rosa", role: "DIF", rating: 7.6, position: null, number: 11 },
-    { id: 12, name: "Davide Azzurri", role: "CEN", rating: 7.1, position: null, number: 12 },
-    { id: 13, name: "Davide Violi", role: "ATT", rating: 7.1, position: null, number: 13 },
-    { id: 14, name: "Luca Azzurri", role: "CEN", rating: 7.1, position: null, number: 14 },
-    { id: 15, name: "Marco Azzurri", role: "DIF", rating: 7.1, position: null, number: 15 },
-    { id: 16, name: "Davide Wolf", role: "DIF", rating: 7.1, position: null, number: 16 },
-    { id: 17, name: "Finn Azzurri", role: "ATT", rating: 7.1, position: null, number: 17 },
-    { id: 18, name: "Davide Luca Azzurri", role: "CEN", rating: 7.1, position: null, number: 18 },
-  ]);
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "POR": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-      case "DIF": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
-      case "CEN": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-      case "ATT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-      default: return "bg-muted";
-    }
-  };
-
-  const getOverallColor = (overall:number) => {
-
-  if(overall < 70) return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-  if(overall >= 70 && overall < 80) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-  if(overall >= 80) return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-};
+  const [players, setPlayers] = useState<Player[]>([]);
+  
+    useEffect(() => {
+      async function fetchPlayers() {
+        const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', 'APD'); // filtrare per squadra dell'utente
+        console.log(data);
+        if (error) console.error(error);
+        else setPlayers(data || []);
+      }
+      fetchPlayers();
+    }, []);
 
   const handleSaveFormation = () => {
     toast.success("Formazione salvata con successo!");
@@ -81,20 +50,20 @@ const Tattica = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!draggedPlayer || draggedPlayer.id === targetPlayer.id) {
+    if (!draggedPlayer || draggedPlayer.ID === targetPlayer.ID) {
       setDraggedPlayer(null);
       setDragOverPlayer(null);
       return;
     }
 
-    const draggedIsTitolare = draggedPlayer.position !== null;
-    const targetIsTitolare = targetPlayer.position !== null;
+    const draggedIsTitolare = draggedPlayer.RuoloInCampo !== null;
+    const targetIsTitolare = targetPlayer.RuoloInCampo !== null;
 
     if (draggedIsTitolare === targetIsTitolare) {
       // Riordina nella stessa lista
       const newPlayers = [...players];
-      const draggedIndex = newPlayers.findIndex(p => p.id === draggedPlayer.id);
-      const targetIndex = newPlayers.findIndex(p => p.id === targetPlayer.id);
+      const draggedIndex = newPlayers.findIndex(p => p.ID === draggedPlayer.ID);
+      const targetIndex = newPlayers.findIndex(p => p.ID === targetPlayer.ID);
       
       // Scambia le posizioni nell'array
       [newPlayers[draggedIndex], newPlayers[targetIndex]] = [newPlayers[targetIndex], newPlayers[draggedIndex]];
@@ -105,19 +74,19 @@ const Tattica = () => {
     } else {
       // Scambia tra le due liste
       setPlayers(players.map(p => {
-        if (p.id === draggedPlayer.id) {
+        if (p.ID === draggedPlayer.ID) {
           // Il giocatore trascinato prende la posizione del target
-          return { ...p, position: targetPlayer.position };
-        } else if (p.id === targetPlayer.id) {
+          return { ...p, RuoloInCampo: targetPlayer.RuoloInCampo };
+        } else if (p.ID === targetPlayer.ID) {
           // Il giocatore target prende la posizione del trascinato
-          return { ...p, position: draggedPlayer.position };
+          return { ...p, RuoloInCampo: draggedPlayer.RuoloInCampo };
         }
         return p;
       }));
       
       setDraggedPlayer(null);
       setDragOverPlayer(null);
-      toast.success(`${draggedPlayer.name} e ${targetPlayer.name} hanno scambiato posizione`);
+      toast.success(`${draggedPlayer.Nome} ${draggedPlayer.Cognome} e ${targetPlayer.Nome} ${targetPlayer.Cognome} hanno scambiato posizione`);
     }
   };
 
@@ -138,19 +107,19 @@ const Tattica = () => {
       handleDropOnPlayer(e, playerInSlot);
     } else {
       // Slot vuoto - sposta il giocatore
-      if (draggedPlayer.position === null) {
+      if (draggedPlayer.RuoloInCampo === null) {
         // Da panchina a slot vuoto
         setPlayers(players.map(p => 
-          p.id === draggedPlayer.id 
-            ? { ...p, position: `SLOT${slotIndex}` }
+          p.ID === draggedPlayer.ID 
+            ? { ...p, RuoloInCampo: `SLOT${slotIndex}` }
             : p
         ));
-        toast.success(`${draggedPlayer.name} aggiunto alla formazione titolare`);
+        toast.success(`${draggedPlayer.Nome} ${draggedPlayer.Cognome} aggiunto alla formazione titolare`);
       } else {
         // Da slot a slot vuoto
         setPlayers(players.map(p => 
-          p.id === draggedPlayer.id 
-            ? { ...p, position: `SLOT${slotIndex}` }
+          p.ID === draggedPlayer.ID 
+            ? { ...p, RuoloInCampo: `SLOT${slotIndex}` }
             : p
         ));
       }
@@ -174,7 +143,7 @@ const Tattica = () => {
     if (!draggedPlayer) return;
     
     // Se il giocatore è già in panchina, non fare nulla
-    if (draggedPlayer.position === null) {
+    if (draggedPlayer.RuoloInCampo === null) {
       setDraggedPlayer(null);
       setDragOverPlayer(null);
       return;
@@ -182,18 +151,18 @@ const Tattica = () => {
     
     // Sposta il giocatore in panchina
     setPlayers(players.map(p => 
-      p.id === draggedPlayer.id 
-        ? { ...p, position: null }
+      p.ID === draggedPlayer.ID 
+        ? { ...p, RuoloInCampo: null }
         : p
     ));
     
     setDraggedPlayer(null);
     setDragOverPlayer(null);
-    toast.success(`${draggedPlayer.name} spostato in panchina`);
+    toast.success(`${draggedPlayer.Nome} ${draggedPlayer.Cognome} spostato in panchina`);
   };
 
-  const titolari = players.filter(p => p.position !== null);
-  const panchina = players.filter(p => p.position === null);
+  const titolari = players.filter(p => p.RuoloInCampo !== null);
+  const panchina = players.filter(p => p.RuoloInCampo === null);
   
   // Crea array di 11 slot con giocatori o null
   const formationSlots: (Player | null)[] = Array.from({ length: 11 }, (_, i) => {
@@ -237,10 +206,10 @@ const Tattica = () => {
                     onDrop={(e) => handleDropOnSlot(e, slotIndex)}
                     className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
                       player 
-                        ? 'bg-card hover:bg-muted/50 cursor-move' 
+                        ? 'bg-card hover:bg-muted/50 cursor-pointer' 
                         : 'bg-muted/20 border-dashed'
                     } ${
-                      dragOverSlot === slotIndex && (!player || draggedPlayer?.id !== player?.id) ? 'ring-2 ring-primary' : ''
+                      dragOverSlot === slotIndex && (!player || draggedPlayer?.ID !== player?.ID) ? 'ring-2 ring-primary' : ''
                     }`}
                   >
                     {player ? (
@@ -249,16 +218,16 @@ const Tattica = () => {
                           draggable
                           onDragStart={() => handleDragStart(player)}
                           onClick={() => setSelected({ player })}
-                          className="flex items-center gap-4 flex-1 cursor-move"
+                          className="flex items-center gap-4 flex-1 cursor-pointer"
                         >
-                          <Badge variant="outline" className={getRoleColor(player.role)}>
-                            {player.role}
+                          <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                            {player.Posiz}
                           </Badge>
-                          <span className="font-medium">{player.name}</span>
+                          <span className="font-medium">{player.Nome} {player.Cognome}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Voto:</span>
-                          <span className="font-bold text-primary">{player.rating}</span>
+                          <span className="font-bold text-primary">7.3</span>
                         </div>
                       </>
                     ) : (
@@ -285,25 +254,25 @@ const Tattica = () => {
               <div className="space-y-3 min-h-[200px]">
                 {panchina.map((player) => (
                   <div
-                    key={player.id}
+                    key={player.ID}
                     draggable
                     onDragStart={() => handleDragStart(player)}
                     onDragOver={(e) => handleDragOverPlayer(e, player)}
                     onDrop={(e) => handleDropOnPlayer(e, player)}
                     onClick={() => setSelected({ player: player })}
-                    className={`flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-move ${
-                      dragOverPlayer?.id === player.id && draggedPlayer?.id !== player.id ? 'ring-2 ring-primary' : ''
+                    className={`flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer ${
+                      dragOverPlayer?.ID === player.ID && draggedPlayer?.ID !== player.ID ? 'ring-2 ring-primary' : ''
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <Badge variant="outline" className={getRoleColor(player.role)}>
-                        {player.role}
+                      <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                        {player.Posiz}
                       </Badge>
-                      <span className="font-medium">{player.name}</span>
+                      <span className="font-medium">{player.Nome} {player.Cognome}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Voto:</span>
-                      <span className="font-bold text-primary">{player.rating}</span>
+                      <span className="font-bold text-primary">7.6</span>
                     </div>
                   </div>
                 ))}
@@ -337,155 +306,149 @@ const Tattica = () => {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <CardTitle className="flex items-center gap-2">
-                            {selected.player.name}
-                             <Badge variant="outline" className={getRoleColor(selected.player.role)}>
-                                {selected.player.role}
+                            <img src="/src/images/players/MConti.png" alt="Custom Trophy" className="h-16 w-16 object-contain border rounded-full" />
+                            {selected.player.Nome} {selected.player.Cognome}
+                             <Badge variant="outline" className={getRoleColor(selected.player.Posiz)}>
+                                {selected.player.Posiz}
                               </Badge>
                           </CardTitle>
                           <CardDescription>
-                            ID {selected.player.id}
+                            # 4
                           </CardDescription>
                         </div>
                         <div className="text-right">
                           <div className="text-3xl font-bold text-primary">
-                            #{selected.player.number}
+                            {selected.player.OVR} 
                           </div>
-                          <button
-                            onClick={() => setSelected(null)}
-                            className="mt-3 px-3 py-1 rounded bg-muted/60 hover:bg-muted text-sm"
-                          >
-                            Chiudi
-                          </button>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
                       <div className="section space-y-4">
-                        {/* Tiri */}
-                        <div className="flex justify-between mb-1">
+                        <div className="flex justify-between mb-1 border-b pb-4">
                           <div className="flex gap-10 p-6">
                             {/* --- Colonna 1: PORTIERE TECNICO --- */}
-                              <div className="bg-orange-50 rounded-md p-3 w-24 text-center">
+                              <div className="bg-orange-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                                 <p className="font-bold text-sm">POR</p>
                                 <p className="text-xs">TECNICO</p>
                               </div>
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Presa</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">83</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Presa</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.PREP)}>{selected.player.PREP}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Posizionamento</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Posizionamento</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.POSP)}>{selected.player.POSP}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Rinvio</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Rinvio</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.RINP)}>{selected.player.RINP}</Badge>
                                 </div>
                               </div>
                             </div>
                             <div className="flex gap-10 p-6">
                             {/* --- Colonna 2: PORTIERE FISICO --- */}
-                              <div className="bg-orange-50 rounded-md p-3 w-24 text-center">
+                              <div className="bg-orange-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                                 <p className="font-bold text-sm">POR</p>
                                 <p className="text-xs">FISICO</p>
                               </div>
 
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Riflessi</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Riflessi</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.RIFP)}>{selected.player.RIFP}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Tuffo</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Tuffo</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.TUFP)}>{selected.player.TUFP}</Badge>
                                 </div>
                               </div>
                             </div>
 
                         </div>
-                        <div className="flex justify-between mb-1">
+                        <div className="flex justify-between mb-1 border-b pb-4">
                            <div className="flex gap-10 p-6">
                             {/* --- Colonna 1: DIFESA FISICO --- */}
-                              <div className="bg-blue-50 rounded-md p-3 w-24 text-center">
+                              <div className="bg-blue-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                                 <p className="font-bold text-sm">DIF</p>
                                 <p className="text-xs">FISICO</p>
                               </div>
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Contrasto</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">87</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Contrasto</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.CONT)}>{selected.player.CONT}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Scivolata</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Scivolata</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.SCIV)}>{selected.player.SCIV}</Badge>
                                 </div>
                               </div>
                             </div>
                             <div className="flex gap-10 p-6">
                             {/* --- Colonna 2: DIFESA MENTALE --- */}
-                              <div className="bg-blue-50 rounded-md p-3 w-24 text-center">
+                              <div className="bg-blue-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                                 <p className="font-bold text-sm">DIF</p>
                                 <p className="text-xs">MENTALE</p>
                               </div>
 
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Marcatura</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Marcatura</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.MARC)}>{selected.player.MARC}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Aggressività</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Aggressività</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.AGGR)}>{selected.player.AGGR}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Intercettazioni</span>
-                                  <span className="bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full text-xs">65</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Intercettazioni</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.INTR)}>{selected.player.INTR}</Badge>
                                 </div>
                               </div>
                             </div>
                         </div>
-                        <div className="flex justify-between mb-1">
+                        <div className="flex justify-between mb-1 border-b pb-4">
                            <div className="flex gap-10 p-6">
                             {/* --- Colonna 1: CENTROCAMPO PASSAGGI --- */}
-                              <div className="bg-green-50 rounded-md p-3 w-24 text-center">
+                              <div className="bg-green-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                                 <p className="font-bold text-sm">CEN</p>
                                 <p className="text-xs">PASSAGGI</p>
                               </div>
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Passaggi Corti</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Passaggi Corti</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.PASC)}>{selected.player.PASC}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Passaggi Lunghi</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Passaggi Lunghi</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.PASL)}>{selected.player.PASL}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Cross</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Cross</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.CRSS)}>{selected.player.CRSS}</Badge>
                                 </div>
                               </div>
                             </div>
                             <div className="flex gap-10 p-6">
                             {/* --- Colonna 2: CENTROCAMPO GESTIONE --- */}
-                              <div className="bg-green-50 rounded-md p-3 w-24 text-center">
+                              <div className="bg-green-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                                 <p className="font-bold text-sm">CEN</p>
                                 <p className="text-xs">GESTIONE</p>
                               </div>
 
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Controllo Palla</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Controllo Palla</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.CTRP)}>{selected.player.CTRP}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Visione</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Visione</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.VISI)}>{selected.player.VISI}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Effetto</span>
-                                  <span className="bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full text-xs">65</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Effetto</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.EFFT)}>{selected.player.EFFT}</Badge>
                                 </div>
                               </div>
                             </div>
@@ -493,44 +456,44 @@ const Tattica = () => {
                         <div className="flex justify-between mb-1">
                            <div className="flex gap-10 p-6">
                             {/* --- Colonna 1: ATTACCO TIRI --- */}
-                              <div className="bg-red-50 rounded-md p-3 w-24 text-center">
+                              <div className="bg-red-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                                 <p className="font-bold text-sm">ATT</p>
                                 <p className="text-xs">TIRI</p>
                               </div>
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Potenza Tiro</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Potenza Tiro</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.PTIR)}>{selected.player.PTIR}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Tiri dalla distanza</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Tiri dalla distanza</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.TIRD)}>{selected.player.TIRD}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Tiri al volo</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Tiri al volo</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.TIRV)}>{selected.player.TIRV}</Badge>
                                 </div>
                               </div>
                             </div>
                             <div className="flex gap-10 p-6">
                             {/* --- Colonna 2: ATTACCO CONTROLLO --- */}
-                              <div className="bg-red-50 rounded-md p-3 w-24 text-center">
+                              <div className="bg-red-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                                 <p className="font-bold text-sm">ATT</p>
                                 <p className="text-xs">CONTROLLO</p>
                               </div>
 
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Dribbling</span>
-                                  <span className="bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full text-xs">90</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Dribbling</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.DRBL)}>{selected.player.DRBL}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Piazzamento</span>
-                                  <span className="bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full text-xs">74</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Piazzamento</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.PIAZ)}>{selected.player.PIAZ}</Badge>
                                 </div>
                                 <div className="flex items-center justify-between w-32">
-                                  <span className="text-sm text-gray-700">Finalizzazione</span>
-                                  <span className="bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full text-xs">65</span>
+                                  <span className="text-sm text-gray-700 dark:text-white">Finalizzazione</span>
+                                  <Badge variant="outline" className={getValueColor(selected.player.FINA)}>{selected.player.FINA}</Badge>
                                 </div>
                               </div>
                             </div>
