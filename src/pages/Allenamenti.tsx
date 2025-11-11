@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Player } from "@/types/player";
 import { supabase } from "@/supabaseClient";
 import { PLAYER_TABLE } from "@/constants/App";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Plus, Minus, TrendingUp, Award } from "lucide-react";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
 type StatKey =
@@ -229,92 +232,113 @@ const Allenamenti = () => {
 
           {/* center: griglia principale (ora per gruppi con sotto-attributi) */}
           <div className="col-span-12 lg:col-span-8">
-            <Card className="shadow">
-              <CardHeader>
-                <CardTitle>Dettaglio Attributi</CardTitle>
-                <CardDescription>Pre / Aumento (per gruppo) / Post / Costo</CardDescription>
+            <Card className="shadow-lg border-primary/10">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <CardTitle>Dettaglio Attributi</CardTitle>
+                </div>
+                <CardDescription>Gestisci gli allenamenti per gruppo di attributi</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left">
-                        <th className="p-2">Gruppo</th>
-                        <th className="p-2">Pre (sotto)</th>
-                        <th className="p-2">Aumento (gruppo)</th>
-                        <th className="p-2">Post (sotto)</th>
-                        <th className="p-2">Costo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {groupRows.map((g) => {
-                        const preVals = g.subs.map((s) => preStats[s]);
-                        const inc = increases[g.key] ?? 0;
-                        const postVals = g.subs.map((s) => postStats[s]);
-                        const cost = inc * g.subs.length * COST_PER_POINT;
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  {groupRows.map((g) => {
+                    const inc = increases[g.key] ?? 0;
+                    const cost = inc * g.subs.length * COST_PER_POINT;
+                    const hasChange = inc > 0;
 
-                        return (
-                          <tr key={g.key} className="border-t align-top">
-                            <td className="p-2 align-top">
-                              <div className="font-medium">{g.label}</div>
-                            </td>
-
-                            {/* Pre: mostra sotto-attributi */}
-                            <td className="p-2 align-top">
-                              <div className="space-y-1">
-                                {g.subs.map((s) => (
-                                  <div key={s} className="flex items-center justify-between">
-                                    <div className="text-xs text-muted-foreground">{statMeta[s].label}</div>
-                                    <div className="font-medium">{preStats[s]}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-
-                            {/* Aumento per gruppo */}
-                            <td className="p-2 align-top">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  className="px-2 py-1 border rounded"
-                                  onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) - 1)}
-                                >
-                                  -
-                                </button>
+                    return (
+                      <Card key={g.key} className={`transition-all duration-300 hover:shadow-md ${hasChange ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <CardTitle className="text-lg">{g.label}</CardTitle>
+                              {hasChange && (
+                                <Badge variant="secondary" className="animate-fade-in">
+                                  +{inc}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) - 1)}
+                                disabled={inc === 0}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <div className="w-16 text-center">
                                 <input
                                   type="number"
                                   min={0}
                                   max={25}
                                   value={inc}
                                   onChange={(e) => setIncrease(g.key, Number(e.target.value || 0))}
-                                  className="w-16 p-1 text-center border rounded bg-card"
+                                  className="w-full px-2 py-1 text-center border rounded-md bg-background focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
                                 />
-                                <button
-                                  className="px-2 py-1 border rounded"
-                                  onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) + 1)}
-                                >
-                                  +
-                                </button>
                               </div>
-                            </td>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) + 1)}
+                                disabled={inc >= 25}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Colonna PRE */}
+                            <div className="space-y-2">
+                              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                                Pre-Allenamento
+                              </div>
+                              {g.subs.map((s) => (
+                                <div key={s} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                                  <span className="text-sm text-foreground">{statMeta[s].label}</span>
+                                  <Badge variant="outline" className="font-mono">
+                                    {preStats[s]}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
 
-                            {/* Post: mostra sotto-attributi aggiornati */}
-                            <td className="p-2 align-top">
-                              <div className="space-y-1">
-                                {g.subs.map((s) => (
-                                  <div key={s} className="flex items-center justify-between">
-                                    <div className="text-xs text-muted-foreground">{statMeta[s].label}</div>
-                                    <div className="font-medium">{postVals[g.subs.indexOf(s)]}</div>
+                            {/* Colonna POST */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Post-Allenamento
+                                </div>
+                                {cost > 0 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Costo: {cost} XP
+                                  </Badge>
+                                )}
+                              </div>
+                              {g.subs.map((s) => (
+                                <div key={s} className={`flex items-center justify-between py-1.5 px-3 rounded-lg transition-all duration-300 ${hasChange ? 'bg-primary/10 border border-primary/20' : 'bg-muted/30'} hover:bg-accent/50`}>
+                                  <span className="text-sm text-foreground">{statMeta[s].label}</span>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant={hasChange ? "default" : "outline"} className="font-mono">
+                                      {postStats[s]}
+                                    </Badge>
+                                    {hasChange && (
+                                      <span className="text-xs text-primary font-semibold animate-fade-in">
+                                        +{inc}
+                                      </span>
+                                    )}
                                   </div>
-                                ))}
-                              </div>
-                            </td>
-
-                            <td className="p-2 align-top">{cost}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -322,25 +346,37 @@ const Allenamenti = () => {
 
           {/* right column: OVR e riepilogo */}
           <div className="col-span-12 lg:col-span-2">
-            <Card className="shadow">
-              <CardHeader>
-                <CardTitle>Riepilogo</CardTitle>
-                <CardDescription>Overall pre / post allenamento</CardDescription>
+            <Card className="shadow-lg border-primary/10">
+              <CardHeader className="bg-gradient-to-br from-accent/10 to-primary/10">
+                <div className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary" />
+                  <CardTitle>Riepilogo</CardTitle>
+                </div>
+                <CardDescription>Overall del giocatore</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="space-y-4">
-                  <div className="text-center py-4 border rounded">
-                    <div className="text-sm text-muted-foreground">OVR Pre-Allenamento</div>
-                    <div className="text-3xl font-bold">{preOverall}</div>
+                  <div className="text-center py-6 rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 border border-border transition-all hover:shadow-md">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      Pre-Allenamento
+                    </div>
+                    <div className="text-4xl font-bold text-foreground">{preOverall}</div>
                   </div>
 
-                  <div className="text-center py-4 border rounded bg-green-50">
-                    <div className="text-sm text-muted-foreground">OVR Post-Allenamento</div>
-                    <div className="text-3xl font-bold">{postOverall}</div>
+                  <div className="text-center py-6 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 shadow-lg transition-all hover:shadow-xl">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      Post-Allenamento
+                    </div>
+                    <div className="text-4xl font-bold text-primary">{postOverall}</div>
+                    {postOverall > preOverall && (
+                      <Badge variant="secondary" className="mt-2 animate-fade-in">
+                        +{postOverall - preOverall}
+                      </Badge>
+                    )}
                   </div>
 
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    Cambiamenti mostrati in tempo reale. Premi "Applica" per consumare XP (non implementato).
+                  <div className="mt-4 p-3 text-xs text-muted-foreground bg-muted/30 rounded-lg border border-border">
+                    Cambiamenti in tempo reale. Premi "Applica" per consumare XP.
                   </div>
                 </div>
               </CardContent>

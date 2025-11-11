@@ -186,11 +186,13 @@ const Rose = () => {
             <TabsContent key={teamIndex} value={teamIndex.toString()}>
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle>
-                    {team.name} 
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle>{team.name}</CardTitle>
+                      <CardDescription>{team.players.length} giocatori</CardDescription>
+                    </div>
                     <img src={team.logo} alt={`${team.name} Logo`} className="h-16 w-16 object-contain" />
-                  </CardTitle>
-                  <CardDescription>{team.players.length} giocatori</CardDescription>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-3">

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Player } from "../types/player";
 import { PLAYER_TABLE } from "@/constants/App";
 import { supabase } from "@/supabaseClient";
-import { fetchPlayers, fetchPlayerById, fetchPlayerByTeam, fetchPlayersByTeam } from '@/services/playersService';
+import { fetchPlayers, fetchPlayersByTeam } from '@/services/playersService';
 
 
 export function getPlayers(fromTeam?: string) {

@@ -141,7 +141,7 @@ const Calendario = () => {
 										<div
 											key={index}
 											onClick={() => setSelected({ round: round.round, date: round.date, match })}
-											className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+											className="flex items-center justify-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
 										>
 											<div className="flex items-center gap-4">
 												<span className="font-medium text-right w-48">{match.home}</span>
