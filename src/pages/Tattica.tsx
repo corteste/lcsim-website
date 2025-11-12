@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, Users, NotebookTabs } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -10,11 +11,14 @@ import { PLAYER_TABLE } from "../constants/App";
 import { Player } from "../types/player";
 import { getRoleColor, getValueColor } from "@/utils/functions";
 
+type FormationType = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '3-4-3';
+
 const Tattica = () => {
   const [selected, setSelected] = useState<{ player: Player } | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
   const [dragOverPlayer, setDragOverPlayer] = useState<Player | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [formation, setFormation] = useState<FormationType>('4-4-2');
   
     useEffect(() => {
       async function fetchPlayers() {
@@ -169,6 +173,75 @@ const Tattica = () => {
     return titolari[i] || null;
   });
 
+  // Configurazioni posizioni per diverse formazioni
+  const formationPositions: Record<FormationType, Array<{ x: string; y: string; label: string }>> = {
+    '4-4-2': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '20%', y: '75%', label: 'TD' },
+      { x: '40%', y: '75%', label: 'DC' },
+      { x: '60%', y: '75%', label: 'DC' },
+      { x: '80%', y: '75%', label: 'TS' },
+      { x: '20%', y: '50%', label: 'ES' },
+      { x: '40%', y: '50%', label: 'CC' },
+      { x: '60%', y: '50%', label: 'CC' },
+      { x: '80%', y: '50%', label: 'ED' },
+      { x: '35%', y: '20%', label: 'ATT' },
+      { x: '65%', y: '20%', label: 'ATT' },
+    ],
+    '4-3-3': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '20%', y: '75%', label: 'TD' },
+      { x: '40%', y: '75%', label: 'DC' },
+      { x: '60%', y: '75%', label: 'DC' },
+      { x: '80%', y: '75%', label: 'TS' },
+      { x: '35%', y: '55%', label: 'CC' },
+      { x: '50%', y: '55%', label: 'CDC' },
+      { x: '65%', y: '55%', label: 'CC' },
+      { x: '20%', y: '20%', label: 'AS' },
+      { x: '50%', y: '20%', label: 'AT' },
+      { x: '80%', y: '20%', label: 'AD' },
+    ],
+    '3-5-2': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '30%', y: '75%', label: 'DC' },
+      { x: '50%', y: '75%', label: 'DC' },
+      { x: '70%', y: '75%', label: 'DC' },
+      { x: '15%', y: '55%', label: 'ES' },
+      { x: '35%', y: '55%', label: 'CC' },
+      { x: '50%', y: '55%', label: 'CDC' },
+      { x: '65%', y: '55%', label: 'CC' },
+      { x: '85%', y: '55%', label: 'ED' },
+      { x: '40%', y: '20%', label: 'ATT' },
+      { x: '60%', y: '20%', label: 'ATT' },
+    ],
+    '4-2-3-1': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '20%', y: '75%', label: 'TD' },
+      { x: '40%', y: '75%', label: 'DC' },
+      { x: '60%', y: '75%', label: 'DC' },
+      { x: '80%', y: '75%', label: 'TS' },
+      { x: '40%', y: '60%', label: 'CDC' },
+      { x: '60%', y: '60%', label: 'CDC' },
+      { x: '25%', y: '38%', label: 'ES' },
+      { x: '50%', y: '38%', label: 'COC' },
+      { x: '75%', y: '38%', label: 'ED' },
+      { x: '50%', y: '15%', label: 'AT' },
+    ],
+    '3-4-3': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '30%', y: '75%', label: 'DC' },
+      { x: '50%', y: '75%', label: 'DC' },
+      { x: '70%', y: '75%', label: 'DC' },
+      { x: '20%', y: '55%', label: 'ES' },
+      { x: '40%', y: '55%', label: 'CC' },
+      { x: '60%', y: '55%', label: 'CC' },
+      { x: '80%', y: '55%', label: 'ED' },
+      { x: '25%', y: '20%', label: 'AS' },
+      { x: '50%', y: '20%', label: 'AT' },
+      { x: '75%', y: '20%', label: 'AD' },
+    ],
+  };
+
   /* MAIN RENDER */
 
   return (
@@ -199,44 +272,58 @@ const Tattica = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {formationSlots.map((player, slotIndex) => (
-                  <div
-                    key={slotIndex}
-                    onDragOver={(e) => handleDragOverSlot(e, slotIndex)}
-                    onDrop={(e) => handleDropOnSlot(e, slotIndex)}
-                    className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                      player 
-                        ? 'bg-card hover:bg-muted/50 cursor-pointer' 
-                        : 'bg-muted/20 border-dashed'
-                    } ${
-                      dragOverSlot === slotIndex && (!player || draggedPlayer?.ID !== player?.ID) ? 'ring-2 ring-primary' : ''
-                    }`}
-                  >
-                    {player ? (
-                      <>
-                        <div
-                          draggable
-                          onDragStart={() => handleDragStart(player)}
-                          onClick={() => setSelected({ player })}
-                          className="flex items-center gap-4 flex-1 cursor-pointer"
-                        >
-                          <Badge variant="outline" className={getRoleColor(player.Posiz)}>
-                            {player.Posiz}
-                          </Badge>
-                          <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                {formationSlots.map((player, slotIndex) => {
+                  const suggestedRole = formationPositions[formation][slotIndex]?.label || '-';
+                  
+                  return (
+                    <div
+                      key={slotIndex}
+                      onDragOver={(e) => handleDragOverSlot(e, slotIndex)}
+                      onDrop={(e) => handleDropOnSlot(e, slotIndex)}
+                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                        player 
+                          ? 'bg-card hover:bg-muted/50 cursor-pointer' 
+                          : 'bg-muted/20 border-dashed'
+                      } ${
+                        dragOverSlot === slotIndex && (!player || draggedPlayer?.ID !== player?.ID) ? 'ring-2 ring-primary' : ''
+                      }`}
+                    >
+                      {player ? (
+                        <>
+                          <div
+                            draggable
+                            onDragStart={() => handleDragStart(player)}
+                            onClick={() => setSelected({ player })}
+                            className="flex items-center gap-4 flex-1 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30">
+                                {suggestedRole}
+                              </Badge>
+                              <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                                {player.Posiz}
+                              </Badge>
+                            </div>
+                            <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Voto:</span>
+                            <span className="font-bold text-primary">7.3</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between w-full px-4">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30">
+                              {suggestedRole}
+                            </Badge>
+                            <span className="text-muted-foreground text-sm">Slot {slotIndex + 1} - Vuoto</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Voto:</span>
-                          <span className="font-bold text-primary">7.3</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center w-full text-muted-foreground text-sm">
-                        Slot {slotIndex + 1} - Vuoto
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -292,6 +379,100 @@ const Tattica = () => {
             Salva Formazione
           </Button>
         </div>
+
+        {/* Campo da Calcio Visuale */}
+        <Card className="mt-8 shadow-lg">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <NotebookTabs className="h-5 w-5" />
+                  Visualizzazione Campo
+                </CardTitle>
+                <CardDescription>Rappresentazione grafica della formazione</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Formazione:</span>
+                <Select value={formation} onValueChange={(value) => setFormation(value as FormationType)}>
+                  <SelectTrigger className="w-32 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="4-4-2">4-4-2</SelectItem>
+                    <SelectItem value="4-3-3">4-3-3</SelectItem>
+                    <SelectItem value="3-5-2">3-5-2</SelectItem>
+                    <SelectItem value="4-2-3-1">4-2-3-1</SelectItem>
+                    <SelectItem value="3-4-3">3-4-3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="relative w-full bg-gradient-to-b from-green-600 to-green-700 rounded-lg p-8 min-h-[600px]">
+              {/* Linee del campo */}
+              <div className="absolute inset-8 border-2 border-white/40 rounded-sm">
+                {/* Linea centrale */}
+                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/40" />
+                {/* Cerchio centrale */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/40 rounded-full" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/60 rounded-full" />
+                
+                {/* Area di rigore superiore (attacco) */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-20 border-2 border-white/40 border-t-0" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-10 border-2 border-white/40 border-t-0" />
+                
+                {/* Area di rigore inferiore (difesa) */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-20 border-2 border-white/40 border-b-0" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-10 border-2 border-white/40 border-b-0" />
+              </div>
+
+              {/* Giocatori posizionati sul campo */}
+              <div className="relative h-[600px]">
+                {formationSlots.map((player, index) => {
+                  if (!player) return null;
+                  
+                  const pos = formationPositions[formation][index];
+
+                  return (
+                    <div
+                      key={player.ID}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                      style={{ left: pos.x, top: pos.y }}
+                      onClick={() => setSelected({ player })}
+                    >
+                      {/* Cerchio giocatore */}
+                      <div className="relative flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-full bg-primary border-2 border-white shadow-lg flex items-center justify-center transition-transform group-hover:scale-110">
+                          <span className="text-white font-bold text-sm">{index + 1}</span>
+                        </div>
+                        {/* Nome giocatore e ruolo suggerito */}
+                        <div className="mt-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded whitespace-nowrap">
+                          {player.Cognome}
+                        </div>
+                        {/* Badge posizione effettiva e suggerita */}
+                        <div className="flex gap-1 mt-0.5">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${getRoleColor(player.Posiz)} border-white`}
+                          >
+                            {player.Posiz}
+                          </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-muted/80 border-white"
+                          >
+                            {pos.label}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </main>
 
       {/* Modal Dettaglio Giocatore */}
