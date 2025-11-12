@@ -168,9 +168,9 @@ const Tattica = () => {
   const titolari = players.filter(p => p.RuoloInCampo !== null);
   const panchina = players.filter(p => p.RuoloInCampo === null);
   
-  // Crea array di 11 slot con giocatori o null
+  // Crea array di 11 slot mappando ogni slot al giocatore che ha esattamente quel RuoloInCampo
   const formationSlots: (Player | null)[] = Array.from({ length: 11 }, (_, i) => {
-    return titolari[i] || null;
+    return players.find(p => p.RuoloInCampo === `SLOT${i}`) || null;
   });
 
   // Configurazioni posizioni per diverse formazioni
