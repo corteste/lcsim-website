@@ -25,7 +25,14 @@ const Tattica = () => {
         const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', 'APD'); // filtrare per squadra dell'utente
         console.log(data);
         if (error) console.error(error);
-        else setPlayers(data || []);
+        else {
+          // Forza tutti i giocatori ad iniziare in panchina
+          const playersInBench = (data || []).map(player => ({
+            ...player,
+            RuoloInCampo: null
+          }));
+          setPlayers(playersInBench);
+        }
       }
       fetchPlayers();
     }, []);
