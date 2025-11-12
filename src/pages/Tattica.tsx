@@ -292,6 +292,88 @@ const Tattica = () => {
             Salva Formazione
           </Button>
         </div>
+
+        {/* Campo da Calcio Visuale */}
+        <Card className="mt-8 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <NotebookTabs className="h-5 w-5" />
+              Visualizzazione Campo
+            </CardTitle>
+            <CardDescription>Rappresentazione grafica della formazione</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="relative w-full bg-gradient-to-b from-green-600 to-green-700 rounded-lg p-8 min-h-[600px]">
+              {/* Linee del campo */}
+              <div className="absolute inset-8 border-2 border-white/40 rounded-sm">
+                {/* Linea centrale */}
+                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/40" />
+                {/* Cerchio centrale */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/40 rounded-full" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/60 rounded-full" />
+                
+                {/* Area di rigore superiore (attacco) */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-20 border-2 border-white/40 border-t-0" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-10 border-2 border-white/40 border-t-0" />
+                
+                {/* Area di rigore inferiore (difesa) */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-20 border-2 border-white/40 border-b-0" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-10 border-2 border-white/40 border-b-0" />
+              </div>
+
+              {/* Giocatori posizionati sul campo */}
+              <div className="relative h-[600px]">
+                {formationSlots.map((player, index) => {
+                  if (!player) return null;
+                  
+                  // Definisci posizioni per formazione 4-4-2
+                  const positions = [
+                    { x: '50%', y: '92%' }, // 0: Portiere
+                    { x: '20%', y: '75%' }, // 1: Difensore sinistro
+                    { x: '40%', y: '75%' }, // 2: Difensore centrale sx
+                    { x: '60%', y: '75%' }, // 3: Difensore centrale dx
+                    { x: '80%', y: '75%' }, // 4: Difensore destro
+                    { x: '20%', y: '50%' }, // 5: Centrocampista sinistro
+                    { x: '40%', y: '50%' }, // 6: Centrocampista centrale sx
+                    { x: '60%', y: '50%' }, // 7: Centrocampista centrale dx
+                    { x: '80%', y: '50%' }, // 8: Centrocampista destro
+                    { x: '35%', y: '20%' }, // 9: Attaccante sinistro
+                    { x: '65%', y: '20%' }, // 10: Attaccante destro
+                  ];
+
+                  const pos = positions[index];
+
+                  return (
+                    <div
+                      key={player.ID}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                      style={{ left: pos.x, top: pos.y }}
+                      onClick={() => setSelected({ player })}
+                    >
+                      {/* Cerchio giocatore */}
+                      <div className="relative flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-full bg-primary border-2 border-white shadow-lg flex items-center justify-center transition-transform group-hover:scale-110">
+                          <span className="text-white font-bold text-sm">{index + 1}</span>
+                        </div>
+                        {/* Nome giocatore */}
+                        <div className="mt-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded whitespace-nowrap">
+                          {player.Cognome}
+                        </div>
+                        {/* Badge posizione */}
+                        <Badge 
+                          variant="outline" 
+                          className={`mt-0.5 text-xs ${getRoleColor(player.Posiz)} border-white`}
+                        >
+                          {player.Posiz}
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </main>
 
       {/* Modal Dettaglio Giocatore */}
