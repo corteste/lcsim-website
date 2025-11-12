@@ -8,30 +8,6 @@ import { useEffect, useState } from "react";
 import { getRoleColor, getPosGroup } from "@/utils/functions";
 import { getPlayers } from "@/hooks/use-players";
 
-const allStats = {
-  goalscorers: [
-    { name: "Alessandro Grigi", team: "FC Dragonslayers", goals: 12, role: "ATT" },
-    { name: "Gabriele Gialli", team: "Thunder United", goals: 11, role: "ATT" },
-    { name: "Matteo Arancio", team: "FC Dragonslayers", goals: 9, role: "ATT" },
-    { name: "Nicola Blu", team: "Thunder United", goals: 8, role: "ATT" },
-    { name: "Giuseppe Gialli", team: "FC Dragonslayers", goals: 7, role: "CEN" },
-  ],
-  assists: [
-    { name: "Giuseppe Gialli", team: "FC Dragonslayers", assists: 8, role: "CEN" },
-    { name: "Federico Bianchi", team: "Thunder United", assists: 7, role: "CEN" },
-    { name: "Francesco Blu", team: "FC Dragonslayers", assists: 6, role: "CEN" },
-    { name: "Lorenzo Neri", team: "Thunder United", assists: 5, role: "CEN" },
-    { name: "Antonio Viola", team: "FC Dragonslayers", assists: 4, role: "CEN" },
-  ],
-  ratings: [
-    { name: "Alessandro Grigi", team: "FC Dragonslayers", rating: 8.5, role: "ATT" },
-    { name: "Gabriele Gialli", team: "Thunder United", rating: 8.3, role: "ATT" },
-    { name: "Giuseppe Gialli", team: "FC Dragonslayers", rating: 8.2, role: "CEN" },
-    { name: "Federico Bianchi", team: "Thunder United", rating: 8.1, role: "CEN" },
-    { name: "Andrea Viola", team: "Average Pegiò Drivers", rating: 8.0, role: "ATT" },
-  ],
-};
-
 const getMarketStatus = (status: string) => {
   switch (status) {
     case "int": return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20";
@@ -42,8 +18,7 @@ const getMarketStatus = (status: string) => {
   }
 };
 
-
-const PLAYERS_PER_PAGE = 20;
+const PLAYERS_PER_PAGE = 10;
 
 const ListaGiocatori = () => {
   const [roleFilter, setRoleFilter] = useState<string>("all");

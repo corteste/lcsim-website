@@ -222,8 +222,7 @@ const Allenamenti = () => {
                   </div>
 
                   <div className="text-xs text-muted-foreground">
-                    Aumento massimo per gruppo: 25<br />
-                    COST_PER_POINT modifica il costo per punto.
+                    Aumento massimo per gruppo: 25
                   </div>
                 </div>
               </CardContent>
@@ -270,7 +269,7 @@ const Allenamenti = () => {
                               </Button>
                               <div className="w-16 text-center">
                                 <input
-                                  type="number"
+                                  // type="number"
                                   min={0}
                                   max={25}
                                   value={inc}
