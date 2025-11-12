@@ -272,44 +272,58 @@ const Tattica = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {formationSlots.map((player, slotIndex) => (
-                  <div
-                    key={slotIndex}
-                    onDragOver={(e) => handleDragOverSlot(e, slotIndex)}
-                    onDrop={(e) => handleDropOnSlot(e, slotIndex)}
-                    className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                      player 
-                        ? 'bg-card hover:bg-muted/50 cursor-pointer' 
-                        : 'bg-muted/20 border-dashed'
-                    } ${
-                      dragOverSlot === slotIndex && (!player || draggedPlayer?.ID !== player?.ID) ? 'ring-2 ring-primary' : ''
-                    }`}
-                  >
-                    {player ? (
-                      <>
-                        <div
-                          draggable
-                          onDragStart={() => handleDragStart(player)}
-                          onClick={() => setSelected({ player })}
-                          className="flex items-center gap-4 flex-1 cursor-pointer"
-                        >
-                          <Badge variant="outline" className={getRoleColor(player.Posiz)}>
-                            {player.Posiz}
-                          </Badge>
-                          <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                {formationSlots.map((player, slotIndex) => {
+                  const suggestedRole = formationPositions[formation][slotIndex]?.label || '-';
+                  
+                  return (
+                    <div
+                      key={slotIndex}
+                      onDragOver={(e) => handleDragOverSlot(e, slotIndex)}
+                      onDrop={(e) => handleDropOnSlot(e, slotIndex)}
+                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                        player 
+                          ? 'bg-card hover:bg-muted/50 cursor-pointer' 
+                          : 'bg-muted/20 border-dashed'
+                      } ${
+                        dragOverSlot === slotIndex && (!player || draggedPlayer?.ID !== player?.ID) ? 'ring-2 ring-primary' : ''
+                      }`}
+                    >
+                      {player ? (
+                        <>
+                          <div
+                            draggable
+                            onDragStart={() => handleDragStart(player)}
+                            onClick={() => setSelected({ player })}
+                            className="flex items-center gap-4 flex-1 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30">
+                                {suggestedRole}
+                              </Badge>
+                              <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                                {player.Posiz}
+                              </Badge>
+                            </div>
+                            <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Voto:</span>
+                            <span className="font-bold text-primary">7.3</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between w-full px-4">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30">
+                              {suggestedRole}
+                            </Badge>
+                            <span className="text-muted-foreground text-sm">Slot {slotIndex + 1} - Vuoto</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Voto:</span>
-                          <span className="font-bold text-primary">7.3</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center w-full text-muted-foreground text-sm">
-                        Slot {slotIndex + 1} - Vuoto
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
