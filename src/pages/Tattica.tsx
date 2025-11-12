@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, Users, NotebookTabs } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -10,11 +11,14 @@ import { PLAYER_TABLE } from "../constants/App";
 import { Player } from "../types/player";
 import { getRoleColor, getValueColor } from "@/utils/functions";
 
+type FormationType = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '3-4-3';
+
 const Tattica = () => {
   const [selected, setSelected] = useState<{ player: Player } | null>(null);
   const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
   const [dragOverPlayer, setDragOverPlayer] = useState<Player | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [formation, setFormation] = useState<FormationType>('4-4-2');
   
     useEffect(() => {
       async function fetchPlayers() {
@@ -169,6 +173,75 @@ const Tattica = () => {
     return titolari[i] || null;
   });
 
+  // Configurazioni posizioni per diverse formazioni
+  const formationPositions: Record<FormationType, Array<{ x: string; y: string; label: string }>> = {
+    '4-4-2': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '20%', y: '75%', label: 'TD' },
+      { x: '40%', y: '75%', label: 'DC' },
+      { x: '60%', y: '75%', label: 'DC' },
+      { x: '80%', y: '75%', label: 'TS' },
+      { x: '20%', y: '50%', label: 'ES' },
+      { x: '40%', y: '50%', label: 'CC' },
+      { x: '60%', y: '50%', label: 'CC' },
+      { x: '80%', y: '50%', label: 'ED' },
+      { x: '35%', y: '20%', label: 'ATT' },
+      { x: '65%', y: '20%', label: 'ATT' },
+    ],
+    '4-3-3': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '20%', y: '75%', label: 'TD' },
+      { x: '40%', y: '75%', label: 'DC' },
+      { x: '60%', y: '75%', label: 'DC' },
+      { x: '80%', y: '75%', label: 'TS' },
+      { x: '35%', y: '55%', label: 'CC' },
+      { x: '50%', y: '55%', label: 'CDC' },
+      { x: '65%', y: '55%', label: 'CC' },
+      { x: '20%', y: '20%', label: 'AS' },
+      { x: '50%', y: '20%', label: 'AT' },
+      { x: '80%', y: '20%', label: 'AD' },
+    ],
+    '3-5-2': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '30%', y: '75%', label: 'DC' },
+      { x: '50%', y: '75%', label: 'DC' },
+      { x: '70%', y: '75%', label: 'DC' },
+      { x: '15%', y: '55%', label: 'ES' },
+      { x: '35%', y: '55%', label: 'CC' },
+      { x: '50%', y: '55%', label: 'CDC' },
+      { x: '65%', y: '55%', label: 'CC' },
+      { x: '85%', y: '55%', label: 'ED' },
+      { x: '40%', y: '20%', label: 'ATT' },
+      { x: '60%', y: '20%', label: 'ATT' },
+    ],
+    '4-2-3-1': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '20%', y: '75%', label: 'TD' },
+      { x: '40%', y: '75%', label: 'DC' },
+      { x: '60%', y: '75%', label: 'DC' },
+      { x: '80%', y: '75%', label: 'TS' },
+      { x: '40%', y: '60%', label: 'CDC' },
+      { x: '60%', y: '60%', label: 'CDC' },
+      { x: '25%', y: '38%', label: 'ES' },
+      { x: '50%', y: '38%', label: 'COC' },
+      { x: '75%', y: '38%', label: 'ED' },
+      { x: '50%', y: '15%', label: 'AT' },
+    ],
+    '3-4-3': [
+      { x: '50%', y: '92%', label: 'POR' },
+      { x: '30%', y: '75%', label: 'DC' },
+      { x: '50%', y: '75%', label: 'DC' },
+      { x: '70%', y: '75%', label: 'DC' },
+      { x: '20%', y: '55%', label: 'ES' },
+      { x: '40%', y: '55%', label: 'CC' },
+      { x: '60%', y: '55%', label: 'CC' },
+      { x: '80%', y: '55%', label: 'ED' },
+      { x: '25%', y: '20%', label: 'AS' },
+      { x: '50%', y: '20%', label: 'AT' },
+      { x: '75%', y: '20%', label: 'AD' },
+    ],
+  };
+
   /* MAIN RENDER */
 
   return (
@@ -296,11 +369,30 @@ const Tattica = () => {
         {/* Campo da Calcio Visuale */}
         <Card className="mt-8 shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <NotebookTabs className="h-5 w-5" />
-              Visualizzazione Campo
-            </CardTitle>
-            <CardDescription>Rappresentazione grafica della formazione</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <NotebookTabs className="h-5 w-5" />
+                  Visualizzazione Campo
+                </CardTitle>
+                <CardDescription>Rappresentazione grafica della formazione</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Formazione:</span>
+                <Select value={formation} onValueChange={(value) => setFormation(value as FormationType)}>
+                  <SelectTrigger className="w-32 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="4-4-2">4-4-2</SelectItem>
+                    <SelectItem value="4-3-3">4-3-3</SelectItem>
+                    <SelectItem value="3-5-2">3-5-2</SelectItem>
+                    <SelectItem value="4-2-3-1">4-2-3-1</SelectItem>
+                    <SelectItem value="3-4-3">3-4-3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="relative w-full bg-gradient-to-b from-green-600 to-green-700 rounded-lg p-8 min-h-[600px]">
@@ -326,22 +418,7 @@ const Tattica = () => {
                 {formationSlots.map((player, index) => {
                   if (!player) return null;
                   
-                  // Definisci posizioni per formazione 4-4-2
-                  const positions = [
-                    { x: '50%', y: '92%' }, // 0: Portiere
-                    { x: '20%', y: '75%' }, // 1: Difensore sinistro
-                    { x: '40%', y: '75%' }, // 2: Difensore centrale sx
-                    { x: '60%', y: '75%' }, // 3: Difensore centrale dx
-                    { x: '80%', y: '75%' }, // 4: Difensore destro
-                    { x: '20%', y: '50%' }, // 5: Centrocampista sinistro
-                    { x: '40%', y: '50%' }, // 6: Centrocampista centrale sx
-                    { x: '60%', y: '50%' }, // 7: Centrocampista centrale dx
-                    { x: '80%', y: '50%' }, // 8: Centrocampista destro
-                    { x: '35%', y: '20%' }, // 9: Attaccante sinistro
-                    { x: '65%', y: '20%' }, // 10: Attaccante destro
-                  ];
-
-                  const pos = positions[index];
+                  const pos = formationPositions[formation][index];
 
                   return (
                     <div
@@ -355,17 +432,25 @@ const Tattica = () => {
                         <div className="w-12 h-12 rounded-full bg-primary border-2 border-white shadow-lg flex items-center justify-center transition-transform group-hover:scale-110">
                           <span className="text-white font-bold text-sm">{index + 1}</span>
                         </div>
-                        {/* Nome giocatore */}
+                        {/* Nome giocatore e ruolo suggerito */}
                         <div className="mt-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded whitespace-nowrap">
                           {player.Cognome}
                         </div>
-                        {/* Badge posizione */}
-                        <Badge 
-                          variant="outline" 
-                          className={`mt-0.5 text-xs ${getRoleColor(player.Posiz)} border-white`}
-                        >
-                          {player.Posiz}
-                        </Badge>
+                        {/* Badge posizione effettiva e suggerita */}
+                        <div className="flex gap-1 mt-0.5">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${getRoleColor(player.Posiz)} border-white`}
+                          >
+                            {player.Posiz}
+                          </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-muted/80 border-white"
+                          >
+                            {pos.label}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   );
