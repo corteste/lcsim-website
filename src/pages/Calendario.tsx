@@ -208,10 +208,10 @@ const Calendario = () => {
 			{/* Modal / Popup per dettaglio partita */}
 			{selected && (
 				<div
-					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 					onClick={handleCloseModal}
 				>
-					<div className="w-full max-w-3xl p-4" onClick={(e) => e.stopPropagation()}>
+					<div className="w-full max-w-7xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
 						<Card className="shadow-xl">
 							<CardHeader>
 								<div className="flex items-start justify-between gap-4">
