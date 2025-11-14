@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BarChart3, TrendingUp, Award, Target } from "lucide-react";
 import { useState } from "react";
 import { getRoleColor } from "@/utils/functions";
@@ -34,6 +35,7 @@ const Statistiche = () => {
   const [statType, setStatType] = useState<"goalscorers" | "assists" | "ratings">("goalscorers");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
 
   const currentStats = allStats[statType];
   const filteredStats = currentStats.filter(
@@ -163,7 +165,8 @@ const Statistiche = () => {
               {filteredStats.map((player, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => setSelectedPlayer(player)}
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 font-bold text-primary">
@@ -189,6 +192,76 @@ const Statistiche = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Player Stats Dialog */}
+      <Dialog open={!!selectedPlayer} onOpenChange={(open) => !open && setSelectedPlayer(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-2xl">
+              {selectedPlayer?.name}
+              <Badge variant="outline" className={getRoleColor(selectedPlayer?.role)}>
+                {selectedPlayer?.role}
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedPlayer && (
+            <div className="space-y-6 mt-4">
+              {/* General Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Informazioni Generali</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Squadra</p>
+                    <p className="font-medium">{selectedPlayer.team}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Ruolo</p>
+                    <p className="font-medium">{selectedPlayer.role}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Performance Stats */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Statistiche Prestazioni</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {selectedPlayer.goals !== undefined && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Gol</p>
+                      <p className="font-bold text-2xl text-primary">{selectedPlayer.goals}</p>
+                    </div>
+                  )}
+                  {selectedPlayer.assists !== undefined && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Assist</p>
+                      <p className="font-bold text-2xl text-primary">{selectedPlayer.assists}</p>
+                    </div>
+                  )}
+                  {selectedPlayer.rating !== undefined && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Voto Medio</p>
+                      <p className="font-bold text-2xl text-primary">{selectedPlayer.rating}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Note about full stats */}
+              <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                <p className="text-sm text-muted-foreground">
+                  💡 Per visualizzare tutte le statistiche complete del giocatore (attributi tecnici, fisici, mentali, ecc.), 
+                  collega il database dei giocatori con l'integrazione dati.
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
