@@ -17,7 +17,7 @@ const getOverallColor = (overall:number) => {
 };
 
 const Roster = () => {
-   const { players, loading, error } = getPlayers("APD");
+   const { players } = getPlayers("APD");
 
   return (
     <div className="min-h-screen bg-background">

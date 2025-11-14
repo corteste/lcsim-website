@@ -2,11 +2,10 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { Player } from "@/types/player";
-import { supabase } from "@/supabaseClient";
-import { PLAYER_TABLE } from "@/constants/App";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, TrendingUp, Award } from "lucide-react";
+import { getPlayers } from "@/hooks/use-players";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
 type StatKey =
@@ -104,29 +103,13 @@ const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number>
 };
 
 const Allenamenti = () => {
-  const [playerList, setPlayers] = useState<Player[]>([]);
+  const { players } = getPlayers("APD");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-
-  useEffect(() => {
-    async function fetchPlayers() {
-      const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', 'APD'); // non deve essere statica la squadra ma dinamica in base all'utente
-      if (error) {
-        console.error(error);
-        return;
-      }
-      setPlayers(data || []);
-      if (data && data.length > 0 && selectedId === null) {
-        setSelectedId((data[0] as any).ID ?? (data[0] as any).id ?? null);
-      }
-    }
-    fetchPlayers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const player = useMemo(() => {
     if (!selectedId) return null;
-    return playerList.find((p) => (p as any).ID === selectedId || (p as any).id === selectedId) ?? null;
-  }, [playerList, selectedId]);
+    return players.find((p) => (p as any).ID === selectedId || (p as any).id === selectedId) ?? null;
+  }, [players, selectedId]);
 
   // aumenti per gruppo
   const [increases, setIncreases] = useState<Record<string, number>>(() =>
@@ -201,7 +184,7 @@ const Allenamenti = () => {
                     className="w-full p-2 border rounded bg-card"
                   >
                     <option value="">Seleziona...</option>
-                    {playerList.map((p) => (
+                    {players.map((p) => (
                       <option key={(p as any).ID ?? (p as any).id} value={(p as any).ID ?? (p as any).id}>
                         {(p as any).Nome ?? (p as any).name} {(p as any).Cognome ?? (p as any).surname} ({(p as any).Posiz ?? (p as any).pos})
                       </option>

@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { Player } from "../types/player";
-import { PLAYER_TABLE } from "@/constants/App";
-import { supabase } from "@/supabaseClient";
 import { fetchPlayers, fetchPlayersByTeam } from '@/services/playersService';
 
 
@@ -12,11 +10,8 @@ export function getPlayers(fromTeam?: string) {
 
   useEffect(() => {
     async function fetchPlayersWrapper() {
-      //let query = supabase.from(PLAYER_TABLE).select("*");
-
       if (fromTeam !== undefined) {
         console.log("Fetching players for team:", fromTeam);
-        //query = query.eq("Squadra", fromTeam);
         fetchPlayersByTeam(fromTeam)
       .then(setPlayers)
       .catch((err) => setError(err.message))

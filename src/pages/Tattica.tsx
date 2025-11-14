@@ -19,6 +19,7 @@ const Tattica = () => {
   const [dragOverPlayer, setDragOverPlayer] = useState<Player | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [formation, setFormation] = useState<FormationType>('4-4-2');
+  //const { players } = getPlayers("APD");
   
     useEffect(() => {
       async function fetchPlayers() {
