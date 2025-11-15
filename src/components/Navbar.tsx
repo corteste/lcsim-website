@@ -36,7 +36,8 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary hover:opacity-80 transition-opacity">
-            <Trophy className="h-6 w-6" />
+            {/* <Trophy className="h-6 w-6" /> */}
+            <img src="/src/images/LCSIM_Logo_SMALL.png" alt="Custom Trophy" className="h-6 w-6 object-contain" />
             <span>Lega Calcio Simulato</span>
           </Link>
           

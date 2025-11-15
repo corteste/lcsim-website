@@ -12,6 +12,14 @@ export async function fetchPlayerStats(pageIndex = 1): Promise<PlayerStats[]> {
   return json.data ?? [];
 }
 
+export async function fetchPlayerRoundStats(pageIndex = 1): Promise<PlayerStats[]> {
+  const offset = pageIndex * LIMIT;
+  const res = await fetch(`${EDGE_PLAYER_STATS_URL}`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error || 'Failed to fetch players');
+  return json.data ?? [];
+}
+
 export async function fetchPlayerAvgBySeason(season: number): Promise<PlayerStatsAvg[]> {
   const res = await fetch(`${EDGE_PLAYER_STATS_URL}/season/avg`,{method: 'POST', body: JSON.stringify({season})});
   const json = await res.json();

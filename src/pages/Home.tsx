@@ -30,12 +30,23 @@ const Home = () => {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 text-center">
+        {/* <div className="mb-8 text-center">
           <h1 className="text-5xl font-bold text-foreground mb-3 flex items-center justify-center gap-3">
-            {/* <Trophy className="h-10 w-10 text-primary" /> */}
             <img src="/src/images/LCSIM_Logo.png" alt="Custom Trophy" className="h-16 w-16 object-contain" />
             Lega Calcio Simulato
           </h1>
+          <p className="text-lg text-muted-foreground">Benvenuto nel tuo campionato manageriale</p>
+          <p className="text-sm text-muted-foreground mt-1">Stagione 2024/25</p>
+        </div> */}
+
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center mb-3">
+            <img
+              src="/src/images/LCSIM_Logo.png"
+              alt="Custom Trophy"
+              className="h-60 w-60 object-contain"
+            />
+          </div>
           <p className="text-lg text-muted-foreground">Benvenuto nel tuo campionato manageriale</p>
           <p className="text-sm text-muted-foreground mt-1">Stagione 2024/25</p>
         </div>

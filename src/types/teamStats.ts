@@ -1,0 +1,33 @@
+export type TeamStats = {
+    AGOL: number;
+    ASST: number;
+    Altezza: number;
+    CROS_SI: number;
+    CROS_TOT: number;
+    CTRS_SI: number;
+    CTRS_TOT: number;
+    Cognome: string;
+    DRIB_SI: number;
+    DRIB_TOT: number;
+    Età: number;
+    FALLI: number;
+    FGIOCO: number;
+    GIALLI: number;
+    GOL: number;
+    GSUB: number;
+    ID: number;
+    MINUTI: number;
+    Nome: string;
+    OVR: number;
+    PARA: number;
+    PASS_SI: number;
+    PASS_TOT: number
+    Peso: number;
+    Posiz: string;
+    ROSSI: number;
+    STAG: number;
+    TIRI_IN: number;
+    TIRI_TOT: number;
+    VOTO: number;
+    WEEK: number;
+};
