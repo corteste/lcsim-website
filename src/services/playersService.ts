@@ -8,6 +8,7 @@ export async function fetchPlayers(pageIndex = 1): Promise<Player[]> {
   const offset = pageIndex * LIMIT;
   const res = await fetch(`${EDGE_PLAYER_URL}`);
   const json = await res.json();
+  //console.log("Players fetched:", json.data);
   if (!res.ok) throw new Error(json?.error || 'Failed to fetch players');
   return json.data ?? [];
 }

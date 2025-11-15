@@ -49,7 +49,7 @@ const Rose = () => {
                     {team.players.map((player, playerIndex) => (
                       <div
                         key={playerIndex}
-                        className="grid grid-cols-[100px_1fr_100px_120px_120px] items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        className="grid grid-cols-[60px_1fr_100px_120px_120px] items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                       >
                         <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                           {player.Posiz}
