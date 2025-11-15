@@ -1,7 +1,8 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 const matches = [
@@ -96,8 +97,45 @@ const generateStats = (m: MatchRow) => {
 	} as const;
 };
 
+// Funzione per generare statistiche giocatori
+const generatePlayerStats = (teamName: string, isHome: boolean, match: MatchRow) => {
+	if (match.status !== "completed") return [];
+	
+	const numPlayers = 11;
+	const players = [];
+	
+	for (let i = 1; i <= numPlayers; i++) {
+		const baseRating = 5.5 + Math.random() * 3;
+		const goals = Math.random() > 0.85 ? 1 : 0;
+		const assists = Math.random() > 0.90 ? 1 : 0;
+		const yellowCards = Math.random() > 0.85 ? 1 : 0;
+		const redCards = Math.random() > 0.95 ? 1 : 0;
+		
+		players.push({
+			name: `Giocatore ${i}`,
+			number: i,
+			rating: (baseRating + goals * 0.5 + assists * 0.3 - redCards * 2).toFixed(1),
+			goals,
+			assists,
+			yellowCards,
+			redCards,
+			minutesPlayed: Math.floor(70 + Math.random() * 20),
+			passes: Math.floor(20 + Math.random() * 40),
+			passAccuracy: Math.floor(70 + Math.random() * 25),
+		});
+	}
+	
+	return players;
+};
+
 const Calendario = () => {
 	const [selected, setSelected] = useState<{ round: number; date: string; match: MatchRow } | null>(null);
+	const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+	
+	const handleCloseModal = () => {
+		setSelected(null);
+		setShowAdvancedStats(false);
+	};
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -170,10 +208,10 @@ const Calendario = () => {
 			{/* Modal / Popup per dettaglio partita */}
 			{selected && (
 				<div
-					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-					onClick={() => setSelected(null)}
+					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+					onClick={handleCloseModal}
 				>
-					<div className="w-full max-w-3xl p-4" onClick={(e) => e.stopPropagation()}>
+					<div className="w-full max-w-7xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
 						<Card className="shadow-xl">
 							<CardHeader>
 								<div className="flex items-start justify-between gap-4">
@@ -193,12 +231,14 @@ const Calendario = () => {
 												? `${selected.match.homeScore} - ${selected.match.awayScore}`
 												: "Non giocata"}
 										</div>
-										<button
-											onClick={() => setSelected(null)}
-											className="mt-3 px-3 py-1 rounded bg-muted/60 hover:bg-muted text-sm"
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={handleCloseModal}
+											className="mt-3"
 										>
 											Chiudi
-										</button>
+										</Button>
 									</div>
 								</div>
 							</CardHeader>
@@ -340,6 +380,94 @@ const Calendario = () => {
 										</div>
 									</div>
 								</div>
+								
+								{/* Pulsante statistiche avanzate */}
+								<div className="mt-6 pt-6 border-t">
+									<Button
+										variant="outline"
+										className="w-full"
+										onClick={() => setShowAdvancedStats(!showAdvancedStats)}
+									>
+										{showAdvancedStats ? (
+											<>
+												<ChevronUp className="h-4 w-4 mr-2" />
+												Nascondi statistiche avanzate
+											</>
+										) : (
+											<>
+												<ChevronDown className="h-4 w-4 mr-2" />
+												Mostra statistiche avanzate
+											</>
+										)}
+									</Button>
+								</div>
+								
+								{/* Sezione statistiche avanzate giocatori */}
+								{showAdvancedStats && selected.match.status === "completed" && (
+									<div className="mt-6 space-y-6">
+										<div className="border-t pt-6">
+											<h3 className="font-semibold text-lg mb-4">Statistiche Giocatori</h3>
+											
+											<div className="grid grid-cols-2 gap-6">
+												{/* Giocatori squadra casa */}
+												<div>
+													<h4 className="font-medium mb-3 text-primary">{selected.match.home}</h4>
+													<div className="space-y-2">
+														{generatePlayerStats(selected.match.home, true, selected.match).map((player, idx) => (
+															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
+																<div className="flex items-center justify-between mb-2">
+																	<div className="flex items-center gap-2">
+																		<span className="font-semibold text-sm">{player.number}</span>
+																		<span className="text-sm">{player.name}</span>
+																	</div>
+																	<Badge variant="outline" className="font-semibold">
+																		{player.rating}
+																	</Badge>
+																</div>
+																<div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+																	<div>⚽ {player.goals} | 🅰️ {player.assists}</div>
+																	<div>⏱️ {player.minutesPlayed}'</div>
+																	<div>🟨 {player.yellowCards} {player.redCards > 0 && "🟥"}</div>
+																</div>
+																<div className="mt-1 text-xs text-muted-foreground">
+																	Passaggi: {player.passes} ({player.passAccuracy}%)
+																</div>
+															</div>
+														))}
+													</div>
+												</div>
+												
+												{/* Giocatori squadra trasferta */}
+												<div>
+													<h4 className="font-medium mb-3 text-accent">{selected.match.away}</h4>
+													<div className="space-y-2">
+														{generatePlayerStats(selected.match.away, false, selected.match).map((player, idx) => (
+															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
+																<div className="flex items-center justify-between mb-2">
+																	<div className="flex items-center gap-2">
+																		<span className="font-semibold text-sm">{player.number}</span>
+																		<span className="text-sm">{player.name}</span>
+																	</div>
+																	<Badge variant="outline" className="font-semibold">
+																		{player.rating}
+																	</Badge>
+																</div>
+																<div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+																	<div>⚽ {player.goals} | 🅰️ {player.assists}</div>
+																	<div>⏱️ {player.minutesPlayed}'</div>
+																	<div>🟨 {player.yellowCards} {player.redCards > 0 && "🟥"}</div>
+																</div>
+																<div className="mt-1 text-xs text-muted-foreground">
+																	Passaggi: {player.passes} ({player.passAccuracy}%)
+																</div>
+															</div>
+														))}
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								)}
 							</CardContent>
 						</Card>
 					</div>
