@@ -42,3 +42,10 @@ switch (pos) {
     default: return "-";
   }
 }
+
+export const getContractStatus = (team: string) => {
+  if (team === "RITIRATO")
+    return "svi";
+   if (team !== "RITIRATO")
+    return "con";
+} 

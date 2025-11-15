@@ -3,61 +3,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BarChart3, TrendingUp, Award, Target } from "lucide-react";
+import { BarChart3, TrendingUp, Award, Target, ChartNoAxesColumn } from "lucide-react";
 import { useState } from "react";
-import { getRoleColor } from "@/utils/functions";
+import { getRoleColor, getPosGroup } from "@/utils/functions";
+import { getPlayersSumStats } from "@/hooks/use-players-stats";
+import { PlayerStatsSum } from "@/types/playerStats";
+import { getTeams } from "@/hooks/use-teams";
 
-const allStats = {
-  goalscorers: [
-    { name: "Alessandro Grigi", team: "FC Dragonslayers", goals: 12, role: "ATT" },
-    { name: "Gabriele Gialli", team: "Thunder United", goals: 11, role: "ATT" },
-    { name: "Matteo Arancio", team: "FC Dragonslayers", goals: 9, role: "ATT" },
-    { name: "Nicola Blu", team: "Thunder United", goals: 8, role: "ATT" },
-    { name: "Giuseppe Gialli", team: "FC Dragonslayers", goals: 7, role: "CEN" },
-  ],
-  assists: [
-    { name: "Giuseppe Gialli", team: "FC Dragonslayers", assists: 8, role: "CEN" },
-    { name: "Federico Bianchi", team: "Thunder United", assists: 7, role: "CEN" },
-    { name: "Francesco Blu", team: "FC Dragonslayers", assists: 6, role: "CEN" },
-    { name: "Lorenzo Neri", team: "Thunder United", assists: 5, role: "CEN" },
-    { name: "Antonio Viola", team: "FC Dragonslayers", assists: 4, role: "CEN" },
-  ],
-  ratings: [
-    { name: "Alessandro Grigi", team: "FC Dragonslayers", rating: 8.5, role: "ATT" },
-    { name: "Gabriele Gialli", team: "Thunder United", rating: 8.3, role: "ATT" },
-    { name: "Giuseppe Gialli", team: "FC Dragonslayers", rating: 8.2, role: "CEN" },
-    { name: "Federico Bianchi", team: "Thunder United", rating: 8.1, role: "CEN" },
-    { name: "Andrea Viola", team: "Average Pegiò Drivers", rating: 8.0, role: "ATT" },
-  ],
-};
+
 
 const Statistiche = () => {
   const [statType, setStatType] = useState<"goalscorers" | "assists" | "ratings">("goalscorers");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const { teams } = getTeams();
+  const { playersStats } = getPlayersSumStats(8,null,null);
 
-  const currentStats = allStats[statType];
-  const filteredStats = currentStats.filter(
-  player =>
-    (teamFilter === "all" || player.team === teamFilter) &&
-    (roleFilter === "all" || player.role === roleFilter)
-);
+  const filteredStats = playersStats.filter(
+    player =>
+      (teamFilter === "all" || player.Squadra === teamFilter) &&
+      (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter)
+  ).sort(sortPlayersStats);
 
+  function sortPlayersStats(a: PlayerStatsSum, b: PlayerStatsSum) {
+  switch (statType) {
+    case "goalscorers":
+      return b.sum_gol - a.sum_gol;
+    case "assists":
+      return b.sum_asst - a.sum_asst;
+    case "ratings":
+      return (Math.round(((b.sum_voto/b.matches_played) - (a.sum_voto/a.matches_played))* 100) / 100);
+    // return (Math.round((b.sum_voto/b.matches_played) * 100) / 100) - Math.round((a.sum_voto/a.matches_played) * 100) / 100;
+    default:
+      return 0;
+  }
+}
 
   const getStatLabel = () => {
     switch (statType) {
-      case "goalscorers": return "Gol";
+      case "goalscorers": return "Goal";
       case "assists": return "Assist";
       case "ratings": return "Voto Medio";
     }
   };
 
-  const getStatValue = (player: any) => {
+  const getStatValue = (player: PlayerStatsSum) => {
     switch (statType) {
-      case "goalscorers": return player.goals;
-      case "assists": return player.assists;
-      case "ratings": return player.rating;
+      case "goalscorers": return player.sum_gol;
+      case "assists": return player.sum_asst;
+      case "ratings": return Math.round((player.sum_voto/player.matches_played) * 100) / 100;
     }
   };
 
@@ -84,7 +79,9 @@ const Statistiche = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Tipo di Statistica</label>
-                <Select value={statType} onValueChange={(value: any) => setStatType(value)}>
+                <Select value={statType} onValueChange={(value: any) => {
+                  setStatType(value)                  
+                  }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -103,7 +100,7 @@ const Statistiche = () => {
                     </SelectItem>
                     <SelectItem value="ratings">
                       <div className="flex items-center gap-2">
-                        <Award className="h-4 w-4" />
+                        <ChartNoAxesColumn className="h-4 w-4" />
                         Voti Medi
                       </div>
                     </SelectItem>
@@ -135,9 +132,9 @@ const Statistiche = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tutte le Squadre</SelectItem>
-                    <SelectItem value="FC Dragonslayers">FC Dragonslayers</SelectItem>
-                    <SelectItem value="Average Pegiò Drivers">Average Pegiò Drivers</SelectItem>
-                    <SelectItem value="Thunder United">Thunder United</SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem value={team.TEAM_ID}>{team.NAME}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -151,13 +148,13 @@ const Statistiche = () => {
             <CardTitle className="flex items-center gap-2">
               {statType === "goalscorers" && <Target className="h-5 w-5 text-primary" />}
               {statType === "assists" && <TrendingUp className="h-5 w-5 text-primary" />}
-              {statType === "ratings" && <Award className="h-5 w-5 text-primary" />}
+              {statType === "ratings" && <ChartNoAxesColumn className="h-5 w-5 text-primary" />}
               {statType === "goalscorers" && "Classifica Marcatori"}
               {statType === "assists" && "Classifica Assist"}
               {statType === "ratings" && "Migliori Voti Medi"}
             </CardTitle>
             <CardDescription>
-              {filteredStats.length} giocatori trovati
+              {playersStats.length} giocatori trovati
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -174,12 +171,12 @@ const Statistiche = () => {
                     </div>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{player.name}</span>
-                        <Badge variant="outline" className={getRoleColor(player.role)}>
-                          {player.role}
+                        <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                        <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                          {player.Posiz}
                         </Badge>
                       </div>
-                      <span className="text-sm text-muted-foreground">{player.team}</span>
+                      <span className="text-sm text-muted-foreground">{teams.find(t => t.TEAM_ID === player.Squadra)?.NAME ?? "-" } </span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
@@ -215,11 +212,11 @@ const Statistiche = () => {
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Squadra</p>
-                    <p className="font-medium">{selectedPlayer.team}</p>
+                    <p className="font-medium">{selectedPlayer.Squadra}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Ruolo</p>
-                    <p className="font-medium">{selectedPlayer.role}</p>
+                    <p className="font-medium">{selectedPlayer.Posiz}</p>
                   </div>
                 </CardContent>
               </Card>

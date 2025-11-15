@@ -1,0 +1,91 @@
+export type PlayerStats = {
+    AGOL: number;
+    ASST: number;
+    Altezza: number;
+    CROS_SI: number;
+    CROS_TOT: number;
+    CTRS_SI: number;
+    CTRS_TOT: number;
+    Cognome: string;
+    DRIB_SI: number;
+    DRIB_TOT: number;
+    Età: number;
+    FALLI: number;
+    FGIOCO: number;
+    GIALLI: number;
+    GOL: number;
+    GSUB: number;
+    ID: number;
+    MINUTI: number;
+    Nome: string;
+    OVR: number;
+    PARA: number;
+    PASS_SI: number;
+    PASS_TOT: number
+    Peso: number;
+    Posiz: string;
+    ROSSI: number;
+    STAG: number;
+    TIRI_IN: number;
+    TIRI_TOT: number;
+    VOTO: number;
+    WEEK: number;
+};
+
+export type PlayerStatsAvg = {
+    Cognome: string;
+    ID: number;
+    Nome: string;
+    avg_agol: number;
+    avg_asst: number;
+    avg_cros_si: number;
+    avg_cros_tot: number;
+    avg_ctrs_si: number;
+    avg_ctrs_tot: number;
+    avg_drib_si: number;
+    avg_drib_tot: number;
+    avg_falli: number;
+    avg_fgioco: number;
+    avg_gialli: number;
+    avg_gol: number;
+    avg_gsub: number;
+    avg_minuti: number;
+    avg_para: number;
+    avg_pass_si: number;
+    avg_pass_tot: number;
+    avg_rossi: number;
+    avg_tiri_in: number;
+    avg_tiri_tot: number;
+    avg_voto: number;
+    matches_played: number;
+}
+
+export type PlayerStatsSum = {
+    Cognome: string;
+    ID: number;
+    Nome: string;
+    Posiz: string;
+    Squadra: string;
+    sum_agol: number;
+    sum_asst: number;
+    sum_cros_si: number;
+    sum_cros_tot: number;
+    sum_ctrs_si: number;
+    sum_ctrs_tot: number;
+    sum_drib_si: number;
+    sum_drib_tot: number;
+    sum_falli: number;
+    sum_fgioco: number;
+    sum_gialli: number;
+    sum_gol: number;
+    sum_gsub: number;
+    sum_minuti: number;
+    sum_para: number;
+    sum_pass_si: number;
+    sum_pass_tot: number;
+    sum_rossi: number;
+    sum_tiri_in: number;
+    sum_tiri_tot: number;
+    sum_voto: number;
+    matches_played: number;
+}
