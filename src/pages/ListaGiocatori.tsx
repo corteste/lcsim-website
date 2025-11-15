@@ -172,41 +172,42 @@ const ListaGiocatori = () => {
               {currentPlayers.map((player, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  className="grid grid-cols-[80px_minmax(200px,1fr)_100px_100px_100px_180px] gap-4 items-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 font-bold text-primary">
-                      {player.OVR}
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{player.Nome} {player.Cognome}</span>
-                        <Badge variant="outline" className={getRoleColor(player.Posiz)}>
-                          {player.Posiz}
-                        </Badge>
-                      </div>
-                      <span className="text-sm text-muted-foreground">{player.Squadra}</span>
-                    </div>
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 font-bold text-primary text-lg">
+                    {player.OVR}
                   </div>
-                  <div className="flex flex-col items-end">
+                  
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium truncate">{player.Nome} {player.Cognome}</span>
+                      <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                        {player.Posiz}
+                      </Badge>
+                    </div>
+                    <span className="text-sm text-muted-foreground truncate">{player.Squadra}</span>
+                  </div>
+                  
+                  <div className="flex flex-col items-center">
                     <span className="text-sm text-muted-foreground">Età</span>
                     <span className="font-bold text-primary text-lg">{player.Età}</span>
                   </div>
-                  <div className="flex flex-col items-end">
+                  
+                  <div className="flex flex-col items-center">
                     <span className="text-sm text-muted-foreground">Piede</span>
                     <span className="font-bold text-primary text-lg">{player.Piede}</span>
                   </div>
-                  <div className="flex flex-col items-end">
+                  
+                  <div className="flex flex-col items-center">
                     <span className="text-sm text-muted-foreground">XP</span>
                     <span className="font-bold text-primary text-lg">{player.XP}</span>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-sm text-muted-foreground">Market Status</span>
-                    <span>
+                  
+                  <div className="flex flex-col items-center">
+                    <span className="text-sm text-muted-foreground mb-1">Market Status</span>
                     <Badge variant="outline" className={getMarketStatus(player.MarketStatus)}>
                       {getMarketStatusDisplay(player.MarketStatus)}
                     </Badge>
-                    </span>
                   </div>
                 </div>
               ))}
