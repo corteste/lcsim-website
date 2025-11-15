@@ -1,3 +1,5 @@
+import { MarketStatus } from "./marketStatus";
+
 export type Player = {
     ID: number;
     Nome: string;
@@ -59,4 +61,5 @@ export type Player = {
     MABI: number | null;
     Tratti: string | null;
     RuoloInCampo: string | null;
+    MarketStatus: MarketStatus | null;
 };

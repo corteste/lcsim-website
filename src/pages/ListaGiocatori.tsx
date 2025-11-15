@@ -7,14 +7,27 @@ import { BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getRoleColor, getPosGroup } from "@/utils/functions";
 import { getPlayers } from "@/hooks/use-players";
+import { MarketStatus } from "@/types/marketStatus";
 
-const getMarketStatus = (status: string) => {
-  switch (status) {
+const getMarketStatus = (market: MarketStatus) => {
+  if(market === null) return "bg-muted";
+  switch (market.Status) {
     case "int": return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20";
     case "ced": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
     case "tra": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
     case "fis": return "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20";
     default: return "bg-muted";
+  }
+};
+
+const getMarketStatusDisplay = (market: MarketStatus) => {
+  if(market === null) return "N/A";
+  switch (market.Status) {
+    case "int": return "Intoccabile";
+    case "ced": return "Cedibile";
+    case "tra": return "Possibili Trattative";
+    case "fis": return "Titolare Fisso";
+    default: return "N/A";
   }
 };
 
@@ -36,9 +49,9 @@ const ListaGiocatori = () => {
   const filteredStats = players.filter(
     player =>
       (teamFilter === "all" || player.Squadra === teamFilter) &&
-      (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) //&&
-      //(contractFilter === "all" || player.contractStatus === contractFilter) &&
-      //(marketFilter === "all" || player.marketStatus === marketFilter)
+      (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) &&
+      (marketFilter === "all" || player.MarketStatus?.Status === marketFilter) //&&
+      //(contractFilter === "all" || player.contractStatus === contractFilter)
   );
 
   // Calculate pagination
@@ -176,15 +189,23 @@ const ListaGiocatori = () => {
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-sm text-muted-foreground">Overall</span>
-                    <span className="font-bold text-primary text-2xl">{player.OVR ? player.OVR : "-"}</span>
+                    <span className="text-sm text-muted-foreground">Età</span>
+                    <span className="font-bold text-primary text-lg">{player.Età}</span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm text-muted-foreground">Piede</span>
+                    <span className="font-bold text-primary text-lg">{player.Piede}</span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm text-muted-foreground">XP</span>
+                    <span className="font-bold text-primary text-lg">{player.XP}</span>
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-sm text-muted-foreground">Market Status</span>
-                    <span className="font-bold text-primary text-2xl"> -
-                      {/* <Badge variant="outline" className={getMarketStatus(player.marketStatus)}>
-                      {player.marketStatus}
-                    </Badge> */}
+                    <span>
+                    <Badge variant="outline" className={getMarketStatus(player.MarketStatus)}>
+                      {getMarketStatusDisplay(player.MarketStatus)}
+                    </Badge>
                     </span>
                   </div>
                 </div>
