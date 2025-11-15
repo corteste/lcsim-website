@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getRoleColor, getPosGroup } from "@/utils/functions";
+import { getRoleColor, getPosGroup, getContractStatus } from "@/utils/functions";
 import { getPlayers } from "@/hooks/use-players";
 import { MarketStatus } from "@/types/marketStatus";
+import { getTeams } from "@/hooks/use-teams";
 
 const getMarketStatus = (market: MarketStatus) => {
   if(market === null) return "bg-muted";
@@ -39,7 +40,9 @@ const ListaGiocatori = () => {
   const [contractFilter, setContractFilter] = useState<string>("all");
   const [marketFilter, setMarketFilter] = useState<string>("all");
   const { players } = getPlayers();
+  const { teams } = getTeams();
   const [currentPage, setCurrentPage] = useState(1);
+  
   
   // Reset page when filters change
   useEffect(() => {
@@ -50,8 +53,8 @@ const ListaGiocatori = () => {
     player =>
       (teamFilter === "all" || player.Squadra === teamFilter) &&
       (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) &&
-      (marketFilter === "all" || player.MarketStatus?.Status === marketFilter) //&&
-      //(contractFilter === "all" || player.contractStatus === contractFilter)
+      (marketFilter === "all" || player.MarketStatus?.Status === marketFilter) &&
+      (contractFilter === "all" || getContractStatus(player.Squadra) === contractFilter)
   );
 
   // Calculate pagination
@@ -94,9 +97,9 @@ const ListaGiocatori = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tutte le Squadre</SelectItem>
-                    <SelectItem value="FC Dragonslayers">FC Dragonslayers</SelectItem>
-                    <SelectItem value="APD">Average Pegiò Drivers</SelectItem>
-                    <SelectItem value="Thunder United">Thunder United</SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem value={team.TEAM_ID}>{team.NAME}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -185,7 +188,7 @@ const ListaGiocatori = () => {
                         {player.Posiz}
                       </Badge>
                     </div>
-                    <span className="text-sm text-muted-foreground truncate">{player.Squadra}</span>
+                    <span className="text-sm text-muted-foreground truncate">{teams.find(t => t.TEAM_ID === player.Squadra)?.NAME ?? "-"}</span>
                   </div>
                   
                   <div className="flex flex-col items-center">
