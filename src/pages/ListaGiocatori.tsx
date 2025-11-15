@@ -27,7 +27,7 @@ const getMarketStatusDisplay = (market: MarketStatus) => {
     case "int": return "Intoccabile";
     case "ced": return "Cedibile";
     case "tra": return "Possibili Trattative";
-    case "fis": return "Titolare Fisso";
+    case "fis": return "Elemento Fisso";
     default: return "N/A";
   }
 };

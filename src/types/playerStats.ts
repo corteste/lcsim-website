@@ -30,6 +30,7 @@ export type PlayerStats = {
     TIRI_TOT: number;
     VOTO: number;
     WEEK: number;
+    Squadra: string;
 };
 
 export type PlayerStatsAvg = {

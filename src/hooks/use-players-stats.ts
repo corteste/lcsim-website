@@ -1,6 +1,28 @@
 import { useEffect, useState } from "react";
-import { PlayerStatsAvg, PlayerStatsSum } from "../types/playerStats";
+import { PlayerStatsAvg, PlayerStatsSum, PlayerStats } from "../types/playerStats";
 import { fetchPlayerSumBySeason, fetchPlayerAvgBySeason, fetchPlayerStatsByPlayer, fetchPlayerStatsByTeam } from "@/services/playerStatsService";
+
+export function getPlayersStatsRound(season?: number,week?: number,team?: String) {
+  const [playersStats, setPlayersStats] = useState<PlayerStatsAvg[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<any>(null);
+  useEffect(() => {
+    async function fetchPlayerStatsWrapper() {
+      if (season !== null) {
+        console.log("Fetching players for season:", season);
+        fetchPlayerAvgBySeason(season)
+      .then(setPlayersStats)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+      } 
+      setLoading(false);
+    }
+
+    fetchPlayerStatsWrapper();
+  }, [season, week, team]);
+
+  return { playersStats, loading, error };
+}
 
 export function getPlayersSumStats(season?: number,player?: String,team?: String) {
   const [playersStats, setPlayersSumStats] = useState<PlayerStatsSum[]>([]);

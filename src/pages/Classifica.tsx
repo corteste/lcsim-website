@@ -55,6 +55,10 @@ const Classifica = () => {
                   <TableHead className="text-center">V</TableHead>
                   <TableHead className="text-center">N</TableHead>
                   <TableHead className="text-center">P</TableHead>
+                  <TableHead className="text-center">GF</TableHead>
+                  <TableHead className="text-center">GS</TableHead>
+                  <TableHead className="text-center">DR</TableHead>
+                  <TableHead className="text-center">Casa</TableHead>
                   <TableHead className="text-center font-bold">Punti</TableHead>
                 </TableRow>
               </TableHeader>
@@ -72,6 +76,10 @@ const Classifica = () => {
                     <TableCell className="text-center">{team.won}</TableCell>
                     <TableCell className="text-center">{team.drawn}</TableCell>
                     <TableCell className="text-center">{team.lost}</TableCell>
+                    <TableCell className="text-center">2</TableCell>
+                    <TableCell className="text-center">2</TableCell>
+                    <TableCell className="text-center">+1</TableCell>
+                    <TableCell className="text-center">3</TableCell>
                     <TableCell className="text-center font-bold text-primary">
                       {team.points}
                     </TableCell>
