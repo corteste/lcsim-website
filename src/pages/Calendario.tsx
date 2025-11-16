@@ -6,158 +6,66 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/supabaseClient";
 import { useState, useEffect } from "react";
 import { PlayerStats } from "@/types/playerStats";
-import { TeamStats } from "@/types/teamStats";
 import { Schedule } from "@/types/schedule";
-
-const matches = [
-	{
-		round: 11,
-		date: "2024-12-15",
-		matches: [
-			{ home: "FC Dragonslayers", away: "Sharks FC", homeScore: null, awayScore: null, status: "scheduled" },
-			{ home: "Thunder United", away: "Lions SC", homeScore: null, awayScore: null, status: "scheduled" },
-			{ home: "Phoenix Rising", away: "Eagles United", homeScore: null, awayScore: null, status: "scheduled" },
-			{ home: "Warriors Club", away: "Titans FC", homeScore: null, awayScore: null, status: "scheduled" },
-		],
-	},
-	{
-		round: 10,
-		date: "2024-12-08",
-		matches: [
-			{ home: "FC Dragonslayers", away: "Thunder United", homeScore: 2, awayScore: 1, status: "completed" },
-			{ home: "Phoenix Rising", away: "Warriors Club", homeScore: 3, awayScore: 3, status: "completed" },
-			{ home: "Titans FC", away: "Eagles United", homeScore: 1, awayScore: 0, status: "completed" },
-			{ home: "Sharks FC", away: "Lions SC", homeScore: 2, awayScore: 2, status: "completed" },
-		],
-	},
-	{
-		round: 9,
-		date: "2024-12-01",
-		matches: [
-			{ home: "Thunder United", away: "Phoenix Rising", homeScore: 1, awayScore: 2, status: "completed" },
-			{ home: "Warriors Club", away: "FC Dragonslayers", homeScore: 0, awayScore: 3, status: "completed" },
-			{ home: "Eagles United", away: "Sharks FC", homeScore: 2, awayScore: 1, status: "completed" },
-			{ home: "Lions SC", away: "Titans FC", homeScore: 1, awayScore: 1, status: "completed" },
-		],
-	},
-];
-
-type MatchRow = {
-	home: string;
-	away: string;
-	homeScore: number | null;
-	awayScore: number | null;
-	status: "scheduled" | "completed";
-};
-
-type Round = {
-	round: number;
-	date: string;
-	matches: MatchRow[];
-};
-
-const generateStats = (m: MatchRow) => {
-	// deterministic simple stats derived from score when available
-	if (m.status === "completed" && m.homeScore !== null && m.awayScore !== null) {
-		const totalGoals = m.homeScore + m.awayScore;
-		const homeAdv = m.homeScore - m.awayScore;
-		const possessionHome = Math.max(20, Math.min(80, 50 + homeAdv * 6));
-		const possessionAway = 100 - possessionHome;
-		const shotsHome = 6 + Math.max(0, m.homeScore) * 3 + Math.max(0, Math.min(4, homeAdv));
-		const shotsAway = 6 + Math.max(0, m.awayScore) * 3 + Math.max(0, Math.min(4, -homeAdv));
-		const shotsOnTargetHome = Math.max(0, Math.round(shotsHome * 0.45));
-		const shotsOnTargetAway = Math.max(0, Math.round(shotsAway * 0.4));
-		const cornersHome = Math.max(0, Math.round(shotsHome / 3));
-		const cornersAway = Math.max(0, Math.round(shotsAway / 3));
-		const foulsHome = 8 + Math.abs(homeAdv) * 2;
-		const foulsAway = 8 + Math.abs(homeAdv) * 2 - (homeAdv > 0 ? 1 : 0);
-
-		return {
-			possessionHome,
-			possessionAway,
-			shotsHome,
-			shotsAway,
-			shotsOnTargetHome,
-			shotsOnTargetAway,
-			cornersHome,
-			cornersAway,
-			foulsHome,
-			foulsAway,
-		};
-	}
-
-	
-
-	// scheduled -> placeholder / N/D values
-	return {
-		possessionHome: "N/D",
-		possessionAway: "N/D",
-		shotsHome: "N/D",
-		shotsAway: "N/D",
-		shotsOnTargetHome: "N/D",
-		shotsOnTargetAway: "N/D",
-		cornersHome: "N/D",
-		cornersAway: "N/D",
-		foulsHome: "N/D",
-		foulsAway: "N/D",
-	} as const;
-};
+import { MatchStats } from "@/types/teamStats";
 
 const Calendario = () => {
-	const [selected, setSelected] = useState<{ round: number; date: string; match: MatchRow } | null>(null);
+	const [selected, setSelected] = useState<{ week: number; date: string; match: MatchStats } | null>(null);
 	const [showAdvancedStats, setShowAdvancedStats] = useState(false);
 	const [playersStats, setPlayersStats] = useState<PlayerStats[]>([]);
 	const [schedule, setSchedule] = useState<Schedule[]>([]);
-	
+
 	// PER ORDINE FORMAZIONE
 	const rolePriority: Record<string, number> = {
-  	POR: 0,TD: 1,DC: 2,TS: 3,CDC: 4,ED: 5,CC: 6,ES: 7,COC: 8,AD: 9,AS: 10,AT: 11,ATT: 12
+		POR: 0, TD: 1, DC: 2, TS: 3, CDC: 4, ED: 5, CC: 6, ES: 7, COC: 8, AD: 9, AS: 10, AT: 11, ATT: 12
 	};
-	
+
 	const sortedPlayers = playersStats.sort(
-  	(a, b) => rolePriority[a.Posiz] - rolePriority[b.Posiz]
+		(a, b) => rolePriority[a.Posiz] - rolePriority[b.Posiz]
 	);
+
+	// popolo il calendario con i risultati
+	useEffect(() => {
+		async function fetchStats() {
+			let temp: Schedule[] = [];
+			
+			// per invertire ordine di visualizzazione fare for al contrario
+			for (var i = 0; i < 2; i++) {
+				const { data, error } = await supabase.from("view_team_stats").select("*").eq('stag', 8).eq('week', i + 1);
+				// console.log("Fetch statistiche per giornata:");
+				// console.log(data);
+				temp[i] = {
+					week: i + 1,
+					matches: data
+				};
+				
+				if (error) console.error(error);
+			}
+			setSchedule(temp);
+		}
+		fetchStats();
+	}, []);
 
 	// get di tutte le statistiche per la stagione corrente, poi nel selected bisogna fare la get per squadra e per week
 	useEffect(() => {
-		  async function fetchStats() {
+		async function fetchStats() {
 			const { data, error } = await supabase.from("VIEW_PLAYER_STATS").select("*").eq('Squadra', 'APD').eq('STAG', 8).eq('WEEK', 4); // filtrare per squadra dell'utente
 			// console.log("Fetch statistiche per squadra e giornata:");
 			// console.log(data);
 			if (error) console.error(error);
 			else setPlayersStats(data || []);
-		  }
-		  fetchStats();
-		}, []);
+		}
+		fetchStats();
+	}, []);
 
-		// get di tutte le statistiche per la stagione corrente, poi nel selected bisogna fare la get per squadra e per week
-	useEffect(() => {
-		  async function fetchStats() {
-			let temp: Schedule[] = [];
 
-			for(var i=0; i<2;i++){
-			const { data, error } = await supabase.from("view_team_stats").select("*").eq('stag', 8).eq('week', i+1); // filtrare per squadra dell'utente
-			// console.log("Fetch statistiche per giornata:");
-			// console.log(data);
-			temp[i] = {
-			week: i+1,
-			matches: data
-			};
-
-			if (error) console.error(error);
-			}
-			setSchedule(temp);
-		  }
-		  fetchStats();
-		}, []);
 
 	const handleCloseModal = () => {
 		setSelected(null);
 		setShowAdvancedStats(false);
 	};
 
-	// console.log("Fetch schedule per giornata:");
-	// 		console.log(schedule);
+	console.log(schedule);
 	return (
 		<div className="min-h-screen bg-background">
 			<Navbar />
@@ -198,10 +106,11 @@ const Calendario = () => {
 									{round.matches.map((match, index) => (
 										<div
 											key={index}
-											// onClick={() => setSelected({ round: round.round, date: round.date, match })}
+											onClick={() => setSelected({ week: round.week, date: new Date().toLocaleDateString("it-IT", { weekday: "long", year: "numeric", month: "long", day: "numeric", }), match })}
 											className="flex items-center justify-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
 										>
 											<div className="flex items-center gap-4">
+												<img src={`/src/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-8 w-8 object-contain" />
 												<span className="font-medium text-right w-48">{match.home_team}</span>
 												<div className="flex items-center gap-3 min-w-[80px] justify-center">
 													{match.away_minuti != 0 ? (
@@ -215,6 +124,8 @@ const Calendario = () => {
 													)}
 												</div>
 												<span className="font-medium w-48">{match.away_team}</span>
+												
+												<img src={`/src/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-8 w-8 object-contain" />
 											</div>
 										</div>
 									))}
@@ -237,24 +148,24 @@ const Calendario = () => {
 								<div className="flex items-start justify-between gap-4">
 									<div>
 										<CardTitle className="flex items-center gap-2">
-										{selected.match.status === "completed" ? (
-											<>
-											{selected.match.home}
-											<span className="text-primary font-bold">{selected.match.homeScore}</span>
-											<span className="text-muted-foreground font-medium">-</span> 
-											<span className="text-primary font-bold">{selected.match.awayScore}</span>
-											{selected.match.away}
-											</>
-										) : (
-											<>
-											{selected.match.home} 
-											<span className="text-muted-foreground font-medium">-</span> 
-											{selected.match.away}
-											</>
-										)}
+											{selected.match.home_minuti > 0 ? (
+												<>
+													{selected.match.home_team}
+													<span className="text-primary font-bold">{selected.match.home_gol}</span>
+													<span className="text-muted-foreground font-medium">-</span>
+													<span className="text-primary font-bold">{selected.match.away_gol}</span>
+													{selected.match.away_team}
+												</>
+											) : (
+												<>
+													{selected.match.home_team}
+													<span className="text-muted-foreground font-medium">-</span>
+													{selected.match.away_team}
+												</>
+											)}
 										</CardTitle>
 										<CardDescription>
-											Giornata {selected.round} —{" "}
+											Giornata {selected.week} —{" "}
 											{new Date(selected.date).toLocaleDateString("it-IT")}
 										</CardDescription>
 									</div>
@@ -273,7 +184,7 @@ const Calendario = () => {
 									<div>
 										<h3 className="font-semibold mb-2">Statistiche principali</h3>
 										{(() => {
-											const s = generateStats(selected.match);
+											// const s = generateStats(selected.match);
 
 											const renderBar = (left: number | string, right: number | string) => {
 												if (typeof left !== "number" || typeof right !== "number") {
@@ -304,12 +215,12 @@ const Calendario = () => {
 														<div className="flex justify-between mb-1">
 															<span>Possesso palla</span>
 															<span>
-																{typeof s.possessionHome === "number"
-																	? `${s.possessionHome}% - ${s.possessionAway}%`
+																{typeof selected.match.home_poss === "number"
+																	? `${Math.round(selected.match.home_poss * 100)}% - ${Math.round(selected.match.away_poss * 100)}%`
 																	: "N/D"}
 															</span>
 														</div>
-														{renderBar(s.possessionHome, s.possessionAway)}
+														{renderBar(selected.match.home_poss, selected.match.away_poss)}
 													</div>
 
 													{/* Tiri */}
@@ -317,12 +228,12 @@ const Calendario = () => {
 														<div className="flex justify-between mb-1">
 															<span>Tiri</span>
 															<span>
-																{typeof s.shotsHome === "number"
-																	? `${s.shotsHome} - ${s.shotsAway}`
+																{typeof selected.match.home_tiri_tot === "number"
+																	? `${selected.match.home_tiri_tot} - ${selected.match.away_tiri_tot}`
 																	: "N/D"}
 															</span>
 														</div>
-														{renderBar(s.shotsHome, s.shotsAway)}
+														{renderBar(selected.match.home_tiri_tot, selected.match.away_tiri_tot)}
 													</div>
 
 													{/* Tiri in porta */}
@@ -330,12 +241,12 @@ const Calendario = () => {
 														<div className="flex justify-between mb-1">
 															<span>Tiri in porta</span>
 															<span>
-																{typeof s.shotsOnTargetHome === "number"
-																	? `${s.shotsOnTargetHome} - ${s.shotsOnTargetAway}`
+																{typeof selected.match.home_tiri_si === "number"
+																	? `${selected.match.home_tiri_si} - ${selected.match.away_tiri_si}`
 																	: "N/D"}
 															</span>
 														</div>
-														{renderBar(s.shotsOnTargetHome, s.shotsOnTargetAway)}
+														{renderBar(selected.match.home_tiri_si, selected.match.away_tiri_si)}
 													</div>
 
 													{/* Calci d'angolo */}
@@ -343,12 +254,12 @@ const Calendario = () => {
 														<div className="flex justify-between mb-1">
 															<span>Calci d'angolo</span>
 															<span>
-																{typeof s.cornersHome === "number"
-																	? `${s.cornersHome} - ${s.cornersAway}`
+																{typeof selected.match.home_cangl === "number"
+																	? `${selected.match.home_cangl} - ${selected.match.away_cangl}`
 																	: "N/D"}
 															</span>
 														</div>
-														{renderBar(s.cornersHome, s.cornersAway)}
+														{renderBar(selected.match.home_cangl, selected.match.away_cangl)}
 													</div>
 
 													{/* Falli */}
@@ -356,12 +267,12 @@ const Calendario = () => {
 														<div className="flex justify-between mb-1">
 															<span>Falli</span>
 															<span>
-																{typeof s.foulsHome === "number"
-																	? `${s.foulsHome} - ${s.foulsAway}`
+																{typeof selected.match.home_falli === "number"
+																	? `${selected.match.home_falli} - ${selected.match.away_falli}`
 																	: "N/D"}
 															</span>
 														</div>
-														{renderBar(s.foulsHome, s.foulsAway)}
+														{renderBar(selected.match.home_falli, selected.match.away_falli)}
 													</div>
 												</div>
 											);
@@ -408,7 +319,7 @@ const Calendario = () => {
 								</div>
 
 								{/* Sezione statistiche avanzate giocatori */}
-								{showAdvancedStats && selected.match.status === "completed" && (
+								{showAdvancedStats && selected.match.home_minuti > 0 && (
 									<div className="mt-6 space-y-6">
 										<div className="border-t pt-6">
 											<h3 className="font-semibold text-lg mb-4">Statistiche Giocatori</h3>
@@ -416,7 +327,7 @@ const Calendario = () => {
 											<div className="grid grid-cols-2 gap-6">
 												{/* Giocatori squadra casa */}
 												<div>
-													<h4 className="font-medium mb-3 text-primary">{selected.match.home}</h4>
+													<h4 className="font-medium mb-3 text-primary">{selected.match.home_team}</h4>
 													<div className="space-y-2">
 														{sortedPlayers.map((player, idx) => (
 															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
@@ -446,7 +357,7 @@ const Calendario = () => {
 
 												{/* Giocatori squadra trasferta */}
 												<div>
-													<h4 className="font-medium mb-3 text-accent">{selected.match.away}</h4>
+													<h4 className="font-medium mb-3 text-accent">{selected.match.away_team}</h4>
 													<div className="space-y-2">
 														{sortedPlayers.map((player, idx) => (
 															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
