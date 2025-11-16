@@ -1,20 +1,13 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getStandings } from "@/hooks/use-standings";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
-const mockStandings = [
-  { position: 1, team: "FC Dragonslayers", played: 10, won: 8, drawn: 1, lost: 1, points: 25, trend: "up" },
-  { position: 2, team: "Thunder United", played: 10, won: 7, drawn: 2, lost: 1, points: 23, trend: "same" },
-  { position: 3, team: "Phoenix Rising", played: 10, won: 6, drawn: 3, lost: 1, points: 21, trend: "up" },
-  { position: 4, team: "Titans FC", played: 10, won: 6, drawn: 2, lost: 2, points: 20, trend: "down" },
-  { position: 5, team: "Warriors Club", played: 10, won: 5, drawn: 3, lost: 2, points: 18, trend: "same" },
-  { position: 6, team: "Eagles United", played: 10, won: 4, drawn: 4, lost: 2, points: 16, trend: "up" },
-  { position: 7, team: "Lions SC", played: 10, won: 4, drawn: 3, lost: 3, points: 15, trend: "down" },
-  { position: 8, team: "Sharks FC", played: 10, won: 3, drawn: 3, lost: 4, points: 12, trend: "same" },
-];
-
 const Classifica = () => {
+
+  const { standings } = getStandings();
+  console.log(standings);
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case "up":
@@ -49,7 +42,7 @@ const Classifica = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16 text-center">Pos.</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-16"></TableHead>
                   <TableHead>Squadra</TableHead>
                   <TableHead className="text-center">G</TableHead>
                   <TableHead className="text-center">V</TableHead>
@@ -63,23 +56,23 @@ const Classifica = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockStandings.map((team) => (
-                  <TableRow key={team.position} className="hover:bg-muted/50 transition-colors">
+                {standings.map((team,index) => (
+                  <TableRow key={index} className="hover:bg-muted/50 transition-colors">
                     <TableCell className="text-center font-bold">
-                      {team.position}
+                      {index+1}
                     </TableCell>
                     <TableCell className="text-center">
-                      {getTrendIcon(team.trend)}
+                      <img src={`/src/images/teams/${team.team.TEAM_ID}_Logo.png`} alt={`${team.team.TEAM_ID} Logo`} className="h-8 w-8 object-contain" />
                     </TableCell>
-                    <TableCell className="font-medium">{team.team}</TableCell>
-                    <TableCell className="text-center">{team.played}</TableCell>
-                    <TableCell className="text-center">{team.won}</TableCell>
-                    <TableCell className="text-center">{team.drawn}</TableCell>
-                    <TableCell className="text-center">{team.lost}</TableCell>
-                    <TableCell className="text-center">2</TableCell>
-                    <TableCell className="text-center">2</TableCell>
-                    <TableCell className="text-center">+1</TableCell>
-                    <TableCell className="text-center">3</TableCell>
+                    <TableCell className="font-medium">{team.team.NAME}</TableCell>
+                    <TableCell className="text-center">{team.games_played}</TableCell>
+                    <TableCell className="text-center">{team.win}</TableCell>
+                    <TableCell className="text-center">{team.draws}</TableCell>
+                    <TableCell className="text-center">{team.loss}</TableCell>
+                    <TableCell className="text-center">{team.goal_made}</TableCell>
+                    <TableCell className="text-center">{team.goal_conceded}</TableCell>
+                    <TableCell className="text-center">{team.goal_difference}</TableCell>
+                    <TableCell className="text-center">{team.played_at_home}</TableCell>
                     <TableCell className="text-center font-bold text-primary">
                       {team.points}
                     </TableCell>
