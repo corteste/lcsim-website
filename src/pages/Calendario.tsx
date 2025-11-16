@@ -12,8 +12,8 @@ import { fetchSchedule } from "@/services/scheduleService";
 const Calendario = () => {
 	const [selected, setSelected] = useState<{ week: number; date: string; match: MatchStats } | null>(null);
 	const [showAdvancedStats, setShowAdvancedStats] = useState(false);
-	const [playersStats, setPlayersStats] = useState<PlayerStats[]>([]);
 	const [schedule, setSchedule] = useState<Schedule[]>([]);
+	const [loading, setLoading] = useState<boolean>(true); // stato per lo spinner
 
 	// PER ORDINE FORMAZIONE
 	const rolePriority: Record<string, number> = {
@@ -29,6 +29,7 @@ const Calendario = () => {
 	// popolo il calendario con i risultati
 	useEffect(() => {
 		async function fetchAllWeeks() {
+			setLoading(true); // inizio caricamento
 			let temp: Schedule[] = [];
 
 			for (let i = 0; i < 2; i++) {
@@ -51,7 +52,7 @@ const Calendario = () => {
 					});
 				}
 			}
-
+			setLoading(false); // fine caricamento
 			setSchedule(temp);
 		}
 
@@ -75,62 +76,77 @@ const Calendario = () => {
 					</h1>
 					<p className="text-muted-foreground">Tutte le partite del campionato</p>
 				</div>
-				<div className="space-y-6">
-					{schedule.map((round: Schedule) => (
-						<Card key={round.week} className="shadow-lg">
-							<CardHeader>
-								<div className="flex items-center justify-between">
-									<div>
-										<CardTitle>Giornata {round.week}</CardTitle>
-										<CardDescription>
-											{new Date().toLocaleDateString("it-IT", {
-												weekday: "long",
-												year: "numeric",
-												month: "long",
-												day: "numeric",
-											})}
-										</CardDescription>
-									</div>
-									{round.matches[0].away_minuti < 1 && (
-										<Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
-											In programma
-										</Badge>
-									)}
-								</div>
-							</CardHeader>
-							<CardContent>
-								<div className="space-y-3">
-									{round.matches.map((match, index) => (
-										<div
-											key={index}
-											onClick={() => setSelected({ week: round.week, date: new Date().toLocaleDateString("it-IT", { weekday: "long", year: "numeric", month: "long", day: "numeric", }), match })}
-											className="flex items-center justify-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
-										>
-											<div className="flex items-center gap-4">
-												<img src={`/src/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-8 w-8 object-contain" />
-												<span className="font-medium text-right w-48">{match.home_team}</span>
-												<div className="flex items-center gap-3 min-w-[80px] justify-center">
-													{match.away_minuti != 0 ? (
-														<>
-															<span className="text-2xl font-bold text-primary">{match.home_gol}</span>
-															<span className="text-muted-foreground">-</span>
-															<span className="text-2xl font-bold text-primary">{match.away_gol}</span>
-														</>
-													) : (
-														<span className="text-muted-foreground font-medium">-</span>
-													)}
-												</div>
-												<span className="font-medium w-48">{match.away_team}</span>
 
-												<img src={`/src/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-8 w-8 object-contain" />
-											</div>
+				{/* qui mostriamo lo spinner se loading, altrimenti la lista delle giornate */}
+				{loading ? (
+					<div className="w-full max-w-6xl mx-auto py-12 flex items-center justify-center">
+						<div className="flex flex-col items-center gap-4">
+							<div
+								className="animate-spin rounded-full border-4 border-t-transparent"
+								style={{ width: 56, height: 56, borderColor: "rgba(73,140,244,0.15)", borderTopColor: "rgb(73,140,244)" }}
+								aria-hidden="true"
+							/>
+							<span className="text-sm text-muted-foreground">Caricamento calendario…</span>
+						</div>
+					</div>
+				) : (
+					<div className="space-y-6">
+						{schedule.map((round: Schedule) => (
+							<Card key={round.week} className="shadow-lg">
+								<CardHeader>
+									<div className="flex items-center justify-between">
+										<div>
+											<CardTitle>Giornata {round.week}</CardTitle>
+											<CardDescription>
+												{new Date().toLocaleDateString("it-IT", {
+													weekday: "long",
+													year: "numeric",
+													month: "long",
+													day: "numeric",
+												})}
+											</CardDescription>
 										</div>
-									))}
-								</div>
-							</CardContent>
-						</Card>
-					))}
-				</div>
+										{round.matches[0].away_minuti < 1 && (
+											<Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
+												In programma
+											</Badge>
+										)}
+									</div>
+								</CardHeader>
+								<CardContent>
+									<div className="space-y-3">
+										{round.matches.map((match, index) => (
+											<div
+												key={index}
+												onClick={() => setSelected({ week: round.week, date: new Date().toLocaleDateString("it-IT", { weekday: "long", year: "numeric", month: "long", day: "numeric", }), match })}
+												className="flex items-center justify-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+											>
+												<div className="flex items-center gap-4">
+													<img src={`/src/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-8 w-8 object-contain" />
+													<span className="font-medium text-right w-48">{match.home_team}</span>
+													<div className="flex items-center gap-3 min-w-[80px] justify-center">
+														{match.away_minuti != 0 ? (
+															<>
+																<span className="text-2xl font-bold text-primary">{match.home_gol}</span>
+																<span className="text-muted-foreground">-</span>
+																<span className="text-2xl font-bold text-primary">{match.away_gol}</span>
+															</>
+														) : (
+															<span className="text-muted-foreground font-medium">-</span>
+														)}
+													</div>
+													<span className="font-medium w-48">{match.away_team}</span>
+
+													<img src={`/src/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-8 w-8 object-contain" />
+												</div>
+											</div>
+										))}
+									</div>
+								</CardContent>
+							</Card>
+						))}
+					</div>
+				)}
 			</main>
 
 			{/* Modal / Popup per dettaglio partita */}
