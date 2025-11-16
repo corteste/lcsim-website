@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/supabaseClient";
 import { useState, useEffect } from "react";
 import { PlayerStats } from "@/types/playerStats";
+import { TeamStats } from "@/types/teamStats";
+import { Schedule } from "@/types/schedule";
 
 const matches = [
 	{
@@ -101,70 +103,50 @@ const generateStats = (m: MatchRow) => {
 	} as const;
 };
 
-// Funzione per generare statistiche giocatori
-const generatePlayerStats = (teamName: string, isHome: boolean, match: MatchRow) => {
-	if (match.status !== "completed") return [];
-
-	const numPlayers = 11;
-	const players = [];
-
-	for (let i = 1; i <= numPlayers; i++) {
-		const baseRating = 5.5 + Math.random() * 3;
-		const goals = Math.random() > 0.85 ? 1 : 0;
-		const assists = Math.random() > 0.90 ? 1 : 0;
-		const yellowCards = Math.random() > 0.85 ? 1 : 0;
-		const redCards = Math.random() > 0.95 ? 1 : 0;
-
-		players.push({
-			name: `Giocatore ${i}`,
-			number: i,
-			rating: (baseRating + goals * 0.5 + assists * 0.3 - redCards * 2).toFixed(1),
-			goals,
-			assists,
-			yellowCards,
-			redCards,
-			minutesPlayed: Math.floor(70 + Math.random() * 20),
-			passes: Math.floor(20 + Math.random() * 40),
-			passAccuracy: Math.floor(70 + Math.random() * 25),
-		});
-	}
-
-	return players;
-};
-
 const Calendario = () => {
 	const [selected, setSelected] = useState<{ round: number; date: string; match: MatchRow } | null>(null);
 	const [showAdvancedStats, setShowAdvancedStats] = useState(false);
 	const [playersStats, setPlayersStats] = useState<PlayerStats[]>([]);
+	const [schedule, setSchedule] = useState<Schedule[]>([]);
 	
 	// PER ORDINE FORMAZIONE
 	const rolePriority: Record<string, number> = {
-  	POR: 0,
-  	TD: 1,
-  	DC: 2,
-  	TS: 3,
-	CDC: 4,
-	ED: 5,
-	CC: 6,
-	ES: 7,
-	COC: 8,
-	AD: 9,
-	AS: 10,
-	AT: 11,
-	ATT: 12
+  	POR: 0,TD: 1,DC: 2,TS: 3,CDC: 4,ED: 5,CC: 6,ES: 7,COC: 8,AD: 9,AS: 10,AT: 11,ATT: 12
 	};
 	
 	const sortedPlayers = playersStats.sort(
   	(a, b) => rolePriority[a.Posiz] - rolePriority[b.Posiz]
 	);
 
+	// get di tutte le statistiche per la stagione corrente, poi nel selected bisogna fare la get per squadra e per week
 	useEffect(() => {
 		  async function fetchStats() {
 			const { data, error } = await supabase.from("VIEW_PLAYER_STATS").select("*").eq('Squadra', 'APD').eq('STAG', 8).eq('WEEK', 4); // filtrare per squadra dell'utente
-			console.log("Fetch risultati di giornata:");
-			console.log(data);
+			// console.log("Fetch statistiche per squadra e giornata:");
+			// console.log(data);
 			if (error) console.error(error);
 			else setPlayersStats(data || []);
+		  }
+		  fetchStats();
+		}, []);
+
+		// get di tutte le statistiche per la stagione corrente, poi nel selected bisogna fare la get per squadra e per week
+	useEffect(() => {
+		  async function fetchStats() {
+			let temp: Schedule[] = [];
+
+			for(var i=0; i<2;i++){
+			const { data, error } = await supabase.from("view_team_stats").select("*").eq('stag', 8).eq('week', i+1); // filtrare per squadra dell'utente
+			// console.log("Fetch statistiche per giornata:");
+			// console.log(data);
+			temp[i] = {
+			week: i+1,
+			matches: data
+			};
+
+			if (error) console.error(error);
+			}
+			setSchedule(temp);
 		  }
 		  fetchStats();
 		}, []);
@@ -174,6 +156,8 @@ const Calendario = () => {
 		setShowAdvancedStats(false);
 	};
 
+	// console.log("Fetch schedule per giornata:");
+	// 		console.log(schedule);
 	return (
 		<div className="min-h-screen bg-background">
 			<Navbar />
@@ -186,16 +170,15 @@ const Calendario = () => {
 					</h1>
 					<p className="text-muted-foreground">Tutte le partite del campionato</p>
 				</div>
-
 				<div className="space-y-6">
-					{matches.map((round: Round) => (
-						<Card key={round.round} className="shadow-lg">
+					{schedule.map((round: Schedule) => (
+						<Card key={round.week} className="shadow-lg">
 							<CardHeader>
 								<div className="flex items-center justify-between">
 									<div>
-										<CardTitle>Giornata {round.round}</CardTitle>
+										<CardTitle>Giornata {round.week}</CardTitle>
 										<CardDescription>
-											{new Date(round.date).toLocaleDateString("it-IT", {
+											{new Date().toLocaleDateString("it-IT", {
 												weekday: "long",
 												year: "numeric",
 												month: "long",
@@ -203,7 +186,7 @@ const Calendario = () => {
 											})}
 										</CardDescription>
 									</div>
-									{round.matches[0].status === "scheduled" && (
+									{round.matches[0].away_minuti < 1 && (
 										<Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
 											In programma
 										</Badge>
@@ -215,23 +198,23 @@ const Calendario = () => {
 									{round.matches.map((match, index) => (
 										<div
 											key={index}
-											onClick={() => setSelected({ round: round.round, date: round.date, match })}
+											// onClick={() => setSelected({ round: round.round, date: round.date, match })}
 											className="flex items-center justify-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
 										>
 											<div className="flex items-center gap-4">
-												<span className="font-medium text-right w-48">{match.home}</span>
+												<span className="font-medium text-right w-48">{match.home_team}</span>
 												<div className="flex items-center gap-3 min-w-[80px] justify-center">
-													{match.status === "completed" ? (
+													{match.away_minuti != 0 ? (
 														<>
-															<span className="text-2xl font-bold text-primary">{match.homeScore}</span>
+															<span className="text-2xl font-bold text-primary">{match.home_gol}</span>
 															<span className="text-muted-foreground">-</span>
-															<span className="text-2xl font-bold text-primary">{match.awayScore}</span>
+															<span className="text-2xl font-bold text-primary">{match.away_gol}</span>
 														</>
 													) : (
-														<span className="text-muted-foreground font-medium">vs</span>
+														<span className="text-muted-foreground font-medium">-</span>
 													)}
 												</div>
-												<span className="font-medium w-48">{match.away}</span>
+												<span className="font-medium w-48">{match.away_team}</span>
 											</div>
 										</div>
 									))}
@@ -258,13 +241,15 @@ const Calendario = () => {
 											<>
 											{selected.match.home}
 											<span className="text-primary font-bold">{selected.match.homeScore}</span>
-											-
+											<span className="text-muted-foreground font-medium">-</span> 
 											<span className="text-primary font-bold">{selected.match.awayScore}</span>
 											{selected.match.away}
 											</>
 										) : (
 											<>
-											{selected.match.home} vs {selected.match.away}
+											{selected.match.home} 
+											<span className="text-muted-foreground font-medium">-</span> 
+											{selected.match.away}
 											</>
 										)}
 										</CardTitle>
@@ -463,24 +448,26 @@ const Calendario = () => {
 												<div>
 													<h4 className="font-medium mb-3 text-accent">{selected.match.away}</h4>
 													<div className="space-y-2">
-														{generatePlayerStats(selected.match.away, false, selected.match).map((player, idx) => (
+														{sortedPlayers.map((player, idx) => (
 															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
 																<div className="flex items-center justify-between mb-2">
 																	<div className="flex items-center gap-2">
-																		<span className="font-semibold text-sm">{player.number}</span>
-																		<span className="text-sm">{player.name}</span>
+																		<span className="font-semibold text-sm">7</span>
+																		<span className="text-sm">{player.Cognome} {player.Nome}</span>
 																	</div>
 																	<Badge variant="outline" className="font-semibold">
-																		{player.rating}
+																		{player.VOTO}
 																	</Badge>
 																</div>
 																<div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-																	<div>⚽ {player.goals} | 🅰️ {player.assists}</div>
-																	<div>⏱️ {player.minutesPlayed}'</div>
-																	<div>🟨 {player.yellowCards} {player.redCards > 0 && "🟥"}</div>
-																</div>
-																<div className="mt-1 text-xs text-muted-foreground">
-																	Passaggi: {player.passes} ({player.passAccuracy}%)
+																	<div>⚽Goal: {player.GOL} | 🅰️ Assist: {player.ASST}</div>
+																	<div>⏱️Minuti: {player.MINUTI}' {player.MINUTI < 90 && "🔄"}</div>
+																	<div>🟨 {player.GIALLI} {player.ROSSI > 0 && "🟥"}</div>
+																	<div>Passaggi: {player.PASS_SI}/{player.PASS_TOT} {player.PASS_TOT > 0 && (<> ({Math.round((player.PASS_SI / player.PASS_TOT) * 100)}%)</>)}</div>
+																	<div>Tiri: {player.TIRI_IN}/{player.TIRI_TOT} {player.TIRI_TOT > 0 && (<> ({Math.round((player.TIRI_IN / player.TIRI_TOT) * 100)}%)</>)}</div>
+																	<div>Cross: {player.CROS_SI}/{player.CROS_TOT} {player.CROS_TOT > 0 && (<> ({Math.round((player.CROS_SI / player.CROS_TOT) * 100)}%)</>)}</div>
+																	<div>Dribbling: {player.DRIB_SI}/{player.DRIB_TOT} {player.DRIB_TOT > 0 && (<> ({Math.round((player.DRIB_TOT / player.DRIB_TOT) * 100)}%)</>)}</div>
+																	<div>Contrasti: {player.CTRS_SI}/{player.CTRS_TOT} {player.CTRS_TOT > 0 && (<> ({Math.round((player.CTRS_SI / player.CTRS_TOT) * 100)}%)</>)}</div>
 																</div>
 															</div>
 														))}
