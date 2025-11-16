@@ -1,3 +1,5 @@
+import { PlayerStats } from "./playerStats";
+
 export type TeamStats = {
     AGOL: number;
     ASST: number;
@@ -88,4 +90,6 @@ export type MatchStats = {
   home_voto: number;
   stag: number;
   week: number;
+  home_player_stats: PlayerStats[];
+  away_player_stats: PlayerStats[];
 };

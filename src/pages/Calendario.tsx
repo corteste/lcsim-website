@@ -3,11 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar as CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/supabaseClient";
 import { useState, useEffect } from "react";
 import { PlayerStats } from "@/types/playerStats";
 import { Schedule } from "@/types/schedule";
 import { MatchStats } from "@/types/teamStats";
+import { fetchSchedule } from "@/services/scheduleService";
 
 const Calendario = () => {
 	const [selected, setSelected] = useState<{ week: number; date: string; match: MatchStats } | null>(null);
@@ -20,52 +20,49 @@ const Calendario = () => {
 		POR: 0, TD: 1, DC: 2, TS: 3, CDC: 4, ED: 5, CC: 6, ES: 7, COC: 8, AD: 9, AS: 10, AT: 11, ATT: 12
 	};
 
-	const sortedPlayers = playersStats.sort(
-		(a, b) => rolePriority[a.Posiz] - rolePriority[b.Posiz]
-	);
+	function sortPlayersByRole(players: PlayerStats[]): PlayerStats[] {
+		// slice() serve per non modificare l'array originale
+		return players.slice().sort((a, b) => rolePriority[a.Posiz] - rolePriority[b.Posiz]);
+	}
+
 
 	// popolo il calendario con i risultati
 	useEffect(() => {
-		async function fetchStats() {
+		async function fetchAllWeeks() {
 			let temp: Schedule[] = [];
-			
-			// per invertire ordine di visualizzazione fare for al contrario
-			for (var i = 0; i < 2; i++) {
-				const { data, error } = await supabase.from("view_team_stats").select("*").eq('stag', 8).eq('week', i + 1);
-				// console.log("Fetch statistiche per giornata:");
-				// console.log(data);
-				temp[i] = {
-					week: i + 1,
-					matches: data
-				};
-				
-				if (error) console.error(error);
+
+			for (let i = 0; i < 2; i++) {
+				try {
+					const matchStats = await fetchSchedule(8, i + 1);
+					//ordino lista di giocatori per la formazione
+					for (const m of matchStats) {
+						m.away_player_stats = sortPlayersByRole(m.away_player_stats);
+						m.home_player_stats = sortPlayersByRole(m.home_player_stats);
+					}
+					temp.push({
+						week: i + 1,
+						matches: matchStats,
+					});
+				} catch (err) {
+					console.error("Error fetching week", i + 1, err);
+					temp.push({
+						week: i + 1,
+						matches: [],
+					});
+				}
 			}
+
 			setSchedule(temp);
 		}
-		fetchStats();
+
+		fetchAllWeeks();
 	}, []);
-
-	// get di tutte le statistiche per la stagione corrente, poi nel selected bisogna fare la get per squadra e per week
-	useEffect(() => {
-		async function fetchStats() {
-			const { data, error } = await supabase.from("VIEW_PLAYER_STATS").select("*").eq('Squadra', 'APD').eq('STAG', 8).eq('WEEK', 4); // filtrare per squadra dell'utente
-			// console.log("Fetch statistiche per squadra e giornata:");
-			// console.log(data);
-			if (error) console.error(error);
-			else setPlayersStats(data || []);
-		}
-		fetchStats();
-	}, []);
-
-
 
 	const handleCloseModal = () => {
 		setSelected(null);
 		setShowAdvancedStats(false);
 	};
 
-	console.log(schedule);
 	return (
 		<div className="min-h-screen bg-background">
 			<Navbar />
@@ -124,7 +121,7 @@ const Calendario = () => {
 													)}
 												</div>
 												<span className="font-medium w-48">{match.away_team}</span>
-												
+
 												<img src={`/src/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-8 w-8 object-contain" />
 											</div>
 										</div>
@@ -329,7 +326,7 @@ const Calendario = () => {
 												<div>
 													<h4 className="font-medium mb-3 text-primary">{selected.match.home_team}</h4>
 													<div className="space-y-2">
-														{sortedPlayers.map((player, idx) => (
+														{selected.match.home_player_stats.map((player, idx) => (
 															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
 																<div className="flex items-center justify-between mb-2">
 																	<div className="flex items-center gap-2">
@@ -359,7 +356,7 @@ const Calendario = () => {
 												<div>
 													<h4 className="font-medium mb-3 text-accent">{selected.match.away_team}</h4>
 													<div className="space-y-2">
-														{sortedPlayers.map((player, idx) => (
+														{selected.match.home_player_stats.map((player, idx) => (
 															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
 																<div className="flex items-center justify-between mb-2">
 																	<div className="flex items-center gap-2">
