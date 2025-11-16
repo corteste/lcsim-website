@@ -372,7 +372,7 @@ const Calendario = () => {
 												<div>
 													<h4 className="font-medium mb-3 text-accent">{selected.match.away_team}</h4>
 													<div className="space-y-2">
-														{selected.match.home_player_stats.map((player, idx) => (
+														{selected.match.away_player_stats.map((player, idx) => (
 															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
 																<div className="flex items-center justify-between mb-2">
 																	<div className="flex items-center gap-2">
