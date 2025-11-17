@@ -264,7 +264,7 @@ const Statistiche = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-2xl">
-              <img src="/src/images/players/MConti.png" alt="Custom Trophy" className="h-14 w-14 object-contain border rounded-full" />
+              <img src="/images/players/MConti.png" alt="Custom Trophy" className="h-14 w-14 object-contain border rounded-full" />
               {selectedPlayer?.Nome} {selectedPlayer?.Cognome}
               <Badge variant="outline" className={getRoleColor(selectedPlayer?.Posiz)}>
                 {selectedPlayer?.Posiz}

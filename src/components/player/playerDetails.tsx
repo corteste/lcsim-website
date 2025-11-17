@@ -20,7 +20,7 @@ const PlayerDetails = ({ currentPlayer }: PlayerDetailsProps) => {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <CardTitle className="flex items-center gap-2">
-                            <img src="/src/images/players/MConti.png" alt="Custom Trophy" className="h-16 w-16 object-contain border rounded-full" />
+                            <img src="/images/players/MConti.png" alt="Custom Trophy" className="h-16 w-16 object-contain border rounded-full" />
                             {currentPlayer.Nome} {currentPlayer.Cognome}
                              <Badge variant="outline" className={getRoleColor(currentPlayer.Posiz)}>
                                 {currentPlayer.Posiz}

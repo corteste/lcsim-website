@@ -42,7 +42,7 @@ const Home = () => {
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center mb-3">
             <img
-              src="/src/images/LCSIM_Logo.png"
+              src="/images/LCSIM_Logo.png"
               alt="Custom Trophy"
               className="h-60 w-60 object-contain"
             />
