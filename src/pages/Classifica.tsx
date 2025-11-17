@@ -62,7 +62,7 @@ const Classifica = () => {
                       {index+1}
                     </TableCell>
                     <TableCell className="text-center">
-                      <img src={`/src/images/teams/${team.team.TEAM_ID}_Logo.png`} alt={`${team.team.TEAM_ID} Logo`} className="h-8 w-8 object-contain" />
+                      <img src={`/images/teams/${team.team.TEAM_ID}_Logo.png`} alt={`${team.team.TEAM_ID} Logo`} className="h-8 w-8 object-contain" />
                     </TableCell>
                     <TableCell className="font-medium">{team.team.NAME}</TableCell>
                     <TableCell className="text-center">{team.games_played}</TableCell>

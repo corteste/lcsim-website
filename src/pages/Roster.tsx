@@ -52,7 +52,7 @@ const Roster = () => {
                           </Badge>
                           
                           <span className="font-medium">{player.Nome} {player.Cognome}</span>
-                          <img src="/src/images/players/MConti.png" alt="Custom Trophy" className="h-8 w-8 object-contain border rounded-full" />
+                          <img src="/images/players/MConti.png" alt="Custom Trophy" className="h-8 w-8 object-contain border rounded-full" />
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-sm text-muted-foreground">Età:</span>

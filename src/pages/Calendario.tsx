@@ -123,7 +123,7 @@ const Calendario = () => {
 												className="flex items-center justify-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
 											>
 												<div className="flex items-center gap-4">
-													<img src={`/src/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-8 w-8 object-contain" />
+													<img src={`/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-8 w-8 object-contain" />
 													<span className="font-medium text-right w-48">{match.home_team}</span>
 													<div className="flex items-center gap-3 min-w-[80px] justify-center">
 														{match.away_minuti != 0 ? (
@@ -138,7 +138,7 @@ const Calendario = () => {
 													</div>
 													<span className="font-medium w-48">{match.away_team}</span>
 
-													<img src={`/src/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-8 w-8 object-contain" />
+													<img src={`/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-8 w-8 object-contain" />
 												</div>
 											</div>
 										))}

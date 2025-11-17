@@ -31,7 +31,7 @@ const Rose = () => {
             {teams.map((team, index) => (
               <TabsTrigger key={index} value={index.toString()}>
                 {team.NAME}
-                <img src={`/src/images/teams/${team.TEAM_ID}_Logo.png`} alt={`${team.TEAM_ID} Logo`} className="h-8 w-8 object-contain" />
+                <img src={`/images/teams/${team.TEAM_ID}_Logo.png`} alt={`${team.TEAM_ID} Logo`} className="h-8 w-8 object-contain" />
               </TabsTrigger>
             ))}
           </TabsList>
@@ -45,7 +45,7 @@ const Rose = () => {
                       <CardTitle>{team.NAME}</CardTitle>
                       <CardDescription>{team.players.length} giocatori</CardDescription>
                     </div>
-                    <img src={`/src/images/teams/${team.TEAM_ID}_Logo.png`} alt={`${team.TEAM_ID} Logo`} className="h-16 w-16 object-contain" />
+                    <img src={`/images/teams/${team.TEAM_ID}_Logo.png`} alt={`${team.TEAM_ID} Logo`} className="h-16 w-16 object-contain" />
                   </div>
                 </CardHeader>
                 <CardContent>
