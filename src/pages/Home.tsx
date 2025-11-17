@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Trophy, TrendingUp, Users, Award, BarChart3, CalendarDays} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { getStandings } from "@/hooks/use-standings";
 
 const topTeams = [
   { position: 1, team: "Average Pegiò Drivers", points: 25 },
@@ -24,6 +25,9 @@ const topPlayers = [
 ];
 
 const Home = () => {
+
+  const { standings } = getStandings();
+
   return (
     
     <div className="min-h-screen bg-background">
@@ -63,20 +67,20 @@ const Home = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {topTeams.map((team) => (
+                {standings.slice(0,3).map((team,index) => (
                   <div
-                    key={team.position}
+                    key={index}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-                        team.position === 1 ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
-                        team.position === 2 ? "bg-gray-400/20 text-gray-700 dark:text-gray-400" :
+                        index + 1 === 1 ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
+                        index + 1 === 2 ? "bg-gray-400/20 text-gray-700 dark:text-gray-400" :
                         "bg-orange-500/20 text-orange-700 dark:text-orange-400"
                       }`}>
-                        {team.position}
+                        {index + 1}
                       </div>
-                      <span className="font-medium">{team.team}</span>
+                      <span className="font-medium">{team.team.NAME}</span>
                     </div>
                     <span className="font-bold text-primary">{team.points} pt</span>
                   </div>

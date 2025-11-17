@@ -24,6 +24,9 @@ nella pagina /lista-giocatori nella sezione filtri fai in modo che di default si
 - pagina storico con lo storico per giocatore e squadra
 - in classifica se clicco squadra vedo incontri stagione attuale
 - nel file calendario devo tenere un file per ogni squadra per recuperare il numero del giocatore velocemente
+- in squadre mostrare maglie attuali della stagione più sezione archivio con tutte le maglie utilizzate negli anni
+- in rose a fianco al logo mettere coppe vinte
+- in rose aggiungere nazionalità (bandierina)
 
 **Parte personale squadre**
 
