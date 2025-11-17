@@ -9,7 +9,7 @@
 
 
 **Prompt per Lovable**
-Crea una visualizzazione del campo da calcio con posizioni grafiche dove trascinare 
+-- Crea una visualizzazione del campo da calcio con posizioni grafiche dove trascinare 
 Cronologia allenamenti?
 nella pagina /lista-giocatori nella sezione filtri fai in modo che di default si vedano solo i filtri squadra e ruolo, aggiungi un pulsante più filtri che mostri filtri aggiuntivi (come stato giocatore e stato sul mercato)
 

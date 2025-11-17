@@ -134,6 +134,7 @@ const ListaGiocatori = () => {
                     <SelectItem value="all">Tutti</SelectItem>
                     <SelectItem value="svi">Svincolati</SelectItem>
                     <SelectItem value="con">Sotto Contratto</SelectItem>
+                    <SelectItem value="sec">Serie Inferiore</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -198,7 +199,7 @@ const ListaGiocatori = () => {
                   
                   <div className="flex flex-col items-center">
                     <span className="text-sm text-muted-foreground">Piede</span>
-                    <span className="font-bold text-primary text-lg">{player.Piede}</span>
+                    <span className="font-bold text-[rgb(73,140,244)]/90 text-lg">{player.Piede}</span>
                   </div>
                   
                   <div className="flex flex-col items-center">
