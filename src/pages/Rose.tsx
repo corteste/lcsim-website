@@ -5,14 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
 import { getRoleColor, getValueColor } from "@/utils/functions";
 import { getTeams } from "@/hooks/use-teams";
+import { getPlayersSumStats } from "@/hooks/use-players-stats";
+
+const CURRENT_SEASON = 8;
 
 const Rose = () => {
- const { teams } = getTeams();
-  
+  const { teams } = getTeams();
+  const { playersStats } = getPlayersSumStats(CURRENT_SEASON, null, null);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
@@ -49,7 +53,7 @@ const Rose = () => {
                     {team.players.map((player, playerIndex) => (
                       <div
                         key={playerIndex}
-                        className="grid grid-cols-[60px_1fr_100px_120px_120px] items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        className="grid grid-cols-[50px_1fr_100px_120px_120px_120px_120px] items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                       >
                         <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                           {player.Posiz}
@@ -58,16 +62,32 @@ const Rose = () => {
                         <div className="flex items-center gap-1">
                           <span className="text-sm text-muted-foreground">Età:</span>
                           <span className="font-medium">{player.Età}</span>
-                        </div> 
+                        </div>
                         <div className="flex items-center gap-1">
                           <span className="text-sm text-muted-foreground">Overall:</span>
                           <Badge variant="outline" className={getValueColor(player.OVR)}>
                             {player.OVR}
                           </Badge>
                         </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-muted-foreground">Piede:</span>
+                          <span className="font-small">{player.Piede}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-muted-foreground">XP:</span>
+                          <span className="font-small">{player.XP}</span>
+                        </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Voto medio:</span>
-                          <span className="font-bold text-primary text-lg">{player.OVR}</span>
+                          <span className="font-bold text-primary text-lg">
+                            {playersStats.find(p => p.ID === player.ID)?.sum_voto
+                              ? Math.round(
+                                ((playersStats.find(p => p.ID === player.ID)?.sum_voto ?? 0) /
+                                  (playersStats.find(p => p.ID === player.ID)?.matches_played || 1)) *
+                                100
+                              ) / 100
+                              : "N/D"}
+                          </span>
                         </div>
                       </div>
                     ))}

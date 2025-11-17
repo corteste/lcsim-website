@@ -8,6 +8,7 @@ import { PlayerStats } from "@/types/playerStats";
 import { Schedule } from "@/types/schedule";
 import { MatchStats } from "@/types/teamStats";
 import { fetchSchedule } from "@/services/scheduleService";
+import { getRoleColor, getValueColor } from "@/utils/functions";
 
 const Calendario = () => {
 	const [selected, setSelected] = useState<{ week: number; date: string; match: MatchStats } | null>(null);
@@ -346,7 +347,8 @@ const Calendario = () => {
 															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
 																<div className="flex items-center justify-between mb-2">
 																	<div className="flex items-center gap-2">
-																		<span className="font-semibold text-sm">7</span>
+																		{/* <span className="font-semibold text-sm">7</span> */}
+																		<Badge variant="outline" className={getRoleColor(player.Posiz)}>{player.Posiz}</Badge>
 																		<span className="text-sm">{player.Cognome} {player.Nome}</span>
 																	</div>
 																	<Badge variant="outline" className="font-semibold">
@@ -376,7 +378,8 @@ const Calendario = () => {
 															<div key={idx} className="p-3 bg-muted/30 rounded-lg">
 																<div className="flex items-center justify-between mb-2">
 																	<div className="flex items-center gap-2">
-																		<span className="font-semibold text-sm">7</span>
+																		{/* <span className="font-semibold text-sm">7</span> */}
+																		<Badge variant="outline" className={getRoleColor(player.Posiz)}>{player.Posiz}</Badge>
 																		<span className="text-sm">{player.Cognome} {player.Nome}</span>
 																	</div>
 																	<Badge variant="outline" className="font-semibold">
