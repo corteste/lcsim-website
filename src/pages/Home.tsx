@@ -12,7 +12,6 @@ const topTeams = [
 ];
 
 const stats = [
-  { label: "Squadre Totali", value: "8", icon: Users, color: "text-blue-600" },
   { label: "Giornate Giocate", value: "10", icon: CalendarDays, color: "text-green-600" },
   { label: "Gol Totali", value: "142", icon: Award, color: "text-red-600" },
   { label: "Media Gol/Partita", value: "3.55", icon: TrendingUp, color: "text-purple-600" },
@@ -105,6 +104,16 @@ const Home = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                 <div
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  >
+                    
+                    <div className="flex items-center gap-3">
+                      <Users className={`h-5 w-5 text-blue-600`} />
+                      <span className="text-sm text-muted-foreground">Squadre</span>
+                    </div>
+                    <span className="font-bold text-lg">10</span>
+                  </div>
                 {stats.map((stat, index) => (
                   <div
                     key={index}
@@ -119,7 +128,7 @@ const Home = () => {
                 ))}
                 <Link to="/statistiche">
                   <Button variant="outline" className="w-full mt-2">
-                    Vedi Statistiche Dettagliate
+                    Vedi Statistiche Giocatori
                   </Button>
                 </Link>
               </div>

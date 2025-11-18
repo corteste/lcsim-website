@@ -22,9 +22,6 @@ const PlayerAdvancedStats = ({ currentPlayer, teams }: PlayerStatsProps) => {
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                   <img src="/src/images/players/MConti.png" alt="Custom Trophy" className="h-14 w-14 object-contain border rounded-full" />
-                </div>
-                <div>
                     <p className="text-sm text-muted-foreground">Nome</p>
                     <p className="font-medium">{currentPlayer.Nome} {currentPlayer.Cognome}</p>
                 </div>
@@ -96,7 +93,7 @@ const PlayerAdvancedStats = ({ currentPlayer, teams }: PlayerStatsProps) => {
                         {currentPlayer.matches_played !== undefined && (
                             <div className="p-3 rounded-lg bg-muted/50">
                                 <p className="text-sm text-muted-foreground">Voto Medio</p>
-                                <p className="font-bold text-2xl text-primary">{Math.round((currentPlayer.sum_voto / currentPlayer.matches_played) * 100) / 100}</p>
+                                <p className="font-bold text-2xl text-primary">{isNaN(currentPlayer.sum_voto / currentPlayer.matches_played) ? "N/D": Math.round((currentPlayer.sum_voto / currentPlayer.matches_played) * 100) / 100}</p>
                             </div>
                         )}
                         {currentPlayer.sum_minuti !== undefined && (
@@ -212,7 +209,7 @@ const PlayerAdvancedStats = ({ currentPlayer, teams }: PlayerStatsProps) => {
                         {currentPlayer.sum_cros_tot !== undefined && (
                             <div className="p-3 rounded-lg bg-muted/50">
                                 <p className="text-sm text-muted-foreground">Cross %</p>
-                                <p className="font-bold text-2xl text-primary">{Math.round((currentPlayer.sum_cros_si / currentPlayer.sum_cros_tot) * 100)}%</p>
+                                <p className="font-bold text-2xl text-primary">{isNaN(currentPlayer.sum_cros_si / currentPlayer.sum_cros_tot) ? "0": Math.round((currentPlayer.sum_cros_si / currentPlayer.sum_cros_tot) * 100)}%</p>
                             </div>
                         )}
                     </CardContent>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
-import { getRoleColor, getValueColor } from "@/utils/functions";
+import { getRoleColor, getValueColor, getNationalityFlag } from "@/utils/functions";
 import { getTeams } from "@/hooks/use-teams";
 import { getPlayersSumStats } from "@/hooks/use-players-stats";
 
@@ -53,12 +53,15 @@ const Rose = () => {
                     {team.players.map((player, playerIndex) => (
                       <div
                         key={playerIndex}
-                        className="grid grid-cols-[50px_1fr_100px_120px_120px_120px_120px] items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        className="grid grid-cols-[50px_200px_1fr_100px_120px_120px_120px_120px] items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                       >
                         <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                           {player.Posiz}
                         </Badge>
                         <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                        <div className="flex items-center gap-1">
+                          <img src={getNationalityFlag(player.Nazionalità)} alt="Player Flag" className="h-8 w-8 object-contain border rounded-full" />
+                        </div>
                         <div className="flex items-center gap-1">
                           <span className="text-sm text-muted-foreground">Età:</span>
                           <span className="font-medium">{player.Età}</span>
