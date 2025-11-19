@@ -7,7 +7,7 @@ import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 const Classifica = () => {
 
   const { standings } = getStandings();
-  console.log(standings);
+  
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case "up":
