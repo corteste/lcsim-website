@@ -108,7 +108,7 @@ const Calendario = () => {
 											</CardDescription>
 										</div>
 										{round.matches[0].away_minuti < 1 && (
-											<Badge variant="outline" className="bg-blue/10 text-blue border-blue/20">
+											<Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
 												In programma
 											</Badge>
 										)}
