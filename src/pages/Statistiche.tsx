@@ -14,7 +14,7 @@ import PlayerAdvancedStats from "@/components/player/playerAdvancedStats"
 
 
 const PLAYERS_PER_PAGE = 10;
-const CURRENT_SEASON = 8;
+const CURRENT_SEASON = 9;
 
 const Statistiche = () => {
   const [statType, setStatType] = useState<"goalscorers" | "assists" | "ratings">("ratings");
@@ -170,7 +170,7 @@ const Statistiche = () => {
               {statType === "ratings" && "Migliore Media Voto"}
             </CardTitle>
             <CardDescription>
-              {playersStats.length} giocatori trovati
+              {filteredStats.length} giocatori trovati
             </CardDescription>
           </CardHeader>
           <CardContent>
