@@ -33,9 +33,9 @@ const Calendario = () => {
 			setLoading(true); // inizio caricamento
 			let temp: Schedule[] = [];
 
-			for (let i = 0; i < 2; i++) {
+			for (let i = 0; i < 9; i++) {
 				try {
-					const matchStats = await fetchSchedule(8, i + 1);
+					const matchStats = await fetchSchedule(9, i + 1);
 					//ordino lista di giocatori per la formazione
 					for (const m of matchStats) {
 						m.away_player_stats = sortPlayersByRole(m.away_player_stats);

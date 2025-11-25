@@ -7,7 +7,7 @@ import { getRoleColor, getValueColor, getNationalityFlag } from "@/utils/functio
 import { getTeams } from "@/hooks/use-teams";
 import { getPlayersSumStats } from "@/hooks/use-players-stats";
 
-const CURRENT_SEASON = 8;
+const CURRENT_SEASON = 9;
 
 const Rose = () => {
   const { teams } = getTeams();

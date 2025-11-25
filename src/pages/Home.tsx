@@ -1,20 +1,18 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, TrendingUp, Users, Award, BarChart3, CalendarDays} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getStandings } from "@/hooks/use-standings";
-
-const topTeams = [
-  { position: 1, team: "Average Pegiò Drivers", points: 25 },
-  { position: 2, team: "Panormus FC", points: 23 },
-  { position: 3, team: "Phoenix Rising", points: 21 },
-];
+import { getPlayersSumStats } from "@/hooks/use-players-stats";
+import { PlayerStatsSum } from "@/types/playerStats";
+import { getRoleColor } from "@/utils/functions";
 
 const stats = [
   { label: "Giornate Giocate", value: "10", icon: CalendarDays, color: "text-green-600" },
-  { label: "Gol Totali", value: "142", icon: Award, color: "text-red-600" },
-  { label: "Media Gol/Partita", value: "3.55", icon: TrendingUp, color: "text-purple-600" },
+  { label: "Gol Totali", value: "0", icon: Award, color: "text-red-600" },
+  { label: "Media Gol/Partita", value: "0", icon: TrendingUp, color: "text-purple-600" },
 ];
 
 const topPlayers = [
@@ -23,10 +21,19 @@ const topPlayers = [
   { name: "Giuseppe Gialli", team: "FC Dragonslayers", rating: 8.2, role: "CEN" },
 ];
 
+const CURRENT_SEASON = 9;
+
 const Home = () => {
 
-  const { standings } = getStandings();
+  const { playersStats } = getPlayersSumStats(CURRENT_SEASON, null, null);
+  const filteredStats = playersStats.sort(sortPlayersStats);
 
+    function sortPlayersStats(a: PlayerStatsSum, b: PlayerStatsSum) {
+          return (Math.round(((b.sum_voto / b.matches_played) - (a.sum_voto / a.matches_played)) * 100) / 100);
+    };
+    
+
+  const { standings } = getStandings();
   return (
     
     <div className="min-h-screen bg-background">
@@ -145,24 +152,22 @@ const Home = () => {
               <CardDescription>Migliori performance</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {topPlayers.map((player, index) => (
+              <div className="grid gap-3">
+                {filteredStats.slice(0,3).map((player, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium">{player.name}</span>
-                      <span className="text-xs text-muted-foreground">{player.team}</span>
+                      
+                      <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                      <span className="text-xs text-muted-foreground">{player.Squadra}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                        player.role === "ATT" ? "bg-red-500/10 text-red-700 dark:text-red-400" :
-                        "bg-green-500/10 text-green-700 dark:text-green-400"
-                      }`}>
-                        {player.role}
-                      </span>
-                      <span className="font-bold text-primary text-lg">{player.rating}</span>
+                      <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                        {player.Posiz}
+                      </Badge>
+                      <span className="font-bold text-primary text-lg">{Math.round((player.sum_voto / player.matches_played) * 100)/100}</span>
                     </div>
                   </div>
                 ))}
