@@ -66,7 +66,7 @@ const Navbar = () => {
               </Link>
             ))}
             
-            <DropdownMenu>
+            {/* <DropdownMenu>
               <DropdownMenuTrigger
                 className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${
                   isMiaSquadraActive
@@ -93,7 +93,7 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu> */}
             </div>
 
             
