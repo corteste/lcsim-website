@@ -10,7 +10,7 @@ import { PlayerStatsSum } from "@/types/playerStats";
 import { getRoleColor } from "@/utils/functions";
 
 const stats = [
-  { label: "Giornate Giocate", value: "10", icon: CalendarDays, color: "text-green-600" },
+  { label: "Giornate Giocate", value: "0", icon: CalendarDays, color: "text-green-600" },
   { label: "Gol Totali", value: "0", icon: Award, color: "text-red-600" },
   { label: "Media Gol/Partita", value: "0", icon: TrendingUp, color: "text-purple-600" },
 ];

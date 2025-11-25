@@ -30,9 +30,11 @@ export const getRoleColor = (role: string) => {
  */
 
 export const getValueColor = (value:number) => {
-  if(value < 70) return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20 font-semibold px-2 py-0.5 rounded-full text-xs";
-  if(value >= 70 && value < 80) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 font-semibold px-2 py-0.5 rounded-full text-xs";
-  if(value >= 80) return "bg-green-500/10 text-green-700 dark:text-green-400 font-semibold px-2 py-0.5 rounded-full text-xs";
+  if(value < 75) return "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-red-500/20 font-semibold px-2 py-0.5 rounded-full text-xs";
+  if(value >= 75 && value < 80) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 font-semibold px-2 py-0.5 rounded-full text-xs";
+  if(value >= 80 && value < 85) return "bg-green-500/10 text-green-700 dark:text-green-400 font-semibold px-2 py-0.5 rounded-full text-xs";
+  if(value >= 85 && value < 90) return "bg-blue-500/10 text-blue-700 dark:text-blue-400 font-semibold px-2 py-0.5 rounded-full text-xs";
+  if(value >= 90) return "bg-purple-500/10 text-purple-700 dark:text-purple-400 font-semibold px-2 py-0.5 rounded-full text-xs";
 };
 
 /**
@@ -73,6 +75,21 @@ export const getContractStatus = (team: string) => {
     return "con";
 } 
 
+/**
+ * Funzione che ritorna un icona per il meteo corrente
+ * @param team Nome del team
+ * @returns 
+ */
+export const getWeatherIcon = (weather: string) => {
+  if (weather == "Soleggiato")
+    return "☀️";
+  if (weather == "Nuvoloso")
+    return "☁️";
+  if (weather == "Pioggia")
+    return "🌧️";
+  if (weather == "Neve")
+    return "🌨️";
+} 
 
 /**
  * Funzione che ritorna lo stato del contratto del giocatore
