@@ -92,4 +92,8 @@ export type MatchStats = {
   week: number;
   home_player_stats: PlayerStats[];
   away_player_stats: PlayerStats[];
+  stadium: string;
+  referee: string;
+  weather: string;
+  date: Date;
 };

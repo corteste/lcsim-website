@@ -7,11 +7,11 @@ import { useState, useEffect } from "react";
 import { PlayerStats } from "@/types/playerStats";
 import { Schedule } from "@/types/schedule";
 import { MatchStats } from "@/types/teamStats";
-import { fetchSchedule } from "@/services/scheduleService";
-import { getRoleColor, getValueColor } from "@/utils/functions";
+import { fetchSchedule, fetchScheduleGeneral } from "@/services/scheduleService";
+import { getRoleColor, getValueColor, getWeatherIcon } from "@/utils/functions";
 
 const Calendario = () => {
-	const [selected, setSelected] = useState<{ week: number; date: string; match: MatchStats } | null>(null);
+	const [selected, setSelected] = useState<{ week: number; match: MatchStats } | null>(null);
 	const [showAdvancedStats, setShowAdvancedStats] = useState(false);
 	const [schedule, setSchedule] = useState<Schedule[]>([]);
 	const [loading, setLoading] = useState<boolean>(true); // stato per lo spinner
@@ -36,10 +36,15 @@ const Calendario = () => {
 			for (let i = 0; i < 9; i++) {
 				try {
 					const matchStats = await fetchSchedule(9, i + 1);
+					const scheduleGeneral = await fetchScheduleGeneral(9, i + 1);
 					//ordino lista di giocatori per la formazione
-					for (const m of matchStats) {
-						m.away_player_stats = sortPlayersByRole(m.away_player_stats);
-						m.home_player_stats = sortPlayersByRole(m.home_player_stats);
+					for(let j=0; j < matchStats.length; j++){
+						matchStats[j].away_player_stats = sortPlayersByRole(matchStats[j].away_player_stats);
+						matchStats[j].home_player_stats = sortPlayersByRole(matchStats[j].home_player_stats);
+						matchStats[j].stadium = scheduleGeneral[j].stadium;
+						matchStats[j].referee = scheduleGeneral[j].referee;
+						matchStats[j].weather = scheduleGeneral[j].weather;
+						matchStats[j].date = scheduleGeneral[j].date;
 					}
 					temp.push({
 						week: i + 1,
@@ -99,16 +104,11 @@ const Calendario = () => {
 										<div>
 											<CardTitle>Giornata {round.week}</CardTitle>
 											<CardDescription>
-												{new Date().toLocaleDateString("it-IT", {
-													weekday: "long",
-													year: "numeric",
-													month: "long",
-													day: "numeric",
-												})}
+												{new Date(round.matches[0].date).toLocaleDateString("it-IT")}
 											</CardDescription>
 										</div>
 										{round.matches[0].away_minuti < 1 && (
-											<Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
+											<Badge variant="outline" className="bg-blue/10 text-blue border-blue/20">
 												In programma
 											</Badge>
 										)}
@@ -119,7 +119,7 @@ const Calendario = () => {
 										{round.matches.map((match, index) => (
 											<div
 												key={index}
-												onClick={() => setSelected({ week: round.week, date: new Date().toLocaleDateString("it-IT", { weekday: "long", year: "numeric", month: "long", day: "numeric", }), match })}
+												onClick={() => setSelected({ week: round.week, match })}
 												className="flex items-center justify-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
 											>
 												<div className="flex items-center gap-4">
@@ -180,7 +180,7 @@ const Calendario = () => {
 										</CardTitle>
 										<CardDescription>
 											Giornata {selected.week} —{" "}
-											{new Date(selected.date).toLocaleDateString("it-IT")}
+											{new Date(selected.match.date).toLocaleDateString("it-IT")}
 										</CardDescription>
 									</div>
 									{/* <div className="text-right">
@@ -297,15 +297,23 @@ const Calendario = () => {
 									<div>
 										<h3 className="font-semibold mb-2">Dettagli</h3>
 										<div className="text-sm text-foreground space-y-2">
-											<div>
+											{/* <div>
 												<strong>Data:</strong>{" "}
 												<span className="ml-2">
-													{new Date(selected.date).toLocaleString("it-IT")}
+													{new Date(selected.match.date).toLocaleDateString("it-IT")}
 												</span>
-											</div>
+											</div> */}
 											<div>
 												<strong>Stadio:</strong>{" "}
-												<span className="ml-2">Stadio principale</span>
+												<span className="ml-2">{selected.match.stadium}</span>
+											</div>
+											<div>
+												<strong>Arbitro:</strong>{" "}
+												<span className="ml-2">{selected.match.referee}</span>
+											</div>
+											<div>
+												<strong>Meteo:</strong>{" "}
+												<span className="ml-2">{selected.match.weather} {getWeatherIcon(selected.match.weather)}</span>
 											</div>
 										</div>
 									</div>
