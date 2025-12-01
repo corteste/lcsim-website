@@ -69,7 +69,7 @@ const Calendario = () => {
 											<div
 												key={index}
 												onClick={() => setSelected({ week: round.week, match })}
-												className="grid grid-cols-[1fr_80px_1fr] gap-3 items-center p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+												className="grid grid-cols-[1fr_auto_auto_auto_1fr] gap-3 items-center p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
 											>
 												<div className="flex items-center gap-2 justify-end">
 													<span className="font-medium text-right text-sm sm:text-base truncate">{match.home_team}</span>
