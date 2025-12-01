@@ -12,6 +12,9 @@ const CURRENT_SEASON = 9;
 const Rose = () => {
   const { teams } = getTeams();
   const { playersStats } = getPlayersSumStats(CURRENT_SEASON, null, null);
+  
+  const sortedTeams = teams.slice().sort((a, b) =>  a.NAME.localeCompare(b.NAME));
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,8 +30,8 @@ const Rose = () => {
         </div>
 
         <Tabs defaultValue="0" className="w-full">
-          <TabsList className="w-full h-auto bg-muted/50 p-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-            {teams.map((team, index) => (
+          <TabsList className="w-full h-auto bg-muted/50 p-2 grid grid-cols-5 grid-rows-2 gap-2">
+            {sortedTeams.map((team, index) => (
               <TabsTrigger key={index} value={index.toString()}>
                 {team.NAME}
                 <img src={`/images/teams/${team.TEAM_ID}_Logo.png`} alt={`${team.TEAM_ID} Logo`} className="h-8 w-8 object-contain" />
@@ -36,16 +39,46 @@ const Rose = () => {
             ))}
           </TabsList>
 
-          {teams.map((team, teamIndex) => (
+          {sortedTeams.map((team, teamIndex) => (
             <TabsContent key={teamIndex} value={teamIndex.toString()}>
               <Card className="shadow-lg">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
+                  <div className="grid grid-cols-[5fr_1fr_100px] gap-4 items-center">
                     <div>
                       <CardTitle>{team.NAME}</CardTitle>
                       <CardDescription>{team.players.length} giocatori</CardDescription>
                     </div>
-                    <img src={`/images/teams/${team.TEAM_ID}_Logo.png`} alt={`${team.TEAM_ID} Logo`} className="h-16 w-16 object-contain" />
+                    {/* TROFEI (dinamico) */}
+                    <div className="flex gap-4 items-center">
+                      {team.scudetto > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span>{team.scudetto}×</span>
+                          <img
+                            src={`/images/trophies/LCSIM_Scudetto.png`}
+                            alt="Scudetto"
+                            className="h-16 w-16 object-contain"
+                          />
+                        </div>
+                      )}
+
+                      {team.supercoppa > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span>{team.supercoppa}×</span>
+                          <img
+                            src={`/images/trophies/LCSIM_Supercoppa.png`}
+                            alt="Supercoppa"
+                            className="h-16 w-16 object-contain"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* LOGO TEAM (sempre fisso) */}
+                    <img
+                      src={`/images/teams/${team.TEAM_ID}_Logo.png`}
+                      alt={`${team.TEAM_ID} Logo`}
+                      className="h-16 w-16 object-contain"
+                    />
                   </div>
                 </CardHeader>
                 <CardContent>

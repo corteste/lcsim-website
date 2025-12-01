@@ -7,4 +7,6 @@ export type Team = {
     MANAGER: string | null;
     ACTIVE: boolean;
     players: Player[];
+    scudetto: number;
+    supercoppa: number;
 };
