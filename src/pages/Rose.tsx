@@ -12,8 +12,9 @@ const CURRENT_SEASON = 9;
 const Rose = () => {
   const { teams } = getTeams();
   const { playersStats } = getPlayersSumStats(CURRENT_SEASON, null, null);
-  
-  const sortedTeams = teams.slice().sort((a, b) =>  a.NAME.localeCompare(b.NAME));
+
+  const sortedTeams = teams.slice().sort((a, b) => a.NAME.localeCompare(b.NAME));
+
 
 
   return (
@@ -83,56 +84,51 @@ const Rose = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-3">
-                    {team.players.map((player, playerIndex) => (
-                      <div
-                        key={playerIndex}
-                        className="flex flex-col sm:grid sm:grid-cols-[50px_minmax(150px,1fr)_80px_80px_80px] lg:grid-cols-[50px_200px_1fr_100px_120px_120px_120px_120px] items-start sm:items-center gap-2 sm:gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
+                    {team.players.map((player, playerIndex) => {
+                      const stat = playersStats.find(p => p.ID === player.ID);
+                      const avgVote = stat?.sum_voto
+                        ? (stat.sum_voto / (stat.matches_played || 1)).toFixed(1)
+                        : "N/D";
+
+                      return (
+                        <div
+                          key={playerIndex}
+                          className="flex flex-col sm:grid sm:grid-cols-[50px_minmax(150px,1fr)_80px_80px_80px] lg:grid-cols-[50px_300px_2fr_100px_120px_120px_120px_150px] items-start sm:items-center gap-2 sm:gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        >
                           <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                             {player.Posiz}
                           </Badge>
-                          <Badge variant="outline" className={getValueColor(player.OVR)}>
-                            {player.OVR}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <img src={getNationalityFlag(player.Nazionalità)} alt="Player Flag" className="h-6 w-6 sm:h-8 sm:w-8 object-contain border rounded-full" />
                           <span className="font-medium">{player.Nome} {player.Cognome}</span>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-3 sm:contents">
                           <div className="flex items-center gap-1">
-                            <span className="text-xs sm:text-sm text-muted-foreground">Età:</span>
-                            <span className="font-medium text-sm">{player.Età}</span>
+                            <img src={getNationalityFlag(player.Nazionalità)} alt="Player Flag" className="h-8 w-8 object-contain border rounded-full" />
                           </div>
-                          
+                          <div className="flex items-center gap-1 sm:w-auto">
+                            <span className="text-sm text-muted-foreground">Età:</span>
+                            <span className="font-medium">{player.Età}</span>
+                          </div>
                           <div className="flex items-center gap-1 sm:hidden lg:flex">
-                            <span className="text-xs sm:text-sm text-muted-foreground">Piede:</span>
-                            <span className="font-small text-sm">{player.Piede}</span>
+                            <span className="text-sm text-muted-foreground">Overall:</span>
+                            <Badge variant="outline" className={getValueColor(player.OVR)}>
+                              {player.OVR}
+                            </Badge>
                           </div>
-                          
-                          <div className="flex items-center gap-1 sm:hidden lg:flex">
-                            <span className="text-xs sm:text-sm text-muted-foreground">XP:</span>
-                            <span className="font-small text-sm">{player.XP}</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">Piede:</span>
+                            <span className="font-small">{player.Piede}</span>
                           </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm text-muted-foreground">Voto:</span>
-                            <span className="font-bold text-primary text-base sm:text-lg">
-                              {playersStats.find(p => p.ID === player.ID)?.sum_voto
-                                ? Math.round(
-                                  ((playersStats.find(p => p.ID === player.ID)?.sum_voto ?? 0) /
-                                    (playersStats.find(p => p.ID === player.ID)?.matches_played || 1)) *
-                                  100
-                                ) / 100
-                                : "N/D"}
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">XP:</span>
+                            <span className="font-small">{player.XP}</span>
+                          </div>
+                          <div className="flex items-center gap-2 sm:hidden lg:flex">
+                            <span className="text-sm text-muted-foreground">Voto medio:</span>
+                            <span className="font-bold text-primary text-lg">
+                              {avgVote}
                             </span>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>

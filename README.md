@@ -25,6 +25,7 @@ nella pagina /lista-giocatori nella sezione filtri fai in modo che di default si
 - in squadre mostrare maglie attuali della stagione più sezione archivio con tutte le maglie utilizzate negli anni
 - in rose a fianco al logo mettere coppe vinte
 - specchietto playoff sotto classifica
+- in calendario quando clicco partita metti formazioni prima di stat avanzate
 
 **Parte personale squadre**
 
