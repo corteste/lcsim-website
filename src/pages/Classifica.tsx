@@ -37,7 +37,7 @@ const Classifica = () => {
             <CardTitle>Posizioni</CardTitle>
             <CardDescription>Aggiornata al {new Date().toLocaleDateString('it-IT')}</CardDescription>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

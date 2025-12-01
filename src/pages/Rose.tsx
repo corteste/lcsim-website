@@ -86,44 +86,50 @@ const Rose = () => {
                     {team.players.map((player, playerIndex) => (
                       <div
                         key={playerIndex}
-                        className="grid grid-cols-[50px_200px_1fr_100px_120px_120px_120px_120px] items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        className="flex flex-col sm:grid sm:grid-cols-[50px_minmax(150px,1fr)_80px_80px_80px] lg:grid-cols-[50px_200px_1fr_100px_120px_120px_120px_120px] items-start sm:items-center gap-2 sm:gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                       >
-                        <Badge variant="outline" className={getRoleColor(player.Posiz)}>
-                          {player.Posiz}
-                        </Badge>
-                        <span className="font-medium">{player.Nome} {player.Cognome}</span>
-                        <div className="flex items-center gap-1">
-                          <img src={getNationalityFlag(player.Nazionalità)} alt="Player Flag" className="h-8 w-8 object-contain border rounded-full" />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-muted-foreground">Età:</span>
-                          <span className="font-medium">{player.Età}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-muted-foreground">Overall:</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                            {player.Posiz}
+                          </Badge>
                           <Badge variant="outline" className={getValueColor(player.OVR)}>
                             {player.OVR}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-muted-foreground">Piede:</span>
-                          <span className="font-small">{player.Piede}</span>
+                        
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <img src={getNationalityFlag(player.Nazionalità)} alt="Player Flag" className="h-6 w-6 sm:h-8 sm:w-8 object-contain border rounded-full" />
+                          <span className="font-medium">{player.Nome} {player.Cognome}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-muted-foreground">XP:</span>
-                          <span className="font-small">{player.XP}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Voto medio:</span>
-                          <span className="font-bold text-primary text-lg">
-                            {playersStats.find(p => p.ID === player.ID)?.sum_voto
-                              ? Math.round(
-                                ((playersStats.find(p => p.ID === player.ID)?.sum_voto ?? 0) /
-                                  (playersStats.find(p => p.ID === player.ID)?.matches_played || 1)) *
-                                100
-                              ) / 100
-                              : "N/D"}
-                          </span>
+                        
+                        <div className="flex flex-wrap gap-3 sm:contents">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs sm:text-sm text-muted-foreground">Età:</span>
+                            <span className="font-medium text-sm">{player.Età}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 sm:hidden lg:flex">
+                            <span className="text-xs sm:text-sm text-muted-foreground">Piede:</span>
+                            <span className="font-small text-sm">{player.Piede}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 sm:hidden lg:flex">
+                            <span className="text-xs sm:text-sm text-muted-foreground">XP:</span>
+                            <span className="font-small text-sm">{player.XP}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm text-muted-foreground">Voto:</span>
+                            <span className="font-bold text-primary text-base sm:text-lg">
+                              {playersStats.find(p => p.ID === player.ID)?.sum_voto
+                                ? Math.round(
+                                  ((playersStats.find(p => p.ID === player.ID)?.sum_voto ?? 0) /
+                                    (playersStats.find(p => p.ID === player.ID)?.matches_played || 1)) *
+                                  100
+                                ) / 100
+                                : "N/D"}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}

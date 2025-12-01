@@ -56,10 +56,10 @@ const Home = () => {
             <img
               src="/images/LCSIM_Logo.png"
               alt="Custom Trophy"
-              className="h-60 w-60 object-contain"
+              className="h-40 w-40 sm:h-52 sm:w-52 md:h-60 md:w-60 object-contain"
             />
           </div>
-          <p className="text-lg text-muted-foreground">Benvenuto nel tuo campionato manageriale</p>
+          <p className="text-base sm:text-lg text-muted-foreground">Benvenuto nel tuo campionato manageriale</p>
           <p className="text-sm text-muted-foreground mt-1">Stagione 2024/25</p>
         </div>
 

@@ -44,29 +44,32 @@ const Roster = () => {
                     {players.map((player, playerIndex) => (
                       <div
                         key={playerIndex}
-                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                           <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                             {player.Posiz}
                           </Badge>
                           
-                          <span className="font-medium">{player.Nome} {player.Cognome}</span>
-                          <img src="/images/players/MConti.png" alt="Custom Trophy" className="h-8 w-8 object-contain border rounded-full" />
+                          <span className="font-medium text-sm sm:text-base truncate">{player.Nome} {player.Cognome}</span>
+                          <img src="/images/players/MConti.png" alt="Custom Trophy" className="h-6 w-6 sm:h-8 sm:w-8 object-contain border rounded-full" />
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-muted-foreground">Età:</span>
-                          <span className="font-medium">{player.Età}</span>
-                        </div> 
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-muted-foreground">Overall:</span>
-                          <Badge variant="outline" className={getOverallColor(player.OVR)}>
-                            {player.OVR}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Voto medio:</span>
-                          <span className="font-bold text-primary text-lg">{player.OVR}</span>
+                        
+                        <div className="flex gap-4 sm:gap-6 justify-between sm:justify-end w-full sm:w-auto">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs sm:text-sm text-muted-foreground">Età:</span>
+                            <span className="font-medium text-sm sm:text-base">{player.Età}</span>
+                          </div> 
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs sm:text-sm text-muted-foreground">Overall:</span>
+                            <Badge variant="outline" className={getOverallColor(player.OVR)}>
+                              {player.OVR}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 sm:flex hidden">
+                            <span className="text-sm text-muted-foreground">Voto medio:</span>
+                            <span className="font-bold text-primary text-lg">{player.OVR}</span>
+                          </div>
                         </div>
                       </div>
                     ))}
