@@ -1,17 +1,26 @@
 import { Link, useLocation } from "react-router-dom";
-import { Trophy, ChevronDown, Moon, Sun } from "lucide-react";
+import { Trophy, ChevronDown, Moon, Sun, Menu } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const Navbar = () => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
+  const [isOpen, setIsOpen] = useState(false);
   
   const navItems = [
     //{ path: "/", label: "Home" }, // disabilitato, se clicco sul logo mi porta alla home
@@ -35,13 +44,14 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 border-b bg-card shadow-sm backdrop-blur-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary hover:opacity-80 transition-opacity">
-            {/* <Trophy className="h-6 w-6" /> */}
+          <Link to="/" className="flex items-center gap-2 font-bold text-lg md:text-xl text-primary hover:opacity-80 transition-opacity">
             <img src="/images/LCSIM_Logo_SMALL.png" alt="Custom Trophy" className="h-6 w-6 object-contain" />
-            <span>Lega Calcio Simulato</span>
+            <span className="hidden sm:inline">Lega Calcio Simulato</span>
+            <span className="sm:hidden">LCSIM</span>
           </Link>
           
-          <div className="flex gap-3 items-center">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex gap-3 items-center">
             <div className="flex items-center gap-2">
               <Sun className="h-4 w-4 text-muted-foreground" />
               <Switch
@@ -52,51 +62,61 @@ const Navbar = () => {
             </div>
             
             <div className="flex gap-1 items-center">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  location.pathname === item.path
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-foreground hover:bg-secondary"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                    location.pathname === item.path
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden gap-2 items-center">
+            <div className="flex items-center gap-2">
+              <Sun className="h-4 w-4 text-muted-foreground" />
+              <Switch
+                checked={theme === "dark"}
+                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+              />
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            </div>
             
-            {/* <DropdownMenu>
-              <DropdownMenuTrigger
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${
-                  isMiaSquadraActive
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-foreground hover:bg-secondary"
-                }`}
-              >
-                La Mia Squadra
-                <ChevronDown className="h-4 w-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-card z-50">
-                {miaSquadraItems.map((item) => (
-                  <DropdownMenuItem key={item.path} asChild>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
+                  <Menu className="h-6 w-6" />
+                </button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-2 mt-6">
+                  {navItems.map((item) => (
                     <Link
+                      key={item.path}
                       to={item.path}
-                      className={`cursor-pointer ${
+                      onClick={() => setIsOpen(false)}
+                      className={`px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
                         location.pathname === item.path
-                          ? "bg-secondary font-medium"
-                          : ""
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "text-foreground hover:bg-secondary"
                       }`}
                     >
                       {item.label}
                     </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu> */}
-            </div>
-
-            
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>

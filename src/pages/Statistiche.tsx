@@ -178,26 +178,26 @@ const Statistiche = () => {
               {currentPlayers.map((player, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer gap-3 sm:gap-0"
                   onClick={() => setSelectedPlayer(player)}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 font-bold text-primary">
+                  <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                    <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 font-bold text-primary text-sm sm:text-base flex-shrink-0">
                       {index + 1 + ((currentPage - 1) * 10)}
                     </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm sm:text-base truncate">{player.Nome} {player.Cognome}</span>
                         <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                           {player.Posiz}
                         </Badge>
                       </div>
-                      <span className="text-sm text-muted-foreground">{teams.find(t => t.TEAM_ID === player.Squadra)?.NAME ?? "-"}</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground truncate">{teams.find(t => t.TEAM_ID === player.Squadra)?.NAME ?? "-"}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-sm text-muted-foreground">{getStatLabel()}</span>
-                    <span className="font-bold text-primary text-2xl">{getStatValue(player)}</span>
+                  <div className="flex flex-col items-end self-end sm:self-auto">
+                    <span className="text-xs sm:text-sm text-muted-foreground">{getStatLabel()}</span>
+                    <span className="font-bold text-primary text-xl sm:text-2xl">{getStatValue(player)}</span>
                   </div>
                 </div>
               ))}

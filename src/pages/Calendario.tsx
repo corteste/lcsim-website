@@ -69,25 +69,30 @@ const Calendario = () => {
 											<div
 												key={index}
 												onClick={() => setSelected({ week: round.week, match })}
-												className="flex items-center justify-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+												className="flex flex-col sm:flex-row items-center justify-center p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer gap-2 sm:gap-0"
 											>
-												<div className="flex items-center gap-4">
-													<img src={`/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-8 w-8 object-contain" />
-													<span className="font-medium text-right w-48">{match.home_team}</span>
-													<div className="flex items-center gap-3 min-w-[80px] justify-center">
+												<div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-center">
+													<div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
+														<span className="font-medium text-right text-sm sm:text-base truncate max-w-[120px] sm:max-w-[180px]">{match.home_team}</span>
+														<img src={`/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-6 w-6 sm:h-8 sm:w-8 object-contain flex-shrink-0" />
+													</div>
+													
+													<div className="flex items-center gap-2 sm:gap-3 min-w-[60px] sm:min-w-[80px] justify-center">
 														{match.away_minuti != 0 ? (
 															<>
-																<span className="text-2xl font-bold text-primary">{match.home_gol}</span>
+																<span className="text-xl sm:text-2xl font-bold text-primary">{match.home_gol}</span>
 																<span className="text-muted-foreground">-</span>
-																<span className="text-2xl font-bold text-primary">{match.away_gol}</span>
+																<span className="text-xl sm:text-2xl font-bold text-primary">{match.away_gol}</span>
 															</>
 														) : (
-															<span className="text-muted-foreground font-medium">-</span>
+															<span className="text-muted-foreground font-medium">vs</span>
 														)}
 													</div>
-													<span className="font-medium w-48">{match.away_team}</span>
-
-													<img src={`/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-8 w-8 object-contain" />
+													
+													<div className="flex items-center gap-2 flex-1 sm:flex-initial">
+														<img src={`/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-6 w-6 sm:h-8 sm:w-8 object-contain flex-shrink-0" />
+														<span className="font-medium text-sm sm:text-base truncate max-w-[120px] sm:max-w-[180px]">{match.away_team}</span>
+													</div>
 												</div>
 											</div>
 										))}
