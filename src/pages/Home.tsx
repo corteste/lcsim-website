@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, TrendingUp, Users, Award, BarChart3, CalendarDays} from "lucide-react";
+import { Trophy, TrendingUp, Users, Award, BarChart3, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,22 +23,24 @@ const topPlayers = [
 
 const CURRENT_SEASON = 9;
 
+const videoLink = "https://youtube.com/playlist?list=PL6KtE-gTmEMF-hjXJj5TQuUAqOje3U1XW&si=qEg_cfVv1XY_VPhi";
+
 const Home = () => {
 
   const { playersStats } = getPlayersSumStats(CURRENT_SEASON, null, null);
   const filteredStats = playersStats.sort(sortPlayersStats);
 
-    function sortPlayersStats(a: PlayerStatsSum, b: PlayerStatsSum) {
-          return (Math.round(((b.sum_voto / b.matches_played) - (a.sum_voto / a.matches_played)) * 100) / 100);
-    };
-    
+  function sortPlayersStats(a: PlayerStatsSum, b: PlayerStatsSum) {
+    return (Math.round(((b.sum_voto / b.matches_played) - (a.sum_voto / a.matches_played)) * 100) / 100);
+  };
+
 
   const { standings } = getStandings();
   return (
-    
+
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 py-8">
         {/* <div className="mb-8 text-center">
           <h1 className="text-5xl font-bold text-foreground mb-3 flex items-center justify-center gap-3">
@@ -73,17 +75,16 @@ const Home = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {standings.slice(0,3).map((team,index) => (
+                {standings.slice(0, 3).map((team, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-                        index + 1 === 1 ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
-                        index + 1 === 2 ? "bg-gray-400/20 text-gray-700 dark:text-gray-400" :
-                        "bg-orange-500/20 text-orange-700 dark:text-orange-400"
-                      }`}>
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${index + 1 === 1 ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
+                          index + 1 === 2 ? "bg-gray-400/20 text-gray-700 dark:text-gray-400" :
+                            "bg-orange-500/20 text-orange-700 dark:text-orange-400"
+                        }`}>
                         {index + 1}
                       </div>
                       <span className="font-medium">{team.team.NAME}</span>
@@ -111,16 +112,16 @@ const Home = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                 <div
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                  >
-                    
-                    <div className="flex items-center gap-3">
-                      <Users className={`h-5 w-5 text-blue-600`} />
-                      <span className="text-sm text-muted-foreground">Squadre</span>
-                    </div>
-                    <span className="font-bold text-lg">10</span>
+                <div
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                >
+
+                  <div className="flex items-center gap-3">
+                    <Users className={`h-5 w-5 text-blue-600`} />
+                    <span className="text-sm text-muted-foreground">Squadre</span>
                   </div>
+                  <span className="font-bold text-lg">10</span>
+                </div>
                 {stats.map((stat, index) => (
                   <div
                     key={index}
@@ -153,13 +154,13 @@ const Home = () => {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
-                {filteredStats.slice(0,3).map((player, index) => (
+                {filteredStats.slice(0, 3).map((player, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                   >
                     <div className="flex flex-col">
-                      
+
                       <span className="font-medium">{player.Nome} {player.Cognome}</span>
                       <span className="text-xs text-muted-foreground">{player.Squadra}</span>
                     </div>
@@ -167,7 +168,7 @@ const Home = () => {
                       <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                         {player.Posiz}
                       </Badge>
-                      <span className="font-bold text-primary text-lg">{Math.round((player.sum_voto / player.matches_played) * 100)/100}</span>
+                      <span className="font-bold text-primary text-lg">{Math.round((player.sum_voto / player.matches_played) * 100) / 100}</span>
                     </div>
                   </div>
                 ))}
