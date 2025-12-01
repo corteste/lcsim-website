@@ -312,7 +312,7 @@ const Calendario = () => {
 																		<span className="text-sm">{player.Cognome} {player.Nome}</span>
 																	</div>
 																	<Badge variant="outline" className="font-semibold">
-																		{player.VOTO}
+																		{Number(player.VOTO).toFixed(1)}
 																	</Badge>
 																</div>
 																<div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
@@ -322,7 +322,7 @@ const Calendario = () => {
 																	<div>Passaggi: {player.PASS_SI}/{player.PASS_TOT} {player.PASS_TOT > 0 && (<> ({Math.round((player.PASS_SI / player.PASS_TOT) * 100)}%)</>)}</div>
 																	<div>Tiri: {player.TIRI_IN}/{player.TIRI_TOT} {player.TIRI_TOT > 0 && (<> ({Math.round((player.TIRI_IN / player.TIRI_TOT) * 100)}%)</>)}</div>
 																	<div>Cross: {player.CROS_SI}/{player.CROS_TOT} {player.CROS_TOT > 0 && (<> ({Math.round((player.CROS_SI / player.CROS_TOT) * 100)}%)</>)}</div>
-																	<div>Dribbling: {player.DRIB_SI}/{player.DRIB_TOT} {player.DRIB_TOT > 0 && (<> ({Math.round((player.DRIB_TOT / player.DRIB_TOT) * 100)}%)</>)}</div>
+																	<div>Dribbling: {player.DRIB_SI}/{player.DRIB_TOT} {player.DRIB_TOT > 0 && (<> ({Math.round((player.DRIB_SI / player.DRIB_TOT) * 100)}%)</>)}</div>
 																	<div>Contrasti: {player.CTRS_SI}/{player.CTRS_TOT} {player.CTRS_TOT > 0 && (<> ({Math.round((player.CTRS_SI / player.CTRS_TOT) * 100)}%)</>)}</div>
 																</div>
 															</div>
@@ -343,7 +343,7 @@ const Calendario = () => {
 																		<span className="text-sm">{player.Cognome} {player.Nome}</span>
 																	</div>
 																	<Badge variant="outline" className="font-semibold">
-																		{player.VOTO}
+																		{Number(player.VOTO).toFixed(1)}
 																	</Badge>
 																</div>
 																<div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
@@ -353,7 +353,7 @@ const Calendario = () => {
 																	<div>Passaggi: {player.PASS_SI}/{player.PASS_TOT} {player.PASS_TOT > 0 && (<> ({Math.round((player.PASS_SI / player.PASS_TOT) * 100)}%)</>)}</div>
 																	<div>Tiri: {player.TIRI_IN}/{player.TIRI_TOT} {player.TIRI_TOT > 0 && (<> ({Math.round((player.TIRI_IN / player.TIRI_TOT) * 100)}%)</>)}</div>
 																	<div>Cross: {player.CROS_SI}/{player.CROS_TOT} {player.CROS_TOT > 0 && (<> ({Math.round((player.CROS_SI / player.CROS_TOT) * 100)}%)</>)}</div>
-																	<div>Dribbling: {player.DRIB_SI}/{player.DRIB_TOT} {player.DRIB_TOT > 0 && (<> ({Math.round((player.DRIB_TOT / player.DRIB_TOT) * 100)}%)</>)}</div>
+																	<div>Dribbling: {player.DRIB_SI}/{player.DRIB_TOT} {player.DRIB_TOT > 0 && (<> ({Math.round((player.DRIB_SI / player.DRIB_TOT) * 100)}%)</>)}</div>
 																	<div>Contrasti: {player.CTRS_SI}/{player.CTRS_TOT} {player.CTRS_TOT > 0 && (<> ({Math.round((player.CTRS_SI / player.CTRS_TOT) * 100)}%)</>)}</div>
 																</div>
 															</div>
