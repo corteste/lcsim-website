@@ -6,6 +6,7 @@ import { Users } from "lucide-react";
 import { getRoleColor, getValueColor, getNationalityFlag } from "@/utils/functions";
 import { getTeams } from "@/hooks/use-teams";
 import { getPlayersSumStats } from "@/hooks/use-players-stats";
+import { Player } from "@/types/player";
 
 const CURRENT_SEASON = 9;
 
@@ -15,6 +16,15 @@ const Rose = () => {
 
   const sortedTeams = teams.slice().sort((a, b) => a.NAME.localeCompare(b.NAME));
 
+ // PER ORDINE FORMAZIONE
+    const rolePriority: Record<string, number> = {
+        POR: 0, DC: 1, TD: 2, TS: 3, CDC: 4, CC: 5, ED: 6, ES: 7, COC: 8, AD: 9, AS: 10, AT: 11, ATT: 12
+    };
+
+    function sortPlayersByRole(players: Player[]): Player[] {
+        // slice() serve per non modificare l'array originale
+        return players.slice().sort((a, b) => rolePriority[a.Posiz] - rolePriority[b.Posiz]);
+    }
 
 
   return (
@@ -84,7 +94,7 @@ const Rose = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-3">
-                    {team.players.map((player, playerIndex) => {
+                    {sortPlayersByRole(team.players).map((player, playerIndex) => {
                       const stat = playersStats.find(p => p.ID === player.ID);
                       const avgVote = stat?.sum_voto
                         ? (stat.sum_voto / (stat.matches_played || 1)).toFixed(1)
