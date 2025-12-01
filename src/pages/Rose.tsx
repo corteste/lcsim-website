@@ -99,28 +99,28 @@ const Rose = () => {
                             {player.Posiz}
                           </Badge>
                           <span className="font-medium">{player.Nome} {player.Cognome}</span>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 sm:hidden lg:flex">
                             <img src={getNationalityFlag(player.Nazionalità)} alt="Player Flag" className="h-8 w-8 object-contain border rounded-full" />
                           </div>
                           <div className="flex items-center gap-1 sm:w-auto">
                             <span className="text-sm text-muted-foreground">Età:</span>
                             <span className="font-medium">{player.Età}</span>
                           </div>
-                          <div className="flex items-center gap-1 sm:hidden lg:flex">
+                          <div className="flex items-center gap-1">
                             <span className="text-sm text-muted-foreground">Overall:</span>
                             <Badge variant="outline" className={getValueColor(player.OVR)}>
                               {player.OVR}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 sm:hidden lg:flex">
                             <span className="text-sm text-muted-foreground">Piede:</span>
                             <span className="font-small">{player.Piede}</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 sm:hidden lg:flex">
                             <span className="text-sm text-muted-foreground">XP:</span>
                             <span className="font-small">{player.XP}</span>
                           </div>
-                          <div className="flex items-center gap-2 sm:hidden lg:flex">
+                          <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">Voto medio:</span>
                             <span className="font-bold text-primary text-lg">
                               {avgVote}
