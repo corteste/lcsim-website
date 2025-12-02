@@ -27,7 +27,7 @@ const PlayerDetails = ({ currentPlayer }: PlayerDetailsProps) => {
                               </Badge>
                           </CardTitle>
                           <CardDescription>
-                            # 4
+                            Altezza: {currentPlayer.Altezza} cm - Peso: {currentPlayer.Peso} kg
                           </CardDescription>
                         </div>
                         <div className="text-right">
