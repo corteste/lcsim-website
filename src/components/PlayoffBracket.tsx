@@ -93,18 +93,23 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
           <div className="flex justify-between items-start gap-3 sm:gap-6 mb-6">
             <div className="flex-1 text-center">
               <h3 className="text-sm sm:text-base font-bold text-primary">PLAY IN</h3>
+              <p className="text-xs text-muted-foreground mt-1">15-16 Mag</p>
             </div>
             <div className="flex-1 text-center">
               <h3 className="text-sm sm:text-base font-bold text-primary">QUARTI</h3>
+              <p className="text-xs text-muted-foreground mt-1">22-23 Mag</p>
             </div>
             <div className="flex-1 text-center">
               <h3 className="text-sm sm:text-base font-bold text-primary">SEMIFINALE</h3>
+              <p className="text-xs text-muted-foreground mt-1">29-30 Mag</p>
             </div>
             <div className="flex-1 text-center">
               <h3 className="text-sm sm:text-base font-bold text-primary">FINALE</h3>
+              <p className="text-xs text-muted-foreground mt-1">5-6 Giu</p>
             </div>
             <div className="flex-1 text-center">
               <h3 className="text-sm sm:text-base font-bold text-primary">VINCITORE</h3>
+              <p className="text-xs text-muted-foreground mt-1">6 Giu</p>
             </div>
           </div>
 
