@@ -9,6 +9,8 @@ import { getRoleColor, getPosGroup, getContractStatus } from "@/utils/functions"
 import { getPlayers } from "@/hooks/use-players";
 import { MarketStatus } from "@/types/marketStatus";
 import { getTeams } from "@/hooks/use-teams";
+import { Player } from "@/types/player";
+import PlayerDetails from "@/components/player/playerDetails";
 
 const getMarketStatus = (market: MarketStatus) => {
   if(market === null) return "bg-muted";
@@ -42,6 +44,7 @@ const ListaGiocatori = () => {
   const { players } = getPlayers();
   const { teams } = getTeams();
   const [currentPage, setCurrentPage] = useState(1);
+  const [selected, setSelected] = useState<{ player: Player } | null>(null);
   
   
   // Reset page when filters change
@@ -176,7 +179,8 @@ const ListaGiocatori = () => {
               {currentPlayers.map((player, index) => (
                 <div
                   key={index}
-                  className="flex flex-col sm:grid sm:grid-cols-[60px_minmax(150px,1fr)_80px] lg:grid-cols-[80px_minmax(200px,1fr)_100px_100px_100px_180px] gap-3 sm:gap-4 items-start sm:items-center p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  onClick={() => setSelected({ player })}
+                  className="flex flex-col sm:grid sm:grid-cols-[60px_minmax(150px,1fr)_80px] lg:grid-cols-[80px_minmax(200px,1fr)_100px_100px_100px_180px] gap-3 sm:gap-4 items-start sm:items-center p-4 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
                 >
                   <div className="flex items-center justify-center w-12 h-12 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full bg-primary/10 font-bold text-primary text-base sm:text-lg">
                     {player.OVR}
@@ -273,6 +277,13 @@ const ListaGiocatori = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Modal Dettaglio Giocatore */}
+      {selected && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setSelected(null)}>
+                <PlayerDetails currentPlayer={selected.player} />
+              </div>
+            )}
     </div>
   );
 };
