@@ -69,14 +69,12 @@ const Calendario = () => {
 											<div
 												key={index}
 												onClick={() => setSelected({ week: round.week, match })}
-												className="grid grid-cols-[1fr_auto_auto_auto_1fr] gap-3 items-center p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+												className="grid grid-cols-[minmax(100px,1fr)_32px_90px_32px_minmax(100px,1fr)] sm:grid-cols-[minmax(150px,1fr)_40px_90px_40px_minmax(150px,1fr)] gap-2 sm:gap-3 items-center p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
 											>
-												<div className="flex items-center gap-2 justify-end">
-													<span className="font-medium text-right text-sm sm:text-base truncate">{match.home_team}</span>
-													<img src={`/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-6 w-6 sm:h-8 sm:w-8 object-contain flex-shrink-0" />
-												</div>
+												<span className="font-medium text-right text-sm sm:text-base truncate">{match.home_team}</span>
+												<img src={`/images/teams/${match.home}_Logo.png`} alt={`${match.home} Logo`} className="h-6 w-6 sm:h-8 sm:w-8 object-contain flex-shrink-0 justify-self-center" />
 												
-												<div className="flex items-center gap-2 justify-center min-w-[70px]">
+												<div className="flex items-center gap-2 justify-center">
 													{match.away_minuti != 0 ? (
 														<>
 															<span className="text-lg sm:text-2xl font-bold text-primary">{match.home_gol}</span>
@@ -88,10 +86,8 @@ const Calendario = () => {
 													)}
 												</div>
 												
-												<div className="flex items-center gap-2">
-													<img src={`/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-6 w-6 sm:h-8 sm:w-8 object-contain flex-shrink-0" />
-													<span className="font-medium text-sm sm:text-base truncate">{match.away_team}</span>
-												</div>
+												<img src={`/images/teams/${match.away}_Logo.png`} alt={`${match.away} Logo`} className="h-6 w-6 sm:h-8 sm:w-8 object-contain flex-shrink-0 justify-self-center" />
+												<span className="font-medium text-sm sm:text-base truncate">{match.away_team}</span>
 											</div>
 										))}
 									</div>
