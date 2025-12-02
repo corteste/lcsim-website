@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getStandings } from "@/hooks/use-standings";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import PlayoffBracket from "@/components/PlayoffBracket";
 
 const Classifica = () => {
 
@@ -82,6 +83,8 @@ const Classifica = () => {
             </Table>
           </CardContent>
         </Card>
+
+        <PlayoffBracket standings={standings} />
       </main>
     </div>
   );
