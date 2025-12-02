@@ -89,6 +89,25 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <div className="min-w-[900px] p-4">
+          {/* Round Headers */}
+          <div className="flex justify-between items-start gap-3 sm:gap-6 mb-6">
+            <div className="flex-1 text-center">
+              <h3 className="text-sm sm:text-base font-bold text-primary">PLAY IN</h3>
+            </div>
+            <div className="flex-1 text-center">
+              <h3 className="text-sm sm:text-base font-bold text-primary">QUARTI</h3>
+            </div>
+            <div className="flex-1 text-center">
+              <h3 className="text-sm sm:text-base font-bold text-primary">SEMIFINALE</h3>
+            </div>
+            <div className="flex-1 text-center">
+              <h3 className="text-sm sm:text-base font-bold text-primary">FINALE</h3>
+            </div>
+            <div className="flex-1 text-center">
+              <h3 className="text-sm sm:text-base font-bold text-primary">VINCITORE</h3>
+            </div>
+          </div>
+
           {/* Bracket Structure */}
           <div className="flex justify-between items-center gap-3 sm:gap-6">
             
