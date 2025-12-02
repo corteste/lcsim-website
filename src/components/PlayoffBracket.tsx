@@ -81,83 +81,67 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
   );
 
   return (
-    <Card className="shadow-lg mt-8">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          🏆 Schema Playoff
+    <Card className="shadow-lg mt-8 overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
+        <CardTitle className="flex items-center gap-3">
+          <span className="text-2xl">🏆</span>
+          <span>Schema Playoff</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <div className="min-w-[900px] p-4">
+      <CardContent className="overflow-x-auto p-0">
+        <div className="min-w-[800px] p-6">
           {/* Round Headers */}
-          <div className="flex justify-between items-start gap-3 sm:gap-6 mb-6">
-            <div className="flex-1 text-center">
-              <h3 className="text-sm sm:text-base font-bold text-primary">PLAY IN</h3>
+          <div className="grid grid-cols-4 gap-4 mb-8">
+            <div className="text-center px-4 py-3 rounded-lg bg-primary/5 border border-primary/20">
+              <h3 className="text-sm sm:text-base font-bold text-primary uppercase tracking-wide">Play In</h3>
               <p className="text-xs text-muted-foreground mt-1">15-16 Mag</p>
             </div>
-            <div className="flex-1 text-center">
-              <h3 className="text-sm sm:text-base font-bold text-primary">QUARTI</h3>
+            <div className="text-center px-4 py-3 rounded-lg bg-primary/5 border border-primary/20">
+              <h3 className="text-sm sm:text-base font-bold text-primary uppercase tracking-wide">Quarti</h3>
               <p className="text-xs text-muted-foreground mt-1">22-23 Mag</p>
             </div>
-            <div className="flex-1 text-center">
-              <h3 className="text-sm sm:text-base font-bold text-primary">SEMIFINALE</h3>
+            <div className="text-center px-4 py-3 rounded-lg bg-primary/5 border border-primary/20">
+              <h3 className="text-sm sm:text-base font-bold text-primary uppercase tracking-wide">Semifinale</h3>
               <p className="text-xs text-muted-foreground mt-1">29-30 Mag</p>
             </div>
-            <div className="flex-1 text-center">
-              <h3 className="text-sm sm:text-base font-bold text-primary">FINALE</h3>
+            <div className="text-center px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30">
+              <h3 className="text-sm sm:text-base font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Finale</h3>
               <p className="text-xs text-muted-foreground mt-1">5-6 Giu</p>
-            </div>
-            <div className="flex-1 text-center">
-              <h3 className="text-sm sm:text-base font-bold text-primary">VINCITORE</h3>
-              <p className="text-xs text-muted-foreground mt-1">6 Giu</p>
             </div>
           </div>
 
           {/* Bracket Structure */}
-          <div className="flex justify-between items-center gap-3 sm:gap-6">
+          <div className="grid grid-cols-4 gap-4 items-center">
             
-            {/* First Round - Left Side */}
-            <div className="flex flex-col gap-16">
+            {/* Play In */}
+            <div className="flex flex-col gap-6">
               <MatchBox team1Pos={8} team2Pos={9} />
               <MatchBox team1Pos={7} team2Pos={10} />
             </div>
 
             {/* Quarterfinals */}
-            <div className="flex flex-col gap-8">
-              <div className="flex flex-col items-center">
-                <MatchBox team1Pos={4} team2Pos={5} />
-                <Connector vertical />
-                <MatchBox team1Pos={9} team2Pos={1} />
-              </div>
-              
-              <div className="flex flex-col items-center">
-                <MatchBox team1Pos={2} team2Pos={7} />
-                <Connector vertical />
-                <MatchBox team1Pos={3} team2Pos={6} />
-              </div>
+            <div className="flex flex-col gap-4">
+              <MatchBox team1Pos={4} team2Pos={5} />
+              <MatchBox team1Pos={1} team2Pos={8} />
+              <MatchBox team1Pos={2} team2Pos={7} />
+              <MatchBox team1Pos={3} team2Pos={6} />
             </div>
 
             {/* Semifinals */}
-            <div className="flex flex-col gap-32">
-              <MatchBox team1Pos={5} team2Pos={1} />
+            <div className="flex flex-col gap-8 py-8">
+              <MatchBox team1Pos={4} team2Pos={1} />
               <MatchBox team1Pos={2} team2Pos={3} />
             </div>
 
             {/* Finals */}
-            <div className="flex flex-col items-center justify-center">
-              <MatchBox team1Pos={1} team2Pos={2} className="min-w-[200px]" />
-            </div>
-
-            {/* Winner */}
-            <div className="flex items-center gap-3">
-              <Connector />
-              <WinnerBox teamPos={2} className="min-w-[180px] bg-primary/5 border-primary/30" />
+            <div className="flex items-center justify-center h-full">
+              <MatchBox team1Pos={1} team2Pos={2} className="min-w-[180px] border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-yellow-500/5" />
             </div>
           </div>
 
           {/* Legend */}
-          <div className="mt-8 pt-6 border-t">
-            <p className="text-xs sm:text-sm text-muted-foreground text-center">
+          <div className="mt-8 pt-6 border-t border-border/50">
+            <p className="text-xs text-muted-foreground text-center italic">
               I risultati mostrati sono esemplificativi. I punteggi effettivi verranno aggiornati durante i playoff.
             </p>
           </div>
