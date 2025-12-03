@@ -44,7 +44,7 @@ const StatSection = ({ children, className = "" }: { children: React.ReactNode; 
 
 const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
   return (
-    <div className="w-full max-w-4xl p-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+    <div className="w-full max-w-4xl max-h-4xl p-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
       <Card className="shadow-2xl border-0 bg-gradient-to-br from-card to-card/95 overflow-hidden">
         {/* Header */}
         <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6">
@@ -167,7 +167,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               </TabsTrigger>
             </TabsList>
 
-            <div className="p-6 max-h-[400px] overflow-y-auto">
+            <div className="p-6 max-h-[800px]  overflow-y-auto">
               <TabsContent value="portiere" className="mt-0 space-y-4 animate-fade-in data-[state=inactive]:animate-fade-out">
                 <div>
                   <h4 className="text-xs font-semibold text-orange-500 uppercase tracking-wider mb-3">Tecnico</h4>
