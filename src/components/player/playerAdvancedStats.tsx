@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { X, Target, Timer, Award, TrendingUp, Shield, Footprints } from "lucide-react";
-import { getRoleColor } from "@/utils/functions";
+import { getPlayerImage, getRoleColor } from "@/utils/functions";
 
 interface PlayerStatsProps {
   currentPlayer: PlayerStatsSum;
@@ -82,6 +82,18 @@ const PlayerAdvancedStats = ({ currentPlayer, teams, onClose }: PlayerStatsProps
           )}
           
           <div className="flex items-center gap-5">
+
+             {/* Player Image & OVR */}
+                        <div className="relative">
+                          <div className="h-24 w-24 rounded-xl overflow-hidden border-2 border-primary/20 shadow-lg">
+                            <img 
+                              src={getPlayerImage(currentPlayer.ID)} 
+                              onError={(e) => e.currentTarget.src = "/images/players/MConti.png"} 
+                              alt="Player" 
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        </div>
             {/* Player Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -188,7 +200,7 @@ const PlayerAdvancedStats = ({ currentPlayer, teams, onClose }: PlayerStatsProps
                 </TabsTrigger>
               </TabsList>
 
-              <div className="p-6 max-h-[400px] overflow-y-auto">
+              <div className="p-6 max-h-[800px] overflow-y-auto">
                 <TabsContent value="generale" className="mt-0 space-y-6 animate-fade-in data-[state=inactive]:animate-fade-out">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard label="Gol" value={currentPlayer.sum_gol ?? 0} icon={Target} delay={0} />
