@@ -12,24 +12,24 @@ interface PlayerDetailsProps {
   onClose?: () => void;
 }
 
-const StatBar = ({ label, value }: { label: string; value: number | null }) => {
+const StatBar = ({ label, value, delay = 0 }: { label: string; value: number | null; delay?: number }) => {
   const numValue = value ?? 0;
   const percentage = Math.min(numValue, 99);
   
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="flex justify-between items-center">
         <span className="text-xs text-muted-foreground">{label}</span>
         <span className={`text-sm font-bold ${getValueColor(value)}`}>{value ?? "-"}</span>
       </div>
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div 
-          className={`h-full rounded-full transition-all ${
+          className={`h-full rounded-full transition-all duration-500 ${
             numValue >= 80 ? "bg-green-500" : 
             numValue >= 60 ? "bg-yellow-500" : 
             numValue >= 40 ? "bg-orange-500" : "bg-red-500"
           }`}
-          style={{ width: `${percentage}%` }}
+          style={{ width: `${percentage}%`, transitionDelay: `${delay + 100}ms` }}
         />
       </div>
     </div>
@@ -44,7 +44,7 @@ const StatSection = ({ children, className = "" }: { children: React.ReactNode; 
 
 const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
   return (
-    <div className="w-full max-w-2xl p-4" onClick={(e) => e.stopPropagation()}>
+    <div className="w-full max-w-4xl p-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
       <Card className="shadow-2xl border-0 bg-gradient-to-br from-card to-card/95 overflow-hidden">
         {/* Header */}
         <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6">
@@ -167,118 +167,118 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               </TabsTrigger>
             </TabsList>
 
-            <div className="p-5 max-h-[300px] overflow-y-auto">
-              <TabsContent value="portiere" className="mt-0 space-y-4">
+            <div className="p-6 max-h-[400px] overflow-y-auto">
+              <TabsContent value="portiere" className="mt-0 space-y-4 animate-fade-in data-[state=inactive]:animate-fade-out">
                 <div>
                   <h4 className="text-xs font-semibold text-orange-500 uppercase tracking-wider mb-3">Tecnico</h4>
                   <StatSection>
-                    <StatBar label="Presa" value={currentPlayer.PREP} />
-                    <StatBar label="Posizionamento" value={currentPlayer.POSP} />
-                    <StatBar label="Rinvio" value={currentPlayer.RINP} />
+                    <StatBar label="Presa" value={currentPlayer.PREP} delay={0} />
+                    <StatBar label="Posizionamento" value={currentPlayer.POSP} delay={50} />
+                    <StatBar label="Rinvio" value={currentPlayer.RINP} delay={100} />
                   </StatSection>
                 </div>
                 <Separator className="my-4" />
                 <div>
                   <h4 className="text-xs font-semibold text-orange-500 uppercase tracking-wider mb-3">Fisico</h4>
                   <StatSection>
-                    <StatBar label="Riflessi" value={currentPlayer.RIFP} />
-                    <StatBar label="Tuffo" value={currentPlayer.TUFP} />
+                    <StatBar label="Riflessi" value={currentPlayer.RIFP} delay={150} />
+                    <StatBar label="Tuffo" value={currentPlayer.TUFP} delay={200} />
                   </StatSection>
                 </div>
               </TabsContent>
 
-              <TabsContent value="difesa" className="mt-0 space-y-4">
+              <TabsContent value="difesa" className="mt-0 space-y-4 animate-fade-in data-[state=inactive]:animate-fade-out">
                 <div>
                   <h4 className="text-xs font-semibold text-blue-500 uppercase tracking-wider mb-3">Fisico</h4>
                   <StatSection>
-                    <StatBar label="Contrasto" value={currentPlayer.CONT} />
-                    <StatBar label="Scivolata" value={currentPlayer.SCIV} />
+                    <StatBar label="Contrasto" value={currentPlayer.CONT} delay={0} />
+                    <StatBar label="Scivolata" value={currentPlayer.SCIV} delay={50} />
                   </StatSection>
                 </div>
                 <Separator className="my-4" />
                 <div>
                   <h4 className="text-xs font-semibold text-blue-500 uppercase tracking-wider mb-3">Mentale</h4>
                   <StatSection>
-                    <StatBar label="Marcatura" value={currentPlayer.MARC} />
-                    <StatBar label="Aggressività" value={currentPlayer.AGGR} />
-                    <StatBar label="Intercettazioni" value={currentPlayer.INTR} />
+                    <StatBar label="Marcatura" value={currentPlayer.MARC} delay={100} />
+                    <StatBar label="Aggressività" value={currentPlayer.AGGR} delay={150} />
+                    <StatBar label="Intercettazioni" value={currentPlayer.INTR} delay={200} />
                   </StatSection>
                 </div>
               </TabsContent>
 
-              <TabsContent value="centrocampo" className="mt-0 space-y-4">
+              <TabsContent value="centrocampo" className="mt-0 space-y-4 animate-fade-in data-[state=inactive]:animate-fade-out">
                 <div>
                   <h4 className="text-xs font-semibold text-green-500 uppercase tracking-wider mb-3">Passaggi</h4>
                   <StatSection>
-                    <StatBar label="Passaggi Corti" value={currentPlayer.PASC} />
-                    <StatBar label="Passaggi Lunghi" value={currentPlayer.PASL} />
-                    <StatBar label="Cross" value={currentPlayer.CRSS} />
+                    <StatBar label="Passaggi Corti" value={currentPlayer.PASC} delay={0} />
+                    <StatBar label="Passaggi Lunghi" value={currentPlayer.PASL} delay={50} />
+                    <StatBar label="Cross" value={currentPlayer.CRSS} delay={100} />
                   </StatSection>
                 </div>
                 <Separator className="my-4" />
                 <div>
                   <h4 className="text-xs font-semibold text-green-500 uppercase tracking-wider mb-3">Gestione</h4>
                   <StatSection>
-                    <StatBar label="Controllo Palla" value={currentPlayer.CTRP} />
-                    <StatBar label="Visione" value={currentPlayer.VISI} />
-                    <StatBar label="Effetto" value={currentPlayer.EFFT} />
+                    <StatBar label="Controllo Palla" value={currentPlayer.CTRP} delay={150} />
+                    <StatBar label="Visione" value={currentPlayer.VISI} delay={200} />
+                    <StatBar label="Effetto" value={currentPlayer.EFFT} delay={250} />
                   </StatSection>
                 </div>
               </TabsContent>
 
-              <TabsContent value="attacco" className="mt-0 space-y-4">
+              <TabsContent value="attacco" className="mt-0 space-y-4 animate-fade-in data-[state=inactive]:animate-fade-out">
                 <div>
                   <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-3">Tiri</h4>
                   <StatSection>
-                    <StatBar label="Potenza Tiro" value={currentPlayer.PTIR} />
-                    <StatBar label="Tiri Distanza" value={currentPlayer.TIRD} />
-                    <StatBar label="Tiri al Volo" value={currentPlayer.TIRV} />
+                    <StatBar label="Potenza Tiro" value={currentPlayer.PTIR} delay={0} />
+                    <StatBar label="Tiri Distanza" value={currentPlayer.TIRD} delay={50} />
+                    <StatBar label="Tiri al Volo" value={currentPlayer.TIRV} delay={100} />
                   </StatSection>
                 </div>
                 <Separator className="my-4" />
                 <div>
                   <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-3">Controllo</h4>
                   <StatSection>
-                    <StatBar label="Dribbling" value={currentPlayer.DRBL} />
-                    <StatBar label="Piazzamento" value={currentPlayer.PIAZ} />
-                    <StatBar label="Finalizzazione" value={currentPlayer.FINA} />
-                    <StatBar label="Colpo di Testa" value={currentPlayer.TSTA} />
+                    <StatBar label="Dribbling" value={currentPlayer.DRBL} delay={150} />
+                    <StatBar label="Piazzamento" value={currentPlayer.PIAZ} delay={200} />
+                    <StatBar label="Finalizzazione" value={currentPlayer.FINA} delay={250} />
+                    <StatBar label="Colpo di Testa" value={currentPlayer.TSTA} delay={300} />
                   </StatSection>
                 </div>
               </TabsContent>
 
-              <TabsContent value="fisico" className="mt-0 space-y-4">
+              <TabsContent value="fisico" className="mt-0 space-y-4 animate-fade-in data-[state=inactive]:animate-fade-out">
                 <div>
                   <h4 className="text-xs font-semibold text-purple-500 uppercase tracking-wider mb-3">Velocità</h4>
                   <StatSection>
-                    <StatBar label="Accelerazione" value={currentPlayer.ACCL} />
-                    <StatBar label="Velocità" value={currentPlayer.VELO} />
-                    <StatBar label="Agilità" value={currentPlayer.AGIL} />
+                    <StatBar label="Accelerazione" value={currentPlayer.ACCL} delay={0} />
+                    <StatBar label="Velocità" value={currentPlayer.VELO} delay={50} />
+                    <StatBar label="Agilità" value={currentPlayer.AGIL} delay={100} />
                   </StatSection>
                 </div>
                 <Separator className="my-4" />
                 <div>
                   <h4 className="text-xs font-semibold text-purple-500 uppercase tracking-wider mb-3">Potenza</h4>
                   <StatSection>
-                    <StatBar label="Forza" value={currentPlayer.FRZA} />
-                    <StatBar label="Resistenza" value={currentPlayer.RESI} />
-                    <StatBar label="Elevazione" value={currentPlayer.ELEV} />
+                    <StatBar label="Forza" value={currentPlayer.FRZA} delay={150} />
+                    <StatBar label="Resistenza" value={currentPlayer.RESI} delay={200} />
+                    <StatBar label="Elevazione" value={currentPlayer.ELEV} delay={250} />
                   </StatSection>
                 </div>
                 <Separator className="my-4" />
                 <div>
                   <h4 className="text-xs font-semibold text-purple-500 uppercase tracking-wider mb-3">Prontezza</h4>
                   <StatSection>
-                    <StatBar label="Riflessi" value={currentPlayer.RIFL} />
-                    <StatBar label="Equilibrio" value={currentPlayer.EQLB} />
+                    <StatBar label="Riflessi" value={currentPlayer.RIFL} delay={300} />
+                    <StatBar label="Equilibrio" value={currentPlayer.EQLB} delay={350} />
                   </StatSection>
                 </div>
                 <Separator className="my-4" />
                 <div>
                   <h4 className="text-xs font-semibold text-amber-500 uppercase tracking-wider mb-3">Calci Piazzati</h4>
                   <StatSection>
-                    <StatBar label="Punizioni" value={currentPlayer.PNIZ} />
-                    <StatBar label="Rigori" value={currentPlayer.CRIG} />
+                    <StatBar label="Punizioni" value={currentPlayer.PNIZ} delay={400} />
+                    <StatBar label="Rigori" value={currentPlayer.CRIG} delay={450} />
                   </StatSection>
                 </div>
               </TabsContent>
