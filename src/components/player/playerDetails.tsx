@@ -167,7 +167,7 @@ const PlayerDetails = ({ currentPlayer }: PlayerDetailsProps) => {
                 </div>
               </div>
             </div>
-            <div className="flex justify-between mb-1">
+            <div className="flex justify-between border-b mb-1">
               <div className="flex gap-10 p-6">
                 {/* --- Colonna 1: ATTACCO TIRI --- */}
                 <div className="bg-red-500/10 dark:text-white rounded-md p-3 w-24 text-center">
@@ -194,6 +194,98 @@ const PlayerDetails = ({ currentPlayer }: PlayerDetailsProps) => {
                 <div className="bg-red-500/10 dark:text-white rounded-md p-3 w-24 text-center">
                   <p className="font-bold text-sm">ATT</p>
                   <p className="text-xs">CONTROLLO</p>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Dribbling</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.DRBL)}>{currentPlayer.DRBL}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Piazzamento</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.PIAZ)}>{currentPlayer.PIAZ}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Finalizzazione</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.FINA)}>{currentPlayer.FINA}</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between border-b mb-1">
+              <div className="flex gap-10 p-6">
+                {/* --- Colonna 1: FISICO VELOCITA --- */}
+                <div className="bg-purple-500/10 dark:text-white rounded-md p-3 w-24 text-center">
+                  <p className="font-bold text-sm">FIS</p>
+                  <p className="text-xs">VELOCITÀ</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Potenza Tiro</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.PTIR)}>{currentPlayer.PTIR}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Tiri dalla distanza</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.TIRD)}>{currentPlayer.TIRD}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Tiri al volo</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.TIRV)}>{currentPlayer.TIRV}</Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-10 p-6">
+                {/* --- Colonna 2: FISICO POTENZA --- */}
+                <div className="bg-purple-500/10 dark:text-white rounded-md p-3 w-24 text-center">
+                  <p className="font-bold text-sm">FIS</p>
+                  <p className="text-xs">POTENZA</p>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Dribbling</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.DRBL)}>{currentPlayer.DRBL}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Piazzamento</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.PIAZ)}>{currentPlayer.PIAZ}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Finalizzazione</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.FINA)}>{currentPlayer.FINA}</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between mb-1">
+              <div className="flex gap-10 p-6">
+                {/* --- Colonna 1: FISICO PRONTEZZA --- */}
+                <div className="bg-purple-500/10 dark:text-white rounded-md p-3 w-24 text-center">
+                  <p className="font-bold text-sm">FIS</p>
+                  <p className="text-xs">PRONTEZZA</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Potenza Tiro</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.PTIR)}>{currentPlayer.PTIR}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Tiri dalla distanza</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.TIRD)}>{currentPlayer.TIRD}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between w-32">
+                    <span className="text-sm text-gray-700 dark:text-white">Tiri al volo</span>
+                    <Badge variant="outline" className={getValueColor(currentPlayer.TIRV)}>{currentPlayer.TIRV}</Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-10 p-6">
+                {/* --- Colonna 2: CALCI PIAZZATI --- */}
+                <div className="bg-purple-500/10 dark:text-white rounded-md p-3 w-24 text-center">
+                  <p className="font-bold text-sm">CALCI</p>
+                  <p className="text-xs">PIAZZATI</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
