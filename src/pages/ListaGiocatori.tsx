@@ -280,10 +280,10 @@ const ListaGiocatori = () => {
 
       {/* Modal Dettaglio Giocatore */}
       {selected && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setSelected(null)}>
-                <PlayerDetails currentPlayer={selected.player} />
-              </div>
-            )}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelected(null)}>
+          <PlayerDetails currentPlayer={selected.player} onClose={() => setSelected(null)} />
+        </div>
+      )}
     </div>
   );
 };

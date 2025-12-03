@@ -2,7 +2,6 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BarChart3, TrendingUp, ChevronRight, Target, ChartNoAxesColumn, ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import { getRoleColor, getPosGroup } from "@/utils/functions";
@@ -259,25 +258,19 @@ const Statistiche = () => {
         </Card>
       </main>
 
-      {/* Player Stats Dialog */}
-      <Dialog open={!!selectedPlayer} onOpenChange={(open) => !open && setSelectedPlayer(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-2xl">
-              <img src="/images/players/MConti.png" alt="Custom Trophy" className="h-14 w-14 object-contain border rounded-full" />
-              {selectedPlayer?.Nome} {selectedPlayer?.Cognome}
-              <Badge variant="outline" className={getRoleColor(selectedPlayer?.Posiz)}>
-                {selectedPlayer?.Posiz}
-              </Badge>
-              <p className="text-sm text-muted-foreground">{teams.find(t => t.TEAM_ID === selectedPlayer?.Squadra)?.NAME ?? "-"}</p>
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedPlayer && (
-            <PlayerAdvancedStats currentPlayer={selectedPlayer} teams={teams} />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Player Stats Modal */}
+      {selectedPlayer && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
+          onClick={() => setSelectedPlayer(null)}
+        >
+          <PlayerAdvancedStats 
+            currentPlayer={selectedPlayer} 
+            teams={teams} 
+            onClose={() => setSelectedPlayer(null)} 
+          />
+        </div>
+      )}
     </div>
   );
 };
