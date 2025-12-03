@@ -92,6 +92,16 @@ export const getWeatherIcon = (weather: string) => {
 } 
 
 /**
+ * Funzione che ritorna il percorso della miniface del giocatore
+ * @param id 
+ * @returns 
+ */
+
+export const getPlayerImage = (id: number) => {
+  return `/images/players/p${id}.png`;
+}
+
+/**
  * Funzione che ritorna lo stato del contratto del giocatore
  * @param team Nome del team
  * @returns 
