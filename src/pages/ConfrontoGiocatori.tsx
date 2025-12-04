@@ -2,38 +2,64 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState } from "react";
+import { getPlayers } from "@/hooks/use-players";
+import { Player } from "@/types/player";
 
-type Player = {
-  id: number;
-  name: string;
-  team?: string;
-  role?: string;
-  overall: number;
-  rating: number;
-  number?: number | null;
-  position?: string | null;
-};
-
-const samplePlayers: Player[] = [
-  { id: 1, name: "Alessandro Grigi", team: "FC Dragonslayers", role: "ATT", overall: 84, rating: 8.5, number: 9 },
-  { id: 2, name: "Gabriele Gialli", team: "Thunder United", role: "ATT", overall: 83, rating: 8.3, number: 11 },
-  { id: 3, name: "Giuseppe Gialli", team: "FC Dragonslayers", role: "CEN", overall: 81, rating: 8.2, number: 8 },
-  { id: 4, name: "Federico Bianchi", team: "Thunder United", role: "CEN", overall: 80, rating: 8.1, number: 6 },
-  { id: 5, name: "Matteo Arancio", team: "FC Dragonslayers", role: "ATT", overall: 79, rating: 8.0, number: 7 },
+const generalStats: { key: keyof Player; label: string }[] = [
+  { key: "OVR", label: "Overall" },
+  { key: "POR", label: "Porta" },
+  { key: "DIF", label: "Difesa" },
+  { key: "CEN", label: "Centrocampo" },
+  { key: "MEN", label: "Mentale" },
+  { key: "ATT", label: "Attacco" },
+  { key: "FIS", label: "Fisico" },
+  { key: "CPZ", label: "Calci Piazzati" },
 ];
 
 const statRows: { key: keyof Player; label: string }[] = [
-  { key: "overall", label: "Overall" },
-  { key: "rating", label: "Voto medio" },
-  { key: "number", label: "Numero" },
+  { key: "RIFP", label: "Riflessi Portiere" },
+  { key: "PREP", label: "Presa Portiere" },
+  { key: "TUFP", label: "Tuffo Portiere" },
+  { key: "POSP", label: "Posizionamento Portiere" },
+  { key: "RINP", label: "Rinvio Portiere" },
+  { key: "MARC", label: "Marcatura" },
+  { key: "CONT", label: "Contrasto" },
+  { key: "AGGR", label: "Aggressività" },
+  { key: "SCIV", label: "Scivolata" },
+  { key: "INTR", label: "Intercettazioni" },
+  { key: "PASC", label: "Passaggi Corti" },
+  { key: "PASL", label: "Passaggi Lunghi" },
+  { key: "CRSS", label: "Cross" },
+  { key: "CTRP", label: "Controllo Palla" },
+  { key: "VISI", label: "Visione" },
+  { key: "EFFT", label: "Effetto" },
+  { key: "PIAZ", label: "Piazzamento" },
+  { key: "PTIR", label: "Potenza Tiro" },
+  { key: "TIRD", label: "Tiro dalla Distanza" },
+  { key: "DRBL", label: "Dribbling" },
+  { key: "TIRV", label: "Tiri al Volo" },
+  { key: "TSTA", label: "Colpi di Testa" },
+  { key: "FINA", label: "Finalizzazione" },
+  { key: "ACCL", label: "Accelerazione" },
+  { key: "VELO", label: "Velocità" },
+  { key: "RESI", label: "Resistenza" },
+  { key: "FRZA", label: "Forza" },
+  { key: "AGIL", label: "Agilità" },
+  { key: "ELEV", label: "Elevazione" },
+  { key: "RIFL", label: "Riflessi" },
+  { key: "EQLB", label: "Equilibrio" },
+  { key: "PNIZ", label: "Calci di Punizione" },
+  { key: "CRIG", label: "Rigori" },
+  { key: "MABI", label: "Mosse Abilità" },
 ];
 
 const ConfrontoGiocatori = () => {
-  const [leftId, setLeftId] = useState<number>(samplePlayers[0].id);
-  const [rightId, setRightId] = useState<number>(samplePlayers[1].id);
+  const { players } = getPlayers();
+  const [leftId, setLeftId] = useState<number>(0);
+  const [rightId, setRightId] = useState<number>(0);
 
-  const left = useMemo(() => samplePlayers.find((p) => p.id === leftId) || null, [leftId]);
-  const right = useMemo(() => samplePlayers.find((p) => p.id === rightId) || null, [rightId]);
+  const left = useMemo(() => players.find((p) => p.ID === leftId) || null, [leftId]);
+  const right = useMemo(() => players.find((p) => p.ID === rightId) || null, [rightId]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,15 +69,15 @@ const ConfrontoGiocatori = () => {
           <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
             Confronto Giocatori
           </h1>
-          <p className="text-muted-foreground">Confronta le statistiche dei tuoi giocatori.</p>
+          <p className="text-muted-foreground">Confronta le statistiche dei giocatori.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left panel */}
           <Card className="shadow">
             <CardHeader>
-              <CardTitle>Giocatore A</CardTitle>
-              <CardDescription>Seleziona il primo giocatore</CardDescription>
+              <CardTitle>{left ? left.Nome + " " + left.Cognome : "N/D"}</CardTitle>
+              <CardDescription>{left ? left.Squadra + " " + left.OVR : "N/D"}</CardDescription>
             </CardHeader>
             <CardContent>
               <select
@@ -59,9 +85,9 @@ const ConfrontoGiocatori = () => {
                 onChange={(e) => setLeftId(Number(e.target.value))}
                 className="w-full mb-4 p-2 border rounded bg-card"
               >
-                {samplePlayers.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} — {p.team}
+                {players.map((p) => (
+                  <option key={p.ID} value={p.ID}>
+                    {p.Cognome} {p.Nome}  — {p.Squadra}
                   </option>
                 ))}
               </select>
@@ -70,14 +96,14 @@ const ConfrontoGiocatori = () => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-lg font-medium">{left.name}</div>
-                      <div className="text-sm text-muted-foreground">{left.team} • {left.role}</div>
+                      <div className="text-lg font-medium">{left.Nome} {left.Cognome}</div>
+                      <div className="text-sm text-muted-foreground">{left.Squadra} • {left.Posiz}</div>
                     </div>
-                    <Badge variant="outline">{left.position ?? "—"}</Badge>
+                    <Badge variant="outline">{left.Posiz ?? "—"}</Badge>
                   </div>
 
                   <div className="space-y-2">
-                    {statRows.map((row) => (
+                    {generalStats.map((row) => (
                       <div key={String(row.key)} className="flex items-center justify-between">
                         <div className="text-sm text-muted-foreground">{row.label}</div>
                         <div className="font-semibold">
@@ -105,9 +131,9 @@ const ConfrontoGiocatori = () => {
                 onChange={(e) => setRightId(Number(e.target.value))}
                 className="w-full mb-4 p-2 border rounded bg-card"
               >
-                {samplePlayers.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} — {p.team}
+                {players.map((p) => (
+                  <option key={p.ID} value={p.ID}>
+                    {p.Cognome} {p.Nome} — {p.Squadra}
                   </option>
                 ))}
               </select>
@@ -116,14 +142,14 @@ const ConfrontoGiocatori = () => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-lg font-medium">{right.name}</div>
-                      <div className="text-sm text-muted-foreground">{right.team} • {right.role}</div>
+                      <div className="text-lg font-medium">{right.Nome} {right.Cognome}</div>
+                      <div className="text-sm text-muted-foreground">{right.Squadra} • {right.Posiz}</div>
                     </div>
-                    <Badge variant="outline">{right.position ?? "—"}</Badge>
+                    <Badge variant="outline">{right.Posiz ?? "—"}</Badge>
                   </div>
 
                   <div className="space-y-2">
-                    {statRows.map((row) => (
+                    {generalStats.map((row) => (
                       <div key={String(row.key)} className="flex items-center justify-between">
                         <div className="text-sm text-muted-foreground">{row.label}</div>
                         <div className="font-semibold">
@@ -156,9 +182,9 @@ const ConfrontoGiocatori = () => {
                     <div key={String(row.key)} className="p-3 border rounded">
                       <div className="text-sm text-muted-foreground mb-2">{row.label}</div>
                       <div className="flex items-center justify-between">
-                        <div className="text-sm">{left ? left.name : "—"}</div>
+                        <div className="text-sm">{left ? left.Nome : "—"}</div>
                         <div className="font-bold">{isNaN(a) ? "—" : a}</div>
-                        <div className="text-sm">{right ? right.name : "—"}</div>
+                        <div className="text-sm">{right ? right.Nome : "—"}</div>
                         <div className="font-bold">{isNaN(b) ? "—" : b}</div>
                       </div>
 
@@ -167,13 +193,13 @@ const ConfrontoGiocatori = () => {
                         {(!isNaN(a) && !isNaN(b)) ? (
                           <>
                             <div
-                              className="h-full bg-primary"
+                              className="h-full bg-[rgb(73,140,244)]/80"
                               style={{
                                 width: `${Math.round((a / (a + b || 1)) * 100)}%`,
                               }}
                             />
                             <div
-                              className="h-full bg-accent"
+                              className="h-full bg-[rgb(80,200,120)]/80"
                               style={{
                                 width: `${100 - Math.round((a / (a + b || 1)) * 100)}%`,
                               }}
