@@ -101,6 +101,33 @@ export const getPlayerImage = (id: number) => {
   return `/images/players/p${id}.png`;
 }
 
+export const getTeamBackground = (team: string) => {
+  switch (team) {
+    case "APD":
+      return "relative bg-gradient-to-r from-pink-500/20 via-yellow-500/10 to-black-500/10 p-6";
+    case "ASK":
+      return "relative bg-gradient-to-r from-red-500/20 via-red-500/10 to-black-500/10 p-6";
+    case "ACF":
+      return "relative bg-gradient-to-r from-green-500/20 via-green-500/10 to-black-500/10 p-6";
+    case "PFC":
+      return "relative bg-gradient-to-r from-pink-500/20 via-pink-500/10 to-black-500/10 p-6";
+    case "MAR":
+      return "relative bg-gradient-to-r from-red-500/20 via-red-500/10 to-blue-500/10 p-6";
+    case "ACD":
+      return "relative bg-gradient-to-r from-red-500/20 via-red-500/10 to-white-500/10 p-6";
+    case "ALV":
+      return "relative bg-gradient-to-r from-blue-500/10 via-blue-500/10 to-white-500/10 p-6";
+    case "OLD":
+      return "relative bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-pink-500/10 p-6";
+    case "VFC":
+      return "relative bg-gradient-to-r from-yellow-500/20 via-yellow-500/10 to-black-500/10 p-6";
+    case "RMB":
+      return "relative bg-gradient-to-r from-red-500/20 via-red-500/10 to-black-500/10 p-6";
+    default: 
+      return "relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6";
+  }
+}
+
 /**
  * Funzione che ritorna lo stato del contratto del giocatore
  * @param team Nome del team
