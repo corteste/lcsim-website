@@ -32,7 +32,8 @@ const App = () => (
               <Route path="/classifica" element={<Classifica />} />
               <Route path="/rose" element={<Rose />} />
               <Route path="/statistiche" element={<Statistiche />} />
-              <Route path="/lista-giocatori" element={<ListaGiocatori />} />
+              <Route path="/giocatori/lista-giocatori" element={<ListaGiocatori />} />
+              <Route path="/giocatori/confronto-giocatori" element={<ConfrontoGiocatori />} />
               <Route path="/calendario" element={<Calendario />} />
               <Route path="/mia-squadra/roster" element={<Roster />} />
               <Route path="/mia-squadra/tattica" element={<Tattica />} />
