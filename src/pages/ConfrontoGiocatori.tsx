@@ -6,6 +6,7 @@ import { Player } from "@/types/player";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Swords, Shield, Target, Zap, Award } from "lucide-react";
+import { getPlayerImage } from "@/utils/functions";
 
 const statCategories = {
   generale: {
@@ -101,10 +102,6 @@ const statCategories = {
   },
 };
 
-const getPlayerImage = (player: Player | null) => {
-  if (!player) return "/placeholder.svg";
-  return `/images/players/p${player.ID}.png`;
-};
 
 const getPositionColor = (position: string | undefined) => {
   if (!position) return "bg-muted text-muted-foreground";
@@ -153,11 +150,11 @@ const PlayerCard = ({ player, playerId, onPlayerChange, players, side }: PlayerC
             <div className="relative mb-4">
               <div className={`w-32 h-32 rounded-full overflow-hidden border-4 ${accentColor} bg-muted/30`}>
                 <img
-                  src={getPlayerImage(player)}
+                  src={getPlayerImage(player.ID)}
                   alt={`${player.Nome} ${player.Cognome}`}
                   className="w-full h-full object-cover object-top"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/placeholder.svg";
+                    (e.target as HTMLImageElement).src = "/images/players/MConti.png";
                   }}
                 />
               </div>
@@ -177,8 +174,9 @@ const PlayerCard = ({ player, playerId, onPlayerChange, players, side }: PlayerC
               {player.Posiz || "—"}
             </Badge>
 
-            <div className="grid grid-cols-4 gap-3 mt-6 w-full">
+            <div className="grid grid-cols-5 gap-3 mt-6 w-full">
               {[
+                { key: "POR", label: "POR", color: "text-orange-500" },
                 { key: "DIF", label: "DIF", color: "text-blue-500" },
                 { key: "CEN", label: "CEN", color: "text-green-500" },
                 { key: "ATT", label: "ATT", color: "text-red-500" },
@@ -251,7 +249,7 @@ const ComparisonBar = ({ label, valueA, valueB, delay = 0 }: ComparisonBarProps)
 };
 
 const ConfrontoGiocatori = () => {
-  const { players } = getPlayers();
+  const { players } = getPlayers("RITIRATO");
   const [leftId, setLeftId] = useState<number>(players[0]?.ID || 0);
   const [rightId, setRightId] = useState<number>(players[1]?.ID || 0);
 
