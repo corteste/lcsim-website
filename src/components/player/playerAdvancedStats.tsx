@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { X, Target, Timer, Award, TrendingUp, Shield, Footprints } from "lucide-react";
-import { getPlayerImage, getRoleColor } from "@/utils/functions";
+import { getPlayerImage, getRoleColor, getTeamBackground } from "@/utils/functions";
 
 interface PlayerStatsProps {
   currentPlayer: PlayerStatsSum;
@@ -69,7 +69,7 @@ const PlayerAdvancedStats = ({ currentPlayer, teams, onClose }: PlayerStatsProps
     <div className="w-full max-w-4xl p-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
       <Card className="shadow-2xl border-0 bg-gradient-to-br from-card to-card/95 overflow-hidden">
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6">
+        <div className={getTeamBackground(currentPlayer.Squadra)}>
           {onClose && (
             <Button
               variant="ghost"

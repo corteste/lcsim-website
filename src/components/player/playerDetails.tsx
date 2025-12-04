@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { getPlayerImage, getRoleColor, getValueColor } from "@/utils/functions";
+import { getPlayerImage, getRoleColor, getTeamBackground, getValueColor } from "@/utils/functions";
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/player";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,9 +25,11 @@ const StatBar = ({ label, value, delay = 0 }: { label: string; value: number | n
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div 
           className={`h-full rounded-full transition-all duration-500 ${
-            numValue >= 80 ? "bg-green-500" : 
-            numValue >= 60 ? "bg-yellow-500" : 
-            numValue >= 40 ? "bg-orange-500" : "bg-red-500"
+            numValue >= 90 ? "bg-purple-500/80" : 
+            numValue >= 85 ? "bg-blue-500/80" : 
+            numValue >= 80 ? "bg-green-500/80" : 
+            numValue >= 75 ? "bg-yellow-500/80" : 
+            numValue >= 40 ? "bg-orange-500/80" : "bg-red-500/80"
           }`}
           style={{ width: `${percentage}%`, transitionDelay: `${delay + 100}ms` }}
         />
@@ -47,7 +49,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
     <div className="w-full max-w-4xl max-h-4xl p-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
       <Card className="shadow-2xl border-0 bg-gradient-to-br from-card to-card/95 overflow-hidden">
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6">
+        <div className={getTeamBackground(currentPlayer.Squadra)}>
           {onClose && (
             <Button
               variant="ghost"
