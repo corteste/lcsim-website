@@ -39,14 +39,14 @@ const StatBar = ({ label, value, delay = 0 }: { label: string; value: number | n
 };
 
 const StatSection = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`grid grid-cols-2 gap-x-6 gap-y-3 ${className}`}>
+  <div className={`grid grid-cols-3 gap-x-8 gap-y-4 ${className}`}>
     {children}
   </div>
 );
 
 const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
   return (
-    <div className="w-full max-w-4xl max-h-4xl p-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+    <div className="w-full max-w-7xl p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
       <Card className="shadow-2xl border-0 bg-gradient-to-br from-card to-card/95 overflow-hidden">
         {/* Header */}
         <div className={getTeamBackground(currentPlayer.Squadra)}>
@@ -54,17 +54,17 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 h-8 w-8"
+              className="absolute top-3 right-3 h-10 w-10"
               onClick={onClose}
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           )}
           
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-8">
             {/* Player Image & OVR */}
             <div className="relative">
-              <div className="h-24 w-24 rounded-xl overflow-hidden border-2 border-primary/20 shadow-lg">
+              <div className="h-36 w-36 rounded-xl overflow-hidden border-2 border-primary/20 shadow-lg">
                 <img 
                   src={getPlayerImage(currentPlayer.ID)} 
                   onError={(e) => e.currentTarget.src = "/images/players/MConti.png"} 
@@ -72,49 +72,49 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
                   className="h-full w-full object-cover"
                 />
               </div>
-              <div className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg shadow-lg">
+              <div className="absolute -bottom-3 -right-3 h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl shadow-lg">
                 {currentPlayer.OVR}
               </div>
             </div>
             
             {/* Player Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h2 className="text-xl font-bold text-foreground truncate">
+              <div className="flex items-center gap-3 flex-wrap mb-2">
+                <h2 className="text-2xl font-bold text-foreground truncate">
                   {currentPlayer.Nome} {currentPlayer.Cognome}
                 </h2>
-                <Badge variant="outline" className={`${getRoleColor(currentPlayer.Posiz)} shrink-0`}>
+                <Badge variant="outline" className={`${getRoleColor(currentPlayer.Posiz)} shrink-0 text-sm px-3 py-1`}>
                   {currentPlayer.Posiz}
                 </Badge>
               </div>
               
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-2">
-                <div className="flex items-center gap-1">
-                  <User className="h-3.5 w-3.5" />
+              <div className="flex flex-wrap items-center gap-4 text-base text-muted-foreground mt-3">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
                   <span>{currentPlayer.Età} anni</span>
                 </div>
                 {currentPlayer.Altezza && (
-                  <div className="flex items-center gap-1">
-                    <Ruler className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-4 w-4" />
                     <span>{currentPlayer.Altezza} cm</span>
                   </div>
                 )}
                 {currentPlayer.Peso && (
-                  <div className="flex items-center gap-1">
-                    <Weight className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-2">
+                    <Weight className="h-4 w-4" />
                     <span>{currentPlayer.Peso} kg</span>
                   </div>
                 )}
                 {currentPlayer.Piede && (
-                  <div className="flex items-center gap-1">
-                    <Footprints className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-2">
+                    <Footprints className="h-4 w-4" />
                     <span>{currentPlayer.Piede}</span>
                   </div>
                 )}
               </div>
               
               {/* Main Stats */}
-              <div className="flex gap-2 mt-3 flex-wrap">
+              <div className="flex gap-3 mt-4 flex-wrap">
                 {[
                   { label: "POR", value: currentPlayer.POR, color: "bg-orange-500/20 text-orange-600 dark:text-orange-400" },
                   { label: "DIF", value: currentPlayer.DIF, color: "bg-blue-500/20 text-blue-600 dark:text-blue-400" },
@@ -122,7 +122,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
                   { label: "ATT", value: currentPlayer.ATT, color: "bg-red-500/20 text-red-600 dark:text-red-400" },
                   { label: "FIS", value: currentPlayer.FIS, color: "bg-purple-500/20 text-purple-600 dark:text-purple-400" },
                 ].map(stat => (
-                  <div key={stat.label} className={`px-2 py-1 rounded-md text-xs font-medium ${stat.color}`}>
+                  <div key={stat.label} className={`px-3 py-1.5 rounded-md text-sm font-medium ${stat.color}`}>
                     {stat.label}: {stat.value ?? "-"}
                   </div>
                 ))}
@@ -169,7 +169,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               </TabsTrigger>
             </TabsList>
 
-            <div className="p-6 max-h-[800px]  overflow-y-auto">
+            <div className="p-8 max-h-[600px] overflow-y-auto">
               <TabsContent value="portiere" className="mt-0 space-y-4 animate-fade-in data-[state=inactive]:animate-fade-out">
                 <div>
                   <h4 className="text-xs font-semibold text-orange-500 uppercase tracking-wider mb-3">Tecnico</h4>
