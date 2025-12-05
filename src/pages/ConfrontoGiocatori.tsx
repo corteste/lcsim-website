@@ -326,9 +326,9 @@ const ConfrontoGiocatori = () => {
                 <TabsContent 
                   key={key} 
                   value={key}
-                  className="p-6 animate-fade-in data-[state=inactive]:animate-fade-out"
+                  className="p-8 animate-fade-in data-[state=inactive]:animate-fade-out"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-8">
                     {category.stats.map((stat, index) => {
                       const a = left ? Number(left[stat.key as keyof Player] ?? NaN) : NaN;
                       const b = right ? Number(right[stat.key as keyof Player] ?? NaN) : NaN;
