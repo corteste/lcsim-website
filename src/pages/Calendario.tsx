@@ -313,8 +313,8 @@ const Calendario = () => {
 																</div>
 																<div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
 																	<div>⚽Goal: {player.GOL} | 🅰️ Assist: {player.ASST}</div>
-																	<div>⏱️Minuti: {player.MINUTI}' {player.MINUTI < 90 && "🔄"}</div>
-																	<div>🟨 {player.GIALLI} {player.ROSSI > 0 && "🟥"}</div>
+																	<div>⏱️Minuti: {player.MINUTI}' {player.MINUTI < 90 && player.ROSSI < 1 && "🔄"}</div>
+																	<div>🟨 {player.GIALLI} {player.ROSSI > 0 && "🟥 1"}</div>
 																	<div>Passaggi: {player.PASS_SI}/{player.PASS_TOT} {player.PASS_TOT > 0 && (<> ({Math.round((player.PASS_SI / player.PASS_TOT) * 100)}%)</>)}</div>
 																	<div>Tiri: {player.TIRI_IN}/{player.TIRI_TOT} {player.TIRI_TOT > 0 && (<> ({Math.round((player.TIRI_IN / player.TIRI_TOT) * 100)}%)</>)}</div>
 																	<div>Cross: {player.CROS_SI}/{player.CROS_TOT} {player.CROS_TOT > 0 && (<> ({Math.round((player.CROS_SI / player.CROS_TOT) * 100)}%)</>)}</div>
@@ -344,8 +344,8 @@ const Calendario = () => {
 																</div>
 																<div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
 																	<div>⚽Goal: {player.GOL} | 🅰️ Assist: {player.ASST}</div>
-																	<div>⏱️Minuti: {player.MINUTI}' {player.MINUTI < 90 && "🔄"}</div>
-																	<div>🟨 {player.GIALLI} {player.ROSSI > 0 && "🟥"}</div>
+																	<div>⏱️Minuti: {player.MINUTI}' {player.MINUTI < 90 && player.ROSSI < 1 && "🔄"}</div>
+																	<div>🟨 {player.GIALLI} {player.ROSSI > 0 && "🟥 1"}</div>
 																	<div>Passaggi: {player.PASS_SI}/{player.PASS_TOT} {player.PASS_TOT > 0 && (<> ({Math.round((player.PASS_SI / player.PASS_TOT) * 100)}%)</>)}</div>
 																	<div>Tiri: {player.TIRI_IN}/{player.TIRI_TOT} {player.TIRI_TOT > 0 && (<> ({Math.round((player.TIRI_IN / player.TIRI_TOT) * 100)}%)</>)}</div>
 																	<div>Cross: {player.CROS_SI}/{player.CROS_TOT} {player.CROS_TOT > 0 && (<> ({Math.round((player.CROS_SI / player.CROS_TOT) * 100)}%)</>)}</div>
