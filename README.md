@@ -9,13 +9,10 @@
 
 
 **Prompt per Lovable**
--- Crea una visualizzazione del campo da calcio con posizioni grafiche dove trascinare 
 Cronologia allenamenti?
-nella pagina /lista-giocatori nella sezione filtri fai in modo che di default si vedano solo i filtri squadra e ruolo, aggiungi un pulsante più filtri che mostri filtri aggiuntivi (come stato giocatore e stato sul mercato)
 
 **Parte fogli comuni**
 
-- Lista giocatori completa con filtri per ruolo, età, stato contratto (svincolato o no) e stato sul calciomercato
 - Parte separata per il draft con menù a discesa: lista di tutti i rookies, vista sul tabellone draft, possibilità di inserire scelta manualmente direttamente sul sito
 - Pagina degli interessi delle squadre per i ruoli? - [poco utile]
 - Possiblità di filtrare calendario per le squadre (post login)
@@ -23,8 +20,6 @@ nella pagina /lista-giocatori nella sezione filtri fai in modo che di default si
 - pagina storico con lo storico per giocatore e squadra
 - in classifica se clicco squadra vedo incontri stagione attuale
 - in squadre mostrare maglie attuali della stagione più sezione archivio con tutte le maglie utilizzate negli anni
-- in rose a fianco al logo mettere coppe vinte
-- specchietto playoff sotto classifica
 - in calendario quando clicco partita metti formazioni prima di stat avanzate
 
 **Parte personale squadre**

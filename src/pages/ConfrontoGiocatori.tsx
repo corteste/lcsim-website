@@ -168,7 +168,7 @@ const PlayerCard = ({ player, playerId, onPlayerChange, players, side }: PlayerC
             <h3 className="text-xl font-bold text-foreground mb-1">
               {player.Nome} {player.Cognome}
             </h3>
-            <p className="text-sm text-muted-foreground mb-3">{player.Squadra}</p>
+            <p className="text-sm text-muted-foreground mb-3">{player.Squadra} - {player.Altezza}cm</p>
             
             <Badge className={`${getPositionColor(player.Posiz)} border-0 px-4 py-1 text-sm font-medium`}>
               {player.Posiz || "—"}
@@ -213,7 +213,12 @@ const ComparisonBar = ({ label, valueA, valueB, delay = 0 }: ComparisonBarProps)
   const isANaN = isNaN(valueA);
   const isBNaN = isNaN(valueB);
   const total = valueA + valueB || 1;
-  const percentA = isANaN || isBNaN ? 50 : Math.round((valueA / total) * 100);
+
+  const boost = 6; // aumenta la differenza del 30%
+  const boostedA = Math.pow(valueA, boost);
+  const boostedB = Math.pow(valueB, boost);
+  const totalBoosted = boostedA + boostedB;
+  const percentA = isANaN || isBNaN ? 50 : Math.round((boostedA / totalBoosted) * 100);
   const percentB = 100 - percentA;
   
   const aWins = !isANaN && !isBNaN && valueA > valueB;
@@ -236,11 +241,11 @@ const ComparisonBar = ({ label, valueA, valueB, delay = 0 }: ComparisonBarProps)
       </div>
       <div className="h-2 w-full bg-muted/30 rounded-full overflow-hidden flex">
         <div
-          className={`h-full transition-all duration-500 ease-out ${aWins ? "bg-blue-500" : "bg-blue-500/40"}`}
+          className={`h-full transition-all duration-500 ease-out ${aWins ? "bg-blue-500 ring-2 ring-blue-400" : "bg-blue-400/40"}`}
           style={{ width: `${percentA}%` }}
         />
         <div
-          className={`h-full transition-all duration-500 ease-out ${bWins ? "bg-emerald-500" : "bg-emerald-500/40"}`}
+          className={`h-full transition-all duration-500 ease-out ${bWins ? "bg-emerald-500 ring-2 ring-emerald-400" : "bg-emerald-400/40"}`}
           style={{ width: `${percentB}%` }}
         />
       </div>
@@ -338,7 +343,7 @@ const ConfrontoGiocatori = () => {
                           label={stat.label}
                           valueA={a}
                           valueB={b}
-                          delay={index * 50}
+                          delay={index * 100}
                         />
                       );
                     })}
