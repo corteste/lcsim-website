@@ -43,8 +43,15 @@ const Navbar = () => {
     { path: "/giocatori/confronto-giocatori", label: "Confronto Giocatori" },
   ];
 
+  const archivioItems = [
+    { path: "/archivio/giocatori", label: "Archivio Giocatori" },
+    { path: "/archivio/squadre", label: "Archivio Squadre" },
+    { path: "/archivio/hall-of-fame", label: "Hall of Fame" },
+  ];
+
   const isMiaSquadraActive = location.pathname.startsWith("/mia-squadra");
   const isGiocatoriActive = location.pathname.startsWith("/giocatori");
+  const isArchivioActive = location.pathname.startsWith("/archivio");
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-card shadow-sm backdrop-blur-sm">
@@ -109,6 +116,35 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
               {/* Fine Parte Giocatori */}
+
+              {/* Parte Archivio */}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${isArchivioActive
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-foreground hover:bg-secondary"
+                    }`}
+                >
+                  Archivio
+                  <ChevronDown className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-card z-50">
+                  {archivioItems.map((item) => (
+                    <DropdownMenuItem key={item.path} asChild>
+                      <Link
+                        to={item.path}
+                        className={`cursor-pointer ${location.pathname === item.path
+                            ? "bg-secondary font-medium"
+                            : ""
+                          }`}
+                      >
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {/* Fine Parte Archivio */}
 
 
               {/* Parte la mia squadra, da disattivare per pubblico */}
