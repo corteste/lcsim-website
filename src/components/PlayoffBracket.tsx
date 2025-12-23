@@ -58,7 +58,12 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
   }) => (
     <div className={`
       bg-card border rounded-lg overflow-hidden shadow-sm
-      ${isFinal ? 'border-amber-500/40 ring-1 ring-amber-500/20' : ''}
+      transition-all duration-300 ease-out cursor-pointer
+      hover:scale-105 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1
+      hover:border-primary/40 hover:z-10 relative
+      ${isFinal 
+        ? 'border-amber-500/40 ring-1 ring-amber-500/20 hover:shadow-amber-500/20 hover:border-amber-500/60' 
+        : ''}
     `}>
       <TeamRow teamPos={team1Pos} score={score1} isTop />
       <TeamRow teamPos={team2Pos} score={score2} />
