@@ -46,6 +46,7 @@ const Navbar = () => {
   const archivioItems = [
     { path: "/archivio/giocatori", label: "Archivio Giocatori" },
     { path: "/archivio/squadre", label: "Archivio Squadre" },
+    { path: "/archivio/hall-of-fame", label: "Hall of Fame" },
   ];
 
   const isMiaSquadraActive = location.pathname.startsWith("/mia-squadra");
