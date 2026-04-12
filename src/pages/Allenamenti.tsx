@@ -151,7 +151,9 @@ const Allenamenti = () => {
 
   const totalCost = groupRows.reduce((s, g) => s + (increases[g.key] || 0) * g.subs.length * COST_PER_POINT, 0);
   const xpAvailable = player ? Number((player as any).XP ?? (player as any).xp ?? 0) : 0;
-  const xpRemaining = xpAvailable - totalCost;
+  const xpRemaining = xpAvailable - totalCost - xpSpentExtra;
+
+  const handleExtraXpSpent = (cost: number) => setXpSpentExtra((prev) => prev + cost);
 
   const computeOverall = (stats: Record<StatKey, number>) => {
     const values = Object.values(stats);
