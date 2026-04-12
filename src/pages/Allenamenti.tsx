@@ -371,6 +371,15 @@ const Allenamenti = () => {
             </Card>
           </div>
         </div>
+
+        {/* Sezioni aggiuntive: Cambio Ruolo, Tratti, Ruolo+ */}
+        {player && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+            <RoleChangeSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+            <TraitSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+            <RolePlusSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+          </div>
+        )}
       </main>
     </div>
   );
