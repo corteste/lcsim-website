@@ -32,6 +32,10 @@ Cronologia allenamenti?
 - Nella pagina delle tattiche nel nome del giocatore aggiungere due pulsanti Attributi e Statistiche
 - Nuova pagina menù a tendina statistiche avanzate (statistiche dei giocatori per propria squadra)
 
+- !! Sezione calci piazzati aggiungere freddezza
+- !! Opzione cambio ruolo (come anno scorso, scegli ruolo nuovo: quando lo scegli c'è prompt per scegliere ruolo+)
+- !! Tratti
+- !! Ruolo+ (sotto ruolo)
 
 
 

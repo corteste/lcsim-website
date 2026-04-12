@@ -148,7 +148,7 @@ const Navbar = () => {
 
 
               {/* Parte la mia squadra, da disattivare per pubblico */}
-              {/* <DropdownMenu>
+              <DropdownMenu>
                 <DropdownMenuTrigger
                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${isMiaSquadraActive
                       ? "bg-primary text-primary-foreground shadow-md"
@@ -173,7 +173,7 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
-              </DropdownMenu> */}
+              </DropdownMenu>
               {/* Fine Parte la mia squadra */}
             </div>
           </div>
