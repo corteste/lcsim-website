@@ -126,6 +126,7 @@ const Allenamenti = () => {
   // reset increases when player changes
   const handlePlayerChange = (id: number) => {
     setSelectedId(id);
+    setXpSpentExtra(0);
     setIncreases((prev) => {
       const fresh = { ...prev };
       for (const k of Object.keys(fresh)) fresh[k] = 0;
