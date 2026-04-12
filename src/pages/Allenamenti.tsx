@@ -105,12 +105,10 @@ const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number>
   return out;
 };
 
-const [xpSpentExtra, setXpSpentExtra] = useState(0);
-
 const Allenamenti = () => {
   const { players } = getPlayers("APD");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [xpSpentExtra, setXpSpentExtra] = useState(0);
 
   const player = useMemo(() => {
     if (!selectedId) return null;
