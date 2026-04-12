@@ -5,6 +5,9 @@ import { Player } from "@/types/player";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, TrendingUp, Award } from "lucide-react";
+import TraitSystem from "@/components/training/TraitSystem";
+import RolePlusSystem from "@/components/training/RolePlusSystem";
+import RoleChangeSystem from "@/components/training/RoleChangeSystem";
 import { getPlayers } from "@/hooks/use-players";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
