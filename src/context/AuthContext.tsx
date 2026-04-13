@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 export interface AppUser {
   id: string;
   email: string;
+  username: string;
   name: string;
   team: string; // abbreviazione squadra (es. "APD", "JUV", ecc.)
 }
@@ -11,21 +12,25 @@ export interface AppUser {
 const MOCK_USERS: Record<string, { password: string; user: AppUser }> = {
   "admin@lcsim.it": {
     password: "admin",
-    user: { id: "1", email: "admin@lcsim.it", name: "Admin", team: "APD" },
+    user: { id: "1", email: "admin@lcsim.it", username: "admin@lcsim.it", name: "Admin", team: "APD" },
   },
   "user2@lcsim.it": {
     password: "user2",
-    user: { id: "2", email: "user2@lcsim.it", name: "Mister B", team: "PFC" },
+    user: { id: "2", email: "user2@lcsim.it", username: "admin@lcsim.it",name: "Mister B", team: "PFC" },
   },
   "user3@lcsim.it": {
     password: "user3",
-    user: { id: "3", email: "user3@lcsim.it", name: "Mister C", team: "ACD" },
+    user: { id: "3", email: "user3@lcsim.it", username: "admin@lcsim.it",name: "Mister C", team: "ACD" },
+  },
+  "mar9125": {
+    password: "rioux96",
+    user: { id: "4", email: "user3@lcsim.it", username: "mar9215",name: "Mario San", team: "MAR" },
   },
 };
 
 interface AuthContextType {
   user: AppUser | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -47,9 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     // TODO: sostituire con chiamata al DB
-    const entry = MOCK_USERS[email.toLowerCase()];
+    const entry = MOCK_USERS[username.toLowerCase()];
     if (!entry || entry.password !== password) return false;
     setUser(entry.user);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entry.user));

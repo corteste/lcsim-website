@@ -1,1 +1,1 @@
-export const PLAYER_TABLE = "AN_PLAYER";
+export const PLAYER_TABLE = "an_player";
