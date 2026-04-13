@@ -28,13 +28,11 @@ const MAX_ROLE_PLUS = 2;
 const OVR_PLUSPLUS_THRESHOLD = 85;
 
 export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSystemProps) {
-  // ── Cambio Ruolo state ──
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [roleStep, setRoleStep] = useState<1 | 2>(1);
   const [newRole, setNewRole] = useState("");
   const [newSubRole, setNewSubRole] = useState("");
 
-  // ── Ruolo+ state ──
   const [ownedSubRoles, setOwnedSubRoles] = useState<PlayerSubRole[]>([]);
   const [dialogMode, setDialogMode] = useState<"add" | "swap" | "upgrade" | null>(null);
   const [selectedSubRoleId, setSelectedSubRoleId] = useState("");
@@ -46,7 +44,6 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
   const canUpgradePlusPlus = playerOvr >= OVR_PLUSPLUS_THRESHOLD;
   const hasPlusPlus = ownedSubRoles.some((r) => r.tier === "plusplus");
 
-  // ── Cambio Ruolo helpers ──
   const compatibleSubRolesForNewRole = AVAILABLE_SUBROLES.filter((sr) =>
     sr.positions.some((p) => newRole.includes(p) || p.includes(newRole))
   );
@@ -75,7 +72,6 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
     setShowRoleDialog(false);
   };
 
-  // ── Ruolo+ helpers ──
   const compatibleSubRoles = useMemo(
     () => AVAILABLE_SUBROLES.filter((sr) => sr.positions.some((p) => playerPos.includes(p) || p.includes(playerPos))),
     [playerPos]
@@ -143,7 +139,7 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
 
   return (
     <Card className="shadow-lg border-primary/10">
-      <CardHeader className="bg-gradient-to-r from-green-500/10 via-blue-500/10 to-primary/5">
+      <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/5">
         <div className="flex items-center gap-2">
           <Shield className="h-5 w-5 text-primary" />
           <CardTitle>Ruolo & Ruolo+</CardTitle>
@@ -161,7 +157,6 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
             </TabsTrigger>
           </TabsList>
 
-          {/* ── TAB: Cambio Ruolo ── */}
           <TabsContent value="role" className="space-y-4 mt-4">
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
               <div>
@@ -177,7 +172,6 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
             </div>
           </TabsContent>
 
-          {/* ── TAB: Ruolo+ ── */}
           <TabsContent value="subrole" className="space-y-4 mt-4">
             {ownedSubRoles.length > 0 ? (
               <div className="space-y-2">
@@ -188,14 +182,14 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
                     <div
                       key={sr.subRoleId}
                       className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                        sr.tier === "plusplus" ? "bg-amber-500/10 border-amber-500/30" : "bg-muted/30 border-border"
+                        sr.tier === "plusplus" ? "bg-accent/20 border-accent/40" : "bg-muted/30 border-border"
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         {sr.tier === "plusplus" ? (
-                          <Crown className="h-4 w-4 text-amber-500" />
+                          <Crown className="h-4 w-4 text-accent-foreground" />
                         ) : (
-                          <UserPlus className="h-4 w-4 text-blue-500" />
+                          <UserPlus className="h-4 w-4 text-primary" />
                         )}
                         <div>
                           <div className="text-sm font-medium">{info.name}</div>
@@ -203,14 +197,14 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Badge variant={sr.tier === "plusplus" ? "default" : "secondary"} className={sr.tier === "plusplus" ? "bg-amber-500" : ""}>
+                        <Badge variant={sr.tier === "plusplus" ? "default" : "secondary"}>
                           {sr.tier === "plusplus" ? "Ruolo++" : "Ruolo+"}
                         </Badge>
                         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openSwapDialog(idx)}>
                           <ArrowRightLeft className="h-3 w-3 mr-1" /> Cambia
                         </Button>
                         {sr.tier === "plus" && canUpgradePlusPlus && !hasPlusPlus && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs border-amber-400 text-amber-600" onClick={() => openUpgradeDialog(idx)}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openUpgradeDialog(idx)}>
                             <Crown className="h-3 w-3 mr-1" /> ++
                           </Button>
                         )}
@@ -233,14 +227,13 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
             )}
 
             {canUpgradePlusPlus && !hasPlusPlus && (
-              <div className="text-xs text-amber-600 p-2 bg-amber-500/10 rounded border border-amber-500/20">
+              <div className="text-xs text-muted-foreground p-2 bg-accent/10 rounded border border-accent/20">
                 ⭐ OVR ≥ 85 — Upgrade Ruolo++ disponibile!
               </div>
             )}
           </TabsContent>
         </Tabs>
 
-        {/* ── Dialog: Cambio Ruolo ── */}
         <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
           <DialogContent>
             <DialogHeader>
@@ -292,7 +285,6 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
           </DialogContent>
         </Dialog>
 
-        {/* ── Dialog: Ruolo+ ── */}
         <Dialog open={!!dialogMode} onOpenChange={() => setDialogMode(null)}>
           <DialogContent>
             <DialogHeader>
