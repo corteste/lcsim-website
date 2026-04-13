@@ -1,8 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Trophy, ChevronDown, Moon, Sun, Menu } from "lucide-react";
+import { Trophy, ChevronDown, Moon, Sun, Menu, LogIn, LogOut, User } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
+import LoginDialog from "@/components/LoginDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
