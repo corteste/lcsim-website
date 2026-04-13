@@ -78,6 +78,20 @@ const Navbar = () => {
               <Moon className="h-4 w-4 text-muted-foreground" />
             </div>
 
+            {user ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border">
+                <User className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">{user.name}</span>
+                <span className="text-xs text-muted-foreground">({user.team})</span>
+                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={logout}>
+                  <LogOut className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setShowLogin(true)}>
+                <LogIn className="h-4 w-4 mr-1" /> Accedi
+              </Button>
+            )}
             <div className="flex gap-1 items-center">
               {navItems.map((item) => (
                 <Link
