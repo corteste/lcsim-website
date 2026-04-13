@@ -24,7 +24,8 @@ const Navbar = () => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-
+  const [showLogin, setShowLogin] = useState(false);
+  const { user, logout } = useAuth();
   const navItems = [
     //{ path: "/", label: "Home" }, // disabilitato, se clicco sul logo mi porta alla home
     { path: "/classifica", label: "Classifica" },
