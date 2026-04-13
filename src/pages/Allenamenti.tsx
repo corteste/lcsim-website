@@ -8,6 +8,7 @@ import { Plus, Minus, TrendingUp, Award } from "lucide-react";
 import TraitSystem from "@/components/training/TraitSystem";
 import RoleSystem from "@/components/training/RoleSystem";
 import { getPlayers } from "@/hooks/use-players";
+import { useAuth } from "@/context/AuthContext";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
 type StatKey =
