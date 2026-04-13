@@ -5,7 +5,10 @@ import { Player } from "@/types/player";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, TrendingUp, Award } from "lucide-react";
+import TraitSystem from "@/components/training/TraitSystem";
+import RoleSystem from "@/components/training/RoleSystem";
 import { getPlayers } from "@/hooks/use-players";
+import { useAuth } from "@/context/AuthContext";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
 type StatKey =
@@ -103,8 +106,11 @@ const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number>
 };
 
 const Allenamenti = () => {
-  const { players } = getPlayers("APD");
+  const { user } = useAuth();
+  const userTeam = user?.team ?? "APD";
+  const { players } = getPlayers(userTeam);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [xpSpentExtra, setXpSpentExtra] = useState(0);
 
   const player = useMemo(() => {
     if (!selectedId) return null;
@@ -122,6 +128,7 @@ const Allenamenti = () => {
   // reset increases when player changes
   const handlePlayerChange = (id: number) => {
     setSelectedId(id);
+    setXpSpentExtra(0);
     setIncreases((prev) => {
       const fresh = { ...prev };
       for (const k of Object.keys(fresh)) fresh[k] = 0;
@@ -147,7 +154,9 @@ const Allenamenti = () => {
 
   const totalCost = groupRows.reduce((s, g) => s + (increases[g.key] || 0) * g.subs.length * COST_PER_POINT, 0);
   const xpAvailable = player ? Number((player as any).XP ?? (player as any).xp ?? 0) : 0;
-  const xpRemaining = xpAvailable - totalCost;
+  const xpRemaining = xpAvailable - totalCost - xpSpentExtra;
+
+  const handleExtraXpSpent = (cost: number) => setXpSpentExtra((prev) => prev + cost);
 
   const computeOverall = (stats: Record<StatKey, number>) => {
     const values = Object.values(stats);
@@ -365,6 +374,14 @@ const Allenamenti = () => {
             </Card>
           </div>
         </div>
+
+        {/* Sezioni aggiuntive: Ruolo & Ruolo+, Tratti */}
+        {player && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+            <RoleSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+            <TraitSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+          </div>
+        )}
       </main>
     </div>
   );

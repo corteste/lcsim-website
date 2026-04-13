@@ -18,39 +18,41 @@ import ConfrontoGiocatori from "./pages/ConfrontoGiocatori";
 import ArchivioGiocatori from "./pages/ArchivioGiocatori";
 import HallOfFame from "./pages/HallOfFame";
 import { ScheduleProvider } from "./context/ScheduleContext";
+import { AuthProvider } from "./context/AuthContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ScheduleProvider>   {/* <-- WRAP QUI TUTTA L’APP */}
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/classifica" element={<Classifica />} />
-              <Route path="/rose" element={<Rose />} />
-              <Route path="/statistiche" element={<Statistiche />} />
-              <Route path="/giocatori/lista-giocatori" element={<ListaGiocatori />} />
-              <Route path="/giocatori/confronto-giocatori" element={<ConfrontoGiocatori />} />
-              <Route path="/calendario" element={<Calendario />} />
-              <Route path="/mia-squadra/roster" element={<Roster />} />
-              <Route path="/mia-squadra/tattica" element={<Tattica />} />
-              <Route path="/mia-squadra/allenamenti" element={<Allenamenti />} />
-              <Route path="/mia-squadra/confronto-giocatori" element={<ConfrontoGiocatori />} />
-              <Route path="/archivio/giocatori" element={<ArchivioGiocatori />} />
-              <Route path="/archivio/hall-of-fame" element={<HallOfFame />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  </ScheduleProvider>
+  <AuthProvider>
+    <ScheduleProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/classifica" element={<Classifica />} />
+                <Route path="/rose" element={<Rose />} />
+                <Route path="/statistiche" element={<Statistiche />} />
+                <Route path="/giocatori/lista-giocatori" element={<ListaGiocatori />} />
+                <Route path="/giocatori/confronto-giocatori" element={<ConfrontoGiocatori />} />
+                <Route path="/calendario" element={<Calendario />} />
+                <Route path="/mia-squadra/roster" element={<Roster />} />
+                <Route path="/mia-squadra/tattica" element={<Tattica />} />
+                <Route path="/mia-squadra/allenamenti" element={<Allenamenti />} />
+                <Route path="/mia-squadra/confronto-giocatori" element={<ConfrontoGiocatori />} />
+                <Route path="/archivio/giocatori" element={<ArchivioGiocatori />} />
+                <Route path="/archivio/hall-of-fame" element={<HallOfFame />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ScheduleProvider>
+  </AuthProvider>
 );
 
 export default App;
