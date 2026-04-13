@@ -11,6 +11,7 @@ import { supabase } from "@/supabaseClient";
 import { PLAYER_TABLE } from "../constants/App";
 import { Player } from "../types/player";
 import { getRoleColor, getValueColor } from "@/utils/functions";
+import { useAuth } from "@/context/AuthContext";
 
 type FormationType = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '3-4-3';
 
@@ -21,10 +22,12 @@ const Tattica = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [formation, setFormation] = useState<FormationType>('4-4-2');
   //const { players } = getPlayers("APD");
+  const { user } = useAuth();
+  const userTeam = user?.team;
   
     useEffect(() => {
       async function fetchPlayers() {
-        const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', 'APD'); // filtrare per squadra dell'utente
+        const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', userTeam); // filtrare per squadra dell'utente
         console.log(data);
         if (error) console.error(error);
         else setPlayers(data || []);

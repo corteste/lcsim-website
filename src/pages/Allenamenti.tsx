@@ -107,7 +107,7 @@ const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number>
 
 const Allenamenti = () => {
   const { user } = useAuth();
-  const userTeam = user?.team ?? "APD";
+  const userTeam = user?.team;
   const { players } = getPlayers(userTeam);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [xpSpentExtra, setXpSpentExtra] = useState(0);
