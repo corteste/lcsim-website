@@ -237,6 +237,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+      <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
     </nav>
   );
 };
