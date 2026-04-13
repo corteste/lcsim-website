@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, TrendingUp, Award } from "lucide-react";
 import TraitSystem from "@/components/training/TraitSystem";
-import RolePlusSystem from "@/components/training/RolePlusSystem";
-import RoleChangeSystem from "@/components/training/RoleChangeSystem";
+import RoleSystem from "@/components/training/RoleSystem";
 import { getPlayers } from "@/hooks/use-players";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
@@ -373,12 +372,11 @@ const Allenamenti = () => {
           </div>
         </div>
 
-        {/* Sezioni aggiuntive: Cambio Ruolo, Tratti, Ruolo+ */}
+        {/* Sezioni aggiuntive: Ruolo & Ruolo+, Tratti */}
         {player && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-            <RoleChangeSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+            <RoleSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
             <TraitSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
-            <RolePlusSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
           </div>
         )}
       </main>
