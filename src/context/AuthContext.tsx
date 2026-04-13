@@ -15,11 +15,11 @@ const MOCK_USERS: Record<string, { password: string; user: AppUser }> = {
   },
   "user2@lcsim.it": {
     password: "user2",
-    user: { id: "2", email: "user2@lcsim.it", name: "Mister B", team: "JUV" },
+    user: { id: "2", email: "user2@lcsim.it", name: "Mister B", team: "PFC" },
   },
   "user3@lcsim.it": {
     password: "user3",
-    user: { id: "3", email: "user3@lcsim.it", name: "Mister C", team: "MIL" },
+    user: { id: "3", email: "user3@lcsim.it", name: "Mister C", team: "ACD" },
   },
 };
 

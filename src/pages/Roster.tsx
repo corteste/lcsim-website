@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
 import { getRoleColor } from "@/utils/functions";
 import { getPlayers } from "@/hooks/use-players";
+import { useAuth } from "@/context/AuthContext";
 
 
-const teamName = "Average Pegiò Drivers";
+
 
 const getOverallColor = (overall:number) => {
 
@@ -17,7 +18,11 @@ const getOverallColor = (overall:number) => {
 };
 
 const Roster = () => {
-   const { players } = getPlayers("APD");
+  const { user } = useAuth();
+  const userTeam = user?.team;
+  const { players } = getPlayers(userTeam);
+
+  const teamName = userTeam;
 
   return (
     <div className="min-h-screen bg-background">

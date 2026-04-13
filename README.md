@@ -32,10 +32,11 @@ Cronologia allenamenti?
 - Nella pagina delle tattiche nel nome del giocatore aggiungere due pulsanti Attributi e Statistiche
 - Nuova pagina menù a tendina statistiche avanzate (statistiche dei giocatori per propria squadra)
 
-- !! Sezione calci piazzati aggiungere freddezza
-- !! Opzione cambio ruolo (come anno scorso, scegli ruolo nuovo: quando lo scegli c'è prompt per scegliere ruolo+)
-- !! Tratti
-- !! Ruolo+ (sotto ruolo)
+- !! Sezione calci piazzati aggiungere freddezza -> OK
+- !! Opzione cambio ruolo (come anno scorso, sce gli ruolo nuovo: quando lo scegli c'è prompt per scegliere ruolo+)
+- !! Tratti : compri tratti argento (40 circa), max 5 tratti. Un tratto può essere sbloccato solo se si hanno certi attributi. Quando raggiungi 85 OVR un upgrade gratis per un tratto ad oro. AD 85 senza tratti il primo che
+    compri diventa oro. Se giocatore ha tratto oro puoi pagare tot per cambiare un tratto dorato in un altro. l'altro tratto deve essere argento, max 5 tratti max 1 oro
+- !! Ruolo+ : (sotto ruolo), max 2, tutti almeno 1 se vuoi puoi aggiungerne un altro o cambiarne uno dei due. Quando raggiungi 85 OVR puoi comprare ruolo++
 
 
 

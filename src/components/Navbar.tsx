@@ -42,7 +42,7 @@ const Navbar = () => {
     { path: "/mia-squadra/confronto-giocatori", label: "Confronto Giocatori" },
   ];
 
-   const giocatoriItems = [
+  const giocatoriItems = [
     { path: "/giocatori/lista-giocatori", label: "Lista Giocatori" },
     { path: "/giocatori/confronto-giocatori", label: "Confronto Giocatori" },
   ];
@@ -78,40 +78,27 @@ const Navbar = () => {
               <Moon className="h-4 w-4 text-muted-foreground" />
             </div>
 
-            {user ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border">
-                <User className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">{user.name}</span>
-                <span className="text-xs text-muted-foreground">({user.team})</span>
-                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={logout}>
-                  <LogOut className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setShowLogin(true)}>
-                <LogIn className="h-4 w-4 mr-1" /> Accedi
-              </Button>
-            )}
+
             <div className="flex gap-1 items-center">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${location.pathname === item.path
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "text-foreground hover:bg-secondary"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-foreground hover:bg-secondary"
                     }`}
                 >
                   {item.label}
                 </Link>
               ))}
 
-               {/* Parte GIOCATORI */}
+              {/* Parte GIOCATORI */}
               <DropdownMenu>
                 <DropdownMenuTrigger
                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${isGiocatoriActive
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "text-foreground hover:bg-secondary"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-foreground hover:bg-secondary"
                     }`}
                 >
                   Giocatori
@@ -123,8 +110,8 @@ const Navbar = () => {
                       <Link
                         to={item.path}
                         className={`cursor-pointer ${location.pathname === item.path
-                            ? "bg-secondary font-medium"
-                            : ""
+                          ? "bg-secondary font-medium"
+                          : ""
                           }`}
                       >
                         {item.label}
@@ -139,8 +126,8 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger
                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${isArchivioActive
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "text-foreground hover:bg-secondary"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-foreground hover:bg-secondary"
                     }`}
                 >
                   Archivio
@@ -152,8 +139,8 @@ const Navbar = () => {
                       <Link
                         to={item.path}
                         className={`cursor-pointer ${location.pathname === item.path
-                            ? "bg-secondary font-medium"
-                            : ""
+                          ? "bg-secondary font-medium"
+                          : ""
                           }`}
                       >
                         {item.label}
@@ -165,37 +152,54 @@ const Navbar = () => {
               {/* Fine Parte Archivio */}
 
 
-              {/* Parte la mia squadra, da disattivare per pubblico */}
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${isMiaSquadraActive
+              {/* Parte la mia squadra, visibile solo se loggato */}
+              {user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-1 ${isMiaSquadraActive
                       ? "bg-primary text-primary-foreground shadow-md"
                       : "text-foreground hover:bg-secondary"
-                    }`}
-                >
-                  La Mia Squadra
-                  <ChevronDown className="h-4 w-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-card z-50">
-                  {miaSquadraItems.map((item) => (
-                    <DropdownMenuItem key={item.path} asChild>
-                      <Link
-                        to={item.path}
-                        className={`cursor-pointer ${location.pathname === item.path
+                      }`}
+                  >
+                    La Mia Squadra
+                    <ChevronDown className="h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-card z-50">
+                    {miaSquadraItems.map((item) => (
+                      <DropdownMenuItem key={item.path} asChild>
+                        <Link
+                          to={item.path}
+                          className={`cursor-pointer ${location.pathname === item.path
                             ? "bg-secondary font-medium"
                             : ""
-                          }`}
-                      >
-                        {item.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                            }`}
+                        >
+                          {item.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               {/* Fine Parte la mia squadra */}
+
+
             </div>
           </div>
-
+          {user ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border">
+              <User className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{user.name}</span>
+              <span className="text-xs text-muted-foreground">({user.team})</span>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={logout}>
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setShowLogin(true)}>
+              <LogIn className="h-4 w-4 mr-1" /> Accedi
+            </Button>
+          )}
           {/* Mobile Navigation */}
           <div className="flex md:hidden gap-2 items-center">
             <div className="flex items-center gap-2">
@@ -224,8 +228,8 @@ const Navbar = () => {
                       to={item.path}
                       onClick={() => setIsOpen(false)}
                       className={`px-4 py-3 rounded-lg font-medium transition-all duration-300 ${location.pathname === item.path
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "text-foreground hover:bg-secondary"
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "text-foreground hover:bg-secondary"
                         }`}
                     >
                       {item.label}
