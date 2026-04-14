@@ -331,7 +331,38 @@ const Allenamenti = () => {
               </TabsContent>
             </Tabs>
           </div>
-      </main>
+
+          {/* right column: OVR e riepilogo */}
+          <div className="col-span-12 lg:col-span-2">
+            <Card className="shadow-lg border-primary/10">
+              <CardHeader className="bg-gradient-to-br from-accent/10 to-primary/10">
+                <div className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary" />
+                  <CardTitle>Riepilogo</CardTitle>
+                </div>
+                <CardDescription>Overall del giocatore</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="text-center py-6 rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 border border-border transition-all hover:shadow-md">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pre-Allenamento</div>
+                    <div className="text-4xl font-bold text-foreground">{preOverall}</div>
+                  </div>
+                  <div className="text-center py-6 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 shadow-lg transition-all hover:shadow-xl">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Post-Allenamento</div>
+                    <div className="text-4xl font-bold text-primary">{postOverall}</div>
+                    {postOverall > preOverall && (
+                      <Badge variant="secondary" className="mt-2 animate-fade-in">+{postOverall - preOverall}</Badge>
+                    )}
+                  </div>
+                  <div className="mt-4 p-3 text-xs text-muted-foreground bg-muted/30 rounded-lg border border-border">
+                    Cambiamenti in tempo reale. Premi "Applica" per consumare XP.
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
     </div>
   );
 };
