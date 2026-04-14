@@ -245,6 +245,15 @@ const Allenamenti = () => {
                   <div className="text-xs text-muted-foreground">
                     Aumento massimo per gruppo: 25
                   </div>
+
+                  <Button
+                    className="w-full mt-2"
+                    disabled={!player || totalCost === 0 || xpRemaining < 0 || isSaving}
+                    onClick={handleSave}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSaving ? "Salvataggio..." : "Applica Allenamento"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
