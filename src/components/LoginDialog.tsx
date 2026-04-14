@@ -14,19 +14,19 @@ interface LoginDialogProps {
 
 export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const ok = await login(email, password);
+    const ok = await login(username, password);
     setLoading(false);
     if (ok) {
       toast.success("Login effettuato!");
       onOpenChange(false);
-      setEmail("");
+      setUsername("");
       setPassword("");
     } else {
       toast.error("Credenziali non valide");
@@ -45,7 +45,7 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
-            <Input id="username" type="username" placeholder="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="username" type="username" placeholder="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
