@@ -111,7 +111,9 @@ const Allenamenti = () => {
   const { user } = useAuth();
   const userTeam = user?.team;
   const { players } = getPlayers(userTeam);
+  const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [xpSpentExtra, setXpSpentExtra] = useState(0);
 
   const player = useMemo(() => {
@@ -159,6 +161,31 @@ const Allenamenti = () => {
   const xpRemaining = xpAvailable - totalCost - xpSpentExtra;
 
   const handleExtraXpSpent = (cost: number) => setXpSpentExtra((prev) => prev + cost);
+
+  const handleSave = async () => {
+    if (!player) return;
+    setIsSaving(true);
+    try {
+      // TODO: implementare salvataggio reale a DB
+      // Dati da salvare: postStats, increases, totalCost, xpRemaining, player ID
+      console.log("Mock save:", {
+        playerId: (player as any).ID ?? (player as any).id,
+        postStats,
+        increases,
+        totalCost,
+        xpRemaining,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 800)); // simula latenza
+      toast({
+        title: "Allenamento salvato",
+        description: `Dati salvati per ${(player as any).Nome ?? ""} ${(player as any).Cognome ?? ""}. (Mock)`,
+      });
+    } catch {
+      toast({ title: "Errore", description: "Salvataggio fallito.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const computeOverall = (stats: Record<StatKey, number>) => {
     const values = Object.values(stats);
