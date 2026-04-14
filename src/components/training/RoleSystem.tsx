@@ -102,6 +102,14 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
     setDialogMode("upgrade");
   };
 
+  const handleRemoveSubRole = (index: number) => {
+    if (!player) return;
+    const updated = ownedSubRoles.filter((_, i) => i !== index);
+    setOwnedSubRoles(updated);
+    savePlayerSubRoles(player.ID, updated);
+    toast.success("Ruolo+ rimosso!");
+  };
+
   const confirmSubRoleAction = () => {
     if (!player) return;
     if (dialogMode === "add") {
