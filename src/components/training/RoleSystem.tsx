@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, ArrowRight, UserPlus, Crown, ArrowRightLeft, Shield } from "lucide-react";
+import { RefreshCw, ArrowRight, UserPlus, Crown, ArrowRightLeft, Shield, Trash2 } from "lucide-react";
 import { Player } from "@/types/player";
 import {
   AVAILABLE_ROLES,
@@ -100,6 +100,14 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
     if (hasPlusPlus) { toast.error("Già possiedi un Ruolo++!"); return; }
     setSwapTargetIndex(index);
     setDialogMode("upgrade");
+  };
+
+  const handleRemoveSubRole = (index: number) => {
+    if (!player) return;
+    const updated = ownedSubRoles.filter((_, i) => i !== index);
+    setOwnedSubRoles(updated);
+    savePlayerSubRoles(player.ID, updated);
+    toast.success("Ruolo+ rimosso!");
   };
 
   const confirmSubRoleAction = () => {
@@ -202,6 +210,14 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
                         </Badge>
                         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openSwapDialog(idx)}>
                           <ArrowRightLeft className="h-3 w-3 mr-1" /> Cambia
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                          onClick={() => handleRemoveSubRole(idx)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" /> Rimuovi
                         </Button>
                         {sr.tier === "plus" && canUpgradePlusPlus && !hasPlusPlus && (
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openUpgradeDialog(idx)}>
