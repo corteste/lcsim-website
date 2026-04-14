@@ -280,51 +280,22 @@ const Allenamenti = () => {
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Colonna PRE */}
-                            <div className="space-y-2">
-                              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                                Pre-Allenamento
-                              </div>
-                              {g.subs.map((s) => (
-                                <div key={s} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                                  <span className="text-sm text-foreground">{statMeta[s].label}</span>
-                                  <Badge variant="outline" className="font-mono">
-                                    {preStats[s]}
-                                  </Badge>
-                                </div>
-                              ))}
+                        <CardContent className="pt-2 pb-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pb-1">
+                              <span className="flex-1">Attributo</span>
+                              <span className="w-14 text-center">Pre</span>
+                              <span className="w-14 text-center">Post</span>
                             </div>
-
-                            {/* Colonna POST */}
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                  Post-Allenamento
-                                </div>
-                                {cost > 0 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Costo: {cost} XP
-                                  </Badge>
-                                )}
+                            {g.subs.map((s) => (
+                              <div key={s} className={`flex items-center py-1 px-3 rounded transition-colors ${hasChange ? 'bg-primary/5' : 'hover:bg-muted/30'}`}>
+                                <span className="flex-1 text-sm text-foreground">{statMeta[s].label}</span>
+                                <span className="w-14 text-center font-mono text-sm text-muted-foreground">{preStats[s]}</span>
+                                <span className={`w-14 text-center font-mono text-sm font-semibold ${hasChange ? 'text-primary' : 'text-foreground'}`}>
+                                  {postStats[s]}
+                                </span>
                               </div>
-                              {g.subs.map((s) => (
-                                <div key={s} className={`flex items-center justify-between py-1.5 px-3 rounded-lg transition-all duration-300 ${hasChange ? 'bg-primary/10 border border-primary/20' : 'bg-muted/30'} hover:bg-accent/50`}>
-                                  <span className="text-sm text-foreground">{statMeta[s].label}</span>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant={hasChange ? "default" : "outline"} className="font-mono">
-                                      {postStats[s]}
-                                    </Badge>
-                                    {hasChange && (
-                                      <span className="text-xs text-primary font-semibold animate-fade-in">
-                                        +{inc}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            ))}
                           </div>
                         </CardContent>
                       </Card>
