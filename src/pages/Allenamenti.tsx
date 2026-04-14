@@ -363,6 +363,7 @@ const Allenamenti = () => {
             </Card>
           </div>
         </div>
+      </main>
     </div>
   );
 };
