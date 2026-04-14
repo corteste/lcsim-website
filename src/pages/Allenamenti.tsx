@@ -232,7 +232,7 @@ const Allenamenti = () => {
                 <CardDescription>Gestisci gli allenamenti per gruppo di attributi</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {groupRows.map((g) => {
                     const inc = increases[g.key] ?? 0;
                     const cost = inc * g.subs.length * COST_PER_POINT;
@@ -240,58 +240,57 @@ const Allenamenti = () => {
 
                     return (
                       <Card key={g.key} className={`transition-all duration-300 hover:shadow-md ${hasChange ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
-                        <CardHeader className="pb-3">
+                        <CardHeader className="pb-2 pt-4 px-4">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <CardTitle className="text-lg">{g.label}</CardTitle>
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-sm font-semibold">{g.label}</CardTitle>
                               {hasChange && (
-                                <Badge variant="secondary" className="animate-fade-in">
+                                <Badge variant="secondary" className="text-xs animate-fade-in">
                                   +{inc}
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="outline"
+                                className="h-6 w-6"
                                 onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) - 1)}
                                 disabled={inc === 0}
                               >
-                                <Minus className="h-4 w-4" />
+                                <Minus className="h-3 w-3" />
                               </Button>
-                              <div className="w-16 text-center">
-                                <input
-                                  // type="number"
-                                  min={0}
-                                  max={25}
-                                  value={inc}
-                                  onChange={(e) => setIncrease(g.key, Number(e.target.value || 0))}
-                                  className="w-full px-2 py-1 text-center border rounded-md bg-background focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
-                                />
-                              </div>
+                              <input
+                                min={0}
+                                max={25}
+                                value={inc}
+                                onChange={(e) => setIncrease(g.key, Number(e.target.value || 0))}
+                                className="w-10 px-1 py-0.5 text-center text-sm border rounded bg-background focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                              />
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="outline"
+                                className="h-6 w-6"
                                 onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) + 1)}
                                 disabled={inc >= 25}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-3 w-3" />
                               </Button>
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent className="pt-2 pb-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pb-1">
-                              <span className="flex-1">Attributo</span>
-                              <span className="w-14 text-center">Pre</span>
-                              <span className="w-14 text-center">Post</span>
+                        <CardContent className="pt-1 pb-3 px-4">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pb-0.5">
+                              <span className="flex-1">Attr</span>
+                              <span className="w-10 text-center">Pre</span>
+                              <span className="w-10 text-center">Post</span>
                             </div>
                             {g.subs.map((s) => (
-                              <div key={s} className={`flex items-center py-1 px-3 rounded transition-colors ${hasChange ? 'bg-primary/5' : 'hover:bg-muted/30'}`}>
-                                <span className="flex-1 text-sm text-foreground">{statMeta[s].label}</span>
-                                <span className="w-14 text-center font-mono text-sm text-muted-foreground">{preStats[s]}</span>
-                                <span className={`w-14 text-center font-mono text-sm font-semibold ${hasChange ? 'text-primary' : 'text-foreground'}`}>
+                              <div key={s} className={`flex items-center py-0.5 px-2 rounded transition-colors ${hasChange ? 'bg-primary/5' : 'hover:bg-muted/30'}`}>
+                                <span className="flex-1 text-xs text-foreground">{statMeta[s].label}</span>
+                                <span className="w-10 text-center font-mono text-xs text-muted-foreground">{preStats[s]}</span>
+                                <span className={`w-10 text-center font-mono text-xs font-semibold ${hasChange ? 'text-primary' : 'text-foreground'}`}>
                                   {postStats[s]}
                                 </span>
                               </div>
