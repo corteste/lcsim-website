@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Player } from "@/types/player";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, TrendingUp, Award } from "lucide-react";
+import { Plus, Minus, TrendingUp, Award, Save } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import TraitSystem from "@/components/training/TraitSystem";
 import RoleSystem from "@/components/training/RoleSystem";
 import { getPlayers } from "@/hooks/use-players";
@@ -110,7 +111,9 @@ const Allenamenti = () => {
   const { user } = useAuth();
   const userTeam = user?.team;
   const { players } = getPlayers(userTeam);
+  const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [xpSpentExtra, setXpSpentExtra] = useState(0);
 
   const player = useMemo(() => {
@@ -158,6 +161,31 @@ const Allenamenti = () => {
   const xpRemaining = xpAvailable - totalCost - xpSpentExtra;
 
   const handleExtraXpSpent = (cost: number) => setXpSpentExtra((prev) => prev + cost);
+
+  const handleSave = async () => {
+    if (!player) return;
+    setIsSaving(true);
+    try {
+      // TODO: implementare salvataggio reale a DB
+      // Dati da salvare: postStats, increases, totalCost, xpRemaining, player ID
+      console.log("Mock save:", {
+        playerId: (player as any).ID ?? (player as any).id,
+        postStats,
+        increases,
+        totalCost,
+        xpRemaining,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 800)); // simula latenza
+      toast({
+        title: "Allenamento salvato",
+        description: `Dati salvati per ${(player as any).Nome ?? ""} ${(player as any).Cognome ?? ""}. (Mock)`,
+      });
+    } catch {
+      toast({ title: "Errore", description: "Salvataggio fallito.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const computeOverall = (stats: Record<StatKey, number>) => {
     const values = Object.values(stats);
@@ -217,6 +245,15 @@ const Allenamenti = () => {
                   <div className="text-xs text-muted-foreground">
                     Aumento massimo per gruppo: 25
                   </div>
+
+                  <Button
+                    className="w-full mt-2"
+                    disabled={!player || totalCost === 0 || xpRemaining < 0 || isSaving}
+                    onClick={handleSave}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSaving ? "Salvataggio..." : "Applica Allenamento"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
