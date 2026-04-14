@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useMemo, useState } from "react";
 import { Player } from "@/types/player";
 import { Badge } from "@/components/ui/badge";
@@ -221,88 +222,114 @@ const Allenamenti = () => {
             </Card>
           </div>
 
-          {/* center: griglia principale (ora per gruppi con sotto-attributi) */}
+          {/* center: tab section */}
           <div className="col-span-12 lg:col-span-8">
-            <Card className="shadow-lg border-primary/10">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <CardTitle>Dettaglio Attributi</CardTitle>
-                </div>
-                <CardDescription>Gestisci gli allenamenti per gruppo di attributi</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {groupRows.map((g) => {
-                    const inc = increases[g.key] ?? 0;
-                    const cost = inc * g.subs.length * COST_PER_POINT;
-                    const hasChange = inc > 0;
+            <Tabs defaultValue="attributi" className="w-full">
+              <TabsList className="w-full grid grid-cols-3">
+                <TabsTrigger value="attributi">Dettaglio Attributi</TabsTrigger>
+                <TabsTrigger value="ruolo">Ruolo & Ruolo+</TabsTrigger>
+                <TabsTrigger value="tratti">Tratti</TabsTrigger>
+              </TabsList>
 
-                    return (
-                      <Card key={g.key} className={`transition-all duration-300 hover:shadow-md ${hasChange ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
-                        <CardHeader className="pb-2 pt-4 px-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <CardTitle className="text-sm font-semibold">{g.label}</CardTitle>
-                              {hasChange && (
-                                <Badge variant="secondary" className="text-xs animate-fade-in">
-                                  +{inc}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                className="h-6 w-6"
-                                onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) - 1)}
-                                disabled={inc === 0}
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <input
-                                min={0}
-                                max={25}
-                                value={inc}
-                                onChange={(e) => setIncrease(g.key, Number(e.target.value || 0))}
-                                className="w-10 px-1 py-0.5 text-center text-sm border rounded bg-background focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                              />
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                className="h-6 w-6"
-                                onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) + 1)}
-                                disabled={inc >= 25}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-1 pb-3 px-4">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pb-0.5">
-                              <span className="flex-1">Attr</span>
-                              <span className="w-10 text-center">Pre</span>
-                              <span className="w-10 text-center">Post</span>
-                            </div>
-                            {g.subs.map((s) => (
-                              <div key={s} className={`flex items-center py-0.5 px-2 rounded transition-colors ${hasChange ? 'bg-primary/5' : 'hover:bg-muted/30'}`}>
-                                <span className="flex-1 text-xs text-foreground">{statMeta[s].label}</span>
-                                <span className="w-10 text-center font-mono text-xs text-muted-foreground">{preStats[s]}</span>
-                                <span className={`w-10 text-center font-mono text-xs font-semibold ${hasChange ? 'text-primary' : 'text-foreground'}`}>
-                                  {postStats[s]}
-                                </span>
+              <TabsContent value="attributi">
+                <Card className="shadow-lg border-primary/10">
+                  <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      <CardTitle>Dettaglio Attributi</CardTitle>
+                    </div>
+                    <CardDescription>Gestisci gli allenamenti per gruppo di attributi</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {groupRows.map((g) => {
+                        const inc = increases[g.key] ?? 0;
+                        const cost = inc * g.subs.length * COST_PER_POINT;
+                        const hasChange = inc > 0;
+
+                        return (
+                          <Card key={g.key} className={`transition-all duration-300 hover:shadow-md ${hasChange ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
+                            <CardHeader className="pb-2 pt-4 px-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CardTitle className="text-sm font-semibold">{g.label}</CardTitle>
+                                  {hasChange && (
+                                    <Badge variant="secondary" className="text-xs animate-fade-in">
+                                      +{inc}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-6 w-6"
+                                    onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) - 1)}
+                                    disabled={inc === 0}
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <input
+                                    min={0}
+                                    max={25}
+                                    value={inc}
+                                    onChange={(e) => setIncrease(g.key, Number(e.target.value || 0))}
+                                    className="w-10 px-1 py-0.5 text-center text-sm border rounded bg-background focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                                  />
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-6 w-6"
+                                    onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) + 1)}
+                                    disabled={inc >= 25}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+                            </CardHeader>
+                            <CardContent className="pt-1 pb-3 px-4">
+                              <div className="space-y-0.5">
+                                <div className="flex items-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pb-0.5">
+                                  <span className="flex-1">Attr</span>
+                                  <span className="w-10 text-center">Pre</span>
+                                  <span className="w-10 text-center">Post</span>
+                                </div>
+                                {g.subs.map((s) => (
+                                  <div key={s} className={`flex items-center py-0.5 px-2 rounded transition-colors ${hasChange ? 'bg-primary/5' : 'hover:bg-muted/30'}`}>
+                                    <span className="flex-1 text-xs text-foreground">{statMeta[s].label}</span>
+                                    <span className="w-10 text-center font-mono text-xs text-muted-foreground">{preStats[s]}</span>
+                                    <span className={`w-10 text-center font-mono text-xs font-semibold ${hasChange ? 'text-primary' : 'text-foreground'}`}>
+                                      {postStats[s]}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="ruolo">
+                {player ? (
+                  <RoleSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+                ) : (
+                  <Card><CardContent className="py-8 text-center text-muted-foreground">Seleziona un giocatore</CardContent></Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="tratti">
+                {player ? (
+                  <TraitSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+                ) : (
+                  <Card><CardContent className="py-8 text-center text-muted-foreground">Seleziona un giocatore</CardContent></Card>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* right column: OVR e riepilogo */}
@@ -318,24 +345,16 @@ const Allenamenti = () => {
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   <div className="text-center py-6 rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 border border-border transition-all hover:shadow-md">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                      Pre-Allenamento
-                    </div>
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pre-Allenamento</div>
                     <div className="text-4xl font-bold text-foreground">{preOverall}</div>
                   </div>
-
                   <div className="text-center py-6 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 shadow-lg transition-all hover:shadow-xl">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                      Post-Allenamento
-                    </div>
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Post-Allenamento</div>
                     <div className="text-4xl font-bold text-primary">{postOverall}</div>
                     {postOverall > preOverall && (
-                      <Badge variant="secondary" className="mt-2 animate-fade-in">
-                        +{postOverall - preOverall}
-                      </Badge>
+                      <Badge variant="secondary" className="mt-2 animate-fade-in">+{postOverall - preOverall}</Badge>
                     )}
                   </div>
-
                   <div className="mt-4 p-3 text-xs text-muted-foreground bg-muted/30 rounded-lg border border-border">
                     Cambiamenti in tempo reale. Premi "Applica" per consumare XP.
                   </div>
@@ -344,14 +363,6 @@ const Allenamenti = () => {
             </Card>
           </div>
         </div>
-
-        {/* Sezioni aggiuntive: Ruolo & Ruolo+, Tratti */}
-        {player && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-            <RoleSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
-            <TraitSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
-          </div>
-        )}
       </main>
     </div>
   );
