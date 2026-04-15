@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { BarChart3, ChevronLeft, ChevronRight, Filter, ArrowUpDown, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { getRoleColor, getPosGroup, getContractStatus } from "@/utils/functions";
 import { getPlayers } from "@/hooks/use-players";
 import { MarketStatus } from "@/types/marketStatus";
@@ -34,6 +35,9 @@ const getMarketStatusDisplay = (market: MarketStatus) => {
   }
 };
 
+type SortField = "OVR" | "Età" | "Nome" | "Posiz" | "XP";
+type SortDir = "asc" | "desc";
+
 const PLAYERS_PER_PAGE = 10;
 
 const ListaGiocatori = () => {
@@ -41,34 +45,62 @@ const ListaGiocatori = () => {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [contractFilter, setContractFilter] = useState<string>("all");
   const [marketFilter, setMarketFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("OVR");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const { players } = getPlayers();
   const { teams } = getTeams();
   const [currentPage, setCurrentPage] = useState(1);
   const [selected, setSelected] = useState<{ player: Player } | null>(null);
-  
-  
-  // Reset page when filters change
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [roleFilter, teamFilter, contractFilter, marketFilter]);
+  }, [roleFilter, teamFilter, contractFilter, marketFilter, sortField, sortDir]);
 
-  const filteredStats = players.filter(
-    player =>
-      (teamFilter === "all" || player.Squadra === teamFilter) &&
-      (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) &&
-      (marketFilter === "all" || player.MarketStatus?.Status === marketFilter) &&
-      (contractFilter === "all" || getContractStatus(player.Squadra) === contractFilter)
-  );
+  const filteredAndSorted = useMemo(() => {
+    const filtered = players.filter(
+      player =>
+        (teamFilter === "all" || player.Squadra === teamFilter) &&
+        (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) &&
+        (marketFilter === "all" || player.MarketStatus?.Status === marketFilter) &&
+        (contractFilter === "all" || getContractStatus(player.Squadra) === contractFilter)
+    );
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredStats.length / PLAYERS_PER_PAGE);
+    return [...filtered].sort((a, b) => {
+      let valA: any, valB: any;
+      switch (sortField) {
+        case "OVR": valA = a.OVR ?? 0; valB = b.OVR ?? 0; break;
+        case "Età": valA = a.Età ?? 0; valB = b.Età ?? 0; break;
+        case "XP": valA = a.XP ?? 0; valB = b.XP ?? 0; break;
+        case "Nome": valA = `${a.Cognome} ${a.Nome}`.toLowerCase(); valB = `${b.Cognome} ${b.Nome}`.toLowerCase(); break;
+        case "Posiz": valA = a.Posiz; valB = b.Posiz; break;
+        default: valA = 0; valB = 0;
+      }
+      if (valA < valB) return sortDir === "asc" ? -1 : 1;
+      if (valA > valB) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [players, teamFilter, roleFilter, marketFilter, contractFilter, sortField, sortDir]);
+
+  const totalPages = Math.ceil(filteredAndSorted.length / PLAYERS_PER_PAGE);
   const startIndex = (currentPage - 1) * PLAYERS_PER_PAGE;
-  const endIndex = startIndex + PLAYERS_PER_PAGE;
-  const currentPlayers = filteredStats.slice(startIndex, endIndex);
+  const currentPlayers = filteredAndSorted.slice(startIndex, startIndex + PLAYERS_PER_PAGE);
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
+
+  const activeFiltersCount = [roleFilter, teamFilter, contractFilter, marketFilter].filter(f => f !== "all").length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,86 +115,124 @@ const ListaGiocatori = () => {
           <p className="text-muted-foreground">Lista completa dei giocatori</p>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-6 shadow-lg">
-          <CardHeader>
-            <CardTitle>Filtri</CardTitle>
-            <CardDescription>Personalizza la visualizzazione delle statistiche</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/** Squadra Filter */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Squadra</label>
-                <Select value={teamFilter} onValueChange={setTeamFilter}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutte le Squadre</SelectItem>
-                    {teams.map((team) => (
-                      <SelectItem value={team.TEAM_ID}>{team.NAME}</SelectItem>
+        {/* Filters & Sort row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Filters */}
+          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <Card className="shadow-lg">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-base">Filtri</CardTitle>
+                      {activeFiltersCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">{activeFiltersCount}</Badge>
+                      )}
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Squadra</label>
+                      <Select value={teamFilter} onValueChange={setTeamFilter}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tutte le Squadre</SelectItem>
+                          {teams.map((team) => (
+                            <SelectItem key={team.TEAM_ID} value={team.TEAM_ID}>{team.NAME}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Ruolo</label>
+                      <Select value={roleFilter} onValueChange={setRoleFilter}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tutti i Ruoli</SelectItem>
+                          <SelectItem value="POR">Portieri</SelectItem>
+                          <SelectItem value="DIF">Difensori</SelectItem>
+                          <SelectItem value="CEN">Centrocampisti</SelectItem>
+                          <SelectItem value="ATT">Attaccanti</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Stato Giocatore</label>
+                      <Select value={contractFilter} onValueChange={setContractFilter}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tutti</SelectItem>
+                          <SelectItem value="svi">Svincolati</SelectItem>
+                          <SelectItem value="con">Sotto Contratto</SelectItem>
+                          <SelectItem value="sec">Serie Inferiore</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Stato sul Mercato</label>
+                      <Select value={marketFilter} onValueChange={setMarketFilter}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tutti gli stati</SelectItem>
+                          <SelectItem value="ced">Lista Cessioni</SelectItem>
+                          <SelectItem value="tra">Possibili Trattative</SelectItem>
+                          <SelectItem value="fis">Elemento Fisso</SelectItem>
+                          <SelectItem value="int">Intoccabile</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Sort */}
+          <Collapsible open={sortOpen} onOpenChange={setSortOpen}>
+            <Card className="shadow-lg">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpDown className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-base">Ordinamento</CardTitle>
+                      <Badge variant="outline" className="text-xs">
+                        {sortField} {sortDir === "asc" ? "↑" : "↓"}
+                      </Badge>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${sortOpen ? "rotate-180" : ""}`} />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="flex flex-wrap gap-2">
+                    {(["OVR", "Età", "Nome", "Posiz", "XP"] as SortField[]).map((field) => (
+                      <Button
+                        key={field}
+                        variant={sortField === field ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleSort(field)}
+                        className="gap-1.5"
+                      >
+                        {field}
+                        {sortField === field && (
+                          sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        )}
+                      </Button>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-               {/** Ruolo Filter */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Ruolo</label>
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutti i Ruoli</SelectItem>
-                    <SelectItem value="POR">Portieri</SelectItem>
-                    <SelectItem value="DIF">Difensori</SelectItem>
-                    <SelectItem value="CEN">Centrocampisti</SelectItem>
-                    <SelectItem value="ATT">Attaccanti</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-               {/** Stato Giocatore */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Stato Giocatore</label>
-                <Select value={contractFilter} onValueChange={setContractFilter}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutti</SelectItem>
-                    <SelectItem value="svi">Svincolati</SelectItem>
-                    <SelectItem value="con">Sotto Contratto</SelectItem>
-                    <SelectItem value="sec">Serie Inferiore</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-               {/** Stato sul Mercato */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Stato sul Mercato</label>
-                <Select value={marketFilter} onValueChange={setMarketFilter}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutti gli stati</SelectItem>
-                    <SelectItem value="ced">Lista Cessioni</SelectItem>
-                    <SelectItem value="tra">Possibili Trattative</SelectItem>
-                    <SelectItem value="fis">Elemento Fisso</SelectItem>
-                    <SelectItem value="int">Intoccabile</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-            </div>
-          </CardContent>
-        </Card>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </div>
 
         {/* Stats Display */}
         <Card className="shadow-lg">
@@ -171,7 +241,7 @@ const ListaGiocatori = () => {
               Risultati
             </CardTitle>
             <CardDescription>
-              {filteredStats.length} giocatori trovati - Pagina {currentPage} di {totalPages}
+              {filteredAndSorted.length} giocatori trovati - Pagina {currentPage} di {totalPages}
             </CardDescription>
           </CardHeader>
           <CardContent>
