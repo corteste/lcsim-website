@@ -1,20 +1,21 @@
 import Navbar from "@/components/Navbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users } from "lucide-react";
-import { getRoleColor } from "@/utils/functions";
+import { Users, Shield, Zap, Calendar } from "lucide-react";
+import { getRoleColor, getPlayerImage, getNationalityFlag, getTeamBackground } from "@/utils/functions";
 import { getPlayers } from "@/hooks/use-players";
 import { useAuth } from "@/context/AuthContext";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
+const getOverallColor = (overall: number) => {
+  if (overall < 70) return "bg-destructive/10 text-destructive border-destructive/20";
+  if (overall >= 70 && overall < 80) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
+  if (overall >= 80) return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+};
 
-
-
-const getOverallColor = (overall:number) => {
-
-  if(overall < 70) return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-  if(overall >= 70 && overall < 80) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-  if(overall >= 80) return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+const getOvrSize = (overall: number) => {
+  if (overall >= 85) return "text-2xl font-black";
+  return "text-xl font-bold";
 };
 
 const Roster = () => {
@@ -24,65 +25,113 @@ const Roster = () => {
 
   const teamName = userTeam;
 
+  // Group players by position category
+  const goalkeepers = players.filter(p => p.Posiz === "POR");
+  const defenders = players.filter(p => ["DC", "TD", "TS"].includes(p.Posiz));
+  const midfielders = players.filter(p => ["CDC", "CC", "ED", "ES", "COC"].includes(p.Posiz));
+  const attackers = players.filter(p => ["AD", "AS", "AT", "ATT"].includes(p.Posiz));
+
+  const sections = [
+    { label: "Portieri", icon: Shield, players: goalkeepers },
+    { label: "Difensori", icon: Shield, players: defenders },
+    { label: "Centrocampisti", icon: Zap, players: midfielders },
+    { label: "Attaccanti", icon: Zap, players: attackers },
+  ].filter(s => s.players.length > 0);
+
+  const avgOvr = players.length > 0
+    ? Math.round(players.reduce((sum, p) => sum + (p.OVR ?? 0), 0) / players.length)
+    : 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
-            <Users className="h-8 w-8 text-primary" />
-            Average Pegiò Drivers
-          </h1>
-          <p className="text-muted-foreground">Roster Completo</p>
-        </div>
 
-        <Tabs defaultValue="0" className="w-full">
-            <TabsContent key={0} value={"0"}>
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle>{teamName}</CardTitle>
-                  <CardDescription>{players.length} giocatori</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3">
-                    {players.map((player, playerIndex) => (
-                      <div
-                        key={playerIndex}
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                          <Badge variant="outline" className={getRoleColor(player.Posiz)}>
-                            {player.Posiz}
-                          </Badge>
-                          
-                          <span className="font-medium text-sm sm:text-base truncate">{player.Nome} {player.Cognome}</span>
-                          <img src="/images/players/MConti.png" alt="Custom Trophy" className="h-6 w-6 sm:h-8 sm:w-8 object-contain border rounded-full" />
-                        </div>
-                        
-                        <div className="flex gap-4 sm:gap-6 justify-between sm:justify-end w-full sm:w-auto">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs sm:text-sm text-muted-foreground">Età:</span>
-                            <span className="font-medium text-sm sm:text-base">{player.Età}</span>
-                          </div> 
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs sm:text-sm text-muted-foreground">Overall:</span>
-                            <Badge variant="outline" className={getOverallColor(player.OVR)}>
-                              {player.OVR}
+      <main className="container mx-auto px-4 py-6">
+        {/* Hero header */}
+        <Card className={`mb-6 overflow-hidden border-0 shadow-lg ${getTeamBackground(teamName ?? "")}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                <Users className="h-7 w-7 text-primary" />
+                {teamName}
+              </h1>
+              <p className="text-muted-foreground mt-1">{players.length} giocatori in rosa</p>
+            </div>
+            <div className="text-center">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">OVR Medio</div>
+              <div className="text-4xl font-black text-primary">{avgOvr}</div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Player sections */}
+        <div className="space-y-4">
+          {sections.map((section) => (
+            <div key={section.label}>
+              <div className="flex items-center gap-2 mb-3">
+                <section.icon className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  {section.label}
+                </h2>
+                <Badge variant="secondary" className="text-xs ml-1">{section.players.length}</Badge>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {section.players.map((player) => (
+                  <Card
+                    key={player.ID}
+                    className="group border border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 overflow-hidden"
+                  >
+                    <CardContent className="p-0">
+                      <div className="flex items-center gap-3 p-4">
+                        {/* Avatar */}
+                        <Avatar className="h-12 w-12 border-2 border-border group-hover:border-primary/40 transition-colors">
+                          <AvatarImage src={getPlayerImage(player.ID)} alt={`${player.Nome} ${player.Cognome}`} />
+                          <AvatarFallback className="text-xs font-bold bg-muted">
+                            {player.Nome?.[0]}{player.Cognome?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground truncate">
+                              {player.Nome} {player.Cognome}
+                            </span>
+                            <img
+                              src={getNationalityFlag(player.Nazionalità)}
+                              alt={player.Nazionalità}
+                              className="h-4 w-4 object-contain shrink-0"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${getRoleColor(player.Posiz)}`}>
+                              {player.Posiz}
                             </Badge>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {player.Età} anni
+                            </span>
                           </div>
-                          <div className="flex items-center gap-2 sm:flex hidden">
-                            <span className="text-sm text-muted-foreground">Voto medio:</span>
-                            <span className="font-bold text-primary text-lg">{player.OVR}</span>
-                          </div>
+                        </div>
+
+                        {/* OVR */}
+                        <div className="text-center shrink-0">
+                          <Badge
+                            variant="outline"
+                            className={`${getOverallColor(player.OVR ?? 0)} ${getOvrSize(player.OVR ?? 0)} px-3 py-1 border`}
+                          >
+                            {player.OVR}
+                          </Badge>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-        </Tabs>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </main>
     </div>
   );

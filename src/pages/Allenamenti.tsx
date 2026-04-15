@@ -324,9 +324,12 @@ const Allenamenti = () => {
         <div className="grid grid-cols-12 gap-6">
           {/* left column: selezione e riepilogo XP */}
           <div className="col-span-12 lg:col-span-2">
-            <Card className="shadow">
-              <CardHeader>
-                <CardTitle>Giocatore</CardTitle>
+            <Card className="shadow-lg border-primary/10">
+              <CardHeader className="bg-gradient-to-br from-accent/10 to-primary/10">
+                <div className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary" />
+                  <CardTitle>Giocatore</CardTitle>
+                </div>
                 <CardDescription>Seleziona e visualizza XP</CardDescription>
               </CardHeader>
               <CardContent>
