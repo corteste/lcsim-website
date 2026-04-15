@@ -187,14 +187,129 @@ const Allenamenti = () => {
     }
   };
 
-  const computeOverall = (stats: Record<StatKey, number>) => {
-    const values = Object.values(stats);
-    if (values.length === 0) return 0;
-    return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  // Pesi per la media ponderata basata sul ruolo
+  const roleWeights: Record<string, Record<StatKey, number>> = {
+    'POR': {
+      PREP: 21, POSP: 21, RINP: 5, RIFP: 21, TUFP: 21,
+      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+      PASC: 0, PASL: 0, CRSS: 0, CTRP: 0, VISI: 0, EFFT: 0,
+      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+      ACCL: 0, VELO: 0, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 0,
+      TSTA: 0, RIFL: 11, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'DC': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 17, SCIV: 10, MARC: 14, AGGR: 7, INTR: 13,
+      PASC: 5, PASL: 0, CRSS: 0, CTRP: 4, VISI: 0, EFFT: 0,
+      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+      ACCL: 0, VELO: 2, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 10,
+      TSTA: 10, RIFL: 5, ELEV: 3, PNIZ: 0, CRIG: 0,
+    },
+    'TS': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
+      PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
+      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+      ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
+      TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'TD': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
+      PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
+      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+      ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
+      TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'CDC': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 12, SCIV: 5, MARC: 9, AGGR: 5, INTR: 14,
+      PASC: 14, PASL: 10, CRSS: 0, CTRP: 10, VISI: 4, EFFT: 0,
+      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+      ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 4,
+      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'CC': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 5, SCIV: 0, MARC: 0, AGGR: 0, INTR: 5,
+      PASC: 17, PASL: 13, CRSS: 0, CTRP: 14, VISI: 13, EFFT: 0,
+      PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 7, PIAZ: 6, FINA: 2,
+      ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 0,
+      TSTA: 0, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'ED': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+      PASC: 11, PASL: 5, CRSS: 10, CTRP: 13, VISI: 7, EFFT: 0,
+      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
+      ACCL: 7, VELO: 6, AGIL: 0, RESI: 5, EQLB: 0, FRZA: 0,
+      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'ES': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+      PASC: 11, PASL: 5, CRSS: 10, CTRP: 13, VISI: 7, EFFT: 0,
+      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
+      ACCL: 7, VELO: 6, AGIL: 0, RESI: 5, EQLB: 0, FRZA: 0,
+      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'COC': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+      PASC: 16, PASL: 4, CRSS: 0, CTRP: 15, VISI: 14, EFFT: 0,
+      PTIR: 0, TIRD: 5, TIRV: 0, DRBL: 13, PIAZ: 9, FINA: 7,
+      ACCL: 4, VELO: 3, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
+      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'AD': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+      PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
+      PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
+      ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
+      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'AS': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+      PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
+      PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
+      ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
+      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'AT': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+      PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
+      PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
+      ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
+      TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
+    'ATT': {
+      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+      PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
+      PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
+      ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
+      TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    },
   };
 
-  const preOverall = computeOverall(preStats);
-  const postOverall = computeOverall(postStats);
+  const computeOverall = (stats: Record<StatKey, number>, role: string) => {
+    const weights = roleWeights[role] || {};
+    let totalWeighted = 0;
+    let totalWeight = 0;
+    for (const key in stats) {
+      const weight = weights[key as StatKey] || 0;
+      totalWeighted += stats[key as StatKey] * weight;
+      totalWeight += weight;
+    }
+    if (totalWeight === 0) return 0;
+    return Math.round(totalWeighted / totalWeight);
+  };
+
+  const preOverall = computeOverall(preStats, (player as any)?.Posiz ?? '');
+  const postOverall = computeOverall(postStats, (player as any)?.Posiz ?? '');
 
   // UI: se player non selezionato mostra lista vuota / caricamento
   return (
