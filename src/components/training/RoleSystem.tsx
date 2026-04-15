@@ -154,101 +154,101 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
         </div>
         <CardDescription>Gestisci ruolo principale e sotto-ruoli del giocatore</CardDescription>
       </CardHeader>
-      <CardContent className="pt-4">
-        <Tabs defaultValue="role" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="role" className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" /> Cambio Ruolo
-            </TabsTrigger>
-            <TabsTrigger value="subrole" className="gap-1.5">
-              <UserPlus className="h-3.5 w-3.5" /> Ruolo+
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="role" className="space-y-4 mt-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
-              <div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wider">Ruolo Attuale</div>
-                <div className="text-2xl font-bold mt-1">{currentRole}</div>
-              </div>
-              <Button onClick={openRoleDialog} disabled={!player}>
-                <RefreshCw className="h-4 w-4 mr-2" /> Cambia Ruolo
-              </Button>
+      <CardContent className="pt-4 space-y-6">
+        {/* Sezione Cambio Ruolo */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <RefreshCw className="h-3.5 w-3.5" /> Cambio Ruolo
+          </div>
+          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+            <div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Ruolo Attuale</div>
+              <div className="text-2xl font-bold mt-1">{currentRole}</div>
             </div>
-            <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
-              Costo: {XP_COSTS.ROLE_CHANGE} XP — include la scelta di un nuovo Ruolo+
-            </div>
-          </TabsContent>
+            <Button onClick={openRoleDialog} disabled={!player}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Cambia Ruolo
+            </Button>
+          </div>
+          <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
+            Costo: {XP_COSTS.ROLE_CHANGE} XP — include la scelta di un nuovo Ruolo+
+          </div>
+        </div>
 
-          <TabsContent value="subrole" className="space-y-4 mt-4">
-            {ownedSubRoles.length > 0 ? (
-              <div className="space-y-2">
-                {ownedSubRoles.map((sr, idx) => {
-                  const info = getSubRoleInfo(sr.subRoleId);
-                  if (!info) return null;
-                  return (
-                    <div
-                      key={sr.subRoleId}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                        sr.tier === "plusplus" ? "bg-accent/20 border-accent/40" : "bg-muted/30 border-border"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {sr.tier === "plusplus" ? (
-                          <Crown className="h-4 w-4 text-accent-foreground" />
-                        ) : (
-                          <UserPlus className="h-4 w-4 text-primary" />
-                        )}
-                        <div>
-                          <div className="text-sm font-medium">{info.name}</div>
-                          <div className="text-xs text-muted-foreground">{info.description}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant={sr.tier === "plusplus" ? "default" : "secondary"}>
-                          {sr.tier === "plusplus" ? "Ruolo++" : "Ruolo+"}
-                        </Badge>
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openSwapDialog(idx)}>
-                          <ArrowRightLeft className="h-3 w-3 mr-1" /> Cambia
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs text-destructive hover:bg-destructive/10"
-                          onClick={() => handleRemoveSubRole(idx)}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" /> Rimuovi
-                        </Button>
-                        {sr.tier === "plus" && canUpgradePlusPlus && !hasPlusPlus && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openUpgradeDialog(idx)}>
-                            <Crown className="h-3 w-3 mr-1" /> ++
-                          </Button>
-                        )}
+        <div className="border-t" />
+
+        {/* Sezione Ruolo+ */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <UserPlus className="h-3.5 w-3.5" /> Ruolo+
+          </div>
+
+          {ownedSubRoles.length > 0 ? (
+            <div className="space-y-2">
+              {ownedSubRoles.map((sr, idx) => {
+                const info = getSubRoleInfo(sr.subRoleId);
+                if (!info) return null;
+                return (
+                  <div
+                    key={sr.subRoleId}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      sr.tier === "plusplus" ? "bg-accent/20 border-accent/40" : "bg-muted/30 border-border"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {sr.tier === "plusplus" ? (
+                        <Crown className="h-4 w-4 text-accent-foreground" />
+                      ) : (
+                        <UserPlus className="h-4 w-4 text-primary" />
+                      )}
+                      <div>
+                        <div className="text-sm font-medium">{info.name}</div>
+                        <div className="text-xs text-muted-foreground">{info.description}</div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-6 text-muted-foreground text-sm border rounded-lg border-dashed">
-                Nessun Ruolo+ assegnato. Aggiungine uno gratuitamente!
-              </div>
-            )}
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={sr.tier === "plusplus" ? "default" : "secondary"}>
+                        {sr.tier === "plusplus" ? "Ruolo++" : "Ruolo+"}
+                      </Badge>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openSwapDialog(idx)}>
+                        <ArrowRightLeft className="h-3 w-3 mr-1" /> Cambia
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                        onClick={() => handleRemoveSubRole(idx)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" /> Rimuovi
+                      </Button>
+                      {sr.tier === "plus" && canUpgradePlusPlus && !hasPlusPlus && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openUpgradeDialog(idx)}>
+                          <Crown className="h-3 w-3 mr-1" /> ++
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground text-sm border rounded-lg border-dashed">
+              Nessun Ruolo+ assegnato. Aggiungine uno gratuitamente!
+            </div>
+          )}
 
-            {ownedSubRoles.length < MAX_ROLE_PLUS && (
-              <Button variant="outline" className="w-full" onClick={openAddDialog}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Aggiungi Ruolo+ {ownedSubRoles.length === 0 ? "(Gratis)" : `(${XP_COSTS.ROLE_PLUS_ADD} XP)`}
-              </Button>
-            )}
+          {ownedSubRoles.length < MAX_ROLE_PLUS && (
+            <Button variant="outline" className="w-full" onClick={openAddDialog}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Aggiungi Ruolo+ {ownedSubRoles.length === 0 ? "(Gratis)" : `(${XP_COSTS.ROLE_PLUS_ADD} XP)`}
+            </Button>
+          )}
 
-            {canUpgradePlusPlus && !hasPlusPlus && (
-              <div className="text-xs text-muted-foreground p-2 bg-accent/10 rounded border border-accent/20">
-                ⭐ OVR ≥ 85 — Upgrade Ruolo++ disponibile!
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+          {canUpgradePlusPlus && !hasPlusPlus && (
+            <div className="text-xs text-muted-foreground p-2 bg-accent/10 rounded border border-accent/20">
+              ⭐ OVR ≥ 85 — Upgrade Ruolo++ disponibile!
+            </div>
+          )}
+        </div>
 
         <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
           <DialogContent>
