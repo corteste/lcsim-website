@@ -435,20 +435,22 @@ const Tattica = () => {
         </div>
 
         {/* Campo da Calcio Visuale */}
-        <Card className="mt-8 shadow-lg">
-          <CardHeader>
-            <div className="flex items-center justify-between">
+        <Card className="mt-8 shadow-lg border-primary/10 overflow-hidden">
+          <CardHeader className="bg-gradient-to-br from-primary/10 to-accent/10 border-b">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <NotebookTabs className="h-5 w-5" />
+                  <div className="p-1.5 rounded-md bg-primary/15">
+                    <Shield className="h-4 w-4 text-primary" />
+                  </div>
                   Visualizzazione Campo
                 </CardTitle>
-                <CardDescription>Rappresentazione grafica della formazione</CardDescription>
+                <CardDescription className="mt-1">Rappresentazione grafica della formazione</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-background/70 backdrop-blur-sm border">
                 <span className="text-sm text-muted-foreground">Formazione:</span>
                 <Select value={formation} onValueChange={(value) => setFormation(value as FormationType)}>
-                  <SelectTrigger className="w-32 bg-background">
+                  <SelectTrigger className="w-28 h-8 bg-background border-primary/20 font-bold text-primary">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-background border shadow-lg z-50">
@@ -462,59 +464,68 @@ const Tattica = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="relative w-full bg-gradient-to-b from-green-600 to-green-700 rounded-lg p-8 min-h-[600px]">
+          <CardContent className="p-4 sm:p-6">
+            <div
+              className="relative w-full rounded-2xl p-8 min-h-[640px] shadow-inner overflow-hidden"
+              style={{
+                background: `repeating-linear-gradient(0deg, hsl(140 55% 32%) 0px, hsl(140 55% 32%) 60px, hsl(140 55% 38%) 60px, hsl(140 55% 38%) 120px)`,
+              }}
+            >
+              {/* Vignette */}
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(0,0,0,0.35)_100%)]" />
+
               {/* Linee del campo */}
-              <div className="absolute inset-8 border-2 border-white/40 rounded-sm">
-                {/* Linea centrale */}
-                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/40" />
-                {/* Cerchio centrale */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/40 rounded-full" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/60 rounded-full" />
-                
-                {/* Area di rigore superiore (attacco) */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-20 border-2 border-white/40 border-t-0" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-10 border-2 border-white/40 border-t-0" />
-                
-                {/* Area di rigore inferiore (difesa) */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-20 border-2 border-white/40 border-b-0" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-10 border-2 border-white/40 border-b-0" />
+              <div className="absolute inset-8 border-2 border-white/60 rounded-sm">
+                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/60" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 border-2 border-white/60 rounded-full" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white/80 rounded-full" />
+
+                {/* Aree di rigore */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-24 border-2 border-white/60 border-t-0" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-12 border-2 border-white/60 border-t-0" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 h-24 border-2 border-white/60 border-b-0" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 h-12 border-2 border-white/60 border-b-0" />
               </div>
 
               {/* Giocatori posizionati sul campo */}
               <div className="relative h-[600px]">
                 {formationSlots.map((player, index) => {
                   if (!player) return null;
-                  
+
                   const pos = formationPositions[formation][index];
 
                   return (
                     <div
                       key={player.ID}
-                      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-10"
                       style={{ left: pos.x, top: pos.y }}
                       onClick={() => setSelected({ player })}
                     >
-                      {/* Cerchio giocatore */}
                       <div className="relative flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-full bg-primary border-2 border-white shadow-lg flex items-center justify-center transition-transform group-hover:scale-110">
-                          <span className="text-white font-bold text-sm">{index + 1}</span>
+                        {/* Glow */}
+                        <div className="absolute inset-0 bg-primary/40 blur-xl rounded-full scale-75 opacity-60 group-hover:opacity-100 transition-opacity" />
+
+                        {/* Cerchio giocatore */}
+                        <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/70 border-2 border-white shadow-xl flex items-center justify-center transition-all duration-200 group-hover:scale-110 group-hover:shadow-2xl">
+                          <span className="text-primary-foreground font-extrabold text-base drop-shadow">{index + 1}</span>
                         </div>
-                        {/* Nome giocatore e ruolo suggerito */}
-                        <div className="mt-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded whitespace-nowrap">
+
+                        {/* Nome giocatore */}
+                        <div className="relative mt-1.5 bg-background/95 backdrop-blur-sm text-foreground text-xs font-semibold px-2.5 py-1 rounded-md shadow-md whitespace-nowrap border">
                           {player.Cognome}
                         </div>
+
                         {/* Badge posizione effettiva e suggerita */}
-                        <div className="flex gap-1 mt-0.5">
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${getRoleColor(player.Posiz)} border-white`}
+                        <div className="relative flex gap-1 mt-1">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] h-5 px-1.5 ${getRoleColor(player.Posiz)} border-white shadow`}
                           >
                             {player.Posiz}
                           </Badge>
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs bg-muted/80 border-white"
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] h-5 px-1.5 bg-background/90 border-white shadow"
                           >
                             {pos.label}
                           </Badge>
