@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Users, NotebookTabs } from "lucide-react";
+import { Save, Users, NotebookTabs, Shield, ClipboardList, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
@@ -252,45 +252,77 @@ const Tattica = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
-            <NotebookTabs className="h-8 w-8 text-primary" />
-            Tattica
-          </h1>
-          <p className="text-muted-foreground">Gestisci la tua formazione</p>
-        </div>
+        {/* Hero Header */}
+        <Card className="mb-8 overflow-hidden border-0 shadow-lg bg-gradient-to-br from-primary/15 via-card to-accent/10">
+          <div className="relative p-6 sm:p-8">
+            <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-primary/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent/20 blur-3xl" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-primary/15 border border-primary/20">
+                  <NotebookTabs className="h-7 w-7 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Tattica</h1>
+                  <p className="text-muted-foreground mt-1">Gestisci la tua formazione e schiera la squadra</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-background/70 backdrop-blur-sm border">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">Modulo:</span>
+                  <span className="font-bold text-primary">{formation}</span>
+                </div>
+                <Button onClick={handleSaveFormation} className="gap-2 shadow-md">
+                  <Save className="h-4 w-4" />
+                  Salva
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card 
-            className="shadow-lg"
+          {/* Formazione Titolare */}
+          <Card
+            className="shadow-lg border-primary/10 overflow-hidden"
             onDragOver={handleDragOver}
             onDrop={handleDropToTitolari}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Formazione Titolare
-              </CardTitle>
-              <CardDescription>11 giocatori in campo - Trascina i giocatori negli slot</CardDescription>
+            <CardHeader className="bg-gradient-to-br from-primary/10 to-accent/10 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-primary/15">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    Formazione Titolare
+                  </CardTitle>
+                  <CardDescription className="mt-1">Trascina i giocatori negli slot</CardDescription>
+                </div>
+                <Badge variant="outline" className="bg-background/70 backdrop-blur-sm font-semibold">
+                  {titolari.length}/11
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="p-4">
+              <div className="space-y-2">
                 {formationSlots.map((player, slotIndex) => {
                   const suggestedRole = formationPositions[formation][slotIndex]?.label || '-';
-                  
+
                   return (
                     <div
                       key={slotIndex}
                       onDragOver={(e) => handleDragOverSlot(e, slotIndex)}
                       onDrop={(e) => handleDropOnSlot(e, slotIndex)}
-                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                        player 
-                          ? 'bg-card hover:bg-muted/50 cursor-pointer' 
-                          : 'bg-muted/20 border-dashed'
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        player
+                          ? 'bg-card hover:bg-muted/40 hover:border-primary/30 hover:shadow-sm cursor-pointer'
+                          : 'bg-muted/20 border-dashed hover:border-primary/40 hover:bg-primary/5'
                       } ${
-                        dragOverSlot === slotIndex && (!player || draggedPlayer?.ID !== player?.ID) ? 'ring-2 ring-primary' : ''
+                        dragOverSlot === slotIndex && (!player || draggedPlayer?.ID !== player?.ID) ? 'ring-2 ring-primary scale-[1.01]' : ''
                       }`}
                     >
                       {player ? (
@@ -299,30 +331,38 @@ const Tattica = () => {
                             draggable
                             onDragStart={() => handleDragStart(player)}
                             onClick={() => setSelected({ player })}
-                            className="flex items-center gap-4 flex-1 cursor-pointer"
+                            className="flex items-center gap-3 flex-1 cursor-pointer min-w-0"
                           >
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary font-bold text-sm shrink-0">
+                              {slotIndex + 1}
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30 text-[10px]">
                                 {suggestedRole}
                               </Badge>
-                              <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                              <Badge variant="outline" className={`${getRoleColor(player.Posiz)} text-[10px]`}>
                                 {player.Posiz}
                               </Badge>
                             </div>
-                            <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                            <span className="font-medium truncate">{player.Nome} {player.Cognome}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">Voto:</span>
-                            <span className="font-bold text-primary">7.3</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-xs text-muted-foreground">Voto</span>
+                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-bold">
+                              7.3
+                            </Badge>
                           </div>
                         </>
                       ) : (
-                        <div className="flex items-center justify-between w-full px-4">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/50 text-muted-foreground font-bold text-sm">
+                              {slotIndex + 1}
+                            </div>
                             <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30">
                               {suggestedRole}
                             </Badge>
-                            <span className="text-muted-foreground text-sm">Slot {slotIndex + 1} - Vuoto</span>
+                            <span className="text-muted-foreground text-sm italic">Slot vuoto</span>
                           </div>
                         </div>
                       )}
@@ -333,17 +373,30 @@ const Tattica = () => {
             </CardContent>
           </Card>
 
-          <Card 
-            className="shadow-lg"
+          {/* Panchina */}
+          <Card
+            className="shadow-lg border-primary/10 overflow-hidden"
             onDragOver={handleDragOver}
             onDrop={handleDropToPanchina}
           >
-            <CardHeader>
-              <CardTitle>Panchina</CardTitle>
-              <CardDescription>Giocatori di riserva - Trascina qui per rimuovere</CardDescription>
+            <CardHeader className="bg-gradient-to-br from-accent/10 to-primary/10 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-primary/15">
+                      <ClipboardList className="h-4 w-4 text-primary" />
+                    </div>
+                    Panchina
+                  </CardTitle>
+                  <CardDescription className="mt-1">Trascina qui per rimuovere dalla titolare</CardDescription>
+                </div>
+                <Badge variant="outline" className="bg-background/70 backdrop-blur-sm font-semibold">
+                  {panchina.length}
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3 min-h-[200px]">
+            <CardContent className="p-4">
+              <div className="space-y-2 min-h-[200px]">
                 {panchina.map((player) => (
                   <div
                     key={player.ID}
@@ -352,37 +405,33 @@ const Tattica = () => {
                     onDragOver={(e) => handleDragOverPlayer(e, player)}
                     onDrop={(e) => handleDropOnPlayer(e, player)}
                     onClick={() => setSelected({ player: player })}
-                    className={`flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer ${
-                      dragOverPlayer?.ID === player.ID && draggedPlayer?.ID !== player.ID ? 'ring-2 ring-primary' : ''
+                    className={`flex items-center justify-between p-3 rounded-xl border bg-card hover:bg-muted/40 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer ${
+                      dragOverPlayer?.ID === player.ID && draggedPlayer?.ID !== player.ID ? 'ring-2 ring-primary scale-[1.01]' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <Badge variant="outline" className={getRoleColor(player.Posiz)}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Badge variant="outline" className={`${getRoleColor(player.Posiz)} shrink-0`}>
                         {player.Posiz}
                       </Badge>
-                      <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                      <span className="font-medium truncate">{player.Nome} {player.Cognome}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Voto:</span>
-                      <span className="font-bold text-primary">7.6</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-xs text-muted-foreground">Voto</span>
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-bold">
+                        7.6
+                      </Badge>
                     </div>
                   </div>
                 ))}
                 {panchina.length === 0 && (
-                  <div className="flex items-center justify-center h-[200px] text-muted-foreground">
-                    Nessun giocatore in panchina
+                  <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground gap-2 border-2 border-dashed border-muted rounded-xl">
+                    <ClipboardList className="h-8 w-8 opacity-40" />
+                    <span className="text-sm">Nessun giocatore in panchina</span>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        <div className="mt-8 flex justify-center">
-          <Button size="lg" onClick={handleSaveFormation} className="gap-2">
-            <Save className="h-5 w-5" />
-            Salva Formazione
-          </Button>
         </div>
 
         {/* Campo da Calcio Visuale */}
