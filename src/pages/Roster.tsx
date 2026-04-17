@@ -40,13 +40,21 @@ const Roster = () => {
       <main className="container mx-auto px-4 py-6">
         {/* Hero header */}
         <Card className={`mb-6 overflow-hidden border-0 shadow-lg ${getTeamBackground(teamName ?? "")}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                <Users className="h-7 w-7 text-primary" />
-                {userTeamFullName}
-              </h1>
-              <p className="text-muted-foreground mt-1">{players.length} giocatori in rosa</p>
+          <div className="flex items-center justify-between p-6">
+            <div className="flex items-center gap-4">
+              {userTeam && (
+                <img
+                  src={`/images/teams/${userTeam}_Logo.png`}
+                  alt={`${userTeam} Logo`}
+                  className="h-16 w-16 object-contain drop-shadow-md"
+                />
+              )}
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  {userTeamFullName}
+                </h1>
+                <p className="text-muted-foreground mt-1">{players.length} giocatori in rosa</p>
+              </div>
             </div>
             <div className="text-center">
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">OVR Medio</div>
