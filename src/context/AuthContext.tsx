@@ -6,25 +6,26 @@ export interface AppUser {
   username: string;
   name: string;
   team: string; // abbreviazione squadra (es. "APD", "JUV", ecc.)
+  teamFullName: string;
 }
 
 /** Utenti mock — sostituire con chiamata al DB reale */
 const MOCK_USERS: Record<string, { password: string; user: AppUser }> = {
   "admin@lcsim.it": {
     password: "admin",
-    user: { id: "1", email: "admin@lcsim.it", username: "admin@lcsim.it", name: "Admin", team: "APD" },
+    user: { id: "1", email: "admin@lcsim.it", username: "admin@lcsim.it", name: "Admin", team: "APD", teamFullName: "Average Pegiò Drivers" },
   },
   "user2@lcsim.it": {
     password: "user2",
-    user: { id: "2", email: "user2@lcsim.it", username: "admin@lcsim.it",name: "Mister B", team: "PFC" },
+    user: { id: "2", email: "user2@lcsim.it", username: "admin@lcsim.it",name: "Mister B", team: "PFC", teamFullName: "Panormus FC"  },
   },
   "user3@lcsim.it": {
     password: "user3",
-    user: { id: "3", email: "user3@lcsim.it", username: "admin@lcsim.it",name: "Mister C", team: "ACD" },
+    user: { id: "3", email: "user3@lcsim.it", username: "admin@lcsim.it",name: "Mister C", team: "ACD", teamFullName: "AC Denti"  },
   },
   "mar9125": {
     password: "rioux96",
-    user: { id: "4", email: "user3@lcsim.it", username: "mar9215",name: "Mario San", team: "MAR" },
+    user: { id: "4", email: "user3@lcsim.it", username: "mar9215",name: "Mario San", team: "MAR", teamFullName: "Mar's Attack"  },
   },
 };
 

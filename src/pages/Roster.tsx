@@ -6,20 +6,11 @@ import { getRoleColor, getPlayerImage, getNationalityFlag, getTeamBackground } f
 import { getPlayers } from "@/hooks/use-players";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-
-const getOverallColor = (overall: number) => {
-  if (overall < 70) return "bg-destructive/10 text-destructive border-destructive/20";
-  if (overall >= 70 && overall < 80) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-  if (overall >= 80) return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-};
-
-const getOvrSize = (overall: number) => {
-  if (overall >= 85) return "text-2xl font-black";
-  return "text-xl font-bold";
-};
+import { getValueColor } from "@/utils/functions";
 
 const Roster = () => {
   const { user } = useAuth();
+  const userTeamFullName = user?.teamFullName;
   const userTeam = user?.team;
   const { players } = getPlayers(userTeam);
 
@@ -53,7 +44,7 @@ const Roster = () => {
             <div>
               <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
                 <Users className="h-7 w-7 text-primary" />
-                {teamName}
+                {userTeamFullName}
               </h1>
               <p className="text-muted-foreground mt-1">{players.length} giocatori in rosa</p>
             </div>
@@ -119,7 +110,7 @@ const Roster = () => {
                         <div className="text-center shrink-0">
                           <Badge
                             variant="outline"
-                            className={`${getOverallColor(player.OVR ?? 0)} ${getOvrSize(player.OVR ?? 0)} px-3 py-1 border`}
+                            className={`${getValueColor(player.OVR ?? 0)} text-xl font-bold px-3 py-1 border`}
                           >
                             {player.OVR}
                           </Badge>
