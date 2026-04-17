@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Trophy, ChevronDown, Moon, Sun, Menu, LogIn, LogOut, User } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
@@ -22,10 +22,16 @@ import {
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
   const navItems = [
     //{ path: "/", label: "Home" }, // disabilitato, se clicco sul logo mi porta alla home
     { path: "/classifica", label: "Classifica" },
@@ -191,7 +197,7 @@ const Navbar = () => {
               <User className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">{user.name}</span>
               <span className="text-xs text-muted-foreground">({user.team})</span>
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={logout}>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleLogout}>
                 <LogOut className="h-3.5 w-3.5" />
               </Button>
             </div>
