@@ -4,6 +4,7 @@ import { Schedule } from "@/types/schedule";
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 
 const ScheduleContext = createContext(null);
+const SEASON = 10;
 
 // PER ORDINE FORMAZIONE
 const rolePriority: Record<string, number> = {
@@ -49,7 +50,7 @@ export function ScheduleProvider({ children }) {
             try {
                 // Fetch tutte le settimane in parallelo
                 const weekPromises = Array.from({ length: 9 }, (_, i) => 
-                    fetchWeekData(9, i + 1).catch(err => {
+                    fetchWeekData(SEASON, i + 1).catch(err => {
                         console.error("Error fetching week", i + 1, err);
                         return { week: i + 1, matches: [] } as Schedule;
                     })

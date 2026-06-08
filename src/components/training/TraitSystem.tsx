@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   XP_COSTS,
   savePlayerTraits,
   deductPlayerXP,
+  dbToId,
 } from "@/types/training";
 import { toast } from "sonner";
 
@@ -20,6 +21,7 @@ interface TraitSystemProps {
   player: Player | null;
   xpAvailable: number;
   onXpChange: (cost: number) => void;
+  onPlayerUpdate?: (updatedPlayer: Player) => void;
 }
 
 const CATEGORIES = [
@@ -35,7 +37,7 @@ const MAX_TRAITS = 5;
 const MAX_GOLD = 1;
 const OVR_GOLD_THRESHOLD = 85;
 
-export default function TraitSystem({ player, xpAvailable, onXpChange }: TraitSystemProps) {
+export default function TraitSystem({ player, xpAvailable, onXpChange, onPlayerUpdate }: TraitSystemProps) {
   const [ownedTraits, setOwnedTraits] = useState<PlayerTrait[]>([]);
   const [confirmDialog, setConfirmDialog] = useState<{
     type: "buy" | "upgrade_gold" | "swap_gold";
@@ -47,6 +49,34 @@ export default function TraitSystem({ player, xpAvailable, onXpChange }: TraitSy
   const canGetGold = playerOvr >= OVR_GOLD_THRESHOLD;
   const goldCount = ownedTraits.filter((t) => t.tier === "gold").length;
   const hasUsedFreeGold = ownedTraits.some((t) => t.tier === "gold");
+
+  // Load traits from player database fields when player changes
+  useEffect(() => {
+    if (!player) {
+      setOwnedTraits([]);
+      return;
+    }
+
+    const traitsList: PlayerTrait[] = [];
+
+    const parseTraitsField = (fieldValue: string | null | undefined, tier: "silver" | "gold") => {
+      if (!fieldValue) return;
+      const parts = fieldValue.split(",").map(p => p.trim()).filter(Boolean);
+      for (const part of parts) {
+        const id = dbToId(part);
+        if (!traitsList.some(t => t.traitId === id)) {
+          traitsList.push({ traitId: id, tier });
+        }
+      }
+    };
+
+    parseTraitsField(player.IconTrait1, "gold");
+    parseTraitsField(player.IconTrait2, "gold");
+    parseTraitsField(player.Trait1, "silver");
+    parseTraitsField(player.Trait2, "silver");
+
+    setOwnedTraits(traitsList);
+  }, [player]);
 
   // Check if a trait's attribute requirements are met
   const meetsRequirements = (trait: Trait): boolean => {
@@ -77,13 +107,11 @@ export default function TraitSystem({ player, xpAvailable, onXpChange }: TraitSy
     setConfirmDialog({ type: "swap_gold", trait: newTrait, replaceTrait: oldGoldTrait });
   };
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (!confirmDialog || !player) return;
     const { type, trait, replaceTrait } = confirmDialog;
 
     if (type === "buy") {
-      // At 85 OVR with no traits → first becomes gold free
-      // At 85 OVR with existing traits but no gold → free upgrade
       const shouldBeGold = canGetGold && !hasUsedFreeGold;
       const cost = shouldBeGold ? 0 : XP_COSTS.TRAIT_SILVER;
 
@@ -95,37 +123,59 @@ export default function TraitSystem({ player, xpAvailable, onXpChange }: TraitSy
 
       const newTrait: PlayerTrait = { traitId: trait.id, tier: shouldBeGold ? "gold" : "silver" };
       const updated = [...ownedTraits, newTrait];
-      setOwnedTraits(updated);
-      if (cost > 0) onXpChange(cost);
-      savePlayerTraits(player.ID, updated);
-      if (cost > 0) deductPlayerXP(player.ID, cost);
-      toast.success(shouldBeGold ? `${trait.name} sbloccato come ORO (gratis a 85 OVR)!` : `${trait.name} sbloccato!`);
+      
+      try {
+        let updatedPlayer = await savePlayerTraits(player.ID, updated);
+        if (cost > 0) {
+          updatedPlayer = await deductPlayerXP(player.ID, cost);
+        }
+        setOwnedTraits(updated);
+        if (cost > 0) onXpChange(cost);
+        if (onPlayerUpdate) onPlayerUpdate(updatedPlayer);
+        toast.success(shouldBeGold ? `${trait.name} sbloccato come ORO (gratis a 85 OVR)!` : `${trait.name} sbloccato!`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Errore durante il salvataggio dei tratti.");
+      }
     } else if (type === "swap_gold" && replaceTrait) {
       if (xpAvailable < XP_COSTS.TRAIT_GOLD_SWAP) {
         toast.error("XP insufficienti!");
         setConfirmDialog(null);
         return;
       }
-      // Swap: old gold → silver, new trait → gold (must be owned silver)
       const updated = ownedTraits.map((t) => {
         if (t.traitId === replaceTrait.traitId) return { ...t, tier: "silver" as const };
         if (t.traitId === trait.id) return { ...t, tier: "gold" as const };
         return t;
       });
-      setOwnedTraits(updated);
-      onXpChange(XP_COSTS.TRAIT_GOLD_SWAP);
-      savePlayerTraits(player.ID, updated);
-      deductPlayerXP(player.ID, XP_COSTS.TRAIT_GOLD_SWAP);
-      toast.success(`${trait.name} promosso a ORO!`);
+      
+      try {
+        let updatedPlayer = await savePlayerTraits(player.ID, updated);
+        updatedPlayer = await deductPlayerXP(player.ID, XP_COSTS.TRAIT_GOLD_SWAP);
+        setOwnedTraits(updated);
+        onXpChange(XP_COSTS.TRAIT_GOLD_SWAP);
+        if (onPlayerUpdate) onPlayerUpdate(updatedPlayer);
+        toast.success(`${trait.name} promosso a ORO!`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Errore durante lo scambio del tratto.");
+      }
     }
     setConfirmDialog(null);
   };
 
-  const removeTrait = (traitId: string) => {
+  const removeTrait = async (traitId: string) => {
+    if (!player) return;
     const updated = ownedTraits.filter((t) => t.traitId !== traitId);
-    setOwnedTraits(updated);
-    if (player) savePlayerTraits(player.ID, updated);
-    toast.info("Tratto rimosso");
+    try {
+      const updatedPlayer = await savePlayerTraits(player.ID, updated);
+      setOwnedTraits(updated);
+      if (onPlayerUpdate) onPlayerUpdate(updatedPlayer);
+      toast.info("Tratto rimosso");
+    } catch (err) {
+      console.error(err);
+      toast.error("Errore durante la rimozione del tratto.");
+    }
   };
 
   const getTraitInfo = (id: string) => AVAILABLE_TRAITS.find((t) => t.id === id);

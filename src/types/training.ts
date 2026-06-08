@@ -100,28 +100,172 @@ export const AVAILABLE_ROLES = [
   "ATT", "AC", "PC", "SP",
 ];
 
-// ── Stub save functions (da implementare con il tuo backend) ──
+import { supabase } from "@/supabaseClient";
+import { PLAYER_TABLE } from "@/constants/App";
+import { Player } from "./player";
+
+// Map frontend trait IDs to database names (English names as stored in DB)
+export const TRAIT_MAP: Record<string, string> = {
+  finisher: "Finesse Shot",
+  longshot: "Long Shot Taker",
+  dribbler: "Technical",
+  playmaker: "Tiki Taka",
+  header: "Power Header",
+  volley: "Acrobatic",
+  tackler: "Block",
+  interceptor: "Intercept",
+  slide_master: "Slide Tackle",
+  marker: "Jockey",
+  speedster: "Rapid",
+  tank: "Bruiser",
+  marathon: "Relentless",
+  agile: "Quick Step",
+  leader: "Solid Player",
+  clutch: "Clutch",
+  setpiece: "Dead Ball",
+  reflexes: "Far Throw",
+  sweeper_gk: "Footwork",
+  shot_stopper: "Rush Out"
+};
+
+// Map database strings to frontend trait IDs
+export const dbToId = (dbName: string): string => {
+  const clean = dbName.replace(/\+$/, "").trim();
+  const entry = Object.entries(TRAIT_MAP).find(([_, v]) => v.toLowerCase() === clean.toLowerCase());
+  return entry ? entry[0] : clean.toLowerCase().replace(/ /g, "_");
+};
+
+export const idToDb = (id: string): string => {
+  return TRAIT_MAP[id] || id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+};
+
+// Map frontend subrole IDs to database names (Italian names as stored in DB)
+export const SUBROLE_MAP: Record<string, string> = {
+  sweeper_keeper: "Portiere di Movimento",
+  traditional_gk: "Portiere Classico",
+  ball_playing_cb: "Difensore Regista",
+  stopper: "Stopper",
+  fullback_att: "Terzino Offensivo",
+  fullback_def: "Terzino Difensivo",
+  box_to_box: "Box To Box",
+  deep_playmaker: "Regista Basso",
+  mezzala: "Mezzala",
+  trequartista: "Trequartista",
+  winger: "Ala",
+  inverted_winger: "Attaccante Interno",
+  target_man: "Torre",
+  poacher: "Rapace",
+  false_nine: "Falso 9",
+  second_striker: "Seconda Punta",
+  regista: "Regista",
+  regista_largo: "Regista Largo",
+  attaccante_avanzato: "Attaccante Avanzato",
+  no_10: "10 Vecchia Scuola",
+  difensore: "Difensore"
+};
+
+// Map database strings to frontend subrole IDs
+export const dbToSubroleId = (dbName: string): string => {
+  const clean = dbName.replace(/\+\+$/, "").replace(/\+$/, "").trim();
+  const entry = Object.entries(SUBROLE_MAP).find(([_, v]) => v.toLowerCase() === clean.toLowerCase());
+  return entry ? entry[0] : clean.toLowerCase().replace(/ /g, "_");
+};
+
+export const idToSubroleDb = (id: string): string => {
+  return SUBROLE_MAP[id] || id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+};
+
+// ── Real save functions ──
 
 /** Salva i tratti del giocatore */
-export async function savePlayerTraits(playerId: number, traits: PlayerTrait[]): Promise<void> {
-  console.log("[STUB] savePlayerTraits", { playerId, traits });
-  // TODO: implementare chiamata al backend
+export async function savePlayerTraits(playerId: number, traits: PlayerTrait[]): Promise<Player> {
+  const silverTraits = traits.filter(t => t.tier === "silver").map(t => idToDb(t.traitId));
+  const goldTraits = traits.filter(t => t.tier === "gold").map(t => idToDb(t.traitId) + "+");
+
+  const trait1 = silverTraits.length > 0 ? silverTraits.join(", ") : null;
+  const trait2 = null;
+  const iconTrait1 = goldTraits.length > 0 ? goldTraits[0] : null;
+  const iconTrait2 = goldTraits.length > 1 ? goldTraits[1] : null;
+
+  const { data, error } = await supabase
+    .from(PLAYER_TABLE)
+    .update({
+      Trait1: trait1,
+      Trait2: trait2,
+      IconTrait1: iconTrait1,
+      IconTrait2: iconTrait2
+    })
+    .eq("ID", playerId)
+    .select();
+
+  if (error) throw error;
+
+  const saved = (data && data.length > 0) ? (data[0] as Player) : null;
+  return saved as Player;
 }
 
 /** Salva i sotto-ruoli del giocatore */
-export async function savePlayerSubRoles(playerId: number, subRoles: PlayerSubRole[]): Promise<void> {
-  console.log("[STUB] savePlayerSubRoles", { playerId, subRoles });
-  // TODO: implementare chiamata al backend
+export async function savePlayerSubRoles(playerId: number, subRoles: PlayerSubRole[]): Promise<Player> {
+  const role1 = subRoles.length > 0 ? (idToSubroleDb(subRoles[0].subRoleId) + (subRoles[0].tier === "plusplus" ? " ++" : " +")) : null;
+  const role2 = subRoles.length > 1 ? (idToSubroleDb(subRoles[1].subRoleId) + (subRoles[1].tier === "plusplus" ? " ++" : " +")) : null;
+
+  const { data, error } = await supabase
+    .from(PLAYER_TABLE)
+    .update({
+      Role1: role1,
+      Role2: role2
+    })
+    .eq("ID", playerId)
+    .select();
+
+  if (error) throw error;
+
+  const saved = (data && data.length > 0) ? (data[0] as Player) : null;
+  return saved as Player;
 }
 
 /** Salva il cambio ruolo del giocatore */
-export async function savePlayerRoleChange(playerId: number, newRole: string, selectedSubRole: string): Promise<void> {
-  console.log("[STUB] savePlayerRoleChange", { playerId, newRole, selectedSubRole });
-  // TODO: implementare chiamata al backend
+export async function savePlayerRoleChange(playerId: number, newRole: string, selectedSubRole: string): Promise<Player> {
+  const role1 = idToSubroleDb(selectedSubRole) + " +";
+  const { data, error } = await supabase
+    .from(PLAYER_TABLE)
+    .update({
+      Posiz: newRole,
+      Role1: role1,
+      Role2: null
+    })
+    .eq("ID", playerId)
+    .select();
+
+  if (error) throw error;
+
+  const saved = (data && data.length > 0) ? (data[0] as Player) : null;
+  return saved as Player;
 }
 
 /** Aggiorna l'XP del giocatore dopo un acquisto */
-export async function deductPlayerXP(playerId: number, amount: number): Promise<void> {
-  console.log("[STUB] deductPlayerXP", { playerId, amount });
-  // TODO: implementare chiamata al backend
+export async function deductPlayerXP(playerId: number, amount: number): Promise<Player> {
+  const { data: player, error: fetchError } = await supabase
+    .from(PLAYER_TABLE)
+    .select("XP")
+    .eq("ID", playerId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const currentXp = player?.XP ?? 0;
+  const newXp = Math.max(0, currentXp - amount);
+
+  const { data, error } = await supabase
+    .from(PLAYER_TABLE)
+    .update({ XP: newXp })
+    .eq("ID", playerId)
+    .select();
+
+  if (error) {
+    console.error("Error deducting player XP:", error);
+    throw error;
+  }
+  const saved = (data && data.length > 0) ? (data[0] as Player) : null;
+  return saved as Player;
 }

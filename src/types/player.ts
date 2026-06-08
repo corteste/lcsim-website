@@ -62,4 +62,10 @@ export type Player = {
     Tratti: string | null;
     RuoloInCampo: string | null;
     MarketStatus: MarketStatus | null;
+    Role1: string | null;
+    Role2: string | null;
+    Trait1: string | null;
+    Trait2: string | null;
+    IconTrait1: string | null;
+    IconTrait2: string | null;
 };
