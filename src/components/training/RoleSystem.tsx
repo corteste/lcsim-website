@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   savePlayerRoleChange,
   savePlayerSubRoles,
   deductPlayerXP,
+  dbToSubroleId,
 } from "@/types/training";
 import { toast } from "sonner";
 
@@ -22,12 +23,13 @@ interface RoleSystemProps {
   player: Player | null;
   xpAvailable: number;
   onXpChange: (cost: number) => void;
+  onPlayerUpdate?: (updatedPlayer: Player) => void;
 }
 
 const MAX_ROLE_PLUS = 2;
 const OVR_PLUSPLUS_THRESHOLD = 85;
 
-export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSystemProps) {
+export default function RoleSystem({ player, xpAvailable, onXpChange, onPlayerUpdate }: RoleSystemProps) {
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [roleStep, setRoleStep] = useState<1 | 2>(1);
   const [newRole, setNewRole] = useState("");
@@ -43,6 +45,30 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
   const playerOvr = player?.OVR ?? 0;
   const canUpgradePlusPlus = playerOvr >= OVR_PLUSPLUS_THRESHOLD;
   const hasPlusPlus = ownedSubRoles.some((r) => r.tier === "plusplus");
+
+  // Load subroles from player database fields when player changes
+  useEffect(() => {
+    if (!player) {
+      setOwnedSubRoles([]);
+      return;
+    }
+
+    const subRolesList: PlayerSubRole[] = [];
+
+    const parseSubRole = (fieldValue: string | null | undefined) => {
+      if (!fieldValue) return;
+      const hasPlusPlus = fieldValue.endsWith("++");
+      const hasPlus = fieldValue.endsWith("+") && !hasPlusPlus;
+      const tier = hasPlusPlus ? "plusplus" : "plus";
+      const id = dbToSubroleId(fieldValue);
+      subRolesList.push({ subRoleId: id, tier });
+    };
+
+    parseSubRole(player.Role1);
+    parseSubRole(player.Role2);
+
+    setOwnedSubRoles(subRolesList);
+  }, [player]);
 
   const compatibleSubRolesForNewRole = AVAILABLE_SUBROLES.filter((sr) =>
     sr.positions.some((p) => newRole.includes(p) || p.includes(newRole))
@@ -61,15 +87,22 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
     setRoleStep(2);
   };
 
-  const handleRoleConfirm = () => {
+  const handleRoleConfirm = async () => {
     if (!player) return;
     if (!newSubRole) { toast.error("Seleziona un Ruolo+!"); return; }
     if (xpAvailable < XP_COSTS.ROLE_CHANGE) { toast.error("XP insufficienti!"); return; }
-    onXpChange(XP_COSTS.ROLE_CHANGE);
-    savePlayerRoleChange(player.ID, newRole, newSubRole);
-    deductPlayerXP(player.ID, XP_COSTS.ROLE_CHANGE);
-    toast.success(`Ruolo cambiato a ${newRole} con Ruolo+ ${AVAILABLE_SUBROLES.find(s => s.id === newSubRole)?.name}!`);
-    setShowRoleDialog(false);
+    
+    try {
+      let updatedPlayer = await savePlayerRoleChange(player.ID, newRole, newSubRole);
+      updatedPlayer = await deductPlayerXP(player.ID, XP_COSTS.ROLE_CHANGE);
+      onXpChange(XP_COSTS.ROLE_CHANGE);
+      if (onPlayerUpdate) onPlayerUpdate(updatedPlayer);
+      toast.success(`Ruolo cambiato a ${newRole} con Ruolo+ ${AVAILABLE_SUBROLES.find(s => s.id === newSubRole)?.name}!`);
+      setShowRoleDialog(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Errore durante il cambio ruolo.");
+    }
   };
 
   const compatibleSubRoles = useMemo(
@@ -102,45 +135,74 @@ export default function RoleSystem({ player, xpAvailable, onXpChange }: RoleSyst
     setDialogMode("upgrade");
   };
 
-  const handleRemoveSubRole = (index: number) => {
+  const handleRemoveSubRole = async (index: number) => {
     if (!player) return;
     const updated = ownedSubRoles.filter((_, i) => i !== index);
-    setOwnedSubRoles(updated);
-    savePlayerSubRoles(player.ID, updated);
-    toast.success("Ruolo+ rimosso!");
+    try {
+      const updatedPlayer = await savePlayerSubRoles(player.ID, updated);
+      setOwnedSubRoles(updated);
+      if (onPlayerUpdate) onPlayerUpdate(updatedPlayer);
+      toast.success("Ruolo+ rimosso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Errore durante la rimozione del Ruolo+.");
+    }
   };
 
-  const confirmSubRoleAction = () => {
+  const confirmSubRoleAction = async () => {
     if (!player) return;
     if (dialogMode === "add") {
       if (!selectedSubRoleId) { toast.error("Seleziona un ruolo!"); return; }
       const cost = ownedSubRoles.length === 0 ? 0 : XP_COSTS.ROLE_PLUS_ADD;
       if (xpAvailable < cost) { toast.error("XP insufficienti!"); return; }
       const updated = [...ownedSubRoles, { subRoleId: selectedSubRoleId, tier: "plus" as const }];
-      setOwnedSubRoles(updated);
-      if (cost > 0) onXpChange(cost);
-      savePlayerSubRoles(player.ID, updated);
-      if (cost > 0) deductPlayerXP(player.ID, cost);
-      toast.success(`Ruolo+ aggiunto!${cost === 0 ? " (primo gratuito)" : ""}`);
+      
+      try {
+        let updatedPlayer = await savePlayerSubRoles(player.ID, updated);
+        if (cost > 0) {
+          updatedPlayer = await deductPlayerXP(player.ID, cost);
+          onXpChange(cost);
+        }
+        setOwnedSubRoles(updated);
+        if (onPlayerUpdate) onPlayerUpdate(updatedPlayer);
+        toast.success(`Ruolo+ aggiunto!${cost === 0 ? " (primo gratuito)" : ""}`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Errore durante l'aggiunta del Ruolo+.");
+      }
     } else if (dialogMode === "swap") {
       if (!selectedSubRoleId) { toast.error("Seleziona un ruolo!"); return; }
       if (xpAvailable < XP_COSTS.ROLE_PLUS_SWAP) { toast.error("XP insufficienti!"); return; }
       const updated = [...ownedSubRoles];
       updated[swapTargetIndex] = { ...updated[swapTargetIndex], subRoleId: selectedSubRoleId };
-      setOwnedSubRoles(updated);
-      onXpChange(XP_COSTS.ROLE_PLUS_SWAP);
-      savePlayerSubRoles(player.ID, updated);
-      deductPlayerXP(player.ID, XP_COSTS.ROLE_PLUS_SWAP);
-      toast.success("Ruolo+ cambiato!");
+      
+      try {
+        let updatedPlayer = await savePlayerSubRoles(player.ID, updated);
+        updatedPlayer = await deductPlayerXP(player.ID, XP_COSTS.ROLE_PLUS_SWAP);
+        onXpChange(XP_COSTS.ROLE_PLUS_SWAP);
+        setOwnedSubRoles(updated);
+        if (onPlayerUpdate) onPlayerUpdate(updatedPlayer);
+        toast.success("Ruolo+ cambiato!");
+      } catch (err) {
+        console.error(err);
+        toast.error("Errore durante lo scambio del Ruolo+.");
+      }
     } else if (dialogMode === "upgrade") {
       if (xpAvailable < XP_COSTS.ROLE_PLUSPLUS) { toast.error("XP insufficienti!"); return; }
       const updated = [...ownedSubRoles];
       updated[swapTargetIndex] = { ...updated[swapTargetIndex], tier: "plusplus" };
-      setOwnedSubRoles(updated);
-      onXpChange(XP_COSTS.ROLE_PLUSPLUS);
-      savePlayerSubRoles(player.ID, updated);
-      deductPlayerXP(player.ID, XP_COSTS.ROLE_PLUSPLUS);
-      toast.success("Ruolo++ sbloccato!");
+      
+      try {
+        let updatedPlayer = await savePlayerSubRoles(player.ID, updated);
+        updatedPlayer = await deductPlayerXP(player.ID, XP_COSTS.ROLE_PLUSPLUS);
+        onXpChange(XP_COSTS.ROLE_PLUSPLUS);
+        setOwnedSubRoles(updated);
+        if (onPlayerUpdate) onPlayerUpdate(updatedPlayer);
+        toast.success("Ruolo++ sbloccato!");
+      } catch (err) {
+        console.error(err);
+        toast.error("Errore durante l'upgrade a Ruolo++.");
+      }
     }
     setDialogMode(null);
   };

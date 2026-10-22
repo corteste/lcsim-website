@@ -1,47 +1,32 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Team } from "@/types/team";
 import { fetchTeams, fetchTeamById } from '@/services/teamService';
 
 export function getTeams() {
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
+  const { data, isLoading, error } = useQuery<Team[]>({
+    queryKey: ['teams'],
+    queryFn: () => fetchTeams(),
+    staleTime: 10 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    async function fetchTeamsWrapper() {
-       console.log("Fetching all players");
-      fetchTeams()
-      .then(setTeams)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-      
-      setLoading(false);
-    }
-
-    fetchTeamsWrapper();
-  }, []);
-
-  return { teams, loading, error };
+  return {
+    teams: data ?? [],
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }
 
 export function getTeamById(teamId?: string) {
-  const [team, setTeam] = useState<Team | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
+  const { data, isLoading, error } = useQuery<Team | null>({
+    queryKey: ['team', teamId],
+    queryFn: () => fetchTeamById(teamId),
+    enabled: !!teamId,
+    staleTime: 10 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    async function fetchTeamsWrapper() {
-      console.log("Fetching players for team:", teamId);
-      fetchTeamById(teamId)
-      .then(setTeam)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-      setLoading(false);
-    }
-
-    fetchTeamsWrapper();
-  }, [teamId]);
-
-  return { team, loading, error };
+  return {
+    team: data ?? null,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }
-

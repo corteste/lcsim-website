@@ -1,10 +1,22 @@
 import { Standings } from "@/types/standings";
+import { supabase } from "@/supabaseClient";
 
-const EDGE_URL = 'https://hzenyasrargpsbuaxmxl.supabase.co/functions/v1/rest-get-standings';
+export async function fetchStandings(season?: number): Promise<Standings[]> {
+  let query = supabase
+    .from('an_standings')
+    .select('*, team:AN_TEAM(*)')
+    .order('points', { ascending: false })
+    .order('goal_difference', { ascending: false });
 
-export async function fetchStandings(): Promise<Standings[]> {
-  const res = await fetch(`${EDGE_URL}`);
-  const json = await res.json();
-  if (!res.ok) throw new Error(json?.error || 'Failed to fetch standings');
-  return json.data ?? [];
+  if (season !== undefined) {
+    query = query.eq('stag', season);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching standings:', error);
+    throw new Error(error.message || 'Failed to fetch standings');
+  }
+
+  return (data as Standings[]) ?? [];
 }

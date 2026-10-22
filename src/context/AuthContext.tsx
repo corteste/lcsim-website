@@ -11,8 +11,8 @@ export interface AppUser {
 
 /** Utenti mock — sostituire con chiamata al DB reale */
 const MOCK_USERS: Record<string, { password: string; user: AppUser }> = {
-  "admin@lcsim.it": {
-    password: "admin",
+  "cotestekkio": {
+    password: "forzatoro",
     user: { id: "1", email: "admin@lcsim.it", username: "admin@lcsim.it", name: "Admin", team: "APD", teamFullName: "Average Pegiò Drivers" },
   },
   "user2@lcsim.it": {

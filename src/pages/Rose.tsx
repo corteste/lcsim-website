@@ -7,25 +7,26 @@ import { getRoleColor, getValueColor, getNationalityFlag } from "@/utils/functio
 import { getTeams } from "@/hooks/use-teams";
 import { getPlayersSumStats } from "@/hooks/use-players-stats";
 import { Player } from "@/types/player";
+import PlayerDetails from "@/components/player/playerDetails";
+import { useState } from "react";
 
 const CURRENT_SEASON = 9;
 
 const Rose = () => {
   const { teams } = getTeams();
   const { playersStats } = getPlayersSumStats(CURRENT_SEASON, null, null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   const sortedTeams = teams.slice().sort((a, b) => a.NAME.localeCompare(b.NAME));
 
- // PER ORDINE FORMAZIONE
-    const rolePriority: Record<string, number> = {
-        POR: 0, DC: 1, TD: 2, TS: 3, CDC: 4, CC: 5, ED: 6, ES: 7, COC: 8, AD: 9, AS: 10, AT: 11, ATT: 12
-    };
+  // PER ORDINE FORMAZIONE
+  const rolePriority: Record<string, number> = {
+    POR: 0, DC: 1, TD: 2, TS: 3, CDC: 4, CC: 5, ED: 6, ES: 7, COC: 8, AD: 9, AS: 10, AT: 11, ATT: 12
+  };
 
-    function sortPlayersByRole(players: Player[]): Player[] {
-        // slice() serve per non modificare l'array originale
-        return players.slice().sort((a, b) => rolePriority[a.Posiz] - rolePriority[b.Posiz]);
-    }
-
+  function sortPlayersByRole(players: Player[]): Player[] {
+    return players.slice().sort((a, b) => (rolePriority[a.Posiz] ?? 99) - (rolePriority[b.Posiz] ?? 99));
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,32 +60,6 @@ const Rose = () => {
                       <CardTitle>{team.NAME}</CardTitle>
                       <CardDescription>{team.players.length} giocatori</CardDescription>
                     </div>
-                    {/* TROFEI (dinamico) */}
-                    <div className="flex gap-4 items-center">
-                      {team.scudetto > 0 && (
-                        <div className="flex items-center gap-1">
-                          <span>{team.scudetto}×</span>
-                          <img
-                            src={`/images/trophies/LCSIM_Scudetto.png`}
-                            alt="Scudetto"
-                            className="h-16 w-16 object-contain"
-                          />
-                        </div>
-                      )}
-
-                      {team.supercoppa > 0 && (
-                        <div className="flex items-center gap-1">
-                          <span>{team.supercoppa}×</span>
-                          <img
-                            src={`/images/trophies/LCSIM_Supercoppa.png`}
-                            alt="Supercoppa"
-                            className="h-16 w-16 object-contain"
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* LOGO TEAM (sempre fisso) */}
                     <img
                       src={`/images/teams/${team.TEAM_ID}_Logo.png`}
                       alt={`${team.TEAM_ID} Logo`}
@@ -103,12 +78,15 @@ const Rose = () => {
                       return (
                         <div
                           key={playerIndex}
-                          className="flex flex-col sm:grid sm:grid-cols-[50px_minmax(150px,1fr)_80px_80px_80px] lg:grid-cols-[50px_300px_2fr_100px_120px_120px_120px_150px] items-start sm:items-center gap-2 sm:gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                          onClick={() => setSelectedPlayer(player)}
+                          className="flex flex-col sm:grid sm:grid-cols-[50px_minmax(150px,1fr)_80px_80px_80px] lg:grid-cols-[50px_300px_2fr_100px_120px_120px_120px_150px] items-start sm:items-center gap-2 sm:gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
                         >
                           <Badge variant="outline" className={getRoleColor(player.Posiz)}>
                             {player.Posiz}
                           </Badge>
-                          <span className="font-medium">{player.Nome} {player.Cognome}</span>
+                          <span className="font-medium group-hover:text-primary transition-colors">
+                            {player.Nome} {player.Cognome}
+                          </span>
                           <div className="flex items-center gap-1 sm:hidden lg:flex">
                             <img src={getNationalityFlag(player.Nazionalità)} alt="Player Flag" className="h-8 w-8 object-contain border rounded-full" />
                           </div>
@@ -137,7 +115,7 @@ const Rose = () => {
                             </span>
                           </div>
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 </CardContent>
@@ -146,6 +124,16 @@ const Rose = () => {
           ))}
         </Tabs>
       </main>
+
+      {/* Modal Dettaglio Giocatore */}
+      {selectedPlayer && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4" 
+          onClick={() => setSelectedPlayer(null)}
+        >
+          <PlayerDetails currentPlayer={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+        </div>
+      )}
     </div>
   );
 };

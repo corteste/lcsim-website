@@ -1,26 +1,17 @@
+import { useQuery } from "@tanstack/react-query";
 import { fetchStandings } from "@/services/standingsService";
 import { Standings } from "@/types/standings";
-import { useEffect, useState } from "react";
 
+export function getStandings(season?: number) {
+  const { data, isLoading, error } = useQuery<Standings[]>({
+    queryKey: ['standings', season ?? 'latest'],
+    queryFn: () => fetchStandings(season),
+    staleTime: 5 * 60 * 1000,
+  });
 
-export function getStandings() {
-  const [standings, setStandings] = useState<Standings[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
-
-  useEffect(() => {
-    async function fetchPlayersWrapper() {
-        console.log("Fetching standings");
-        fetchStandings()
-      .then(setStandings)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-      
-      setLoading(false);
-    }
-
-    fetchPlayersWrapper();
-  }, []);
-
-  return { standings, loading, error };
+  return {
+    standings: data ?? [],
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }

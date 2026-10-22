@@ -1,110 +1,54 @@
-import { useEffect, useState } from "react";
-import { PlayerStatsAvg, PlayerStatsSum, PlayerStats } from "../types/playerStats";
-import { fetchPlayerSumBySeason, fetchPlayerAvgBySeason, fetchPlayerStatsByPlayer, fetchPlayerStatsByTeam } from "@/services/playerStatsService";
+import { useQuery } from "@tanstack/react-query";
+import { PlayerStatsAvg, PlayerStatsSum } from "../types/playerStats";
+import { fetchPlayerSumBySeason, fetchPlayerAvgBySeason } from "@/services/playerStatsService";
 
-export function getPlayersStatsRound(season?: number,week?: number,team?: String) {
-  const [playersStats, setPlayersStats] = useState<PlayerStatsAvg[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
-  useEffect(() => {
-    async function fetchPlayerStatsWrapper() {
-      if (season !== null) {
-        console.log("Fetching players for season:", season);
-        fetchPlayerAvgBySeason(season)
-      .then(setPlayersStats)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-      } 
-      setLoading(false);
-    }
+export function getPlayersStatsRound(season?: number, week?: number, team?: string) {
+  const isEnabled = season !== undefined && season !== null;
 
-    fetchPlayerStatsWrapper();
-  }, [season, week, team]);
+  const { data, isLoading, error } = useQuery<PlayerStatsAvg[]>({
+    queryKey: ['playerRoundStats', season, week, team],
+    queryFn: () => (isEnabled ? fetchPlayerAvgBySeason(season!) : Promise.resolve([])),
+    enabled: isEnabled,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  return { playersStats, loading, error };
+  return {
+    playersStats: data ?? [],
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }
 
-export function getPlayersSumStats(season?: number,player?: String,team?: String) {
-  const [playersStats, setPlayersSumStats] = useState<PlayerStatsSum[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
-  useEffect(() => {
-    async function fetchPlayerStatsWrapper() {
-      if (season !== null) {
-        console.log("Fetching players for season:", season);
-        fetchPlayerSumBySeason(season)
-      .then(setPlayersSumStats)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-      } 
-      // else if (player !== null) {
-      //   console.log("Fetching players for player:", player);
-      //   fetchPlayerStatsByPlayer(player)
-      // .then(setPlayersSumStats)
-      // .catch((err) => setError(err.message))
-      // .finally(() => setLoading(false));
-      // } else if (team !== null) {
-      //   console.log("Fetching players for team:", team);
-      //   fetchPlayerStatsByTeam(team)
-      // .then(setPlayersSumStats)
-      // .catch((err) => setError(err.message))
-      // .finally(() => setLoading(false));
-      // }
-      // else {
-      //   console.log("Fetching all players");
-      //   fetchPlayers()
-      // .then(setPlayers)
-      // .catch((err) => setError(err.message))
-      // .finally(() => setLoading(false));
-      // }
-      setLoading(false);
-    }
+export function getPlayersSumStats(season?: number, player?: string, team?: string) {
+  const isEnabled = season !== undefined && season !== null;
 
-    fetchPlayerStatsWrapper();
-  }, [season, player, team]);
+  const { data, isLoading, error } = useQuery<PlayerStatsSum[]>({
+    queryKey: ['playerSumStats', season, player, team],
+    queryFn: () => (isEnabled ? fetchPlayerSumBySeason(season!) : Promise.resolve([])),
+    enabled: isEnabled,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  return { playersStats, loading, error };
+  return {
+    playersStats: data ?? [],
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }
 
+export function getPlayersAvgStats(season?: number, player?: string, team?: string) {
+  const isEnabled = season !== undefined && season !== null;
 
-export function getPlayersAvgStats(season?: number,player?: String,team?: String) {
-  const [playersStats, setPlayersStats] = useState<PlayerStatsAvg[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
-  useEffect(() => {
-    async function fetchPlayerStatsWrapper() {
-      if (season !== null) {
-        console.log("Fetching players for season:", season);
-        fetchPlayerAvgBySeason(season)
-      .then(setPlayersStats)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-      } 
-      // else if (player !== null) {
-      //   console.log("Fetching players for player:", player);
-      //   fetchPlayerStatsByPlayer(player)
-      // .then(setPlayersStats)
-      // .catch((err) => setError(err.message))
-      // .finally(() => setLoading(false));
-      // } else if (team !== null) {
-      //   console.log("Fetching players for team:", team);
-      //   fetchPlayerStatsByTeam(team)
-      // .then(setPlayersStats)
-      // .catch((err) => setError(err.message))
-      // .finally(() => setLoading(false));
-      // }
-      // else {
-      //   console.log("Fetching all players");
-      //   fetchPlayers()
-      // .then(setPlayers)
-      // .catch((err) => setError(err.message))
-      // .finally(() => setLoading(false));
-      // }
-      setLoading(false);
-    }
+  const { data, isLoading, error } = useQuery<PlayerStatsAvg[]>({
+    queryKey: ['playerAvgStats', season, player, team],
+    queryFn: () => (isEnabled ? fetchPlayerAvgBySeason(season!) : Promise.resolve([])),
+    enabled: isEnabled,
+    staleTime: 5 * 60 * 1000,
+  });
 
-    fetchPlayerStatsWrapper();
-  }, [season, player, team]);
-
-  return { playersStats, loading, error };
+  return {
+    playersStats: data ?? [],
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }

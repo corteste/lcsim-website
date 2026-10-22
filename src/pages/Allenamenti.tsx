@@ -9,8 +9,9 @@ import { Plus, Minus, TrendingUp, Award, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TraitSystem from "@/components/training/TraitSystem";
 import RoleSystem from "@/components/training/RoleSystem";
-import { getPlayers } from "@/hooks/use-players";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/supabaseClient";
+import { PLAYER_TABLE, PLAYER_TABLE_TRAINING } from "@/constants/App";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
 type StatKey =
@@ -18,7 +19,6 @@ type StatKey =
   | "VISI"  | "EFFT"  | "PTIR"  | "TIRD"  | "TIRV"  | "DRBL"  | "PIAZ"  | "FINA"  | "ACCL"  | "VELO"  | "AGIL"  | "RESI"  | "EQLB"  | "FRZA"
   | "TSTA"  | "RIFL"  | "ELEV"  | "PNIZ"  | "CRIG";
 
-/* ... statMeta and groupRows unchanged ... */
 const statMeta: Record<StatKey, { label: string; short?: string }> = {
   PREP: { label: "POR Presa", short: "PREP" },
   POSP: { label: "POR Posizionamento", short: "RIFP" },
@@ -70,7 +70,7 @@ const groupRows: { key: string; label: string; subs: StatKey[] }[] = [
   { key: "CALC", label: "Calci piazzati", subs: ["PNIZ","CRIG"] },
 ];
 
-const COST_PER_POINT = 1; // regola il costo XP per ogni punto aumentato
+const COST_PER_POINT = 1;
 
 // helper: crea oggetto vuoto con tutte le StatKey a 0
 const emptyStats = (): Record<StatKey, number> =>
@@ -107,14 +107,254 @@ const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number>
   return out;
 };
 
+// Pesi per la media ponderata basata sul ruolo
+const roleWeights: Record<string, Record<StatKey, number>> = {
+  'POR': {
+    PREP: 21, POSP: 21, RINP: 5, RIFP: 21, TUFP: 21,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 0, PASL: 0, CRSS: 0, CTRP: 0, VISI: 0, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+    ACCL: 0, VELO: 0, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 11, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'DC': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 17, SCIV: 10, MARC: 14, AGGR: 7, INTR: 13,
+    PASC: 5, PASL: 0, CRSS: 0, CTRP: 4, VISI: 0, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+    ACCL: 0, VELO: 2, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 10,
+    TSTA: 10, RIFL: 5, ELEV: 3, PNIZ: 0, CRIG: 0,
+  },
+  'DFC': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 17, SCIV: 10, MARC: 14, AGGR: 7, INTR: 13,
+    PASC: 5, PASL: 0, CRSS: 0, CTRP: 4, VISI: 0, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+    ACCL: 0, VELO: 2, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 10,
+    TSTA: 10, RIFL: 5, ELEV: 3, PNIZ: 0, CRIG: 0,
+  },
+  'TS': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
+    PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+    ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
+    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'DFS': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
+    PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+    ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
+    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'TD': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
+    PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+    ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
+    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'DFD': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
+    PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+    ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
+    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'CDC': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 12, SCIV: 5, MARC: 9, AGGR: 5, INTR: 14,
+    PASC: 14, PASL: 10, CRSS: 0, CTRP: 10, VISI: 4, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
+    ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 4,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'CC': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 5, SCIV: 0, MARC: 0, AGGR: 0, INTR: 5,
+    PASC: 17, PASL: 13, CRSS: 0, CTRP: 14, VISI: 13, EFFT: 0,
+    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 7, PIAZ: 6, FINA: 2,
+    ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'ED': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 11, PASL: 5, CRSS: 10, CTRP: 13, VISI: 7, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
+    ACCL: 7, VELO: 6, AGIL: 0, RESI: 5, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'ES': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 11, PASL: 5, CRSS: 10, CTRP: 13, VISI: 7, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
+    ACCL: 7, VELO: 6, AGIL: 0, RESI: 5, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'COC': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 16, PASL: 4, CRSS: 0, CTRP: 15, VISI: 14, EFFT: 0,
+    PTIR: 0, TIRD: 5, TIRV: 0, DRBL: 13, PIAZ: 9, FINA: 7,
+    ACCL: 4, VELO: 3, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'TRQ': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 16, PASL: 4, CRSS: 0, CTRP: 15, VISI: 14, EFFT: 0,
+    PTIR: 0, TIRD: 5, TIRV: 0, DRBL: 13, PIAZ: 9, FINA: 7,
+    ACCL: 4, VELO: 3, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'AD': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
+    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
+    ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'AS': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
+    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
+    ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'AT': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
+    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
+    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
+    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'AC': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
+    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
+    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
+    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'PC': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
+    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
+    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
+    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'SP': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
+    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
+    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
+    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'ATT': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
+    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
+    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
+    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+};
+
+const computeOverall = (stats: Record<StatKey, number>, role: string) => {
+  const weights = roleWeights[role] || {};
+  let totalWeighted = 0;
+  let totalWeight = 0;
+  for (const key in stats) {
+    const weight = weights[key as StatKey] || 0;
+    totalWeighted += stats[key as StatKey] * weight;
+    totalWeight += weight;
+  }
+  if (totalWeight === 0) return 0;
+  return Math.round(totalWeighted / totalWeight);
+};
+
 const Allenamenti = () => {
   const { user } = useAuth();
   const userTeam = user?.team;
-  const { players } = getPlayers(userTeam);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [xpSpentExtra, setXpSpentExtra] = useState(0);
+
+  // Fetch players from Supabase directly
+  useEffect(() => {
+    async function fetchPlayers() {
+      if (!userTeam) return;
+      setLoading(true);
+      try {
+        // fetch base players
+        const { data: basePlayers, error: baseError } = await supabase
+          .from(PLAYER_TABLE)
+          .select("*")
+          .eq("Squadra", userTeam);
+        if (baseError) throw baseError;
+
+        // fetch all training deltas (we'll match them client-side)
+        const { data: trainingRows, error: trainingError } = await supabase
+          .from(PLAYER_TABLE_TRAINING)
+          .select("*");
+        if (trainingError) throw trainingError;
+
+        const base = basePlayers || [];
+        const training = trainingRows || [];
+
+        // helper: find matching training row for a base player by heuristics
+        const baseIds = new Set((base as any[]).map((p: any) => p.ID ?? p.id));
+
+        const merged = (base as any[]).map((p: any) => {
+          // find a training row that references this player id in any numeric field
+          const match = (training as any[]).find((t) => {
+            for (const k of Object.keys(t)) {
+              const v = t[k];
+              if ((typeof v === "number" || (typeof v === "string" && /^[0-9]+$/.test(v))) && baseIds.has(Number(v))) return true;
+            }
+            return false;
+          });
+
+          // apply deltas (if any) to create displayed values while keeping base available
+          const mergedRow: any = { ...p };
+          mergedRow.__base = { ...p };
+          if (match) {
+            mergedRow.__training = match;
+            for (const key of Object.keys(match)) {
+              // if match has a stat key (uppercase) and numeric delta, add to base
+              if (key.length >= 2 && key.toUpperCase() === key && statMeta[key as StatKey]) {
+                const baseVal = Number(p[key] ?? p[key.toLowerCase()] ?? 0);
+                const delta = Number(match[key] ?? 0);
+                mergedRow[key] = baseVal + delta;
+              }
+            }
+          }
+          return mergedRow;
+        });
+
+        setPlayers(merged || []);
+      } catch (err) {
+        console.error("Error fetching players:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPlayers();
+  }, [userTeam]);
 
   const player = useMemo(() => {
     if (!selectedId) return null;
@@ -162,154 +402,82 @@ const Allenamenti = () => {
 
   const handleExtraXpSpent = (cost: number) => setXpSpentExtra((prev) => prev + cost);
 
+  const preOverall = computeOverall(preStats, (player as any)?.Posiz ?? '');
+  const postOverall = computeOverall(postStats, (player as any)?.Posiz ?? '');
+
+  const handlePlayerUpdate = (updatedPlayer: Player) => {
+    setPlayers(prev => prev.map(p => {
+      const pId = (p as any).ID ?? (p as any).id;
+      const updatedId = (updatedPlayer as any).ID ?? (updatedPlayer as any).id;
+      return pId === updatedId ? updatedPlayer : p;
+    }));
+    setXpSpentExtra(0);
+  };
+
   const handleSave = async () => {
     if (!player) return;
     setIsSaving(true);
     try {
-      // TODO: implementare salvataggio reale a DB
-      // Dati da salvare: postStats, increases, totalCost, xpRemaining, player ID
-      console.log("Mock save:", {
-        playerId: (player as any).ID ?? (player as any).id,
-        postStats,
-        increases,
-        totalCost,
-        xpRemaining,
+      const playerId = (player as any).__base?.ID ?? (player as any).__base?.id ?? (player as any).ID ?? (player as any).id;
+
+      // compute deltas between postStats and base stats
+      const baseStats = mapPlayerToStats((player as any).__base ?? player);
+      const deltas: Record<string, any> = {};
+      for (const key of Object.keys(statMeta) as StatKey[]) {
+        const delta = (postStats[key] ?? 0) - (baseStats[key] ?? 0);
+        deltas[key] = delta;
+      }
+
+      // update base player's XP only
+      const { data: updatedBase, error: xpError } = await supabase
+        .from(PLAYER_TABLE)
+        .update({ XP: xpRemaining })
+        .eq("ID", playerId)
+        .select();
+      if (xpError) throw xpError;
+
+      // upsert training deltas into training table, using PlayerID as reference
+      const trainingPayload: Record<string, any> = { PlayerID: playerId };
+      for (const k of Object.keys(deltas)) trainingPayload[k] = deltas[k];
+      trainingPayload.UpdatedAt = new Date().toISOString();
+
+      const { data: upsertData, error: upsertError } = await supabase
+        .from(PLAYER_TABLE_TRAINING)
+        .upsert(trainingPayload, { onConflict: 'PlayerID' })
+        .select();
+      if (upsertError) throw upsertError;
+
+      // update local state: merge base and training
+      setPlayers(prev => prev.map(p => {
+        const pId = (p as any).__base?.ID ?? (p as any).__base?.id ?? (p as any).ID ?? (p as any).id;
+        if (pId !== playerId) return p;
+        const base = (p as any).__base ?? p;
+        const trainingRow = (upsertData && upsertData.length > 0) ? upsertData[0] : trainingPayload;
+        const mergedRow: any = { ...base, __base: { ...base }, __training: trainingRow };
+        for (const key of Object.keys(statMeta) as StatKey[]) {
+          mergedRow[key] = (Number(base[key] ?? base[key?.toLowerCase()] ?? 0) + Number(trainingRow[key] ?? 0));
+        }
+        return mergedRow;
+      }));
+
+      setXpSpentExtra(0);
+      setIncreases(prev => {
+        const fresh = { ...prev };
+        for (const k of Object.keys(fresh)) fresh[k] = 0;
+        return fresh;
       });
-      await new Promise((resolve) => setTimeout(resolve, 800)); // simula latenza
+
       toast({
         title: "Allenamento salvato",
-        description: `Dati salvati per ${(player as any).Nome ?? ""} ${(player as any).Cognome ?? ""}. (Mock)`,
+        description: `Dati salvati per ${(player as any).Nome ?? ""} ${(player as any).Cognome ?? ""}.`,
       });
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast({ title: "Errore", description: "Salvataggio fallito.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
   };
-
-  // Pesi per la media ponderata basata sul ruolo
-  const roleWeights: Record<string, Record<StatKey, number>> = {
-    'POR': {
-      PREP: 21, POSP: 21, RINP: 5, RIFP: 21, TUFP: 21,
-      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-      PASC: 0, PASL: 0, CRSS: 0, CTRP: 0, VISI: 0, EFFT: 0,
-      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
-      ACCL: 0, VELO: 0, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 0,
-      TSTA: 0, RIFL: 11, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'DC': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 17, SCIV: 10, MARC: 14, AGGR: 7, INTR: 13,
-      PASC: 5, PASL: 0, CRSS: 0, CTRP: 4, VISI: 0, EFFT: 0,
-      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
-      ACCL: 0, VELO: 2, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 10,
-      TSTA: 10, RIFL: 5, ELEV: 3, PNIZ: 0, CRIG: 0,
-    },
-    'TS': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
-      PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
-      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
-      ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
-      TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'TD': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
-      PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
-      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
-      ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
-      TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'CDC': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 12, SCIV: 5, MARC: 9, AGGR: 5, INTR: 14,
-      PASC: 14, PASL: 10, CRSS: 0, CTRP: 10, VISI: 4, EFFT: 0,
-      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
-      ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 4,
-      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'CC': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 5, SCIV: 0, MARC: 0, AGGR: 0, INTR: 5,
-      PASC: 17, PASL: 13, CRSS: 0, CTRP: 14, VISI: 13, EFFT: 0,
-      PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 7, PIAZ: 6, FINA: 2,
-      ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 0,
-      TSTA: 0, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'ED': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-      PASC: 11, PASL: 5, CRSS: 10, CTRP: 13, VISI: 7, EFFT: 0,
-      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
-      ACCL: 7, VELO: 6, AGIL: 0, RESI: 5, EQLB: 0, FRZA: 0,
-      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'ES': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-      PASC: 11, PASL: 5, CRSS: 10, CTRP: 13, VISI: 7, EFFT: 0,
-      PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
-      ACCL: 7, VELO: 6, AGIL: 0, RESI: 5, EQLB: 0, FRZA: 0,
-      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'COC': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-      PASC: 16, PASL: 4, CRSS: 0, CTRP: 15, VISI: 14, EFFT: 0,
-      PTIR: 0, TIRD: 5, TIRV: 0, DRBL: 13, PIAZ: 9, FINA: 7,
-      ACCL: 4, VELO: 3, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
-      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'AD': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-      PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
-      PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
-      ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
-      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'AS': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-      PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
-      PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
-      ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
-      TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'AT': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-      PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
-      PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
-      ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
-      TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-    'ATT': {
-      PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-      CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-      PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
-      PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
-      ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
-      TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-    },
-  };
-
-  const computeOverall = (stats: Record<StatKey, number>, role: string) => {
-    const weights = roleWeights[role] || {};
-    let totalWeighted = 0;
-    let totalWeight = 0;
-    for (const key in stats) {
-      const weight = weights[key as StatKey] || 0;
-      totalWeighted += stats[key as StatKey] * weight;
-      totalWeight += weight;
-    }
-    if (totalWeight === 0) return 0;
-    return Math.round(totalWeighted / totalWeight);
-  };
-
-  const preOverall = computeOverall(preStats, (player as any)?.Posiz ?? '');
-  const postOverall = computeOverall(postStats, (player as any)?.Posiz ?? '');
 
   // UI: se player non selezionato mostra lista vuota / caricamento
   return (
@@ -471,7 +639,7 @@ const Allenamenti = () => {
 
               <TabsContent value="ruolo">
                 {player ? (
-                  <RoleSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+                  <RoleSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} onPlayerUpdate={handlePlayerUpdate} />
                 ) : (
                   <Card><CardContent className="py-8 text-center text-muted-foreground">Seleziona un giocatore</CardContent></Card>
                 )}
@@ -479,7 +647,7 @@ const Allenamenti = () => {
 
               <TabsContent value="tratti">
                 {player ? (
-                  <TraitSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} />
+                  <TraitSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} onPlayerUpdate={handlePlayerUpdate} />
                 ) : (
                   <Card><CardContent className="py-8 text-center text-muted-foreground">Seleziona un giocatore</CardContent></Card>
                 )}

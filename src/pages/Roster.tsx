@@ -7,12 +7,16 @@ import { getPlayers } from "@/hooks/use-players";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getValueColor } from "@/utils/functions";
+import { Player } from "@/types/player";
+import PlayerDetails from "@/components/player/playerDetails";
+import { useState } from "react";
 
 const Roster = () => {
   const { user } = useAuth();
   const userTeamFullName = user?.teamFullName;
   const userTeam = user?.team;
   const { players } = getPlayers(userTeam);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   const teamName = userTeam;
 
@@ -79,7 +83,8 @@ const Roster = () => {
                 {section.players.map((player) => (
                   <Card
                     key={player.ID}
-                    className="group border border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 overflow-hidden"
+                    onClick={() => setSelectedPlayer(player)}
+                    className="group border border-border/50 hover:border-primary/40 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
                   >
                     <CardContent className="p-0">
                       <div className="flex items-center gap-3 p-4">
@@ -94,7 +99,7 @@ const Roster = () => {
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground truncate">
+                            <span className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                               {player.Nome} {player.Cognome}
                             </span>
                             <img
@@ -132,6 +137,16 @@ const Roster = () => {
           ))}
         </div>
       </main>
+
+      {/* Modal Dettaglio Giocatore */}
+      {selectedPlayer && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4" 
+          onClick={() => setSelectedPlayer(null)}
+        >
+          <PlayerDetails currentPlayer={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+        </div>
+      )}
     </div>
   );
 };
