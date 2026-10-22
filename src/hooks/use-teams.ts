@@ -8,17 +8,32 @@ export function getTeams() {
   const [error, setError] = useState<any>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchTeamsWrapper() {
-       console.log("Fetching all players");
-      fetchTeams()
-      .then(setTeams)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-      
-      setLoading(false);
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchTeams();
+        if (isMounted) {
+          setTeams(data);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setError(err.message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     }
 
     fetchTeamsWrapper();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return { teams, loading, error };
@@ -30,18 +45,39 @@ export function getTeamById(teamId?: string) {
   const [error, setError] = useState<any>(null);
 
   useEffect(() => {
-    async function fetchTeamsWrapper() {
-      console.log("Fetching players for team:", teamId);
-      fetchTeamById(teamId)
-      .then(setTeam)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+    let isMounted = true;
+
+    if (!teamId) {
+      setTeam(null);
       setLoading(false);
+      return;
     }
 
-    fetchTeamsWrapper();
+    async function fetchTeamWrapper() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchTeamById(teamId);
+        if (isMounted) {
+          setTeam(data);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setError(err.message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchTeamWrapper();
+
+    return () => {
+      isMounted = false;
+    };
   }, [teamId]);
 
   return { team, loading, error };
 }
-
