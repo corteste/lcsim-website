@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import TraitSystem from "@/components/training/TraitSystem";
 import RoleSystem from "@/components/training/RoleSystem";
 import { useAuth } from "@/context/AuthContext";
+import AdminTeamSelector from "@/components/AdminTeamSelector";
+import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { supabase } from "@/supabaseClient";
 import { PLAYER_TABLE, PLAYER_TABLE_TRAINING } from "@/constants/App";
 import { useQueryClient } from "@tanstack/react-query";
@@ -331,8 +333,8 @@ const hasAnyIncrease = (inc: Record<string, number>): boolean => {
 };
 
 const Allenamenti = () => {
-  const { user } = useAuth();
-  const userTeam = user?.team;
+  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
+  const currentTeam = effectiveTeam;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -351,7 +353,7 @@ const Allenamenti = () => {
   // Caricamento giocatori e allenamenti salvati da Supabase
   useEffect(() => {
     async function fetchTeamTrainingData() {
-      if (!userTeam) {
+      if (!currentTeam) {
         setLoading(false);
         return;
       }
@@ -361,12 +363,12 @@ const Allenamenti = () => {
           supabase
             .from(PLAYER_TABLE)
             .select("*")
-            .eq("Squadra", userTeam)
+            .eq("Squadra", currentTeam)
             .order("OVR", { ascending: false }),
           supabase
             .from(PLAYER_TABLE_TRAINING)
             .select("*")
-            .eq("Squadra", userTeam),
+            .eq("Squadra", currentTeam),
         ]);
 
         if (playersRes.error) throw playersRes.error;
@@ -383,8 +385,9 @@ const Allenamenti = () => {
         setPlayers(basePlayers);
         setTrainingMap(tMap);
 
-        // Se non c'è ancora un giocatore selezionato, seleziona il primo
-        if (basePlayers.length > 0 && selectedId === null) {
+        // Seleziona il primo giocatore o mantiene il selezionato se appartiene alla nuova squadra
+        const currentStillExists = basePlayers.some((p) => Number(p.ID) === selectedId);
+        if (basePlayers.length > 0 && (!currentStillExists || selectedId === null)) {
           const firstId = Number(basePlayers[0].ID);
           setSelectedId(firstId);
           const rec = tMap[firstId];
@@ -407,7 +410,7 @@ const Allenamenti = () => {
     }
 
     fetchTeamTrainingData();
-  }, [userTeam]);
+  }, [currentTeam]);
 
   // Giocatore attualmente selezionato (valori originali da an_player)
   const player = useMemo(() => {
@@ -553,7 +556,7 @@ const Allenamenti = () => {
       const nowIso = new Date().toISOString();
       const payload = {
         PlayerID: playerId,
-        Squadra: userTeam ?? player.Squadra,
+        Squadra: currentTeam || player.Squadra,
         status: "draft" as const,
         increases: normalizeIncreases(increases),
         xp_cost: totalCost,
@@ -657,12 +660,20 @@ const Allenamenti = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <main className="container mx-auto px-4 py-8 space-y-6">
+        {!user ? (
+          <RequireAuthPrompt
+            title="Centro Allenamenti & Sviluppo XP"
+            description="Accedi con il tuo account o scegli una squadra libera per gestire gli allenamenti e l'assegnazione dei punti XP."
+          />
+        ) : (
+          <>
+            <AdminTeamSelector />
         {/* Header Broadcast */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border/80">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                Centro Sviluppo • {user?.teamFullName || userTeam || "Squadra"}
+                Centro Sviluppo • {effectiveTeamFullName || currentTeam || "Squadra"}
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
@@ -1090,6 +1101,8 @@ const Allenamenti = () => {
             </Card>
           </div>
         </div>
+          </>
+        )}
       </main>
     </div>
   );

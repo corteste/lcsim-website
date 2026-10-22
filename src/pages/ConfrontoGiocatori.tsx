@@ -1,12 +1,16 @@
 import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { getPlayers } from "@/hooks/use-players";
 import { Player } from "@/types/player";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Swords, Shield, Target, Zap, Award } from "lucide-react";
 import { getPlayerImage } from "@/utils/functions";
+import { useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import AdminTeamSelector from "@/components/AdminTeamSelector";
+import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 
 const statCategories = {
   generale: {
@@ -255,16 +259,49 @@ const ComparisonBar = ({ label, valueA, valueB, delay = 0 }: ComparisonBarProps)
 
 const ConfrontoGiocatori = () => {
   const { players } = getPlayers("RITIRATO");
-  const [leftId, setLeftId] = useState<number>(players[0]?.ID || 0);
-  const [rightId, setRightId] = useState<number>(players[1]?.ID || 0);
+  const location = useLocation();
+  const isMiaSquadra = location.pathname.startsWith("/mia-squadra");
+  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
 
-  const left = useMemo(() => players.find((p) => p.ID === leftId) || null, [leftId, players]);
+  // Se siamo in /mia-squadra, la lista di sinistra e la propria squadra
+  const leftPlayers = useMemo(() => {
+    if (isMiaSquadra && effectiveTeam) {
+      const filtered = players.filter((p) => p.Squadra === effectiveTeam);
+      return filtered.length > 0 ? filtered : players;
+    }
+    return players;
+  }, [players, isMiaSquadra, effectiveTeam]);
+
+  const [leftId, setLeftId] = useState<number>(0);
+  const [rightId, setRightId] = useState<number>(0);
+
+  useEffect(() => {
+    if (leftPlayers.length > 0 && (!leftId || !leftPlayers.some((p) => p.ID === leftId))) {
+      setLeftId(leftPlayers[0].ID);
+    }
+  }, [leftPlayers, leftId]);
+
+  useEffect(() => {
+    if (players.length > 1 && !rightId) {
+      setRightId(players[1]?.ID || players[0]?.ID || 0);
+    }
+  }, [players, rightId]);
+
+  const left = useMemo(() => leftPlayers.find((p) => p.ID === leftId) || players.find((p) => p.ID === leftId) || null, [leftId, leftPlayers, players]);
   const right = useMemo(() => players.find((p) => p.ID === rightId) || null, [rightId, players]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {isMiaSquadra && !user ? (
+          <RequireAuthPrompt
+            title="Confronto Giocatori"
+            description="Accedi al tuo account di squadra o prendi la guida di una squadra libera per confrontare i tuoi giocatori con gli altri atleti del campionato."
+          />
+        ) : (
+          <>
+            {isMiaSquadra && <AdminTeamSelector />}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
             <Swords className="w-8 h-8 text-primary" />
@@ -279,7 +316,7 @@ const ConfrontoGiocatori = () => {
             player={left}
             playerId={leftId}
             onPlayerChange={setLeftId}
-            players={players}
+            players={leftPlayers}
             side="left"
           />
           <PlayerCard
@@ -352,6 +389,8 @@ const ConfrontoGiocatori = () => {
               ))}
             </Tabs>
           </div>
+        )}
+      </>
         )}
       </main>
     </div>

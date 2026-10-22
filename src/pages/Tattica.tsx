@@ -12,6 +12,8 @@ import { PLAYER_TABLE } from "../constants/App";
 import { Player } from "../types/player";
 import { getRoleColor, getValueColor } from "@/utils/functions";
 import { useAuth } from "@/context/AuthContext";
+import AdminTeamSelector from "@/components/AdminTeamSelector";
+import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 
 type FormationType = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '3-4-3';
 
@@ -22,18 +24,23 @@ const Tattica = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [formation, setFormation] = useState<FormationType>('4-4-2');
   //const { players } = getPlayers("APD");
-  const { user } = useAuth();
-  const userTeam = user?.team;
+  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
+  const currentTeam = effectiveTeam;
+
   
     useEffect(() => {
       async function fetchPlayers() {
-        const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', userTeam); // filtrare per squadra dell'utente
+        if (!currentTeam) {
+          setPlayers([]);
+          return;
+        }
+        const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', currentTeam);
         console.log(data);
         if (error) console.error(error);
         else setPlayers(data || []);
       }
       fetchPlayers();
-    }, []);
+    }, [currentTeam]);
 
   const handleSaveFormation = () => {
     toast.success("Formazione salvata con successo!");
@@ -254,6 +261,14 @@ const Tattica = () => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-8">
+        {!user ? (
+          <RequireAuthPrompt
+            title="Gestione Tattica"
+            description="Effettua il login con il tuo account o scegli una squadra libera per gestire la formazione e le tattiche di gara."
+          />
+        ) : (
+          <>
+            <AdminTeamSelector />
         {/* Hero Header */}
         <Card className="mb-8 overflow-hidden border-0 shadow-lg bg-gradient-to-br from-primary/15 via-card to-accent/10">
           <div className="relative p-6 sm:p-8">
@@ -266,7 +281,9 @@ const Tattica = () => {
                 </div>
                 <div>
                   <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Tattica</h1>
-                  <p className="text-muted-foreground mt-1">Gestisci la tua formazione e schiera la squadra</p>
+                  <p className="text-muted-foreground mt-1">
+                    Gestisci la formazione di {effectiveTeamFullName || currentTeam}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -538,6 +555,8 @@ const Tattica = () => {
             </div>
           </CardContent>
         </Card>
+          </>
+        )}
       </main>
 
       {/* Modal Dettaglio Giocatore */}

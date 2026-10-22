@@ -1,65 +1,180 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
+import { supabase } from "@/supabaseClient";
+import { AppUser, FreeTeam, TeamOption } from "@/types/auth";
 
-export interface AppUser {
-  id: string;
-  email: string;
-  username: string;
-  name: string;
-  team: string; // abbreviazione squadra (es. "APD", "JUV", ecc.)
-  teamFullName: string;
-}
-
-/** Utenti mock — sostituire con chiamata al DB reale */
-const MOCK_USERS: Record<string, { password: string; user: AppUser }> = {
-  "cotestekkio": {
-    password: "forzatoro",
-    user: { id: "1", email: "admin@lcsim.it", username: "admin@lcsim.it", name: "Admin", team: "APD", teamFullName: "Average Pegiò Drivers" },
-  },
-  "user2@lcsim.it": {
-    password: "user2",
-    user: { id: "2", email: "user2@lcsim.it", username: "admin@lcsim.it",name: "Mister B", team: "PFC", teamFullName: "Panormus FC"  },
-  },
-  "user3@lcsim.it": {
-    password: "user3",
-    user: { id: "3", email: "user3@lcsim.it", username: "admin@lcsim.it",name: "Mister C", team: "ACD", teamFullName: "AC Denti"  },
-  },
-  "mar9125": {
-    password: "rioux96",
-    user: { id: "4", email: "user3@lcsim.it", username: "mar9215",name: "Mario San", team: "MAR", teamFullName: "Mar's Attack"  },
-  },
-};
+export type { AppUser, FreeTeam, TeamOption } from "@/types/auth";
 
 interface AuthContextType {
   user: AppUser | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  isAdmin: boolean;
+  effectiveTeam: string;
+  effectiveTeamFullName: string;
+  adminSelectedTeam: string;
+  setAdminSelectedTeam: (teamId: string) => void;
+  availableTeams: TeamOption[];
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  claimTeam: (params: { teamId: string; username: string; password: string; name?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isLoading: boolean;
+  fetchFreeTeams: () => Promise<FreeTeam[]>;
+  isLoginOpen: boolean;
+  loginTab: "login" | "claim";
+  openLogin: (tab?: "login" | "claim") => void;
+  closeLogin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEY = "lcsim_auth_user";
+const ADMIN_TEAM_STORAGE_KEY = "lcsim_admin_selected_team";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [availableTeams, setAvailableTeams] = useState<TeamOption[]>([]);
+  const [adminSelectedTeam, setAdminSelectedTeamState] = useState<string>("APD");
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginTab, setLoginTab] = useState<"login" | "claim">("login");
+
+  // Load available active Serie A teams
+  useEffect(() => {
+    async function loadTeams() {
+      try {
+        const { data, error } = await supabase
+          .from("an_team")
+          .select('TEAM_ID, NAME, NAME_ABBR')
+          .eq("ACTIVE", true)
+          .order("NAME");
+        if (!error && data) {
+          const list = data.map((t: any) => ({
+            team_id: t.TEAM_ID,
+            name: t.NAME,
+            name_abbr: t.NAME_ABBR || t.NAME,
+          }));
+          setAvailableTeams(list);
+        }
+      } catch (err) {
+        console.error("Error loading active teams:", err);
+      }
+    }
+    loadTeams();
+  }, []);
 
   // Restore session from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setUser(JSON.parse(stored));
-    } catch { /* ignore */ }
-    setIsLoading(false);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setUser(parsed);
+      }
+      const storedAdminTeam = localStorage.getItem(ADMIN_TEAM_STORAGE_KEY);
+      if (storedAdminTeam) {
+        setAdminSelectedTeamState(storedAdminTeam);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    // TODO: sostituire con chiamata al DB
-    const entry = MOCK_USERS[username.toLowerCase()];
-    if (!entry || entry.password !== password) return false;
-    setUser(entry.user);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entry.user));
-    return true;
+  const setAdminSelectedTeam = (teamId: string) => {
+    setAdminSelectedTeamState(teamId);
+    try {
+      localStorage.setItem(ADMIN_TEAM_STORAGE_KEY, teamId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const openLogin = (tab: "login" | "claim" = "login") => {
+    setLoginTab(tab);
+    setIsLoginOpen(true);
+  };
+
+  const closeLogin = () => {
+    setIsLoginOpen(false);
+  };
+
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await supabase.rpc("rpc_login", {
+        p_username: username.trim(),
+        p_password: password,
+      });
+
+      if (error) {
+        console.error("rpc_login error:", error);
+        return { success: false, error: error.message };
+      }
+
+      if (!data) {
+        return { success: false, error: "Credenziali non valide. Verifica username e password." };
+      }
+
+      const appUser: AppUser = {
+        id: data.id,
+        username: data.username,
+        name: data.name,
+        team: data.team || "",
+        teamFullName: data.teamFullName || "",
+        teamAbbr: data.teamAbbr || data.team || "",
+        isAdmin: Boolean(data.isAdmin),
+      };
+
+      setUser(appUser);
+      if (appUser.isAdmin && appUser.team) {
+        setAdminSelectedTeam(appUser.team);
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appUser));
+      return { success: true };
+    } catch (err: any) {
+      console.error("login exception:", err);
+      return { success: false, error: err?.message || "Errore imprevisto durante l'accesso." };
+    }
+  };
+
+  const claimTeam = async (params: {
+    teamId: string;
+    username: string;
+    password: string;
+    name?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await supabase.rpc("rpc_claim_team", {
+        p_team_id: params.teamId,
+        p_username: params.username.trim(),
+        p_password: params.password,
+        p_name: params.name?.trim() || "",
+      });
+
+      if (error) {
+        console.error("rpc_claim_team error:", error);
+        return { success: false, error: error.message };
+      }
+
+      if (!data) {
+        return { success: false, error: "Errore durante l'assegnazione della squadra." };
+      }
+
+      const appUser: AppUser = {
+        id: data.id,
+        username: data.username,
+        name: data.name,
+        team: data.team,
+        teamFullName: data.teamFullName,
+        teamAbbr: data.teamAbbr || data.team,
+        isAdmin: false,
+      };
+
+      setUser(appUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appUser));
+      return { success: true };
+    } catch (err: any) {
+      console.error("claimTeam exception:", err);
+      return { success: false, error: err?.message || "Errore imprevisto durante la registrazione." };
+    }
   };
 
   const logout = () => {
@@ -67,8 +182,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const fetchFreeTeams = async (): Promise<FreeTeam[]> => {
+    try {
+      const { data, error } = await supabase.rpc("rpc_get_free_teams");
+      if (error) {
+        console.error("rpc_get_free_teams error:", error);
+        return [];
+      }
+      return data || [];
+    } catch (err) {
+      console.error("fetchFreeTeams error:", err);
+      return [];
+    }
+  };
+
+  const isAdmin = Boolean(user?.isAdmin);
+
+  // Effective team: if admin, use adminSelectedTeam; else user.team
+  const effectiveTeam = useMemo(() => {
+    if (!user) return "";
+    if (isAdmin) {
+      return adminSelectedTeam || user.team || "APD";
+    }
+    return user.team;
+  }, [user, isAdmin, adminSelectedTeam]);
+
+  const effectiveTeamFullName = useMemo(() => {
+    if (!effectiveTeam) return "";
+    const found = availableTeams.find((t) => t.team_id === effectiveTeam);
+    return found ? found.name : user?.teamFullName || effectiveTeam;
+  }, [effectiveTeam, availableTeams, user]);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAdmin,
+        effectiveTeam,
+        effectiveTeamFullName,
+        adminSelectedTeam,
+        setAdminSelectedTeam,
+        availableTeams,
+        login,
+        claimTeam,
+        logout,
+        isLoading,
+        fetchFreeTeams,
+        isLoginOpen,
+        loginTab,
+        openLogin,
+        closeLogin,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

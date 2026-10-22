@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Trophy, ChevronDown, Moon, Sun, Menu, LogIn, LogOut, User } from "lucide-react";
+import { Trophy, ChevronDown, Moon, Sun, Menu, LogIn, LogOut, User, ShieldCheck } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import LoginDialog from "@/components/LoginDialog";
 import {
@@ -26,7 +27,7 @@ const Navbar = () => {
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, openLogin, isAdmin } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -210,7 +211,22 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             {user ? (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/60 border text-sm">
-                <User className="h-4 w-4 text-emerald-500" />
+                {isAdmin ? (
+                  <Badge variant="outline" className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40 text-[10px] font-black px-1.5 py-0 flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3" /> ADMIN
+                  </Badge>
+                ) : (
+                  user.team && (
+                    <img
+                      src={`/images/teams/${user.team}_Logo.png`}
+                      alt={user.team}
+                      className="h-4 w-4 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                      }}
+                    />
+                  )
+                )}
                 <span className="font-semibold text-foreground">{user.name}</span>
                 <span className="text-xs text-muted-foreground font-mono">({user.team})</span>
                 <Button size="sm" variant="ghost" className="h-7 px-2 hover:text-destructive" onClick={handleLogout}>
@@ -218,7 +234,7 @@ const Navbar = () => {
                 </Button>
               </div>
             ) : (
-              <Button size="sm" variant="outline" onClick={() => setShowLogin(true)} className="border-border">
+              <Button size="sm" variant="outline" onClick={() => openLogin("login")} className="border-border">
                 <LogIn className="h-4 w-4 mr-1.5 text-emerald-500" /> Accedi
               </Button>
             )}
@@ -307,7 +323,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-      <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
+      <LoginDialog />
     </nav>
   );
 };
