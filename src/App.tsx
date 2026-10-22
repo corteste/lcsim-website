@@ -17,7 +17,6 @@ import Allenamenti from "./pages/Allenamenti";
 import ConfrontoGiocatori from "./pages/ConfrontoGiocatori";
 import ArchivioGiocatori from "./pages/ArchivioGiocatori";
 import HallOfFame from "./pages/HallOfFame";
-import PreviewStile from "./pages/PreviewStile";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -55,7 +54,6 @@ const App = () => (
                 <Route path="/mia-squadra/confronto-giocatori" element={<ConfrontoGiocatori />} />
                 <Route path="/archivio/giocatori" element={<ArchivioGiocatori />} />
                 <Route path="/archivio/hall-of-fame" element={<HallOfFame />} />
-                <Route path="/preview" element={<PreviewStile />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
