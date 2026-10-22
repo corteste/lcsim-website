@@ -13,9 +13,10 @@ import { getTeams } from "@/hooks/use-teams";
 import { Player } from "@/types/player";
 import PlayerDetails from "@/components/player/playerDetails";
 
-const getMarketStatus = (market?: MarketStatus | null) => {
-  if(!market?.Status) return "bg-muted";
-  switch (market.Status) {
+const getMarketStatus = (market?: any) => {
+  const status = typeof market === 'string' ? market : (Array.isArray(market) ? market[0]?.Status : market?.Status);
+  if (!status) return "bg-muted";
+  switch (status) {
     case "int": return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20";
     case "ced": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
     case "tra": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
@@ -24,9 +25,10 @@ const getMarketStatus = (market?: MarketStatus | null) => {
   }
 };
 
-const getMarketStatusDisplay = (market?: MarketStatus | null) => {
-  if(!market?.Status) return "N/A";
-  switch (market.Status) {
+const getMarketStatusDisplay = (market?: any) => {
+  const status = typeof market === 'string' ? market : (Array.isArray(market) ? market[0]?.Status : market?.Status);
+  if (!status) return "N/A";
+  switch (status) {
     case "int": return "Intoccabile";
     case "ced": return "Cedibile";
     case "tra": return "Possibili Trattative";
@@ -63,7 +65,7 @@ const ListaGiocatori = () => {
       player =>
         (teamFilter === "all" || player.Squadra === teamFilter) &&
         (roleFilter === "all" || getPosGroup(player.Posiz) === roleFilter) &&
-        (marketFilter === "all" || player.MarketStatus?.Status === marketFilter) &&
+        (marketFilter === "all" || ((typeof player.MarketStatus === "string" ? player.MarketStatus : (Array.isArray(player.MarketStatus) ? player.MarketStatus[0]?.Status : player.MarketStatus?.Status)) === marketFilter)) &&
         (contractFilter === "all" || getContractStatus(player.Squadra) === contractFilter)
     );
 
