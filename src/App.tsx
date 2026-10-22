@@ -20,12 +20,21 @@ import HallOfFame from "./pages/HallOfFame";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minuti di cache fresca
+      gcTime: 10 * 60 * 1000,    // 10 minuti di conservazione in memoria
+      refetchOnWindowFocus: false, // Disabilita chiamate inutili al cambio tab
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <AuthProvider>
-    <ScheduleProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ScheduleProvider>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TooltipProvider>
             <Toaster />
@@ -50,8 +59,8 @@ const App = () => (
             </BrowserRouter>
           </TooltipProvider>
         </ThemeProvider>
-      </QueryClientProvider>
-    </ScheduleProvider>
+      </ScheduleProvider>
+    </QueryClientProvider>
   </AuthProvider>
 );
 
