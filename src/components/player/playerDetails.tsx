@@ -6,7 +6,7 @@ import { MarketStatus } from "@/types/marketStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, Ruler, Weight, Footprints, X, Shield, Zap, Target, Activity, 
-  Sparkles, Star, Award, Compass, Shirt, Eye, Swords, Flame
+  Sparkles, Star, Award, Compass, Swords, Flame
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -42,23 +42,23 @@ const StatBar = ({ label, value, code }: { label: string; value: number | null |
   const percentage = Math.min(Math.max(numValue, 0), 99);
   
   return (
-    <div className="group p-2.5 rounded-lg bg-card/60 hover:bg-muted/40 border border-border/40 hover:border-primary/30 transition-all duration-200">
-      <div className="flex justify-between items-center mb-1.5">
-        <div className="flex items-center gap-1.5 min-w-0">
+    <div className="group p-2.5 rounded-lg bg-card/70 hover:bg-muted/50 border border-border/50 hover:border-primary/40 transition-all duration-200 shadow-sm">
+      <div className="flex justify-between items-center mb-1.5 gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           {code && (
-            <span className="text-[10px] font-mono px-1 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
+            <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold shrink-0 border border-border/40">
               {code}
             </span>
           )}
-          <span className="text-xs font-medium text-foreground/80 truncate group-hover:text-foreground transition-colors">
+          <span className="text-sm font-semibold text-foreground whitespace-normal leading-snug">
             {label}
           </span>
         </div>
-        <span className={`text-sm font-bold font-mono ${getValueColor(value ?? null)} shrink-0 ml-2`}>
+        <span className={`text-base font-bold font-mono ${getValueColor(value ?? null)} shrink-0 pl-2`}>
           {value ?? "-"}
         </span>
       </div>
-      <div className="h-1.5 bg-muted/80 rounded-full overflow-hidden">
+      <div className="h-2 bg-muted/90 rounded-full overflow-hidden">
         <div 
           className={`h-full rounded-full transition-all duration-500 ${
             numValue >= 90 ? "bg-gradient-to-r from-purple-500 to-indigo-500" : 
@@ -85,14 +85,14 @@ const StatCardGroup = ({
   colorClass: string; 
   children: React.ReactNode 
 }) => (
-  <Card className="border border-border/50 bg-card/40 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-    <div className={`px-4 py-2.5 border-b border-border/40 flex items-center justify-between ${colorClass}`}>
+  <Card className="border border-border/60 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col">
+    <div className={`px-4 py-3 border-b border-border/50 flex items-center justify-between ${colorClass}`}>
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4" />
-        <h4 className="text-xs font-bold uppercase tracking-wider">{title}</h4>
+        <h4 className="text-sm font-bold uppercase tracking-wider">{title}</h4>
       </div>
     </div>
-    <CardContent className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <CardContent className="p-3.5 flex flex-col gap-2.5 flex-1 justify-start">
       {children}
     </CardContent>
   </Card>
@@ -102,22 +102,22 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
   const ovr = currentPlayer.OVR ?? 0;
   const isGoalkeeper = currentPlayer.Posiz === "POR";
 
-  // Macro pillars
+  // Macro pillars with full non-truncated names
   const macroStats = isGoalkeeper ? [
-    { label: "TUFFO", value: currentPlayer.TUFP, code: "TUF", color: "from-amber-500/20 to-orange-500/10 text-orange-600 dark:text-orange-400" },
-    { label: "PRESA", value: currentPlayer.PREP, code: "PRE", color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
-    { label: "RINVIO", value: currentPlayer.RINP, code: "RIN", color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
-    { label: "RIFLESSI", value: currentPlayer.RIFP, code: "RIF", color: "from-purple-500/20 to-indigo-500/10 text-purple-600 dark:text-purple-400" },
-    { label: "PIAZZAM.", value: currentPlayer.POSP, code: "POS", color: "from-rose-500/20 to-pink-500/10 text-rose-600 dark:text-rose-400" },
-    { label: "FISICO", value: currentPlayer.FIS, code: "FIS", color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
+    { label: "Tuffo", value: currentPlayer.TUFP, color: "from-amber-500/20 to-orange-500/10 text-orange-600 dark:text-orange-400" },
+    { label: "Presa", value: currentPlayer.PREP, color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
+    { label: "Rinvio", value: currentPlayer.RINP, color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
+    { label: "Riflessi", value: currentPlayer.RIFP, color: "from-purple-500/20 to-indigo-500/10 text-purple-600 dark:text-purple-400" },
+    { label: "Piazzamento", value: currentPlayer.POSP, color: "from-rose-500/20 to-pink-500/10 text-rose-600 dark:text-rose-400" },
+    { label: "Fisico", value: currentPlayer.FIS, color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
   ] : [
-    { label: "VELOCITÀ", value: currentPlayer.VELO, code: "VEL", color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
-    { label: "TIRO", value: currentPlayer.ATT, code: "TIR", color: "from-red-500/20 to-rose-500/10 text-red-600 dark:text-red-400" },
-    { label: "PASSAGGIO", value: currentPlayer.CEN, code: "PAS", color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
-    { label: "DRIBBLING", value: currentPlayer.DRBL, code: "DRI", color: "from-amber-500/20 to-yellow-500/10 text-amber-600 dark:text-amber-400" },
-    { label: "DIFESA", value: currentPlayer.DIF, code: "DIF", color: "from-indigo-500/20 to-blue-500/10 text-indigo-600 dark:text-indigo-400" },
-    { label: "FISICO", value: currentPlayer.FIS, code: "FIS", color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
-    { label: "MENTALE", value: currentPlayer.MEN, code: "MEN", color: "from-pink-500/20 to-rose-500/10 text-pink-600 dark:text-pink-400" },
+    { label: "Velocità", value: currentPlayer.VELO, color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
+    { label: "Tiro", value: currentPlayer.ATT, color: "from-red-500/20 to-rose-500/10 text-red-600 dark:text-red-400" },
+    { label: "Passaggio", value: currentPlayer.CEN, color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
+    { label: "Dribbling", value: currentPlayer.DRBL, color: "from-amber-500/20 to-yellow-500/10 text-amber-600 dark:text-amber-400" },
+    { label: "Difesa", value: currentPlayer.DIF, color: "from-indigo-500/20 to-blue-500/10 text-indigo-600 dark:text-indigo-400" },
+    { label: "Fisico", value: currentPlayer.FIS, color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
+    { label: "Mentale", value: currentPlayer.MEN, color: "from-pink-500/20 to-rose-500/10 text-pink-600 dark:text-pink-400" },
   ];
 
   return (
@@ -150,7 +150,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               />
               {/* Flag pill overlay on avatar bottom-left */}
               {currentPlayer.Nazionalità && (
-                <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-md border border-border/60 shadow">
+                <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-background/85 backdrop-blur-md border border-border/60 shadow">
                   <img 
                     src={getNationalityFlag(currentPlayer.Nazionalità)} 
                     alt={currentPlayer.Nazionalità} 
@@ -237,11 +237,11 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
             <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-7 gap-2 pt-2">
               {macroStats.map((st) => (
                 <div 
-                  key={st.code} 
+                  key={st.label} 
                   className={`flex flex-col items-center justify-center p-2 rounded-xl bg-gradient-to-br ${st.color} border border-border/40 shadow-sm`}
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{st.code}</span>
-                  <span className="text-lg font-black font-mono leading-tight">{st.value ?? "-"}</span>
+                  <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap">{st.label}</span>
+                  <span className="text-lg font-black font-mono leading-tight mt-0.5">{st.value ?? "-"}</span>
                 </div>
               ))}
             </div>
@@ -255,38 +255,31 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
           <TabsList className="bg-transparent h-12 p-0 gap-6 justify-start">
             <TabsTrigger 
               value="tutti" 
-              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-semibold text-sm px-1"
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-sm px-2 transition-colors"
             >
               <Activity className="h-4 w-4 mr-2" />
               Tutti gli Attributi
             </TabsTrigger>
             <TabsTrigger 
               value="ruoli" 
-              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-semibold text-sm px-1"
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-sm px-2 transition-colors"
             >
               <Sparkles className="h-4 w-4 mr-2" />
               Ruoli & Tratti Speciali
-            </TabsTrigger>
-            <TabsTrigger 
-              value="dettagli" 
-              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-semibold text-sm px-1"
-            >
-              <Shirt className="h-4 w-4 mr-2" />
-              Info & Stile in Campo
             </TabsTrigger>
           </TabsList>
         </div>
 
         {/* Tab 1: Tutti gli Attributi (Dashboard Completa) */}
         <TabsContent value="tutti" className="flex-1 overflow-y-auto p-6 m-0 focus-visible:outline-none">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Difesa */}
             <StatCardGroup title="Difesa & Marcatura" icon={Shield} colorClass="bg-blue-500/10 text-blue-600 dark:text-blue-400">
               <StatBar label="Contrasto" code="CONT" value={currentPlayer.CONT} />
               <StatBar label="Scivolata" code="SCIV" value={currentPlayer.SCIV} />
               <StatBar label="Marcatura" code="MARC" value={currentPlayer.MARC} />
               <StatBar label="Aggressività" code="AGGR" value={currentPlayer.AGGR} />
-              <StatBar label="Intercettazioni" code="INTR" value={currentPlayer.INTR} />
+              <StatBar label="Intercettazione" code="INTR" value={currentPlayer.INTR} />
             </StatCardGroup>
 
             {/* Passaggi */}
@@ -304,7 +297,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               <StatBar label="Finalizzazione" code="FINA" value={currentPlayer.FINA} />
               <StatBar label="Piazzamento" code="PIAZ" value={currentPlayer.PIAZ} />
               <StatBar label="Potenza Tiro" code="PTIR" value={currentPlayer.PTIR} />
-              <StatBar label="Tiri da Distanza" code="TIRD" value={currentPlayer.TIRD} />
+              <StatBar label="Tiri dalla Distanza" code="TIRD" value={currentPlayer.TIRD} />
               <StatBar label="Tiri al Volo" code="TIRV" value={currentPlayer.TIRV} />
               <StatBar label="Dribbling" code="DRBL" value={currentPlayer.DRBL} />
               <StatBar label="Colpi di Testa" code="TSTA" value={currentPlayer.TSTA} />
@@ -312,8 +305,8 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
 
             {/* Fisico */}
             <StatCardGroup title="Fisico & Velocità" icon={Zap} colorClass="bg-purple-500/10 text-purple-600 dark:text-purple-400">
-              <StatBar label="Accelerazione" code="ACCL" value={currentPlayer.ACCL} />
               <StatBar label="Velocità Scatto" code="VELO" value={currentPlayer.VELO} />
+              <StatBar label="Accelerazione" code="ACCL" value={currentPlayer.ACCL} />
               <StatBar label="Agilità" code="AGIL" value={currentPlayer.AGIL} />
               <StatBar label="Resistenza" code="RESI" value={currentPlayer.RESI} />
               <StatBar label="Forza Fisica" code="FRZA" value={currentPlayer.FRZA} />
@@ -327,7 +320,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               <StatBar label="Presa" code="PREP" value={currentPlayer.PREP} />
               <StatBar label="Posizionamento" code="POSP" value={currentPlayer.POSP} />
               <StatBar label="Rinvio" code="RINP" value={currentPlayer.RINP} />
-              <StatBar label="Riflessi POR" code="RIFP" value={currentPlayer.RIFP} />
+              <StatBar label="Riflessi Portiere" code="RIFP" value={currentPlayer.RIFP} />
               <StatBar label="Tuffo" code="TUFP" value={currentPlayer.TUFP} />
             </StatCardGroup>
 
@@ -349,21 +342,21 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
                 <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">Ruoli e Specializzazioni</h4>
               </div>
               <CardContent className="p-5 space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-muted/20">
                   <span className="text-sm font-medium text-muted-foreground">Ruolo Naturale</span>
                   <Badge variant="outline" className={`${getRoleColor(currentPlayer.Posiz)} text-sm font-bold px-3 py-1`}>
                     {currentPlayer.Posiz}
                   </Badge>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-muted/20">
                   <span className="text-sm font-medium text-muted-foreground">Specializzazione Primaria (Role 1)</span>
                   <span className="text-sm font-bold text-primary">
                     {currentPlayer.Role1 || "Standard"}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-muted/20">
                   <span className="text-sm font-medium text-muted-foreground">Specializzazione Secondaria (Role 2)</span>
                   <span className="text-sm font-bold text-foreground">
                     {currentPlayer.Role2 || "-"}
@@ -371,7 +364,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
                 </div>
 
                 {currentPlayer.RuoloInCampo && (
-                  <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-muted/20">
                     <span className="text-sm font-medium text-muted-foreground">Ruolo Attivo in Tattica</span>
                     <span className="text-sm font-bold text-foreground">{currentPlayer.RuoloInCampo}</span>
                   </div>
@@ -418,77 +411,6 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
                     <p className="text-xs text-foreground font-medium">{currentPlayer.Tratti}</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Tab 3: Dettagli Personali & Stile */}
-        <TabsContent value="dettagli" className="flex-1 overflow-y-auto p-6 m-0 focus-visible:outline-none">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* Dati Anagrafici */}
-            <Card className="border border-border/60 bg-card/60 backdrop-blur-sm">
-              <div className="px-5 py-3 border-b border-border/50 flex items-center gap-2 bg-primary/5">
-                <User className="h-4 w-4 text-primary" />
-                <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">Anagrafica & Squadra</h4>
-              </div>
-              <CardContent className="p-5 space-y-3">
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">ID Giocatore:</span>
-                  <span className="text-xs font-mono font-bold">{currentPlayer.ID}</span>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">Nazionalità:</span>
-                  <div className="flex items-center gap-1.5">
-                    <img 
-                      src={getNationalityFlag(currentPlayer.Nazionalità)} 
-                      alt="" 
-                      className="h-3.5 w-5 object-cover rounded-sm"
-                      onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
-                    <span className="text-xs font-bold">{currentPlayer.Nazionalità}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">Squadra di appartenenza:</span>
-                  <span className="text-xs font-bold">{currentPlayer.Squadra || "Svincolato"}</span>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">Workrate Offensivo / Difensivo:</span>
-                  <span className="text-xs font-bold">
-                    {currentPlayer.WROff ?? "-"} / {currentPlayer.WRDef ?? "-"}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Stile in Gioco */}
-            <Card className="border border-border/60 bg-card/60 backdrop-blur-sm">
-              <div className="px-5 py-3 border-b border-border/50 flex items-center gap-2 bg-primary/5">
-                <Eye className="h-4 w-4 text-primary" />
-                <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">Stile & Personalizzazione</h4>
-              </div>
-              <CardContent className="p-5 space-y-3">
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">Emotività:</span>
-                  <span className="text-xs font-bold">{(currentPlayer as any).Emotion || "-"}</span>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">Corporatura (BodyType):</span>
-                  <span className="text-xs font-bold">{(currentPlayer as any).BodyType || "-"}</span>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">Stile Maglia:</span>
-                  <span className="text-xs font-bold">{(currentPlayer as any).JerseyStyle || "-"}</span>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">Vestibilità Maglia:</span>
-                  <span className="text-xs font-bold">{(currentPlayer as any).JerseyFit || "-"}</span>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-                  <span className="text-xs text-muted-foreground">Scarpe (Modello):</span>
-                  <span className="text-xs font-bold">{(currentPlayer as any).Shoe || "-"}</span>
-                </div>
               </CardContent>
             </Card>
           </div>
