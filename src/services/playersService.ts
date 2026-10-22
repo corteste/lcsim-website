@@ -5,7 +5,7 @@ import { PLAYER_TABLE } from '@/constants/App';
 export async function fetchPlayers(_pageIndex = 1): Promise<Player[]> {
   const { data, error } = await supabase
     .from(PLAYER_TABLE)
-    .select('*')
+    .select('*, MarketStatus:AS_PLAYER_MARKET(Status)')
     .order('ID', { ascending: true });
 
   if (error) {
@@ -20,7 +20,7 @@ export async function fetchPlayersByTeam(team: string | String): Promise<Player[
   const teamStr = String(team);
   const { data, error } = await supabase
     .from(PLAYER_TABLE)
-    .select('*')
+    .select('*, MarketStatus:AS_PLAYER_MARKET(Status)')
     .eq('Squadra', teamStr)
     .order('ID', { ascending: true });
 

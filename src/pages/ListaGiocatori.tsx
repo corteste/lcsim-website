@@ -13,8 +13,8 @@ import { getTeams } from "@/hooks/use-teams";
 import { Player } from "@/types/player";
 import PlayerDetails from "@/components/player/playerDetails";
 
-const getMarketStatus = (market: MarketStatus) => {
-  if(market === null) return "bg-muted";
+const getMarketStatus = (market?: MarketStatus | null) => {
+  if(!market?.Status) return "bg-muted";
   switch (market.Status) {
     case "int": return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20";
     case "ced": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
@@ -24,8 +24,8 @@ const getMarketStatus = (market: MarketStatus) => {
   }
 };
 
-const getMarketStatusDisplay = (market: MarketStatus) => {
-  if(market === null) return "N/A";
+const getMarketStatusDisplay = (market?: MarketStatus | null) => {
+  if(!market?.Status) return "N/A";
   switch (market.Status) {
     case "int": return "Intoccabile";
     case "ced": return "Cedibile";
