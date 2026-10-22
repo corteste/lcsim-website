@@ -98,7 +98,7 @@ export async function fetchSeasonSchedule(stag: number): Promise<Schedule[]> {
       stadium: gen?.stadium ?? "",
       referee: gen?.referee ?? "",
       weather: gen?.weather ?? "",
-      date: (gen?.date as any) ?? new Date(),
+      date: gen?.date ? new Date(gen.date) : new Date(),
       home_player_stats: sortPlayersByRole(homePlayerStats),
       away_player_stats: sortPlayersByRole(awayPlayerStats),
     };

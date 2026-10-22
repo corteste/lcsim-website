@@ -16,18 +16,17 @@ export async function fetchTeams(_pageIndex = 1): Promise<Team[]> {
   return (data as Team[]) ?? [];
 }
 
-export async function fetchTeamById(team?: string | String): Promise<Team | null> {
+export async function fetchTeamById(team?: string): Promise<Team | null> {
   if (!team) return null;
-  const teamStr = String(team);
 
   const { data, error } = await supabase
     .from(TEAM_TABLE)
     .select('*, players:an_player(*, MarketStatus:AS_PLAYER_MARKET(Status))')
-    .or(`TEAM_ID.eq.${teamStr},NAME_ABBR.eq.${teamStr},NAME.eq.${teamStr}`)
+    .or(`TEAM_ID.eq.${team},NAME_ABBR.eq.${team},NAME.eq.${team}`)
     .maybeSingle();
 
   if (error) {
-    console.error(`Error fetching team ${teamStr}:`, error);
+    console.error(`Error fetching team ${team}:`, error);
     throw new Error(error.message || 'Failed to fetch team');
   }
 

@@ -16,16 +16,15 @@ export async function fetchPlayers(_pageIndex = 1): Promise<Player[]> {
   return (data as Player[]) ?? [];
 }
 
-export async function fetchPlayersByTeam(team: string | String): Promise<Player[]> {
-  const teamStr = String(team);
+export async function fetchPlayersByTeam(team: string): Promise<Player[]> {
   const { data, error } = await supabase
     .from(PLAYER_TABLE)
     .select('*, MarketStatus:AS_PLAYER_MARKET(Status)')
-    .eq('Squadra', teamStr)
+    .eq('Squadra', team)
     .order('ID', { ascending: true });
 
   if (error) {
-    console.error(`Error fetching players for team ${teamStr}:`, error);
+    console.error(`Error fetching players for team ${team}:`, error);
     throw new Error(error.message || 'Failed to fetch players');
   }
 
