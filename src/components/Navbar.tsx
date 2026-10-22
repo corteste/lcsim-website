@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Trophy, ChevronDown, Moon, Sun, Menu, LogIn, LogOut, User } from "lucide-react";
+import { Trophy, ChevronDown, Moon, Sun, Menu, LogIn, LogOut, User, Sparkles } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
@@ -75,6 +75,14 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex gap-3 items-center">
+            <Link
+              to="/preview"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors"
+              title="Anteprima stile Pro Analytics (Solo locale)"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Preview Nuovo Stile</span>
+            </Link>
             <div className="flex items-center gap-2">
               <Sun className="h-4 w-4 text-muted-foreground" />
               <Switch
