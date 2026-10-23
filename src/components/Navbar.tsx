@@ -436,11 +436,15 @@ const Navbar = () => {
               <DropdownMenuContent align="end" className="w-68 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                   <span>Gestione Club</span>
-                  {user?.team && (
+                  {user?.team ? (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold">
                       {user.team}
                     </Badge>
-                  )}
+                  ) : isAdmin ? (
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold text-amber-500 border-amber-500/30">
+                      LEGA
+                    </Badge>
+                  ) : null}
                 </div>
                 {miaSquadraItems.map((item) => {
                   const Icon = item.icon;
@@ -516,9 +520,15 @@ const Navbar = () => {
                     <span className="font-extrabold text-foreground truncate max-w-[95px] sm:max-w-[120px]">
                       {user.name}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      ({user.team})
-                    </span>
+                    {user.team ? (
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        ({user.team})
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-amber-500 font-mono font-bold">
+                        (Lega)
+                      </span>
+                    )}
                     <ChevronDown className="h-3 w-3 opacity-60 ml-0.5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -529,8 +539,12 @@ const Navbar = () => {
                   <div className="px-2.5 py-2 border-b border-border/60">
                     <div className="font-bold text-xs text-foreground truncate">{user.name}</div>
                     <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1 mt-0.5">
-                      <span>Squadra: {user.team}</span>
-                      {isAdmin && <span className="text-amber-500 font-bold">• Amministratore</span>}
+                      {user.team ? (
+                        <span>Squadra: {user.team}</span>
+                      ) : (
+                        <span className="text-amber-500 font-bold">Super Admin di Lega</span>
+                      )}
+                      {isAdmin && user.team && <span className="text-amber-500 font-bold">• Admin</span>}
                     </div>
                   </div>
 
@@ -739,7 +753,7 @@ const Navbar = () => {
                           )}
                           <div className="min-w-0">
                             <div className="text-xs font-bold truncate">{user.name}</div>
-                            <div className="text-[10px] text-muted-foreground font-mono">{user.team}</div>
+                            <div className="text-[10px] text-muted-foreground font-mono">{user.team || (isAdmin ? "Admin di Lega" : "")}</div>
                           </div>
                         </div>
                         <Button
