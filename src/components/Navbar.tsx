@@ -39,6 +39,7 @@ const Navbar = () => {
     { path: "/rose", label: "Rose" },
     { path: "/statistiche", label: "Statistiche" },
     { path: "/calendario", label: "Calendario" },
+    { path: "/draft", label: "Draft" },
   ];
 
   const miaSquadraItems = [

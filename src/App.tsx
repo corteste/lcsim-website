@@ -17,6 +17,7 @@ import Allenamenti from "./pages/Allenamenti";
 import ConfrontoGiocatori from "./pages/ConfrontoGiocatori";
 import ArchivioGiocatori from "./pages/ArchivioGiocatori";
 import HallOfFame from "./pages/HallOfFame";
+import Draft from "./pages/Draft";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/giocatori/lista-giocatori" element={<ListaGiocatori />} />
                 <Route path="/giocatori/confronto-giocatori" element={<ConfrontoGiocatori />} />
                 <Route path="/calendario" element={<Calendario />} />
+                <Route path="/draft" element={<Draft />} />
                 <Route path="/mia-squadra/roster" element={<Roster />} />
                 <Route path="/mia-squadra/tattica" element={<Tattica />} />
                 <Route path="/mia-squadra/allenamenti" element={<Allenamenti />} />
