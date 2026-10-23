@@ -469,99 +469,102 @@ export default function AdminAutomazioni() {
           </Card>
 
           {/* 3. START / STOP CALCIOMERCATO */}
-          <Card className="border-border/80 bg-card shadow-md relative overflow-hidden flex flex-col justify-between">
-            <div>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between mb-1">
-                  <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">
-                    🟡 In Definizione • Punto Aperto #11
-                  </Badge>
-                  <Store className="h-6 w-6 text-blue-500" />
-                </div>
-                <CardTitle className="text-xl font-black">Controllo Finestra Calciomercato</CardTitle>
-                <CardDescription className="text-xs">
-                  Interruttore generale per aprire o chiudere ufficialmente le trattative, gli scambi e i tagli calciatore.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-xs space-y-2">
-                  <div className="flex items-center justify-between font-semibold">
-                    <span className="text-muted-foreground">Stato attuale mercato:</span>
-                    <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
-                      {stateMap["market_toggle"]?.details?.status === "closed" ? "CHIUSO" : "APERTO (Predefinito)"}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Quando il mercato è chiuso, i manager non possono inviare o accettare scambi e i tagli sono disabilitati.
-                  </p>
+          {(() => {
+            const isMarketClosed = stateMap["market_toggle"]?.details?.status === "closed";
+            return (
+              <Card className={`bg-card shadow-md relative overflow-hidden flex flex-col justify-between transition-colors ${
+                isMarketClosed ? "border-rose-500/40 bg-gradient-to-br from-card via-card to-rose-500/5" : "border-emerald-500/30 bg-gradient-to-br from-card via-card to-emerald-500/5"
+              }`}>
+                <div>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <Badge
+                        variant="outline"
+                        className={
+                          isMarketClosed
+                            ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+                            : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+                        }
+                      >
+                        {isMarketClosed ? "🔴 Mercato di Lega Chiuso" : "🟢 Mercato di Lega Aperto"}
+                      </Badge>
+                      <Store className={`h-6 w-6 ${isMarketClosed ? "text-rose-500" : "text-emerald-500"}`} />
+                    </div>
+                    <CardTitle className="text-xl font-black">Controllo Finestra Calciomercato</CardTitle>
+                    <CardDescription className="text-xs">
+                      Interruttore generale per aprire o chiudere ufficialmente le trattative e le proposte di scambio tra squadre.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-xs space-y-2">
+                      <div className="flex items-center justify-between font-semibold">
+                        <span className="text-muted-foreground">Stato attuale mercato:</span>
+                        <Badge
+                          className={
+                            isMarketClosed
+                              ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase tracking-wider"
+                              : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider"
+                          }
+                        >
+                          {isMarketClosed ? "CHIUSO" : "APERTO"}
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {isMarketClosed
+                          ? "Il mercato è CHIUSO: ai manager è impedito l'invio di nuove proposte e l'accettazione o il rifiuto delle offerte."
+                          : "Il mercato è APERTO: tutti i club possono formulare nuove proposte e accettare o rifiutare le trattative."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                      <Button
+                        variant={isMarketClosed ? "default" : "outline"}
+                        onClick={async () => {
+                          await recordAutomationRun("market_toggle", { status: "closed" });
+                          toast.error("Finestra di Calciomercato CHIUSA. Proposte e trattative sospese per tutti i club.", {
+                            icon: "🔒",
+                          });
+                        }}
+                        className={`flex-1 font-bold gap-2 text-xs border-rose-500/30 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 ${
+                          isMarketClosed ? "bg-rose-500/15 border-rose-500/50 shadow-sm" : ""
+                        }`}
+                      >
+                        <Lock className="h-3.5 w-3.5" />
+                        Chiudi Mercato di Lega
+                      </Button>
+
+                      <Button
+                        variant={!isMarketClosed ? "default" : "outline"}
+                        onClick={async () => {
+                          await recordAutomationRun("market_toggle", { status: "open" });
+                          toast.success("Finestra di Calciomercato APERTA. Scambi e trattative abilitati per tutti i club.", {
+                            icon: "🔓",
+                          });
+                        }}
+                        className={`flex-1 font-bold gap-2 text-xs border-emerald-500/30 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ${
+                          !isMarketClosed ? "bg-emerald-500/15 border-emerald-500/50 shadow-sm" : ""
+                        }`}
+                      >
+                        <Unlock className="h-3.5 w-3.5" />
+                        Apri Mercato di Lega
+                      </Button>
+                    </div>
+                  </CardContent>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      recordAutomationRun("market_toggle", { action: "close_market_clicked" });
-                      setInfoModal({
-                        id: "market_toggle",
-                        title: "Chiusura Calciomercato (Punto Aperto #11)",
-                        description:
-                          "La gestione dello stato del calciomercato è registrata nel backlog tecnico e sarà discussa con l'utente per definire i parametri esatti:",
-                        puntoApertoIndex: 11,
-                        points: [
-                          "Blocco dell'invio/accettazione trattative in /mia-squadra/trattative a mercato chiuso.",
-                          "Blocco dei tagli giocatori in /mia-squadra/roster a mercato chiuso.",
-                          "Countdown automatico alla scadenza della finestra di mercato per tutti gli utenti.",
-                          "Permessi straordinari per l'Admin di forzare operazioni anche a mercato chiuso."
-                        ],
-                        actionLabel: "Imposta Stato Chiuso (Test)",
-                        detailsToRecord: { status: "closed" }
-                      });
-                    }}
-                    className="flex-1 font-bold gap-2 text-xs border-rose-500/30 hover:bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                  >
-                    <Lock className="h-3.5 w-3.5" />
-                    Chiudi Mercato di Lega
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      recordAutomationRun("market_toggle", { action: "open_market_clicked" });
-                      setInfoModal({
-                        id: "market_toggle",
-                        title: "Apertura Calciomercato (Punto Aperto #11)",
-                        description:
-                          "La gestione dello stato del calciomercato è registrata nel backlog tecnico e sarà discussa con l'utente per definire i parametri esatti:",
-                        puntoApertoIndex: 11,
-                        points: [
-                          "Apertura ufficiale con notifica broadcast e banner globale per tutti i manager.",
-                          "Abilitazione scambi giocatori, scelte draft e tagli compensativi.",
-                          "Impostazione data di termine sessione."
-                        ],
-                        actionLabel: "Imposta Stato Aperto (Test)",
-                        detailsToRecord: { status: "open" }
-                      });
-                    }}
-                    className="flex-1 font-bold gap-2 text-xs border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  >
-                    <Unlock className="h-3.5 w-3.5" />
-                    Apri Mercato di Lega
-                  </Button>
+                {/* Timestamp Footer */}
+                <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+                  <span className="flex items-center gap-1.5 font-sans">
+                    <Clock className="h-3.5 w-3.5 text-blue-500" />
+                    Ultima esecuzione:
+                  </span>
+                  <span className="font-semibold text-foreground truncate max-w-[240px]">
+                    {formatLastRun(stateMap["market_toggle"]?.last_run_at, stateMap["market_toggle"]?.last_run_by)}
+                  </span>
                 </div>
-              </CardContent>
-            </div>
-
-            {/* Timestamp Footer */}
-            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
-              <span className="flex items-center gap-1.5 font-sans">
-                <Clock className="h-3.5 w-3.5 text-blue-500" />
-                Ultima esecuzione:
-              </span>
-              <span className="font-semibold text-foreground truncate max-w-[240px]">
-                {formatLastRun(stateMap["market_toggle"]?.last_run_at, stateMap["market_toggle"]?.last_run_by)}
-              </span>
-            </div>
-          </Card>
+              </Card>
+            );
+          })()}
 
           {/* 4. BLOCCA / SBLOCCA ROSE */}
           <Card className="border-border/80 bg-card shadow-md relative overflow-hidden flex flex-col justify-between">

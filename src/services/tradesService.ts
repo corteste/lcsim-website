@@ -1,5 +1,6 @@
 import { invalidateRostersAndTrades } from "@/queryClient";
 import { supabase } from "@/supabaseClient";
+import { getMarketState } from "@/services/marketStateService";
 import {
   Trade,
   EnrichedTrade,
@@ -287,6 +288,15 @@ export async function createTrade(payload: CreateTradePayload): Promise<{
   error?: string;
 }> {
   try {
+    // Controllo stato finestra di mercato
+    const marketState = await getMarketState();
+    if (!marketState.isOpen) {
+      return {
+        success: false,
+        error: "Il Calciomercato è attualmente chiuso dalla Lega. Non è possibile inviare nuove proposte di scambio.",
+      };
+    }
+
     const totalOffered = payload.offered_player_ids.length + payload.offered_pick_numbers.length;
     const totalRequested = payload.requested_player_ids.length + payload.requested_pick_numbers.length;
 
@@ -347,6 +357,15 @@ export async function createTrade(payload: CreateTradePayload): Promise<{
  */
 export async function acceptTrade(tradeId: string, teamId: string): Promise<{ success: boolean; error?: string }> {
   try {
+    // Controllo stato finestra di mercato
+    const marketState = await getMarketState();
+    if (!marketState.isOpen) {
+      return {
+        success: false,
+        error: "Il Calciomercato è attualmente chiuso dalla Lega. Non è possibile accettare proposte di scambio.",
+      };
+    }
+
     const { error } = await supabase
       .from(TRADES_TABLE)
       .update({
@@ -383,6 +402,15 @@ export async function rejectTrade(
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Controllo stato finestra di mercato
+    const marketState = await getMarketState();
+    if (!marketState.isOpen) {
+      return {
+        success: false,
+        error: "Il Calciomercato è attualmente chiuso dalla Lega. Non è possibile rifiutare proposte a mercato chiuso.",
+      };
+    }
+
     const { error } = await supabase
       .from(TRADES_TABLE)
       .update({

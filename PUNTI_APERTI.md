@@ -290,24 +290,26 @@ Procedura batch eseguibile dall'Admin per effettuare il passaggio d'anno/stagion
 ---
 
 ## 📌 11. Automatizzazione Start / Stop Calciomercato
-- **Stato**: 🟡 Da Discutere & Definire
+- **Stato**: 🟢 Implementato su branch dev (Interruttore e blocco scambi/trattative attivi)
 - **Priorità**: Alta (Regolamentazione ufficiale delle sessioni di mercato)
-- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/pages/Trattative.tsx`, `src/pages/Roster.tsx`
-- **Tabelle coinvolte**: `league_settings` o configurazione stato globale
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/pages/Trattative.tsx`, `src/services/tradesService.ts`, `src/services/marketStateService.ts`
+- **Tabelle coinvolte**: `league_automation_state` (record `market_toggle`), `market_trades`
 
 ### Descrizione
-Interruttore globale controllato dall'Admin per aprire e chiudere ufficialmente le finestre temporali di calciomercato della Lega.
+Interruttore globale controllato dal Super Admin nel Centro Automazioni di Lega per aprire o chiudere ufficialmente la finestra di mercato.
 
-### Punti Chiave da Discutere con l'Utente
-1. **Regole con Mercato Chiuso**:
-   - Disabilitazione dell'invio e accettazione di nuove proposte di scambio in `/mia-squadra/trattative`.
-   - Blocco dei tagli calciatore in `/mia-squadra/roster`.
-   - I manager possono ancora visualizzare lo storico o consultare le rose, ma le azioni transazionali sono inibite con banner informativo.
-2. **Regole con Mercato Aperto**:
-   - Piena operatività per scambi di giocatori e scelte draft.
-   - Possibilità di configurare una data/ora di chiusura con countdown automatico per tutti gli utenti.
-3. **Eccezioni Admin**:
-   - L'Admin deve poter operare o forzare scambi anche a mercato chiuso in casi straordinari?
+### Funzionalità Implementate
+1. **Interruttore Pannello Admin**:
+   - Badge dinamico che diventa **Rosso ("CHIUSO")** quando il mercato è chiuso e **Verde ("APERTO")** quando è aperto.
+   - Pulsanti "Chiudi Mercato di Lega" e "Apri Mercato di Lega" collegati direttamente a Supabase con aggiornamento istantaneo del timestamp e dell'autore.
+2. **Blocco Operazioni a Mercato Chiuso**:
+   - I manager non possono inviare nuove proposte di scambio (pulsante disabilitato e alert in `Trattative.tsx` e `NewTradeModal.tsx`).
+   - I manager non possono accettare o rifiutare proposte in sospeso (pulsanti disabilitati e alert in `TradeDetailsModal.tsx`).
+   - Guardie server/service a livello di `tradesService.ts` (`createTrade`, `acceptTrade`, `rejectTrade`) che rifiutano transazioni se il mercato è chiuso.
+   - Banner informativo ben visibile in testata a `/mia-squadra/trattative` per comunicare la chiusura della sessione a tutti i manager.
+3. **Punti Futuri per Ulteriori Estensioni**:
+   - Possibilità di impostare data/ora di chiusura automatica con countdown per tutti gli utenti.
+   - Eventuale blocco dei tagli calciatore in `/mia-squadra/roster` se previsto dal regolamento.
 
 ---
 

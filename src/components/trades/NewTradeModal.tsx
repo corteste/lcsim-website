@@ -41,6 +41,7 @@ import { toast } from "sonner";
 
 interface NewTradeModalProps {
   open: boolean;
+  isMarketOpen?: boolean;
   onOpenChange: (open: boolean) => void;
   onTradeCreated: () => void;
   counterOfferTrade?: EnrichedTrade | null;
@@ -51,6 +52,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
   onOpenChange,
   onTradeCreated,
   counterOfferTrade,
+  isMarketOpen = true,
 }) => {
   const { user, isAdmin, effectiveTeam, availableTeams } = useAuth();
   const currentTeam = user?.team || effectiveTeam;
@@ -627,6 +629,12 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
         </div>
 
         {/* Footer: Note & Submit */}
+        {!isMarketOpen && !isAdmin && (
+          <div className="px-4 py-2.5 bg-rose-500/10 border-t border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>Calciomercato Chiuso dalla Lega: l'invio di nuove proposte di scambio è al momento sospeso.</span>
+          </div>
+        )}
         <div className="p-4 border-t border-border/70 bg-muted/20 flex flex-col sm:flex-row items-center gap-3">
           <div className="flex-1 w-full">
             <Input
@@ -650,7 +658,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
             <Button
               type="button"
               size="sm"
-              disabled={!isParityValid || !targetTeam || submitting}
+              disabled={!isParityValid || !targetTeam || submitting || (!isMarketOpen && !isAdmin)}
               onClick={handleSendProposal}
               className="text-xs font-black bg-blue-600 hover:bg-blue-500 text-white px-5"
             >

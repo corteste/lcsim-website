@@ -38,6 +38,7 @@ import { toast } from "sonner";
 
 interface TradeDetailsModalProps {
   open: boolean;
+  isMarketOpen?: boolean;
   onOpenChange: (open: boolean) => void;
   trade: EnrichedTrade | null;
   onTradeUpdated: () => void;
@@ -50,6 +51,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
   trade,
   onTradeUpdated,
   onOpenCounterOffer,
+  isMarketOpen = true,
 }) => {
   const { user, isAdmin, effectiveTeam } = useAuth();
   const currentTeam = user?.team || effectiveTeam;
@@ -387,6 +389,12 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
         </div>
 
         {/* Footer Actions */}
+        {!isMarketOpen && !isAdmin && isReceiver && trade.status === "pending" && (
+          <div className="px-4 py-2 bg-rose-500/10 border-t border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>Calciomercato Chiuso dalla Lega: accettazione e rifiuto delle proposte sono bloccati.</span>
+          </div>
+        )}
         <div className="p-4 border-t border-border/70 bg-muted/20 flex flex-wrap items-center justify-between gap-2">
           <Button
             type="button"
@@ -406,7 +414,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={handleReject}
-                  disabled={actionLoading}
+                  disabled={actionLoading || (!isMarketOpen && !isAdmin)}
                   className="h-8 text-xs text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
                 >
                   <XCircle className="h-3.5 w-3.5 mr-1" /> Rifiuta
@@ -419,7 +427,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
                       onOpenChange(false);
                       onOpenCounterOffer(trade);
                     }}
-                    disabled={actionLoading}
+                    disabled={actionLoading || (!isMarketOpen && !isAdmin)}
                     className="h-8 text-xs text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
                   >
                     <RotateCcw className="h-3.5 w-3.5 mr-1" /> Controproposta
@@ -428,7 +436,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
                 <Button
                   size="sm"
                   onClick={handleAccept}
-                  disabled={actionLoading}
+                  disabled={actionLoading || (!isMarketOpen && !isAdmin)}
                   className="h-8 text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Accetta Proposta

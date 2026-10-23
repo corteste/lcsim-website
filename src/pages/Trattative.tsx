@@ -20,6 +20,7 @@ import {
   AlertCircle,
   RefreshCw,
   ExternalLink,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -31,6 +32,7 @@ import {
   adminRejectTrade,
 } from "@/services/tradesService";
 import { EnrichedTrade, TRADE_STATUS_CONFIG } from "@/types/trades";
+import { getMarketState } from "@/services/marketStateService";
 import { NewTradeModal } from "@/components/trades/NewTradeModal";
 import { TradeDetailsModal } from "@/components/trades/TradeDetailsModal";
 import { Link } from "react-router-dom";
@@ -45,6 +47,7 @@ export default function Trattative() {
   const [completedTradesList, setCompletedTradesList] = useState<EnrichedTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isMarketOpen, setIsMarketOpen] = useState(true);
 
   // Modals state
   const [newModalOpen, setNewModalOpen] = useState(false);
@@ -58,14 +61,16 @@ export default function Trattative() {
       return;
     }
     setLoading(true);
-    const [teamTrades, pendingAdmin, completed] = await Promise.all([
+    const [teamTrades, pendingAdmin, completed, marketState] = await Promise.all([
       user.team ? fetchTeamTrades(user.team) : Promise.resolve([]),
       isAdmin ? fetchAdminPendingTrades() : Promise.resolve([]),
       fetchCompletedTrades(),
+      getMarketState(),
     ]);
     setTrades(teamTrades);
     setAdminPendingTrades(pendingAdmin);
     setCompletedTradesList(completed);
+    setIsMarketOpen(marketState.isOpen);
     setLoading(false);
   };
 
@@ -188,6 +193,17 @@ export default function Trattative() {
                       Super Admin di Lega
                     </Badge>
                   )}
+                  <Badge
+                    variant="outline"
+                    className={
+                      isMarketOpen
+                        ? "text-[10px] font-bold border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 flex items-center gap-1.5 uppercase font-mono"
+                        : "text-[10px] font-bold border-rose-500/40 text-rose-600 dark:text-rose-400 bg-rose-500/10 flex items-center gap-1.5 uppercase font-mono"
+                    }
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${isMarketOpen ? "bg-emerald-500" : "bg-rose-500 animate-pulse"}`} />
+                    Mercato {isMarketOpen ? "Aperto" : "Chiuso"}
+                  </Badge>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-black tracking-tight">
                   {isAdmin ? "Pannello Convalida & Controllo Scambi" : "Trattative & Proposte di Scambio"}
@@ -216,10 +232,22 @@ export default function Trattative() {
               {user ? (
                 <Button
                   size="sm"
-                  onClick={handleOpenNewTrade}
-                  className="h-10 text-xs font-black bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 px-4"
+                  onClick={() => {
+                    if (!isMarketOpen && !isAdmin) {
+                      toast.error("Il Calciomercato è attualmente chiuso dalla Lega. Non è possibile creare nuove proposte.");
+                      return;
+                    }
+                    handleOpenNewTrade();
+                  }}
+                  disabled={!isMarketOpen && !isAdmin}
+                  className={`h-10 text-xs font-black px-4 ${
+                    !isMarketOpen && !isAdmin
+                      ? "opacity-60 cursor-not-allowed bg-muted text-muted-foreground border border-border"
+                      : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                  }`}
+                  title={!isMarketOpen && !isAdmin ? "Calciomercato chiuso dalla Lega" : "Crea una nuova proposta di scambio"}
                 >
-                  <Plus className="h-4 w-4 mr-1.5" />
+                  {!isMarketOpen && !isAdmin ? <Lock className="h-4 w-4 mr-1.5" /> : <Plus className="h-4 w-4 mr-1.5" />}
                   Nuova Proposta
                 </Button>
               ) : (
@@ -285,9 +313,18 @@ export default function Trattative() {
                       Stato Mercato
                     </span>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs font-black text-emerald-500 uppercase">Aperto</span>
-                      <Badge variant="outline" className="text-[10px] font-mono">
-                        Sessione S11
+                      <span className={`text-xs font-black uppercase ${isMarketOpen ? "text-emerald-500" : "text-rose-500"}`}>
+                        {isMarketOpen ? "Aperto" : "Chiuso"}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          isMarketOpen
+                            ? "text-[10px] font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                            : "text-[10px] font-mono border-rose-500/30 text-rose-600 dark:text-rose-400 bg-rose-500/10 font-bold"
+                        }
+                      >
+                        {isMarketOpen ? "Sessione S11" : "Bloccato"}
                       </Badge>
                     </div>
                   </div>
@@ -347,6 +384,21 @@ export default function Trattative() {
             </div>
           )}
         </div>
+
+        {/* Banner Avviso Calciomercato Chiuso */}
+        {!isMarketOpen && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 flex items-start sm:items-center gap-3.5 shadow-sm">
+            <div className="h-10 w-10 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30">
+              <Lock className="h-5 w-5" />
+            </div>
+            <div className="text-xs leading-relaxed">
+              <strong className="font-extrabold text-sm block text-rose-600 dark:text-rose-400 mb-0.5">
+                Finestra di Calciomercato Chiusa dalla Lega
+              </strong>
+              La sessione di calciomercato è attualmente chiusa: l'invio di nuove proposte e l'accettazione o il rifiuto delle trattative sono sospesi per tutti i club. Le società possono comunque consultare lo storico e le schede delle trattative.
+            </div>
+          </div>
+        )}
 
         {/* TABS TRATTATIVE */}
         {!user ? (
@@ -487,9 +539,21 @@ export default function Trattative() {
                     </div>
                     <Button
                       size="sm"
-                      onClick={handleOpenNewTrade}
-                      className="mt-3 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white"
+                      onClick={() => {
+                        if (!isMarketOpen && !isAdmin) {
+                          toast.error("Il Calciomercato è attualmente chiuso dalla Lega.");
+                          return;
+                        }
+                        handleOpenNewTrade();
+                      }}
+                      disabled={!isMarketOpen && !isAdmin}
+                      className={`mt-3 text-xs font-bold ${
+                        !isMarketOpen && !isAdmin
+                          ? "opacity-60 cursor-not-allowed bg-muted text-muted-foreground border border-border"
+                          : "bg-blue-600 hover:bg-blue-500 text-white"
+                      }`}
                     >
+                      {!isMarketOpen && !isAdmin ? <Lock className="h-3.5 w-3.5 mr-1" /> : null}
                       Crea Proposta
                     </Button>
                   </div>
@@ -541,6 +605,7 @@ export default function Trattative() {
         onOpenChange={setNewModalOpen}
         onTradeCreated={loadData}
         counterOfferTrade={counterOfferSource}
+        isMarketOpen={isMarketOpen}
       />
 
       {/* TRADE DETAILS / NEGOTIATION MODAL */}
@@ -550,6 +615,7 @@ export default function Trattative() {
         trade={selectedTrade}
         onTradeUpdated={loadData}
         onOpenCounterOffer={handleOpenCounterOffer}
+        isMarketOpen={isMarketOpen}
       />
     </div>
   );
