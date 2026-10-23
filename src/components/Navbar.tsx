@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   ChevronDown,
   Menu,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -122,6 +123,13 @@ const Navbar = () => {
       icon: Sparkles,
       colorClass: "text-amber-500",
     },
+    {
+      path: "/mercato/scambi",
+      label: "Bacheca Scambi",
+      description: "Ufficialità e operazioni approvate dalla Lega",
+      icon: ArrowLeftRight,
+      colorClass: "text-emerald-500",
+    },
   ];
 
   // 4. SEZIONE ARCHIVIO
@@ -178,6 +186,13 @@ const Navbar = () => {
       description: "Duello statistiche tra la tua rosa e i prospetti",
       icon: Swords,
       colorClass: "text-orange-500",
+    },
+    {
+      path: "/mia-squadra/trattative",
+      label: "Trattative & Scambi",
+      description: "Proposte segrete, offerte e storico",
+      icon: ArrowLeftRight,
+      colorClass: "text-rose-500",
     },
   ];
 

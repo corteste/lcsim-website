@@ -75,18 +75,15 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 - **Moduli coinvolti**: Navbar (Badge notifiche), Nuova sezione Posta/Messaggi (`/inbox` o `/mercato/scambi`), Bacheca Comunicazioni Admin
 
 ### 2.1 Modulo Proposte di Scambio Giocatori (Market Trades)
-- **Obiettivo**: Permettere ai manager delle squadre di formulare, negoziare, accettare o rifiutare scambi di calciatori direttamente dalla piattaforma web.
-- **Funzionalità chiave**:
-  - **Composizione Scambio**: Selezione squadra destinataria, selezione di uno o più giocatori offerti (dalla propria rosa), selezione di uno o più giocatori richiesti (dalla rosa avversaria), eventuale conguaglio crediti/budget e messaggio testuale di accompagnamento.
-  - **Workflow di Trattativa**:
-    - *In Attesa (Pending)*: Notifica immediata al destinatario.
-    - *Accetta (Accepted)*: Lo scambio viene approvato. Possibilità di esecuzione automatica (scambio `Squadra` dei giocatori in `an_player`) o validazione finale dell'Admin di Lega.
-    - *Rifiuta (Rejected)*: Possibilità di indicare una motivazione.
-    - *Controproposta (Counter-offer)*: Crea una nuova versione invertita con modifiche ai giocatori o crediti.
-    - *Annulla (Cancelled)*: Il mittente può ritirare la proposta finché non è stata accettata.
-  - **Tabelle Supabase suggerite**:
-    - `market_trades` (`id`, `sender_team`, `receiver_team`, `offered_player_ids`, `requested_player_ids`, `offered_credits`, `requested_credits`, `status`, `notes`, `created_at`, `updated_at`, `expires_at`).
-    - `trade_messages` (`id`, `trade_id`, `sender_team`, `content`, `created_at`, `is_read`).
+- **Stato**: 🟢 Implementato su branch `dev` (Pronto per test)
+- **Funzionalità completate**:
+  - **Area Riservata**: `/mia-squadra/trattative` (proposte segrete, ricevute, inviate, storico e thread negoziazione).
+  - **Bacheca Pubblica Ufficiale**: `/mercato/scambi` (riepilogo pubblico scambi convalidati dalla Lega).
+  - **Asset Supportati**: Calciatori in rosa (`an_player`) e Scelte del Draft (`an_draft_board`).
+  - **Regola di Parità Asset**: Controllo ferreo frontend/backend: $N$ asset ceduti $\iff N$ asset ricevuti (1:1, 2:2, ecc.).
+  - **Workflow di Trattativa Completo**: Invio, Notifiche ricevute, Accetta $\to$ stato `pending_admin`, Rifiuta con motivazione, Controproposta automatica invertita, Ritiro/Annullamento del mittente.
+  - **Pannello Convalida Admin**: Approvazione ufficiale con trasferimento atomico dei giocatori in `an_player` e delle scelte in `an_draft_board`.
+  - **Script SQL Migrazione**: `supabase/migrations/20261023_market_trades.sql` con tabelle `market_trades`, `trade_messages`, indici, RLS e funzione atomica `rpc_execute_trade`.
 
 ### 2.2 Modulo Comunicazioni Ufficiali Admin (Broadcast & Bacheca Lega)
 - **Obiettivo**: Consentire agli Admin di trasmettere annunci, avvisi di sistema, scadenze di mercato o decisioni del giudice sportivo a tutte le squadre contemporaneamente.
