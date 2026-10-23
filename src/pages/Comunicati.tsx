@@ -82,6 +82,9 @@ export default function Comunicati() {
 
   useEffect(() => {
     loadData();
+    const handleSync = () => loadData();
+    window.addEventListener("lcsim-notifications-updated", handleSync);
+    return () => window.removeEventListener("lcsim-notifications-updated", handleSync);
   }, [userKey]);
 
   const unreadList = useMemo(

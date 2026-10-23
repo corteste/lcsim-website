@@ -11,6 +11,11 @@ const READS_TABLE = "announcement_reads";
 const LOCAL_READ_ANNOUNCEMENTS_KEY = "lcsim_read_announcements";
 const LOCAL_DISMISSED_BANNERS_KEY = "lcsim_dismissed_banners";
 const LOCAL_READ_NOTIFICATIONS_KEY = "lcsim_read_notifications";
+const LOCAL_DELETED_NOTIFICATIONS_KEY = "lcsim_deleted_notifications";
+
+function getScopedKey(baseKey: string, userKey?: string): string {
+  return userKey ? `${baseKey}_${userKey}` : baseKey;
+}
 
 function getLocalSet(key: string): Set<string> {
   try {
@@ -40,16 +45,55 @@ export function dismissBannerLocally(announcementId: string) {
   saveLocalSet(LOCAL_DISMISSED_BANNERS_KEY, set);
 }
 
-export function markNotificationIdReadLocally(notifId: string) {
-  const set = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
+export function markNotificationIdReadLocally(notifId: string, userKey?: string) {
+  const scopedKey = getScopedKey(LOCAL_READ_NOTIFICATIONS_KEY, userKey);
+  const set = getLocalSet(scopedKey);
   set.add(notifId);
-  saveLocalSet(LOCAL_READ_NOTIFICATIONS_KEY, set);
+  saveLocalSet(scopedKey, set);
+
+  // Salva anche nella chiave globale per sicurezza
+  const globalSet = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
+  globalSet.add(notifId);
+  saveLocalSet(LOCAL_READ_NOTIFICATIONS_KEY, globalSet);
 }
 
-export function markMultipleNotificationIdsReadLocally(notifIds: string[]) {
-  const set = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
+export function markMultipleNotificationIdsReadLocally(notifIds: string[], userKey?: string) {
+  const scopedKey = getScopedKey(LOCAL_READ_NOTIFICATIONS_KEY, userKey);
+  const set = getLocalSet(scopedKey);
   notifIds.forEach((id) => set.add(id));
-  saveLocalSet(LOCAL_READ_NOTIFICATIONS_KEY, set);
+  saveLocalSet(scopedKey, set);
+
+  const globalSet = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
+  notifIds.forEach((id) => globalSet.add(id));
+  saveLocalSet(LOCAL_READ_NOTIFICATIONS_KEY, globalSet);
+}
+
+/**
+ * Elimina/nasconde definitivamente una notifica dal Centro Notifiche dell'utente.
+ */
+export function deleteNotificationLocally(notifId: string, userKey?: string) {
+  const scopedKey = getScopedKey(LOCAL_DELETED_NOTIFICATIONS_KEY, userKey);
+  const set = getLocalSet(scopedKey);
+  set.add(notifId);
+  saveLocalSet(scopedKey, set);
+
+  const globalSet = getLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY);
+  globalSet.add(notifId);
+  saveLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY, globalSet);
+}
+
+/**
+ * Elimina più notifiche contemporaneamente dal Centro Notifiche.
+ */
+export function deleteMultipleNotificationsLocally(notifIds: string[], userKey?: string) {
+  const scopedKey = getScopedKey(LOCAL_DELETED_NOTIFICATIONS_KEY, userKey);
+  const set = getLocalSet(scopedKey);
+  notifIds.forEach((id) => set.add(id));
+  saveLocalSet(scopedKey, set);
+
+  const globalSet = getLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY);
+  notifIds.forEach((id) => globalSet.add(id));
+  saveLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY, globalSet);
 }
 
 /**
@@ -68,7 +112,8 @@ export async function fetchAnnouncements(userKey?: string): Promise<LeagueAnnoun
       return [];
     }
 
-    const localReadSet = getLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY);
+    const scopedReadSet = getLocalSet(getScopedKey(LOCAL_READ_ANNOUNCEMENTS_KEY, userKey));
+    const globalReadSet = getLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY);
     const dbReadSet = new Set<string>();
 
     if (userKey) {
@@ -91,7 +136,10 @@ export async function fetchAnnouncements(userKey?: string): Promise<LeagueAnnoun
       author_name: item.author_name || "Commissione Lega LCSIM",
       created_at: item.created_at,
       expires_at: item.expires_at,
-      is_read: dbReadSet.has(item.id) || localReadSet.has(item.id),
+      is_read:
+        dbReadSet.has(item.id) ||
+        scopedReadSet.has(item.id) ||
+        globalReadSet.has(item.id),
     }));
   } catch (err) {
     console.error("fetchAnnouncements exception:", err);
@@ -106,10 +154,16 @@ export async function markAnnouncementAsRead(
   announcementId: string,
   userKey?: string
 ): Promise<void> {
+  const scopedKey = getScopedKey(LOCAL_READ_ANNOUNCEMENTS_KEY, userKey);
+  const scopedSet = getLocalSet(scopedKey);
+  scopedSet.add(announcementId);
+  saveLocalSet(scopedKey, scopedSet);
+
   const localSet = getLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY);
   localSet.add(announcementId);
   saveLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY, localSet);
-  markNotificationIdReadLocally(`ann_${announcementId}`);
+
+  markNotificationIdReadLocally(`ann_${announcementId}`, userKey);
 
   if (userKey) {
     try {
@@ -136,10 +190,19 @@ export async function markAllAnnouncementsAsRead(
 ): Promise<void> {
   if (announcementIds.length === 0) return;
 
+  const scopedKey = getScopedKey(LOCAL_READ_ANNOUNCEMENTS_KEY, userKey);
+  const scopedSet = getLocalSet(scopedKey);
+  announcementIds.forEach((id) => scopedSet.add(id));
+  saveLocalSet(scopedKey, scopedSet);
+
   const localSet = getLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY);
   announcementIds.forEach((id) => localSet.add(id));
   saveLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY, localSet);
-  markMultipleNotificationIdsReadLocally(announcementIds.map((id) => `ann_${id}`));
+
+  markMultipleNotificationIdsReadLocally(
+    announcementIds.map((id) => `ann_${id}`),
+    userKey
+  );
 
   if (userKey) {
     try {
@@ -229,12 +292,8 @@ export async function deleteAnnouncement(
 }
 
 /**
- * Costruisce il feed unificato di notifiche per la Campana nella Navbar:
- * - Comunicati Lega non letti (e recenti)
- * - Proposte di scambio ricevute (per i manager)
- * - Aggiornamenti di stato sugli scambi (accettati, approvati, rifiutati)
- * - Nuovi messaggi nella chat delle trattative
- * - Scambi da convalidare (per l'Admin)
+ * Costruisce il feed unificato di notifiche per la Campana nella Navbar,
+ * escludendo quelle eliminate dall'utente.
  */
 export async function fetchUnifiedNotifications(params: {
   userKey?: string;
@@ -242,15 +301,24 @@ export async function fetchUnifiedNotifications(params: {
   isAdmin?: boolean;
 }): Promise<AppNotification[]> {
   const { userKey, userTeam, isAdmin } = params;
-  const localReadNotifs = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
+  const scopedReadNotifs = getLocalSet(getScopedKey(LOCAL_READ_NOTIFICATIONS_KEY, userKey));
+  const globalReadNotifs = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
+  const scopedDeletedNotifs = getLocalSet(getScopedKey(LOCAL_DELETED_NOTIFICATIONS_KEY, userKey));
+  const globalDeletedNotifs = getLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY);
+
+  const isDeleted = (id: string) => scopedDeletedNotifs.has(id) || globalDeletedNotifs.has(id);
+  const isRead = (id: string) => scopedReadNotifs.has(id) || globalReadNotifs.has(id);
+
   const notifications: AppNotification[] = [];
 
   try {
     // 1. Comunicati Lega
     const announcements = await fetchAnnouncements(userKey);
-    announcements.slice(0, 12).forEach((ann) => {
+    announcements.slice(0, 15).forEach((ann) => {
       const notifId = `ann_${ann.id}`;
-      const isUnread = !ann.is_read && !localReadNotifs.has(notifId);
+      if (isDeleted(notifId)) return;
+
+      const unread = !ann.is_read && !isRead(notifId);
       notifications.push({
         id: notifId,
         type: "announcement",
@@ -258,7 +326,7 @@ export async function fetchUnifiedNotifications(params: {
         description: ann.content.length > 90 ? ann.content.slice(0, 90) + "..." : ann.content,
         timestamp: ann.created_at,
         link: "/comunicati",
-        isUnread,
+        isUnread: unread,
         priority: ann.priority,
         announcementId: ann.id,
       });
@@ -275,6 +343,8 @@ export async function fetchUnifiedNotifications(params: {
 
       (adminTrades || []).forEach((t: any) => {
         const notifId = `admin_trade_${t.id}_${t.status}`;
+        if (isDeleted(notifId)) return;
+
         const isPendingAdmin = t.status === "pending_admin";
         notifications.push({
           id: notifId,
@@ -287,7 +357,7 @@ export async function fetchUnifiedNotifications(params: {
             : "Trattativa aperta tra i due club. Clicca per supervisionare o convalidare.",
           timestamp: t.updated_at || t.created_at,
           link: "/mia-squadra/trattative",
-          isUnread: !localReadNotifs.has(notifId),
+          isUnread: !isRead(notifId),
           priority: isPendingAdmin ? "urgent" : "high",
           tradeId: t.id,
         });
@@ -311,53 +381,57 @@ export async function fetchUnifiedNotifications(params: {
         // a. Nuova proposta ricevuta in attesa
         if (t.receiver_team === userTeam && t.status === "pending") {
           const notifId = `trade_recv_${t.id}`;
-          notifications.push({
-            id: notifId,
-            type: "trade_received",
-            title: `📥 Nuova Offerta di Scambio da ${t.sender_team}`,
-            description: `${t.sender_team} ti ha inviato una proposta per ${(t.offered_player_ids?.length || 0) + (t.offered_pick_numbers?.length || 0)} asset.`,
-            timestamp: t.created_at,
-            link: "/mia-squadra/trattative",
-            isUnread: !localReadNotifs.has(notifId),
-            priority: "high",
-            tradeId: t.id,
-          });
+          if (!isDeleted(notifId)) {
+            notifications.push({
+              id: notifId,
+              type: "trade_received",
+              title: `📥 Nuova Offerta di Scambio da ${t.sender_team}`,
+              description: `${t.sender_team} ti ha inviato una proposta per ${(t.offered_player_ids?.length || 0) + (t.offered_pick_numbers?.length || 0)} asset.`,
+              timestamp: t.created_at,
+              link: "/mia-squadra/trattative",
+              isUnread: !isRead(notifId),
+              priority: "high",
+              tradeId: t.id,
+            });
+          }
         }
 
         // b. Aggiornamento stato scambio (pending_admin, completed, rejected, admin_rejected)
         if (t.status !== "pending" && t.status !== "cancelled") {
           const notifId = `trade_status_${t.id}_${t.status}`;
-          let statusTitle = "";
-          let statusDesc = "";
+          if (!isDeleted(notifId)) {
+            let statusTitle = "";
+            let statusDesc = "";
 
-          if (t.status === "pending_admin") {
-            statusTitle = `🤝 Accordo Raggiunto (${t.sender_team} ↔ ${t.receiver_team})`;
-            statusDesc = "In attesa di convalida finale da parte dell'Admin di Lega.";
-          } else if (t.status === "completed") {
-            statusTitle = `🏆 Scambio Ufficiale Approvato (${t.sender_team} ↔ ${t.receiver_team})`;
-            statusDesc = "La Lega ha registrato il trasferimento! Rose e scelte aggiornate.";
-          } else if (t.status === "rejected" && t.sender_team === userTeam) {
-            statusTitle = `❌ Offerta Rifiutata da ${t.receiver_team}`;
-            statusDesc = t.rejection_reason
-              ? `Motivo: "${t.rejection_reason}"`
-              : "La società destinataria ha declinato la proposta.";
-          } else if (t.status === "admin_rejected") {
-            statusTitle = `⛔ Scambio Respinto dalla Lega (${t.sender_team} ↔ ${t.receiver_team})`;
-            statusDesc = t.rejection_reason || "Non convalidato dalla Commissione Tecnica.";
-          }
+            if (t.status === "pending_admin") {
+              statusTitle = `🤝 Accordo Raggiunto (${t.sender_team} ↔ ${t.receiver_team})`;
+              statusDesc = "In attesa di convalida finale da parte dell'Admin di Lega.";
+            } else if (t.status === "completed") {
+              statusTitle = `🏆 Scambio Ufficiale Approvato (${t.sender_team} ↔ ${t.receiver_team})`;
+              statusDesc = "La Lega ha registrato il trasferimento! Rose e scelte aggiornate.";
+            } else if (t.status === "rejected" && t.sender_team === userTeam) {
+              statusTitle = `❌ Offerta Rifiutata da ${t.receiver_team}`;
+              statusDesc = t.rejection_reason
+                ? `Motivo: "${t.rejection_reason}"`
+                : "La società destinataria ha declinato la proposta.";
+            } else if (t.status === "admin_rejected") {
+              statusTitle = `⛔ Scambio Respinto dalla Lega (${t.sender_team} ↔ ${t.receiver_team})`;
+              statusDesc = t.rejection_reason || "Non convalidato dalla Commissione Tecnica.";
+            }
 
-          if (statusTitle) {
-            notifications.push({
-              id: notifId,
-              type: "trade_status",
-              title: statusTitle,
-              description: statusDesc,
-              timestamp: t.completed_at || t.updated_at || t.created_at,
-              link: "/mia-squadra/trattative",
-              isUnread: !localReadNotifs.has(notifId),
-              priority: t.status === "completed" ? "high" : "normal",
-              tradeId: t.id,
-            });
+            if (statusTitle) {
+              notifications.push({
+                id: notifId,
+                type: "trade_status",
+                title: statusTitle,
+                description: statusDesc,
+                timestamp: t.completed_at || t.updated_at || t.created_at,
+                link: "/mia-squadra/trattative",
+                isUnread: !isRead(notifId),
+                priority: t.status === "completed" ? "high" : "normal",
+                tradeId: t.id,
+              });
+            }
           }
         }
       });
@@ -374,6 +448,8 @@ export async function fetchUnifiedNotifications(params: {
 
         (msgs || []).forEach((m: any) => {
           const notifId = `trade_msg_${m.id}`;
+          if (isDeleted(notifId)) return;
+
           notifications.push({
             id: notifId,
             type: "trade_message",
@@ -381,7 +457,7 @@ export async function fetchUnifiedNotifications(params: {
             description: m.message.length > 80 ? m.message.slice(0, 80) + "..." : m.message,
             timestamp: m.created_at,
             link: "/mia-squadra/trattative",
-            isUnread: !localReadNotifs.has(notifId),
+            isUnread: !isRead(notifId),
             priority: "normal",
             tradeId: m.trade_id,
           });
@@ -389,7 +465,6 @@ export async function fetchUnifiedNotifications(params: {
       }
     }
 
-    // Ordina per non lette prima e poi per timestamp decrescente
     return notifications.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );

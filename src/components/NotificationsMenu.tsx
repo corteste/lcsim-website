@@ -9,6 +9,8 @@ import {
   CheckCheck,
   ExternalLink,
   Clock,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +28,8 @@ import {
   markAllAnnouncementsAsRead,
   markNotificationIdReadLocally,
   markMultipleNotificationIdsReadLocally,
+  deleteNotificationLocally,
+  deleteMultipleNotificationsLocally,
 } from "@/services/announcementsService";
 import { AppNotification } from "@/types/announcements";
 import { toast } from "sonner";
@@ -90,7 +94,6 @@ export const NotificationsMenu: React.FC = () => {
       )
       .subscribe();
 
-    // Listen to custom local event when user reads announcements on /comunicati
     const handleSync = () => loadNotifications();
     window.addEventListener("lcsim-notifications-updated", handleSync);
 
@@ -102,21 +105,43 @@ export const NotificationsMenu: React.FC = () => {
 
   const unreadCount = notifications.filter((n) => n.isUnread).length;
 
+  // Clic su una notifica: segna immediatamente come letta e naviga
   const handleNotificationClick = async (notif: AppNotification) => {
-    markNotificationIdReadLocally(notif.id);
-    if (notif.announcementId) {
-      await markAnnouncementAsRead(notif.announcementId, userKey);
-    }
+    markNotificationIdReadLocally(notif.id, userKey);
     setNotifications((prev) =>
       prev.map((n) => (n.id === notif.id ? { ...n, isUnread: false } : n))
     );
+
+    if (notif.announcementId) {
+      await markAnnouncementAsRead(notif.announcementId, userKey);
+    }
+
+    window.dispatchEvent(new Event("lcsim-notifications-updated"));
     setOpen(false);
     navigate(notif.link);
   };
 
+  // Elimina una singola notifica dal Centro Notifiche
+  const handleDeleteNotification = async (
+    e: React.MouseEvent,
+    notif: AppNotification
+  ) => {
+    e.stopPropagation();
+    deleteNotificationLocally(notif.id, userKey);
+    markNotificationIdReadLocally(notif.id, userKey);
+
+    if (notif.announcementId) {
+      await markAnnouncementAsRead(notif.announcementId, userKey);
+    }
+
+    setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+    window.dispatchEvent(new Event("lcsim-notifications-updated"));
+  };
+
+  // Segna tutte come lette
   const handleMarkAllRead = async () => {
     const allIds = notifications.map((n) => n.id);
-    markMultipleNotificationIdsReadLocally(allIds);
+    markMultipleNotificationIdsReadLocally(allIds, userKey);
 
     const announcementIds = notifications
       .filter((n) => n.announcementId)
@@ -129,6 +154,25 @@ export const NotificationsMenu: React.FC = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isUnread: false })));
     window.dispatchEvent(new Event("lcsim-notifications-updated"));
     toast.success("Tutte le notifiche sono state segnate come lette.");
+  };
+
+  // Svuota / elimina tutte le notifiche presenti nel Centro Notifiche
+  const handleClearAllNotifications = async () => {
+    const allIds = notifications.map((n) => n.id);
+    deleteMultipleNotificationsLocally(allIds, userKey);
+    markMultipleNotificationIdsReadLocally(allIds, userKey);
+
+    const announcementIds = notifications
+      .filter((n) => n.announcementId)
+      .map((n) => n.announcementId!);
+
+    if (announcementIds.length > 0) {
+      await markAllAnnouncementsAsRead(announcementIds, userKey);
+    }
+
+    setNotifications([]);
+    window.dispatchEvent(new Event("lcsim-notifications-updated"));
+    toast.info("Centro notifiche svuotato.");
   };
 
   const getIcon = (type: AppNotification["type"]) => {
@@ -170,27 +214,41 @@ export const NotificationsMenu: React.FC = () => {
         className="w-80 sm:w-96 p-0 bg-card/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-2xl overflow-hidden z-50"
       >
         {/* Header */}
-        <div className="p-3.5 border-b border-border/70 bg-muted/30 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-emerald-500" />
-            <span className="text-xs font-black tracking-tight">Centro Notifiche</span>
+        <div className="p-3 border-b border-border/70 bg-muted/30 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Bell className="h-4 w-4 text-emerald-500 shrink-0" />
+            <span className="text-xs font-black tracking-tight truncate">Centro Notifiche</span>
             {unreadCount > 0 && (
-              <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-[10px] font-mono px-1.5 py-0">
+              <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-[10px] font-mono px-1.5 py-0 shrink-0">
                 {unreadCount} nuove
               </Badge>
             )}
           </div>
 
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllRead}
-              className="h-6 px-2 text-[10px] font-bold text-muted-foreground hover:text-foreground"
-            >
-              <CheckCheck className="h-3 w-3 mr-1" /> Segna lette
-            </Button>
-          )}
+          <div className="flex items-center gap-1 shrink-0">
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleMarkAllRead}
+                title="Segna tutte come lette"
+                className="h-6 px-2 text-[10px] font-bold text-muted-foreground hover:text-foreground"
+              >
+                <CheckCheck className="h-3 w-3 mr-1" /> Lette
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAllNotifications}
+                title="Elimina tutte le notifiche dalla lista"
+                className="h-6 px-2 text-[10px] font-bold text-rose-600/80 hover:text-rose-600 hover:bg-rose-500/10"
+              >
+                <Trash2 className="h-3 w-3 mr-1" /> Svuota
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Notifications List */}
@@ -206,10 +264,10 @@ export const NotificationsMenu: React.FC = () => {
                 <div
                   key={notif.id}
                   onClick={() => handleNotificationClick(notif)}
-                  className={`p-3 flex items-start gap-3 cursor-pointer transition-colors ${
+                  className={`group p-3 flex items-start gap-3 cursor-pointer transition-colors ${
                     notif.isUnread
-                      ? "bg-emerald-500/5 hover:bg-emerald-500/10"
-                      : "hover:bg-muted/50 opacity-80"
+                      ? "bg-emerald-500/10 hover:bg-emerald-500/15"
+                      : "hover:bg-muted/50 opacity-75"
                   }`}
                 >
                   <div className="mt-0.5 h-8 w-8 rounded-lg bg-muted/80 border border-border/60 flex items-center justify-center shrink-0">
@@ -220,27 +278,47 @@ export const NotificationsMenu: React.FC = () => {
                     <div className="flex items-start justify-between gap-2">
                       <span
                         className={`text-xs leading-snug ${
-                          notif.isUnread ? "font-extrabold text-foreground" : "font-semibold text-foreground/80"
+                          notif.isUnread
+                            ? "font-extrabold text-foreground"
+                            : "font-semibold text-foreground/80"
                         }`}
                       >
                         {notif.title}
                       </span>
-                      {notif.isUnread && (
-                        <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 mt-1" />
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {notif.isUnread && (
+                          <span
+                            title="Non letta"
+                            className="h-2 w-2 rounded-full bg-emerald-500 shrink-0"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteNotification(e, notif)}
+                          title="Elimina questa notifica"
+                          className="p-1 rounded-md text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
                       {notif.description}
                     </p>
-                    <div className="flex items-center gap-1.5 mt-1 text-[10px] font-mono text-muted-foreground/80">
-                      <Clock className="h-2.5 w-2.5" />
-                      <span>
-                        {new Date(notif.timestamp).toLocaleDateString("it-IT", {
-                          day: "2-digit",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                    <div className="flex items-center justify-between mt-1 text-[10px] font-mono text-muted-foreground/80">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5" />
+                        <span>
+                          {new Date(notif.timestamp).toLocaleDateString("it-IT", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-sans font-bold text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {notif.isUnread ? "Clicca per aprire e segnare letta →" : "Apri →"}
                       </span>
                     </div>
                   </div>
