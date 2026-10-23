@@ -6,6 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -47,6 +54,7 @@ import { Player } from "@/types/player";
 import { supabase } from "@/supabaseClient";
 import {
   PLAYER_TABLE,
+  TEAM_TABLE,
   ROOKIE_TABLE,
   ROOKIE_SCOUTING_TABLE,
 } from "@/constants/App";
@@ -61,7 +69,7 @@ import {
 } from "@/utils/scoutingConfig";
 import PlayerDetails from "@/components/player/playerDetails";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Radar,
   RadarChart,
@@ -130,6 +138,7 @@ const STAT_CATEGORIES: {
       // Calci Piazzati
       { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
       { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
+      { key: "FRED", label: "Freddezza", dept: "CPZ" },
       // Portiere
       { key: "TUFP", label: "Tuffo Portiere", dept: "POR" },
       { key: "PREP", label: "Presa Portiere", dept: "POR" },
@@ -204,6 +213,7 @@ const STAT_CATEGORIES: {
     stats: [
       { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
       { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
+      { key: "FRED", label: "Freddezza", dept: "CPZ" },
     ],
   },
   {
@@ -450,12 +460,16 @@ function getMacroPillars(player: ComparisonPlayer) {
 }
 
 const ConfrontoGiocatori = () => {
+  const location = useLocation();
+  const isTeamMode = location.pathname.startsWith("/mia-squadra");
+
   const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
   const currentTeam = effectiveTeam;
   const currentTeamFullName = effectiveTeamFullName || currentTeam;
 
   const [teamPlayers, setTeamPlayers] = useState<Player[]>([]);
   const [rookies, setRookies] = useState<Player[]>([]);
+  const [serieATeams, setSerieATeams] = useState<{ TEAM_ID: string; NAME: string }[]>([]);
   const [scoutingMap, setScoutingMap] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -466,6 +480,7 @@ const ConfrontoGiocatori = () => {
   // Player selector dialog state
   const [selectorTarget, setSelectorTarget] = useState<"left" | "right" | null>(null);
   const [selectorSource, setSelectorSource] = useState<"ALL" | "TEAM" | "ROOKIE">("ALL");
+  const [selectorTeam, setSelectorTeam] = useState<string>("ALL");
   const [selectorRole, setSelectorRole] = useState<string>("ALL");
   const [selectorSearch, setSelectorSearch] = useState<string>("");
 
@@ -475,47 +490,75 @@ const ConfrontoGiocatori = () => {
   // Active Category Tab
   const [activeTab, setActiveTab] = useState<string>("ALL");
 
-  // Load Data: user's team squad + all rookies + scouting records
+  // Load Data: user's team squad + all rookies (Team Mode) OR active Serie A players (Serie A Mode)
   const loadData = useCallback(async () => {
-    if (!currentTeam) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     try {
-      const [teamRes, rookiesRes, scoutingRes] = await Promise.all([
-        supabase
+      if (isTeamMode) {
+        if (!currentTeam) {
+          setLoading(false);
+          return;
+        }
+        const [teamRes, rookiesRes, scoutingRes] = await Promise.all([
+          supabase
+            .from(PLAYER_TABLE)
+            .select("*")
+            .eq("Squadra", currentTeam)
+            .order("OVR", { ascending: false }),
+          supabase.from(ROOKIE_TABLE).select("*").order("ID", { ascending: true }),
+          supabase
+            .from(ROOKIE_SCOUTING_TABLE)
+            .select("rookie_id, tokens_spent")
+            .eq("team_id", currentTeam),
+        ]);
+
+        if (teamRes.error) throw teamRes.error;
+        if (rookiesRes.error) throw rookiesRes.error;
+
+        const sMap: Record<number, number> = {};
+        if (scoutingRes.data) {
+          for (const row of scoutingRes.data) {
+            sMap[Number(row.rookie_id)] = Number(row.tokens_spent) || 0;
+          }
+        }
+
+        setTeamPlayers((teamRes.data as Player[]) ?? []);
+        setRookies((rookiesRes.data as Player[]) ?? []);
+        setScoutingMap(sMap);
+      } else {
+        // Modalità Serie A (/giocatori/confronto-giocatori):
+        // Carica SOLO i calciatori attivi nelle squadre di Serie A (nessun rookie)
+        const { data: teamsData, error: teamsError } = await supabase
+          .from(TEAM_TABLE)
+          .select("TEAM_ID, NAME")
+          .eq("ACTIVE", true)
+          .order("NAME", { ascending: true });
+
+        if (teamsError) throw teamsError;
+
+        const activeTeamsList = (teamsData || []) as { TEAM_ID: string; NAME: string }[];
+        setSerieATeams(activeTeamsList);
+        const activeTeamIds = activeTeamsList.map((t) => t.TEAM_ID);
+
+        const { data: playersData, error: playersError } = await supabase
           .from(PLAYER_TABLE)
           .select("*")
-          .eq("Squadra", currentTeam)
-          .order("ID", { ascending: true }),
-        supabase.from(ROOKIE_TABLE).select("*").order("ID", { ascending: true }),
-        supabase
-          .from(ROOKIE_SCOUTING_TABLE)
-          .select("rookie_id, tokens_spent")
-          .eq("team_id", currentTeam),
-      ]);
+          .in("Squadra", activeTeamIds)
+          .order("OVR", { ascending: false });
 
-      if (teamRes.error) throw teamRes.error;
-      if (rookiesRes.error) throw rookiesRes.error;
+        if (playersError) throw playersError;
 
-      const sMap: Record<number, number> = {};
-      if (scoutingRes.data) {
-        for (const row of scoutingRes.data) {
-          sMap[Number(row.rookie_id)] = Number(row.tokens_spent) || 0;
-        }
+        setTeamPlayers((playersData as Player[]) ?? []);
+        setRookies([]); // Nessun rookie in Serie A
+        setScoutingMap({});
       }
-
-      setTeamPlayers((teamRes.data as Player[]) ?? []);
-      setRookies((rookiesRes.data as Player[]) ?? []);
-      setScoutingMap(sMap);
     } catch (err) {
       console.error("Errore caricamento dati Confronto Giocatori:", err);
       toast.error("Errore durante il caricamento dei dati di confronto");
     } finally {
       setLoading(false);
     }
-  }, [currentTeam]);
+  }, [isTeamMode, currentTeam]);
 
   useEffect(() => {
     loadData();
@@ -532,38 +575,48 @@ const ConfrontoGiocatori = () => {
         uniqueKey: `player_${p.ID}`,
       });
     }
-    for (const r of rookies) {
-      list.push({
-        ...r,
-        isRookie: true,
-        scoutingTokens: scoutingMap[r.ID] ?? 0,
-        uniqueKey: `rookie_${r.ID}`,
-      });
+    if (isTeamMode) {
+      for (const r of rookies) {
+        list.push({
+          ...r,
+          isRookie: true,
+          scoutingTokens: scoutingMap[r.ID] ?? 0,
+          uniqueKey: `rookie_${r.ID}`,
+        });
+      }
     }
     return list;
-  }, [teamPlayers, rookies, scoutingMap]);
+  }, [teamPlayers, rookies, scoutingMap, isTeamMode]);
 
   // Initialize Left & Right players default selection
   useEffect(() => {
     if (availablePlayers.length > 0) {
-      if (!leftKey || !availablePlayers.some((p) => p.uniqueKey === leftKey)) {
-        // default Left to first team player if available, else first in list
-        const firstTeam = availablePlayers.find((p) => !p.isRookie);
-        setLeftKey(firstTeam ? firstTeam.uniqueKey : availablePlayers[0].uniqueKey);
-      }
-      if (!rightKey || !availablePlayers.some((p) => p.uniqueKey === rightKey)) {
-        // default Right to first rookie if available, else second player
-        const firstRookie = availablePlayers.find((p) => p.isRookie);
-        if (firstRookie) {
-          setRightKey(firstRookie.uniqueKey);
-        } else if (availablePlayers.length > 1) {
-          setRightKey(availablePlayers[1].uniqueKey);
-        } else {
-          setRightKey(availablePlayers[0].uniqueKey);
+      if (!isTeamMode) {
+        // Modalità Serie A: seleziona i primi due giocatori per OVR
+        if (!leftKey || !availablePlayers.some((p) => p.uniqueKey === leftKey)) {
+          setLeftKey(availablePlayers[0].uniqueKey);
+        }
+        if (!rightKey || !availablePlayers.some((p) => p.uniqueKey === rightKey)) {
+          setRightKey(availablePlayers[1]?.uniqueKey || availablePlayers[0].uniqueKey);
+        }
+      } else {
+        if (!leftKey || !availablePlayers.some((p) => p.uniqueKey === leftKey)) {
+          const firstTeam = availablePlayers.find((p) => !p.isRookie);
+          setLeftKey(firstTeam ? firstTeam.uniqueKey : availablePlayers[0].uniqueKey);
+        }
+        if (!rightKey || !availablePlayers.some((p) => p.uniqueKey === rightKey)) {
+          const firstRookie = availablePlayers.find((p) => p.isRookie);
+          if (firstRookie) {
+            setRightKey(firstRookie.uniqueKey);
+          } else if (availablePlayers.length > 1) {
+            setRightKey(availablePlayers[1].uniqueKey);
+          } else {
+            setRightKey(availablePlayers[0].uniqueKey);
+          }
         }
       }
     }
-  }, [availablePlayers, leftKey, rightKey]);
+  }, [availablePlayers, isTeamMode, leftKey, rightKey]);
 
   const leftPlayer = useMemo(
     () => availablePlayers.find((p) => p.uniqueKey === leftKey) ?? null,
@@ -585,9 +638,14 @@ const ConfrontoGiocatori = () => {
   // Filter candidates for Player Selector Dialog
   const dialogFilteredPlayers = useMemo(() => {
     return availablePlayers.filter((p) => {
-      // Source filter
-      if (selectorSource === "TEAM" && p.isRookie) return false;
-      if (selectorSource === "ROOKIE" && !p.isRookie) return false;
+      if (isTeamMode) {
+        // Source filter
+        if (selectorSource === "TEAM" && p.isRookie) return false;
+        if (selectorSource === "ROOKIE" && !p.isRookie) return false;
+      } else {
+        // Team filter in Serie A mode
+        if (selectorTeam !== "ALL" && p.Squadra !== selectorTeam) return false;
+      }
 
       // Role filter
       if (selectorRole !== "ALL") {
@@ -602,13 +660,14 @@ const ConfrontoGiocatori = () => {
         const q = selectorSearch.toLowerCase().trim();
         const fullName = `${p.Nome} ${p.Cognome}`.toLowerCase();
         const role = (p.Posiz || "").toLowerCase();
+        const team = (p.Squadra || "").toLowerCase();
         const num = p.NumeroMaglia ? String(p.NumeroMaglia) : "";
-        return fullName.includes(q) || role.includes(q) || num.includes(q);
+        return fullName.includes(q) || role.includes(q) || team.includes(q) || num.includes(q);
       }
 
       return true;
     });
-  }, [availablePlayers, selectorSource, selectorRole, selectorSearch]);
+  }, [availablePlayers, isTeamMode, selectorSource, selectorTeam, selectorRole, selectorSearch]);
 
   const handleSelectFromDialog = (player: ComparisonPlayer) => {
     if (selectorTarget === "left") {
@@ -649,7 +708,7 @@ const ConfrontoGiocatori = () => {
     return { winsLeft, winsRight, ties, hidden };
   }, [leftPlayer, rightPlayer, comparisonStats]);
 
-  if (!user) {
+  if (isTeamMode && !user) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -666,83 +725,147 @@ const ConfrontoGiocatori = () => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
-        <AdminTeamSelector />
-
-        {/* 1. HERO COMMAND HEADER */}
-        <Card
-          className={`overflow-hidden border border-border/80 shadow-lg ${getTeamBackground(
-            currentTeam ?? ""
-          )}`}
-        >
-          <div className="p-6 bg-gradient-to-r from-card/85 via-card/70 to-card/90 backdrop-blur-md">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-              <div className="flex items-center gap-4">
-                {currentTeam && (
-                  <img
-                    src={`/images/teams/${currentTeam}_Logo.png`}
-                    alt={`${currentTeam} Logo`}
-                    className="h-16 w-16 object-contain drop-shadow-md"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
-                    }}
-                  />
-                )}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-mono font-bold"
-                    >
-                      La Mia Squadra
-                    </Badge>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      Stagione 2026/2027
-                    </span>
+        {isTeamMode ? (
+          <>
+            <AdminTeamSelector />
+            <Card
+              className={`overflow-hidden border border-border/80 shadow-lg ${getTeamBackground(
+                currentTeam ?? ""
+              )}`}
+            >
+              <div className="p-6 bg-gradient-to-r from-card/85 via-card/70 to-card/90 backdrop-blur-md">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                  <div className="flex items-center gap-4">
+                    {currentTeam && (
+                      <img
+                        src={`/images/teams/${currentTeam}_Logo.png`}
+                        alt={`${currentTeam} Logo`}
+                        className="h-16 w-16 object-contain drop-shadow-md"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                        }}
+                      />
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-mono font-bold"
+                        >
+                          La Mia Squadra
+                        </Badge>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          Stagione 2026/2027
+                        </span>
+                      </div>
+                      <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 mt-0.5">
+                        <Swords className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-500" />
+                        Confronto Giocatori &amp; Scouting
+                      </h1>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                        Confronta testa a testa i calciatori della tua rosa ({currentTeamFullName}) con tutti i 72 Rookie del Draft.
+                      </p>
+                    </div>
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 mt-0.5">
-                    <Swords className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-500" />
-                    Confronto Giocatori &amp; Scouting
-                  </h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    Confronta testa a testa i calciatori della tua rosa ({currentTeamFullName}) con tutti i 72 Rookie del Draft.
-                  </p>
+
+                  {/* Quick Telemetry Strip */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Rosa {currentTeam}
+                      </span>
+                      <span className="text-lg sm:text-xl font-black font-mono text-foreground">
+                        {teamPlayers.length}{" "}
+                        <span className="text-xs font-normal text-muted-foreground">giocatori</span>
+                      </span>
+                    </div>
+
+                    <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Rookie Draft
+                      </span>
+                      <span className="text-lg sm:text-xl font-black font-mono text-amber-500">
+                        {rookies.length}{" "}
+                        <span className="text-xs font-normal text-muted-foreground">prospetti</span>
+                      </span>
+                    </div>
+
+                    <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Rookie Scoutati
+                      </span>
+                      <span className="text-lg sm:text-xl font-black font-mono text-emerald-500">
+                        {Object.keys(scoutingMap).length}/{rookies.length}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Quick Telemetry Strip */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Rosa {currentTeam}
-                  </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-foreground">
-                    {teamPlayers.length}{" "}
-                    <span className="text-xs font-normal text-muted-foreground">giocatori</span>
-                  </span>
+            </Card>
+          </>
+        ) : (
+          <Card className="overflow-hidden border border-border/80 shadow-lg bg-card">
+            <div className="p-6 bg-gradient-to-r from-emerald-500/[0.08] via-card to-blue-500/[0.08] backdrop-blur-md">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border-2 border-border/80 flex items-center justify-center shadow-md shrink-0">
+                    <Swords className="h-8 w-8 text-emerald-500" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-mono font-bold"
+                      >
+                        Serie A LCSIM
+                      </Badge>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        Stagione 2026/2027
+                      </span>
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 mt-0.5">
+                      Confronto Calciatori Serie A
+                    </h1>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                      Metti a confronto testa a testa i calciatori attivi delle squadre di Serie A.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Rookie Draft
-                  </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-amber-500">
-                    {rookies.length}{" "}
-                    <span className="text-xs font-normal text-muted-foreground">prospetti</span>
-                  </span>
-                </div>
+                {/* Telemetria Serie A */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      Squadre Serie A
+                    </span>
+                    <span className="text-lg sm:text-xl font-black font-mono text-foreground">
+                      12 <span className="text-xs font-normal text-muted-foreground">club</span>
+                    </span>
+                  </div>
 
-                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Rookie Scoutati
-                  </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-emerald-500">
-                    {Object.keys(scoutingMap).length}/{rookies.length}
-                  </span>
+                  <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      Calciatori Attivi
+                    </span>
+                    <span className="text-lg sm:text-xl font-black font-mono text-emerald-500">
+                      {teamPlayers.length}{" "}
+                      <span className="text-xs font-normal text-muted-foreground">atleti</span>
+                    </span>
+                  </div>
+
+                  <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      Statistiche
+                    </span>
+                    <span className="text-lg sm:text-xl font-black font-mono text-blue-500">
+                      100% <span className="text-xs font-normal text-muted-foreground">visibili</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         {loading ? (
           <Card className="p-16 text-center text-muted-foreground">
@@ -960,14 +1083,20 @@ const ConfrontoGiocatori = () => {
               {selectorTarget === "left" ? "Sinistro (Blu)" : "Destro (Verde)"}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Scegli tra i giocatori della rosa di {currentTeamFullName} o uno dei 72 Rookie del Draft.
+              {isTeamMode
+                ? `Scegli tra i giocatori della rosa di ${currentTeamFullName} o uno dei 72 Rookie del Draft.`
+                : "Scegli tra i calciatori attivi nelle squadre di Serie A."}
             </DialogDescription>
 
             {/* Search Bar */}
             <div className="relative mt-3">
               <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
-                placeholder="Cerca per nome, cognome, ruolo o #..."
+                placeholder={
+                  isTeamMode
+                    ? "Cerca per nome, cognome, ruolo o #..."
+                    : "Cerca per nome, cognome, ruolo, squadra o #..."
+                }
                 value={selectorSearch}
                 onChange={(e) => setSelectorSearch(e.target.value)}
                 className="pl-9 h-9 text-xs"
@@ -975,42 +1104,67 @@ const ConfrontoGiocatori = () => {
               />
             </div>
 
-            {/* Source Filter Tabs */}
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
-              <button
-                type="button"
-                onClick={() => setSelectorSource("ALL")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  selectorSource === "ALL"
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Tutti ({availablePlayers.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectorSource("TEAM")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  selectorSource === "TEAM"
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Rosa {currentTeam} ({teamPlayers.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectorSource("ROOKIE")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  selectorSource === "ROOKIE"
-                    ? "bg-amber-500 text-white shadow-sm"
-                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Rookies Draft ({rookies.length})
-              </button>
-            </div>
+            {/* In Team Mode: Source Filter Tabs */}
+            {isTeamMode ? (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectorSource("ALL")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    selectorSource === "ALL"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Tutti ({availablePlayers.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectorSource("TEAM")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    selectorSource === "TEAM"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Rosa {currentTeam} ({teamPlayers.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectorSource("ROOKIE")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    selectorSource === "ROOKIE"
+                      ? "bg-amber-500 text-white shadow-sm"
+                      : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Rookies Draft ({rookies.length})
+                </button>
+              </div>
+            ) : (
+              /* In Serie A Mode: Team Filter Selector */
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-muted-foreground shrink-0">Squadra:</span>
+                  <Select value={selectorTeam} onValueChange={setSelectorTeam}>
+                    <SelectTrigger className="h-8 text-xs bg-muted/30 w-full sm:w-64">
+                      <SelectValue placeholder="Tutte le squadre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Tutte le squadre ({teamPlayers.length})</SelectItem>
+                      {serieATeams.map((t) => {
+                        const count = teamPlayers.filter((p) => p.Squadra === t.TEAM_ID).length;
+                        return (
+                          <SelectItem key={t.TEAM_ID} value={t.TEAM_ID}>
+                            {t.NAME} ({t.TEAM_ID}) - {count} giocatori
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
 
             {/* Role Filter Pills */}
             <div className="flex flex-wrap gap-1 mt-2">
@@ -1101,8 +1255,18 @@ const ConfrontoGiocatori = () => {
                               </span>
                             </span>
                           ) : (
-                            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                              Rosa {player.Squadra}
+                            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                              {player.Squadra && (
+                                <img
+                                  src={`/images/teams/${player.Squadra}_Logo.png`}
+                                  alt={player.Squadra}
+                                  className="h-3.5 w-3.5 object-contain"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = "none";
+                                  }}
+                                />
+                              )}
+                              <span>{player.Squadra}</span>
                               {player.NumeroMaglia ? ` #${player.NumeroMaglia}` : ""}
                             </span>
                           )}
@@ -1216,9 +1380,19 @@ const PlayerComparisonCard = ({
           ) : (
             <Badge
               variant="outline"
-              className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[11px] font-bold"
+              className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[11px] font-bold flex items-center gap-1.5"
             >
-              Rosa: {player.Squadra} {player.NumeroMaglia ? `#${player.NumeroMaglia}` : ""}
+              {player.Squadra && (
+                <img
+                  src={`/images/teams/${player.Squadra}_Logo.png`}
+                  alt={player.Squadra}
+                  className="h-3.5 w-3.5 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              )}
+              <span>{player.Squadra} {player.NumeroMaglia ? `#${player.NumeroMaglia}` : ""}</span>
             </Badge>
           )}
 
