@@ -21,6 +21,7 @@ import HallOfFame from "./pages/HallOfFame";
 import Draft from "./pages/Draft";
 import Trattative from "./pages/Trattative";
 import UfficialitaScambi from "./pages/UfficialitaScambi";
+import Comunicati from "./pages/Comunicati";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -49,6 +50,7 @@ const App = () => (
                 <Route path="/classifica" element={<Classifica />} />
                 <Route path="/rose" element={<Rose />} />
                 <Route path="/statistiche" element={<Statistiche />} />
+                <Route path="/comunicati" element={<Comunicati />} />
                 <Route path="/giocatori/lista-giocatori" element={<ListaGiocatori />} />
                 <Route path="/giocatori/confronto-giocatori" element={<ConfrontoGiocatori />} />
                 <Route path="/calendario" element={<Calendario />} />

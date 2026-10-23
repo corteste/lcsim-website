@@ -70,7 +70,7 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 2. Sistema di Messaggistica Interna, Proposte di Scambio & Comunicazioni Admin
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Completato (2.1 in prod, 2.2 e 2.3 su branch `dev`)
 - **Priorità**: Media-Alta (Potente miglioramento dell'esperienza utente e della gestione di lega)
 - **Moduli coinvolti**: Navbar (Badge notifiche), Nuova sezione Posta/Messaggi (`/inbox` o `/mercato/scambi`), Bacheca Comunicazioni Admin
 
@@ -86,17 +86,17 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
   - **Script SQL Migrazione**: `supabase/migrations/20261023_market_trades.sql` con tabelle `market_trades`, `trade_messages`, indici, RLS e funzione atomica `rpc_execute_trade`.
 
 ### 2.2 Modulo Comunicazioni Ufficiali Admin (Broadcast & Bacheca Lega)
-- **Obiettivo**: Consentire agli Admin di trasmettere annunci, avvisi di sistema, scadenze di mercato o decisioni del giudice sportivo a tutte le squadre contemporaneamente.
-- **Funzionalità chiave**:
-  - **Bacheca Annunci Ufficiali**: Pagina o feed pubblico con categorie (Regolamento, Mercato, Giornate, Disciplinare).
-  - **Alert Banner Globale / Pop-up**: Avvisi visibili in cima a tutte le pagine per scadenze imminenti o notizie urgenti.
-  - **Posta Ufficiale nei Messaggi**: Recapito di messaggi prioritari della Lega nell'inbox di ciascun manager con tracciamento dello stato di lettura.
-  - **Tabelle Supabase suggerite**:
-    - `league_announcements` (`id`, `title`, `content`, `category`, `priority`, `is_pinned`, `created_at`, `expires_at`).
-    - `announcement_reads` (`announcement_id`, `team_id`, `read_at`).
+- **Stato**: 🟢 Implementato su branch `dev` (Eseguito su Supabase)
+- **Funzionalità completate**:
+  - **Bacheca Comunicati Ufficiali (`/comunicati`)**: Feed pubblico con filtro categorie (Regolamento, Mercato, Giornate, Disciplinare, Generale), ricerca, stato letto/non letto e gestione completa per l'Admin (Creazione, Modifica, Eliminazione, Fissa in alto, Imposta Banner).
+  - **Banner Globale in Cima al Sito**: Mostrato automaticamente sotto la Navbar per i comunicati marcati come `is_banner = true`, chiudibile dall'utente.
+  - **Tabelle Supabase create**: `league_announcements` e `announcement_reads` (`supabase/migrations/20261023_announcements_and_notifications.sql`).
 
 ### 2.3 Integrazione Notifiche Realtime
-- Icona posta/notifiche nella Navbar con contatore `Badge` numerico in tempo reale (sfruttando Supabase Realtime Channels su `market_trades` e `league_announcements`).
+- **Stato**: 🟢 Implementato su branch `dev`
+- **Funzionalità completate**:
+  - **Campana Notifiche nella Navbar (`NotificationsMenu`)**: Contatore `Badge` numerico animato e pannello a discesa unificato (Comunicati Lega non letti, nuove proposte di scambio, cambi di stato scambi, nuovi messaggi chat trattativa e scambi da convalidare per l'Admin).
+  - **Supabase Realtime Channels**: Sottoscrizione live a `league_announcements`, `market_trades` e `trade_messages` con alert toast istantanei.
 
 
 ---

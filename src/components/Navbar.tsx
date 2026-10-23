@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Menu,
   ArrowLeftRight,
+  Megaphone,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -29,6 +30,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import LoginDialog from "@/components/LoginDialog";
+import { NotificationsMenu } from "@/components/NotificationsMenu";
+import { GlobalAnnouncementBanner } from "@/components/GlobalAnnouncementBanner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,6 +89,13 @@ const Navbar = () => {
       description: "Marcatori, assist, rating e rendimento club",
       icon: BarChart3,
       colorClass: "text-emerald-500",
+    },
+    {
+      path: "/comunicati",
+      label: "Comunicati Ufficiali",
+      description: "Avvisi della Commissione, regolamento e giudice sportivo",
+      icon: Megaphone,
+      colorClass: "text-rose-500",
     },
   ];
 
@@ -193,6 +203,13 @@ const Navbar = () => {
       description: "Proposte segrete, offerte e storico",
       icon: ArrowLeftRight,
       colorClass: "text-rose-500",
+    },
+    {
+      path: "/comunicati",
+      label: isAdmin ? "Gestione Comunicati" : "Comunicati Lega",
+      description: isAdmin ? "Pubblica avvisi e banner ufficiali" : "Bacheca avvisi della Commissione",
+      icon: Megaphone,
+      colorClass: "text-amber-500",
     },
   ];
 
@@ -480,6 +497,9 @@ const Navbar = () => {
           {/* ================================================================= */}
           <div className="flex items-center gap-2">
             
+            {/* Centro Notifiche & Comunicazioni Realtime */}
+            <NotificationsMenu />
+
             {/* Theme Toggle Compatto a Icona Singola Rotante */}
             <Button
               variant="ghost"
@@ -787,6 +807,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+      <GlobalAnnouncementBanner />
       <LoginDialog />
     </nav>
   );
