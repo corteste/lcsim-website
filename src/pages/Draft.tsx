@@ -1329,7 +1329,7 @@ const Draft = () => {
 
       {/* ADMIN MODAL: MANAGE BASE ORDER & PICK TRADES */}
       <Dialog open={adminModalOpen} onOpenChange={setAdminModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-extrabold">
               <ShieldCheck className="h-5 w-5 text-amber-500" />
@@ -1524,7 +1524,7 @@ const Draft = () => {
         open={!!inspectedRookie}
         onOpenChange={(open) => !open && setInspectedRookie(null)}
       >
-        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl xl:max-w-4xl max-h-[88vh] overflow-y-auto">
           {inspectedRookie && (() => {
             const tokens = scoutingByRookie[Number(inspectedRookie.ID)] ?? 0;
             const ovrInfo = getOvrDisplayByTokens(inspectedRookie.OVR, tokens);

@@ -603,11 +603,11 @@ const Calendario = () => {
           onClick={handleCloseModal}
         >
           <div
-            className="w-full max-w-5xl max-h-[94vh] flex flex-col rounded-2xl shadow-2xl border border-border/80 bg-card overflow-hidden animate-in zoom-in-95 duration-200"
+            className="w-full max-w-6xl xl:max-w-7xl max-h-[96vh] flex flex-col rounded-2xl shadow-2xl border border-border/80 bg-card overflow-hidden animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* HERO MATCH SCORE BANNER */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-card/90 via-card/80 to-card/90 border-b border-border/80 p-5 sm:p-6 shrink-0">
+            <div className="relative overflow-hidden bg-gradient-to-r from-card/90 via-card/80 to-card/90 border-b border-border/80 p-4 sm:p-5 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -837,9 +837,9 @@ const Calendario = () => {
                     const pitchNodes = computePitchCoordinates(starters);
 
                     return (
-                      <div className="space-y-5">
+                      <div className="grid grid-cols-1 lg:grid-cols-[500px_1fr] xl:grid-cols-[540px_1fr] gap-6 items-start">
                         {/* THE 2D GREEN PITCH */}
-                        <div className="relative w-full max-w-[620px] mx-auto min-h-[660px] sm:min-h-[720px] aspect-[3/4] sm:aspect-[4/5] rounded-2xl overflow-hidden border-2 border-emerald-600/50 bg-gradient-to-b from-emerald-800 via-emerald-700 to-emerald-950 shadow-2xl p-4 select-none">
+                        <div className="relative w-full aspect-[3/4] sm:aspect-[4/5] min-h-[640px] sm:min-h-[700px] rounded-2xl overflow-hidden border-2 border-emerald-600/50 bg-gradient-to-b from-emerald-800 via-emerald-700 to-emerald-950 shadow-2xl p-4 select-none">
                           {/* Grass texture stripes */}
                           <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(0deg,transparent,transparent_38px,rgba(255,255,255,0.08)_38px,rgba(255,255,255,0.08)_76px)] pointer-events-none" />
 

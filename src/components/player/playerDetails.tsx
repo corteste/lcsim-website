@@ -42,23 +42,23 @@ const StatBar = ({ label, value, code }: { label: string; value: number | null |
   const percentage = Math.min(Math.max(numValue, 0), 99);
   
   return (
-    <div className="group p-2.5 rounded-lg bg-card/70 hover:bg-muted/50 border border-border/50 hover:border-primary/40 transition-all duration-200 shadow-sm">
-      <div className="flex justify-between items-center mb-1.5 gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+    <div className="group p-2 rounded-lg bg-card/70 hover:bg-muted/50 border border-border/50 hover:border-primary/40 transition-all duration-200 shadow-xs">
+      <div className="flex justify-between items-center mb-1 gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {code && (
-            <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold shrink-0 border border-border/40">
+            <span className="text-[10px] font-mono px-1 py-0.5 rounded bg-muted text-muted-foreground font-bold shrink-0 border border-border/40">
               {code}
             </span>
           )}
-          <span className="text-sm font-semibold text-foreground whitespace-normal leading-snug">
+          <span className="text-xs font-semibold text-foreground truncate" title={label}>
             {label}
           </span>
         </div>
-        <span className={`text-base font-bold font-mono ${getValueColor(value ?? null)} shrink-0 pl-2`}>
+        <span className={`text-sm font-bold font-mono ${getValueColor(value ?? null)} shrink-0 pl-1`}>
           {value ?? "-"}
         </span>
       </div>
-      <div className="h-2 bg-muted/90 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-muted/90 rounded-full overflow-hidden">
         <div 
           className={`h-full rounded-full transition-all duration-500 ${
             numValue >= 90 ? "bg-gradient-to-r from-purple-500 to-indigo-500" : 
@@ -86,13 +86,13 @@ const StatCardGroup = ({
   children: React.ReactNode 
 }) => (
   <Card className="border border-border/60 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col">
-    <div className={`px-4 py-3 border-b border-border/50 flex items-center justify-between ${colorClass}`}>
-      <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4" />
-        <h4 className="text-sm font-bold uppercase tracking-wider">{title}</h4>
+    <div className={`px-3 py-2 border-b border-border/50 flex items-center justify-between ${colorClass}`}>
+      <div className="flex items-center gap-1.5">
+        <Icon className="h-3.5 w-3.5" />
+        <h4 className="text-xs font-bold uppercase tracking-wider">{title}</h4>
       </div>
     </div>
-    <CardContent className="p-3.5 flex flex-col gap-2.5 flex-1 justify-start">
+    <CardContent className="p-2 flex flex-col gap-1.5 flex-1 justify-start">
       {children}
     </CardContent>
   </Card>
@@ -122,7 +122,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
 
   return (
     <div 
-      className="w-[96vw] max-w-6xl h-[92vh] max-h-[920px] flex flex-col rounded-2xl overflow-hidden bg-card border border-border/80 shadow-2xl animate-scale-in"
+      className="w-[98vw] max-w-7xl 2xl:max-w-[1640px] h-[95vh] max-h-[960px] flex flex-col rounded-2xl overflow-hidden bg-card border border-border/80 shadow-2xl animate-scale-in"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Top Banner / Hero Card */}
@@ -131,17 +131,17 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-3 right-3 h-9 w-9 rounded-full bg-background/60 hover:bg-background/90 text-foreground border border-border/50 shadow-sm transition-transform hover:scale-105 z-20"
+            className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/60 hover:bg-background/90 text-foreground border border-border/50 shadow-sm transition-transform hover:scale-105 z-20"
             onClick={onClose}
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </Button>
         )}
 
-        <div className="flex flex-col md:flex-row md:items-center gap-6 p-6">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 sm:gap-6 p-4 sm:p-5">
           {/* Player Photo + OVR Badge */}
           <div className="relative shrink-0 flex items-center justify-center sm:justify-start">
-            <div className="h-32 w-32 sm:h-36 sm:w-36 rounded-2xl overflow-hidden border-2 border-border/80 shadow-xl bg-card/60 backdrop-blur-sm relative group">
+            <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl overflow-hidden border-2 border-border/80 shadow-xl bg-card/60 backdrop-blur-sm relative group">
               <img 
                 src={getPlayerImage(currentPlayer.ID)} 
                 onError={(e) => (e.currentTarget.src = "/images/players/MConti.png")} 
@@ -150,7 +150,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               />
               {/* Flag pill overlay on avatar bottom-left */}
               {currentPlayer.Nazionalità && (
-                <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-background/85 backdrop-blur-md border border-border/60 shadow">
+                <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-background/85 backdrop-blur-md border border-border/60 shadow">
                   <img 
                     src={getNationalityFlag(currentPlayer.Nazionalità)} 
                     alt={currentPlayer.Nazionalità} 
@@ -163,9 +163,9 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
             </div>
 
             {/* Glowing OVR badge */}
-            <div className="absolute -bottom-2 -right-2 h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex flex-col items-center justify-center font-black shadow-xl border-2 border-background">
-              <span className="text-[9px] uppercase tracking-widest leading-none opacity-80 font-bold">OVR</span>
-              <span className="text-2xl leading-tight font-black">{ovr}</span>
+            <div className="absolute -bottom-2 -right-2 h-12 w-12 sm:h-13 sm:w-13 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex flex-col items-center justify-center font-black shadow-xl border-2 border-background">
+              <span className="text-[8px] uppercase tracking-widest leading-none opacity-80 font-bold">OVR</span>
+              <span className="text-xl sm:text-2xl leading-tight font-black">{ovr}</span>
             </div>
           </div>
 
@@ -271,15 +271,17 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
         </div>
 
         {/* Tab 1: Tutti gli Attributi (Dashboard Completa) */}
-        <TabsContent value="tutti" className="flex-1 overflow-y-auto p-6 m-0 focus-visible:outline-none">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* Difesa */}
-            <StatCardGroup title="Difesa & Marcatura" icon={Shield} colorClass="bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <StatBar label="Contrasto" code="CONT" value={currentPlayer.CONT} />
-              <StatBar label="Scivolata" code="SCIV" value={currentPlayer.SCIV} />
-              <StatBar label="Marcatura" code="MARC" value={currentPlayer.MARC} />
-              <StatBar label="Aggressività" code="AGGR" value={currentPlayer.AGGR} />
-              <StatBar label="Intercettazione" code="INTR" value={currentPlayer.INTR} />
+        <TabsContent value="tutti" className="flex-1 overflow-y-auto p-3.5 sm:p-5 m-0 focus-visible:outline-none">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+            {/* Attacco */}
+            <StatCardGroup title="Attacco & Tiro" icon={Target} colorClass="bg-red-500/10 text-red-600 dark:text-red-400">
+              <StatBar label="Finalizzazione" code="FINA" value={currentPlayer.FINA} />
+              <StatBar label="Piazzamento" code="PIAZ" value={currentPlayer.PIAZ} />
+              <StatBar label="Potenza Tiro" code="PTIR" value={currentPlayer.PTIR} />
+              <StatBar label="Tiri Distanza" code="TIRD" value={currentPlayer.TIRD} />
+              <StatBar label="Tiri al Volo" code="TIRV" value={currentPlayer.TIRV} />
+              <StatBar label="Dribbling" code="DRBL" value={currentPlayer.DRBL} />
+              <StatBar label="Colpi di Testa" code="TSTA" value={currentPlayer.TSTA} />
             </StatCardGroup>
 
             {/* Passaggi */}
@@ -288,19 +290,17 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               <StatBar label="Passaggio Lungo" code="PASL" value={currentPlayer.PASL} />
               <StatBar label="Cross" code="CRSS" value={currentPlayer.CRSS} />
               <StatBar label="Controllo Palla" code="CTRP" value={currentPlayer.CTRP} />
-              <StatBar label="Visione di Gioco" code="VISI" value={currentPlayer.VISI} />
+              <StatBar label="Visione Gioco" code="VISI" value={currentPlayer.VISI} />
               <StatBar label="Effetto" code="EFFT" value={currentPlayer.EFFT} />
             </StatCardGroup>
 
-            {/* Attacco */}
-            <StatCardGroup title="Attacco & Tiro" icon={Target} colorClass="bg-red-500/10 text-red-600 dark:text-red-400">
-              <StatBar label="Finalizzazione" code="FINA" value={currentPlayer.FINA} />
-              <StatBar label="Piazzamento" code="PIAZ" value={currentPlayer.PIAZ} />
-              <StatBar label="Potenza Tiro" code="PTIR" value={currentPlayer.PTIR} />
-              <StatBar label="Tiri dalla Distanza" code="TIRD" value={currentPlayer.TIRD} />
-              <StatBar label="Tiri al Volo" code="TIRV" value={currentPlayer.TIRV} />
-              <StatBar label="Dribbling" code="DRBL" value={currentPlayer.DRBL} />
-              <StatBar label="Colpi di Testa" code="TSTA" value={currentPlayer.TSTA} />
+            {/* Difesa */}
+            <StatCardGroup title="Difesa & Marcatura" icon={Shield} colorClass="bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <StatBar label="Contrasto" code="CONT" value={currentPlayer.CONT} />
+              <StatBar label="Scivolata" code="SCIV" value={currentPlayer.SCIV} />
+              <StatBar label="Marcatura" code="MARC" value={currentPlayer.MARC} />
+              <StatBar label="Aggressività" code="AGGR" value={currentPlayer.AGGR} />
+              <StatBar label="Intercettazione" code="INTR" value={currentPlayer.INTR} />
             </StatCardGroup>
 
             {/* Fisico */}
@@ -315,6 +315,12 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               <StatBar label="Riflessi" code="RIFL" value={currentPlayer.RIFL} />
             </StatCardGroup>
 
+            {/* Calci Piazzati */}
+            <StatCardGroup title="Calci Piazzati" icon={Flame} colorClass="bg-orange-500/10 text-orange-600 dark:text-orange-400">
+              <StatBar label="Punizioni" code="PNIZ" value={currentPlayer.PNIZ} />
+              <StatBar label="Rigori" code="CRIG" value={currentPlayer.CRIG} />
+            </StatCardGroup>
+
             {/* Portiere */}
             <StatCardGroup title="Portiere" icon={Swords} colorClass="bg-amber-500/10 text-amber-600 dark:text-amber-400">
               <StatBar label="Presa" code="PREP" value={currentPlayer.PREP} />
@@ -323,18 +329,12 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               <StatBar label="Riflessi Portiere" code="RIFP" value={currentPlayer.RIFP} />
               <StatBar label="Tuffo" code="TUFP" value={currentPlayer.TUFP} />
             </StatCardGroup>
-
-            {/* Calci Piazzati */}
-            <StatCardGroup title="Calci Piazzati" icon={Flame} colorClass="bg-orange-500/10 text-orange-600 dark:text-orange-400">
-              <StatBar label="Punizioni" code="PNIZ" value={currentPlayer.PNIZ} />
-              <StatBar label="Rigori" code="CRIG" value={currentPlayer.CRIG} />
-            </StatCardGroup>
           </div>
         </TabsContent>
 
         {/* Tab 2: Ruoli & Tratti Speciali */}
-        <TabsContent value="ruoli" className="flex-1 overflow-y-auto p-6 m-0 focus-visible:outline-none">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <TabsContent value="ruoli" className="flex-1 overflow-y-auto p-4 sm:p-6 m-0 focus-visible:outline-none">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
             {/* Ruoli in Campo */}
             <Card className="border border-border/60 bg-card/60 backdrop-blur-sm">
               <div className="px-5 py-3 border-b border-border/50 flex items-center gap-2 bg-primary/5">

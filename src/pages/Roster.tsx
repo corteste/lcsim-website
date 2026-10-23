@@ -1534,7 +1534,7 @@ const Roster = () => {
         open={!!editingPlayer}
         onOpenChange={(open) => !open && setEditingPlayer(null)}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl xl:max-w-5xl max-h-[92vh] overflow-y-auto">
           {editingPlayer && (
             <>
               <DialogHeader>
@@ -1641,7 +1641,7 @@ const Roster = () => {
                 </div>
 
                 {/* 2. STILE DIVISA, VESTIBILITÀ E MANICHE */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-foreground">
                       Stile Divisa (Maglia dentro/fuori)
@@ -1829,7 +1829,7 @@ const Roster = () => {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {/* Slot 1 */}
                     <div className="p-3 rounded-xl border border-border/80 bg-muted/10 space-y-2">
                       <span className="text-[11px] font-bold text-foreground block">

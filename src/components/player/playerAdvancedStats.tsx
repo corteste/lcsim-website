@@ -66,10 +66,10 @@ const PlayerAdvancedStats = ({ currentPlayer, teams, onClose }: PlayerStatsProps
   const isGoalkeeper = currentPlayer.Posiz === "POR";
 
   return (
-    <div className="w-full max-w-4xl p-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
-      <Card className="shadow-2xl border-0 bg-gradient-to-br from-card to-card/95 overflow-hidden">
+    <div className="w-full max-w-6xl xl:max-w-7xl max-h-[92vh] flex flex-col p-2 sm:p-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+      <Card className="shadow-2xl border-0 bg-gradient-to-br from-card to-card/95 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className={getTeamBackground(currentPlayer.Squadra)}>
+        <div className={`${getTeamBackground(currentPlayer.Squadra)} shrink-0 relative`}>
           {onClose && (
             <Button
               variant="ghost"
@@ -201,15 +201,12 @@ const PlayerAdvancedStats = ({ currentPlayer, teams, onClose }: PlayerStatsProps
               </TabsList>
 
               <div className="p-6 max-h-[800px] overflow-y-auto">
-                <TabsContent value="generale" className="mt-0 space-y-6 animate-fade-in data-[state=inactive]:animate-fade-out">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <TabsContent value="generale" className="mt-0 space-y-4 animate-fade-in data-[state=inactive]:animate-fade-out">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
                     <StatCard label="Gol" value={currentPlayer.sum_gol ?? 0} icon={Target} delay={0} />
                     <StatCard label="Assist" value={currentPlayer.sum_asst ?? 0} icon={TrendingUp} delay={50} />
                     <StatCard label="Voto Medio" value={isNaN(avgRating) ? "N/D" : avgRating} icon={Award} delay={100} />
                     <StatCard label="Minuti" value={currentPlayer.sum_minuti ?? 0} icon={Timer} delay={150} />
-                  </div>
-                  <Separator />
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard label="Fuorigioco" value={currentPlayer.sum_fgioco ?? 0} delay={200} />
                     <StatCard label="Falli" value={currentPlayer.sum_falli ?? 0} delay={250} />
                     <StatCard label="Gialli" value={currentPlayer.sum_gialli ?? 0} delay={300} />

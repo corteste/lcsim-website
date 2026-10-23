@@ -952,7 +952,7 @@ const ConfrontoGiocatori = () => {
         open={selectorTarget !== null}
         onOpenChange={(open) => !open && setSelectorTarget(null)}
       >
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden bg-card border-border/80">
+        <DialogContent className="max-w-4xl xl:max-w-5xl max-h-[88vh] flex flex-col p-0 overflow-hidden bg-card border-border/80">
           <DialogHeader className="p-5 pb-3 border-b border-border/80">
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
               <Users className="h-5 w-5 text-emerald-500" />
@@ -1032,13 +1032,14 @@ const ConfrontoGiocatori = () => {
           </DialogHeader>
 
           {/* Results List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 max-h-[460px]">
+          <div className="flex-1 overflow-y-auto p-4 max-h-[580px]">
             {dialogFilteredPlayers.length === 0 ? (
               <div className="py-12 text-center text-muted-foreground text-xs">
                 Nessun giocatore trovato con questi criteri di ricerca.
               </div>
             ) : (
-              dialogFilteredPlayers.map((player) => {
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                {dialogFilteredPlayers.map((player) => {
                 const isSelected =
                   (selectorTarget === "left" && player.uniqueKey === leftKey) ||
                   (selectorTarget === "right" && player.uniqueKey === rightKey);
@@ -1136,8 +1137,9 @@ const ConfrontoGiocatori = () => {
                     </div>
                   </div>
                 );
-              })
-            )}
+              })}
+            </div>
+          )}
           </div>
         </DialogContent>
       </Dialog>
