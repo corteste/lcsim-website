@@ -22,6 +22,9 @@ import {
 import {
   Sparkles,
   Trophy,
+  Star,
+  ListOrdered,
+  Bot,
   Search,
   CheckCircle2,
   Clock,
