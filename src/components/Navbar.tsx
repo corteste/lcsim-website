@@ -266,7 +266,7 @@ const Navbar = () => {
                 <span>Campionato</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
+              <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                   Competizione Ufficiale
                 </div>
@@ -277,19 +277,16 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
                           isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
                         }`}
                       >
-                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0 mt-0.5`}>
+                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-foreground leading-tight">{item.label}</div>
-                          <div className="text-[10px] text-muted-foreground leading-snug truncate mt-0.5">
-                            {item.description}
-                          </div>
-                        </div>
+                        <span className="text-sm font-bold text-foreground leading-tight">
+                          {item.label}
+                        </span>
                       </Link>
                     </DropdownMenuItem>
                   );
@@ -310,7 +307,7 @@ const Navbar = () => {
                 <span>Calciatori</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
+              <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                   Database &amp; Squadre
                 </div>
@@ -321,19 +318,16 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
                           isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
                         }`}
                       >
-                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0 mt-0.5`}>
+                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-foreground leading-tight">{item.label}</div>
-                          <div className="text-[10px] text-muted-foreground leading-snug truncate mt-0.5">
-                            {item.description}
-                          </div>
-                        </div>
+                        <span className="text-sm font-bold text-foreground leading-tight">
+                          {item.label}
+                        </span>
                       </Link>
                     </DropdownMenuItem>
                   );
@@ -354,7 +348,7 @@ const Navbar = () => {
                 <span>Draft &amp; Mercato</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
+              <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                   Acquisizioni &amp; Nuovi Talenti
                 </div>
@@ -365,19 +359,16 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
                           isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
                         }`}
                       >
-                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0 mt-0.5`}>
+                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-foreground leading-tight">{item.label}</div>
-                          <div className="text-[10px] text-muted-foreground leading-snug truncate mt-0.5">
-                            {item.description}
-                          </div>
-                        </div>
+                        <span className="text-sm font-bold text-foreground leading-tight">
+                          {item.label}
+                        </span>
                       </Link>
                     </DropdownMenuItem>
                   );
@@ -398,7 +389,7 @@ const Navbar = () => {
                 <span>Archivio</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
+              <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                   Storia &amp; Albo d'Oro
                 </div>
@@ -409,19 +400,16 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
                           isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
                         }`}
                       >
-                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0 mt-0.5`}>
+                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-foreground leading-tight">{item.label}</div>
-                          <div className="text-[10px] text-muted-foreground leading-snug truncate mt-0.5">
-                            {item.description}
-                          </div>
-                        </div>
+                        <span className="text-sm font-bold text-foreground leading-tight">
+                          {item.label}
+                        </span>
                       </Link>
                     </DropdownMenuItem>
                   );
@@ -444,7 +432,7 @@ const Navbar = () => {
                 <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-68 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
+              <DropdownMenuContent align="end" className="w-64 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                   <span>{isAdmin ? "Amministrazione Lega" : "Gestione Club"}</span>
                   {user?.team ? (
@@ -464,19 +452,16 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
                           isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
                         }`}
                       >
-                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0 mt-0.5`}>
+                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-foreground leading-tight">{item.label}</div>
-                          <div className="text-[10px] text-muted-foreground leading-snug truncate mt-0.5">
-                            {item.description}
-                          </div>
-                        </div>
+                        <span className="text-sm font-bold text-foreground leading-tight">
+                          {item.label}
+                        </span>
                       </Link>
                     </DropdownMenuItem>
                   );
@@ -667,7 +652,7 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
                             location.pathname === item.path
                               ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
                               : "text-foreground hover:bg-muted/50"
@@ -689,7 +674,7 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
                             location.pathname === item.path
                               ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
                               : "text-foreground hover:bg-muted/50"
@@ -711,7 +696,7 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
                             location.pathname === item.path
                               ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
                               : "text-foreground hover:bg-muted/50"
@@ -733,7 +718,7 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
                             location.pathname === item.path
                               ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
                               : "text-foreground hover:bg-muted/50"
@@ -755,7 +740,7 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
                             location.pathname === item.path
                               ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
                               : "text-foreground hover:bg-muted/50"
