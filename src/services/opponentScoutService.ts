@@ -154,11 +154,12 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
   if (!opponentTeamId) return null;
 
   try {
-    // 1. Dati base squadra e classifica
-    const [teamRes, standingsRes, rosterRes] = await Promise.all([
+    // 1. Dati base squadra, classifica e mercato giocatori
+    const [teamRes, standingsRes, rosterRes, marketRes] = await Promise.all([
       supabase.from(TEAM_TABLE).select('*').eq("TEAM_ID", opponentTeamId).maybeSingle(),
       supabase.from("an_standings").select('*').order("stag", { ascending: false }),
       supabase.from(PLAYER_TABLE).select('*').eq("Squadra", opponentTeamId),
+      supabase.from("as_player_market").select("PLAYER_ID_FK, Status"),
     ]);
 
     const teamData = teamRes.data;
@@ -198,8 +199,23 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
         }
       : undefined;
 
-    // Roster ordinato per ruolo poi per OVR
-    const rawRoster = (rosterRes.data || []) as Player[];
+    // Mappa status di mercato
+    const marketMap = new Map<number, string>();
+    (marketRes.data || []).forEach((m: any) => {
+      if (m.PLAYER_ID_FK && m.Status) {
+        marketMap.set(Number(m.PLAYER_ID_FK), m.Status);
+      }
+    });
+
+    // Roster arricchito con status di mercato e ordinato per ruolo poi per OVR
+    const rawRoster = ((rosterRes.data || []) as Player[]).map((p) => {
+      const st = marketMap.get(Number(p.ID));
+      return {
+        ...p,
+        MarketStatus: (st ? { Status: st } : undefined) as any,
+      };
+    });
+
     const roster = rawRoster.sort((a, b) => {
       const rpA = ROLE_PRIORITY[a.Posiz] ?? 99;
       const rpB = ROLE_PRIORITY[b.Posiz] ?? 99;

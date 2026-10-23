@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,15 +20,14 @@ import {
   OpponentMatchInfo,
   OpponentScoutData,
 } from "@/services/opponentScoutService";
-import { OpponentScoutModal } from "@/components/home/OpponentScoutModal";
 
 export const NextOpponentCard: React.FC = () => {
+  const navigate = useNavigate();
   const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
 
   const [matchInfo, setMatchInfo] = useState<OpponentMatchInfo | null>(null);
   const [scoutData, setScoutData] = useState<OpponentScoutData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
 
   const teamId = effectiveTeam || user?.team || "";
 
@@ -89,11 +89,10 @@ export const NextOpponentCard: React.FC = () => {
   if (!matchInfo) return null;
 
   return (
-    <>
-      <Card
-        onClick={() => setModalOpen(true)}
-        className="group relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-emerald-500/[0.04] p-5 md:p-6 shadow-md hover:border-emerald-500/50 hover:shadow-lg transition-all cursor-pointer"
-      >
+    <Card
+      onClick={() => navigate("/prossimo-avversario")}
+      className="group relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-emerald-500/[0.04] p-5 md:p-6 shadow-md hover:border-emerald-500/50 hover:shadow-lg transition-all cursor-pointer"
+    >
         {/* Glow ambient background on hover */}
         <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 rounded-full bg-emerald-500/10 blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
 
@@ -208,24 +207,18 @@ export const NextOpponentCard: React.FC = () => {
 
             <Button
               size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/prossimo-avversario");
+              }}
               className="h-9 px-3.5 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md group-hover:scale-[1.02] transition-transform"
             >
               <Layers className="h-3.5 w-3.5" />
-              <span>Report Avversaria</span>
+              <span>Report Completo Avversaria</span>
               <ChevronRight className="h-4 w-4 ml-0.5" />
             </Button>
           </div>
         </div>
       </Card>
-
-      {/* Opponent Scout Modal Popup */}
-      <OpponentScoutModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        matchInfo={matchInfo}
-        scoutData={scoutData}
-        loading={loading}
-      />
-    </>
   );
 };
