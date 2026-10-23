@@ -205,13 +205,6 @@ const Navbar = () => {
       icon: ArrowLeftRight,
       colorClass: "text-rose-500",
     },
-    {
-      path: "/comunicati",
-      label: isAdmin ? "Gestione Comunicati" : "Comunicati Lega",
-      description: isAdmin ? "Pubblica avvisi e banner ufficiali" : "Bacheca avvisi della Commissione",
-      icon: Megaphone,
-      colorClass: "text-amber-500",
-    },
   ];
 
   // Verifica stati attivi
