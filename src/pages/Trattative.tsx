@@ -10,6 +10,7 @@ import {
   Sparkles,
   Users,
   CheckCircle2,
+  XCircle,
   Clock,
   Plus,
   Inbox,
@@ -24,11 +25,16 @@ import { useAuth } from "@/context/AuthContext";
 import {
   fetchTeamTrades,
   fetchAdminPendingTrades,
+  fetchAllTradesForAdmin,
+  fetchCompletedTrades,
+  adminApproveTrade,
+  adminRejectTrade,
 } from "@/services/tradesService";
 import { EnrichedTrade, TRADE_STATUS_CONFIG } from "@/types/trades";
 import { NewTradeModal } from "@/components/trades/NewTradeModal";
 import { TradeDetailsModal } from "@/components/trades/TradeDetailsModal";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function Trattative() {
   const { user, isAdmin, effectiveTeam, effectiveTeamFullName, openLogin } = useAuth();
@@ -36,7 +42,9 @@ export default function Trattative() {
 
   const [trades, setTrades] = useState<EnrichedTrade[]>([]);
   const [adminPendingTrades, setAdminPendingTrades] = useState<EnrichedTrade[]>([]);
+  const [completedTradesList, setCompletedTradesList] = useState<EnrichedTrade[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Modals state
   const [newModalOpen, setNewModalOpen] = useState(false);
@@ -45,40 +53,47 @@ export default function Trattative() {
   const [counterOfferSource, setCounterOfferSource] = useState<EnrichedTrade | null>(null);
 
   const loadData = async () => {
-    if (!currentTeam) {
+    if (!user) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    const [teamTrades, pendingAdmin] = await Promise.all([
-      fetchTeamTrades(currentTeam),
+    const [teamTrades, pendingAdmin, completed] = await Promise.all([
+      user.team ? fetchTeamTrades(user.team) : Promise.resolve([]),
       isAdmin ? fetchAdminPendingTrades() : Promise.resolve([]),
+      fetchCompletedTrades(),
     ]);
     setTrades(teamTrades);
     setAdminPendingTrades(pendingAdmin);
+    setCompletedTradesList(completed);
     setLoading(false);
   };
 
   useEffect(() => {
     loadData();
-  }, [currentTeam, isAdmin]);
+  }, [user, isAdmin]);
 
   // Categorize trades for current user
   const receivedTrades = useMemo(() => {
-    return trades.filter((t) => t.receiver_team === currentTeam && t.status !== "completed");
-  }, [trades, currentTeam]);
+    if (!user?.team) return [];
+    return trades.filter((t) => t.receiver_team === user.team && t.status !== "completed");
+  }, [trades, user]);
 
   const pendingReceivedCount = useMemo(() => {
     return receivedTrades.filter((t) => t.status === "pending").length;
   }, [receivedTrades]);
 
   const sentTrades = useMemo(() => {
-    return trades.filter((t) => t.sender_team === currentTeam && t.status !== "completed");
-  }, [trades, currentTeam]);
+    if (!user?.team) return [];
+    return trades.filter((t) => t.sender_team === user.team && t.status !== "completed");
+  }, [trades, user]);
 
-  const completedTrades = useMemo(() => {
-    return trades.filter((t) => t.status === "completed");
-  }, [trades]);
+  const myCompletedTrades = useMemo(() => {
+    if (!user?.team) return completedTradesList;
+    return completedTradesList.filter(
+      (t) => t.sender_team === user.team || t.receiver_team === user.team
+    );
+  }, [completedTradesList, user]);
 
   const handleOpenDetails = (trade: EnrichedTrade) => {
     setSelectedTrade(trade);
@@ -95,6 +110,41 @@ export default function Trattative() {
     setNewModalOpen(true);
   };
 
+  // Quick action from Admin Card
+  const handleQuickApprove = async (trade: EnrichedTrade) => {
+    if (!window.confirm(`Confermi l'approvazione ufficiale dello scambio tra ${trade.sender_team} e ${trade.receiver_team}? Le rose e le scelte verranno trasferite a sistema.`)) {
+      return;
+    }
+    setActionLoading(true);
+    const adminUser = user?.name || user?.username || "Admin Lega";
+    const res = await adminApproveTrade(trade, adminUser);
+    setActionLoading(false);
+
+    if (res.success) {
+      toast.success("Scambio approvato ed eseguito ufficialmente in Serie A!");
+      loadData();
+    } else {
+      toast.error(res.error || "Errore durante l'approvazione dello scambio.");
+    }
+  };
+
+  const handleQuickReject = async (trade: EnrichedTrade) => {
+    const reason = window.prompt("Motivazione del rifiuto della Lega:");
+    if (reason === null) return;
+
+    setActionLoading(true);
+    const adminUser = user?.name || user?.username || "Admin Lega";
+    const res = await adminRejectTrade(trade.id, adminUser, reason);
+    setActionLoading(false);
+
+    if (res.success) {
+      toast.info("Scambio respinto dalla Lega.");
+      loadData();
+    } else {
+      toast.error(res.error || "Errore durante il rifiuto.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Navbar />
@@ -104,7 +154,11 @@ export default function Trattative() {
         <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-muted/40 p-6 md:p-8 shadow-xl mb-8">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              {currentTeam ? (
+              {isAdmin ? (
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center justify-center shadow-inner">
+                  <ShieldAlert className="h-8 w-8 md:h-10 md:w-10" />
+                </div>
+              ) : currentTeam ? (
                 <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-muted/60 border border-border flex items-center justify-center p-2 shadow-inner">
                   <img
                     src={`/images/teams/${currentTeam}_Logo.png`}
@@ -122,24 +176,26 @@ export default function Trattative() {
               <div>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-[11px] font-black uppercase tracking-wider text-blue-500 font-mono">
-                    La Mia Squadra · Mercato & Scambi
+                    {isAdmin ? "Amministrazione Lega · Controllo Scambi" : "La Mia Squadra · Mercato & Scambi"}
                   </span>
-                  {currentTeam && (
+                  {user?.team && (
                     <Badge variant="outline" className="font-mono text-[10px] font-bold">
-                      {currentTeam}
+                      {user.team}
                     </Badge>
                   )}
                   {isAdmin && (
-                    <Badge className="bg-purple-600/15 text-purple-600 dark:text-purple-400 border-purple-500/30 text-[10px] font-bold">
-                      Admin Mode
+                    <Badge className="bg-purple-600/15 text-purple-600 dark:text-purple-400 border-purple-500/30 text-[10px] font-black">
+                      Super Admin di Lega
                     </Badge>
                   )}
                 </div>
                 <h1 className="text-2xl md:text-3xl font-black tracking-tight">
-                  Trattative & Proposte di Scambio
+                  {isAdmin ? "Pannello Convalida & Controllo Scambi" : "Trattative & Proposte di Scambio"}
                 </h1>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1 max-w-2xl">
-                  Negozia calciatori e scelte del draft con le altre società. Tutte le trattative rimangono segrete fino all'approvazione finale della Lega.
+                  {isAdmin
+                    ? "In qualità di Amministratore di Lega puoi esaminare, convalidare ed eseguire all'istante qualsiasi scambio attivo o concordato in Serie A."
+                    : "Negozia calciatori e scelte del draft con le altre società. Tutte le trattative rimangono segrete fino all'approvazione finale della Lega."}
                 </p>
               </div>
             </div>
@@ -181,59 +237,112 @@ export default function Trattative() {
           {/* Quick Metrics Cards */}
           {user && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-border/60">
-              <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
-                  Proposte Ricevute
-                </span>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xl font-black">{receivedTrades.length}</span>
-                  {pendingReceivedCount > 0 && (
-                    <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 text-[10px] font-black animate-pulse">
-                      {pendingReceivedCount} da valutare
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
-                  Proposte Inviate
-                </span>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xl font-black">{sentTrades.length}</span>
-                  <span className="text-xs text-muted-foreground">in corso</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
-                  Scambi Conclusi
-                </span>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xl font-black text-emerald-500">{completedTrades.length}</span>
-                  <Link
-                    to="/mercato/scambi"
-                    className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-bold"
-                  >
-                    Bacheca <ExternalLink className="h-2.5 w-2.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {isAdmin && (
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 flex flex-col">
-                  <span className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400 font-mono">
-                    In Attesa Firma Lega
-                  </span>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-xl font-black text-purple-600 dark:text-purple-400">
-                      {adminPendingTrades.length}
+              {isAdmin ? (
+                <>
+                  <div className="p-3 rounded-xl bg-purple-500/15 border border-purple-500/30 flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-purple-700 dark:text-purple-300 font-mono">
+                      In Attesa Convalida Lega
                     </span>
-                    <Badge className="bg-purple-600 text-white text-[10px] font-black">
-                      Admin Hub
-                    </Badge>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-2xl font-black text-purple-700 dark:text-purple-300">
+                        {adminPendingTrades.length}
+                      </span>
+                      <Badge className="bg-purple-600 text-white text-[10px] font-black animate-pulse">
+                        Azione Richiesta
+                      </Badge>
+                    </div>
                   </div>
-                </div>
+
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                      Scambi Ufficiali Eseguiti
+                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-2xl font-black text-emerald-500">{completedTradesList.length}</span>
+                      <Link
+                        to="/mercato/scambi"
+                        className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-bold"
+                      >
+                        Bacheca <ExternalLink className="h-2.5 w-2.5" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                      Club Attivi in Trattativa
+                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-2xl font-black text-blue-500">
+                        {new Set(adminPendingTrades.flatMap((t) => [t.sender_team, t.receiver_team])).size}
+                      </span>
+                      <span className="text-xs text-muted-foreground">società</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                      Stato Mercato
+                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs font-black text-emerald-500 uppercase">Aperto</span>
+                      <Badge variant="outline" className="text-[10px] font-mono">
+                        Sessione S11
+                      </Badge>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                      Proposte Ricevute
+                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xl font-black">{receivedTrades.length}</span>
+                      {pendingReceivedCount > 0 && (
+                        <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 text-[10px] font-black animate-pulse">
+                          {pendingReceivedCount} da valutare
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                      Proposte Inviate
+                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xl font-black">{sentTrades.length}</span>
+                      <span className="text-xs text-muted-foreground">in corso</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                      I Miei Scambi Conclusi
+                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xl font-black text-emerald-500">{myCompletedTrades.length}</span>
+                      <Link
+                        to="/mercato/scambi"
+                        className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-bold"
+                      >
+                        Bacheca <ExternalLink className="h-2.5 w-2.5" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                      La Tua Società
+                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-base font-black truncate">{effectiveTeamFullName}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground">({currentTeam})</span>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -245,146 +354,73 @@ export default function Trattative() {
             <Shield className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
             <h3 className="text-base font-bold">Autenticazione Richiesta</h3>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-              Per accedere alla tua bacheca privata delle trattative e formulare proposte di mercato, accedi con le credenziali della tua squadra.
+              Per accedere alla tua bacheca delle trattative e formulare proposte di mercato, accedi con le credenziali del tuo account.
             </p>
             <Button
               size="sm"
               onClick={() => openLogin("login")}
               className="mt-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white"
             >
-              Accedi alla Squadra
+              Accedi alla Piattaforma
             </Button>
           </div>
         ) : (
-          <Tabs defaultValue="received" className="space-y-6">
+          <Tabs defaultValue={isAdmin ? "admin_approval" : "received"} className="space-y-6">
             <TabsList className="bg-muted p-1 rounded-xl h-auto flex flex-wrap gap-1">
-              <TabsTrigger
-                value="received"
-                className="text-xs font-bold py-2 px-4 rounded-lg data-[state=active]:bg-background"
-              >
-                <Inbox className="h-3.5 w-3.5 mr-1.5" />
-                Ricevute ({receivedTrades.length})
-                {pendingReceivedCount > 0 && (
-                  <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-white font-mono font-bold">
-                    {pendingReceivedCount}
-                  </span>
-                )}
-              </TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger
+                  value="admin_approval"
+                  className="text-xs font-bold py-2 px-4 rounded-lg data-[state=active]:bg-purple-600 data-[state=active]:text-white font-mono"
+                >
+                  <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
+                  Scambi da Convalidare ({adminPendingTrades.length})
+                </TabsTrigger>
+              )}
 
-              <TabsTrigger
-                value="sent"
-                className="text-xs font-bold py-2 px-4 rounded-lg data-[state=active]:bg-background"
-              >
-                <Send className="h-3.5 w-3.5 mr-1.5" />
-                Inviate ({sentTrades.length})
-              </TabsTrigger>
+              {user.team && (
+                <>
+                  <TabsTrigger
+                    value="received"
+                    className="text-xs font-bold py-2 px-4 rounded-lg data-[state=active]:bg-background"
+                  >
+                    <Inbox className="h-3.5 w-3.5 mr-1.5" />
+                    Ricevute ({receivedTrades.length})
+                    {pendingReceivedCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-white font-mono font-bold">
+                        {pendingReceivedCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+
+                  <TabsTrigger
+                    value="sent"
+                    className="text-xs font-bold py-2 px-4 rounded-lg data-[state=active]:bg-background"
+                  >
+                    <Send className="h-3.5 w-3.5 mr-1.5" />
+                    Inviate ({sentTrades.length})
+                  </TabsTrigger>
+                </>
+              )}
 
               <TabsTrigger
                 value="completed"
                 className="text-xs font-bold py-2 px-4 rounded-lg data-[state=active]:bg-background"
               >
                 <History className="h-3.5 w-3.5 mr-1.5" />
-                Storico ({completedTrades.length})
+                Storico Conclusi ({isAdmin ? completedTradesList.length : myCompletedTrades.length})
               </TabsTrigger>
-
-              {isAdmin && (
-                <TabsTrigger
-                  value="admin_approval"
-                  className="text-xs font-bold py-2 px-4 rounded-lg data-[state=active]:bg-purple-600 data-[state=active]:text-white ml-auto"
-                >
-                  <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
-                  Convalida Lega ({adminPendingTrades.length})
-                </TabsTrigger>
-              )}
             </TabsList>
-
-            {/* TAB RICEVUTE */}
-            <TabsContent value="received" className="space-y-4">
-              {receivedTrades.length === 0 ? (
-                <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/40">
-                  <Inbox className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                  <div className="text-sm font-bold">Nessuna proposta ricevuta</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Non hai ancora ricevuto offerte di scambio da altre squadre.
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {receivedTrades.map((trade) => (
-                    <TradeCard
-                      key={trade.id}
-                      trade={trade}
-                      currentTeam={currentTeam}
-                      onOpenDetails={() => handleOpenDetails(trade)}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* TAB INVIATE */}
-            <TabsContent value="sent" className="space-y-4">
-              {sentTrades.length === 0 ? (
-                <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/40">
-                  <Send className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                  <div className="text-sm font-bold">Nessuna proposta inviata</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Non hai trattative attive inviate ad altri club.
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleOpenNewTrade}
-                    className="mt-3 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white"
-                  >
-                    Crea Proposta
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {sentTrades.map((trade) => (
-                    <TradeCard
-                      key={trade.id}
-                      trade={trade}
-                      currentTeam={currentTeam}
-                      onOpenDetails={() => handleOpenDetails(trade)}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* TAB STORICO */}
-            <TabsContent value="completed" className="space-y-4">
-              {completedTrades.length === 0 ? (
-                <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/40">
-                  <History className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                  <div className="text-sm font-bold">Nessuno scambio concluso</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Le trattative accettate ed eseguite ufficialmente compariranno qui.
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {completedTrades.map((trade) => (
-                    <TradeCard
-                      key={trade.id}
-                      trade={trade}
-                      currentTeam={currentTeam}
-                      onOpenDetails={() => handleOpenDetails(trade)}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
 
             {/* TAB ADMIN APPROVAL */}
             {isAdmin && (
               <TabsContent value="admin_approval" className="space-y-4">
-                <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2">
-                  <ShieldAlert className="h-4 w-4 shrink-0" />
-                  <span>
-                    Queste trattative sono state concordate da entrambe le società e attendono la tua firma definitiva. Una volta approvato uno scambio, i calciatori in <code>an_player</code> e le scelte in <code>an_draft_board</code> verranno trasferiti all'istante.
-                  </span>
+                <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-700 dark:text-purple-300 flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4 shrink-0 text-purple-600" />
+                    <span>
+                      <strong>Pannello Esecutivo Admin</strong>: In questa sezione compaiono tutte le trattative concluse tra le società o in corso. Puoi cliccare <strong>"Approva"</strong> direttamente su ciascuna card o aprire la scheda per esaminare i dettagli e i messaggi.
+                    </span>
+                  </div>
                 </div>
 
                 {adminPendingTrades.length === 0 ? (
@@ -392,7 +428,7 @@ export default function Trattative() {
                     <CheckCircle2 className="h-10 w-10 text-emerald-500/40 mx-auto mb-2" />
                     <div className="text-sm font-bold">Nessuno scambio in attesa di approvazione</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Tutte le proposte concluse tra i manager sono già state elaborate.
+                      Tutte le proposte concordate tra i club sono già state convalidate ed eseguite.
                     </div>
                   </div>
                 ) : (
@@ -404,12 +440,97 @@ export default function Trattative() {
                         currentTeam={currentTeam}
                         isAdminView={true}
                         onOpenDetails={() => handleOpenDetails(trade)}
+                        onQuickApprove={() => handleQuickApprove(trade)}
+                        onQuickReject={() => handleQuickReject(trade)}
                       />
                     ))}
                   </div>
                 )}
               </TabsContent>
             )}
+
+            {/* TAB RICEVUTE (Manager) */}
+            {user.team && (
+              <TabsContent value="received" className="space-y-4">
+                {receivedTrades.length === 0 ? (
+                  <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/40">
+                    <Inbox className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                    <div className="text-sm font-bold">Nessuna proposta ricevuta</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Non hai ancora ricevuto offerte di scambio da altre squadre.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {receivedTrades.map((trade) => (
+                      <TradeCard
+                        key={trade.id}
+                        trade={trade}
+                        currentTeam={currentTeam}
+                        onOpenDetails={() => handleOpenDetails(trade)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
+
+            {/* TAB INVIATE (Manager) */}
+            {user.team && (
+              <TabsContent value="sent" className="space-y-4">
+                {sentTrades.length === 0 ? (
+                  <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/40">
+                    <Send className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                    <div className="text-sm font-bold">Nessuna proposta inviata</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Non hai trattative attive inviate ad altri club.
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={handleOpenNewTrade}
+                      className="mt-3 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white"
+                    >
+                      Crea Proposta
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {sentTrades.map((trade) => (
+                      <TradeCard
+                        key={trade.id}
+                        trade={trade}
+                        currentTeam={currentTeam}
+                        onOpenDetails={() => handleOpenDetails(trade)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
+
+            {/* TAB STORICO */}
+            <TabsContent value="completed" className="space-y-4">
+              {(isAdmin ? completedTradesList : myCompletedTrades).length === 0 ? (
+                <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/40">
+                  <History className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                  <div className="text-sm font-bold">Nessuno scambio concluso</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Le trattative accettate ed eseguite ufficialmente compariranno qui.
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(isAdmin ? completedTradesList : myCompletedTrades).map((trade) => (
+                    <TradeCard
+                      key={trade.id}
+                      trade={trade}
+                      currentTeam={currentTeam}
+                      onOpenDetails={() => handleOpenDetails(trade)}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         )}
       </main>
@@ -442,6 +563,8 @@ interface TradeCardProps {
   currentTeam: string;
   isAdminView?: boolean;
   onOpenDetails: () => void;
+  onQuickApprove?: () => void;
+  onQuickReject?: () => void;
 }
 
 const TradeCard: React.FC<TradeCardProps> = ({
@@ -449,6 +572,8 @@ const TradeCard: React.FC<TradeCardProps> = ({
   currentTeam,
   isAdminView,
   onOpenDetails,
+  onQuickApprove,
+  onQuickReject,
 }) => {
   const isSender = trade.sender_team === currentTeam;
   const partnerTeam = isSender ? trade.receiver_team : trade.sender_team;
@@ -463,23 +588,45 @@ const TradeCard: React.FC<TradeCardProps> = ({
   const totalRequested = trade.requested_players.length + trade.requested_picks.length;
 
   return (
-    <Card className="overflow-hidden border-border/80 bg-card hover:border-blue-500/40 transition-all shadow-sm">
+    <Card className="overflow-hidden border-border/80 bg-card hover:border-purple-500/40 transition-all shadow-sm">
       <CardContent className="p-4 flex flex-col justify-between gap-4 h-full">
         {/* Card Header */}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <img
-              src={`/images/teams/${partnerTeam}_Logo.png`}
-              alt={partnerTeam}
-              className="h-6 w-6 object-contain"
-              onError={(e) => ((e.target as HTMLElement).style.display = "none")}
-            />
-            <div className="min-w-0">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase">
-                {isSender ? "Inviata a" : "Ricevuta da"}
-              </span>
-              <div className="font-extrabold text-xs truncate">{partnerTeamName}</div>
-            </div>
+            {isAdminView ? (
+              <div className="flex items-center gap-2">
+                <img
+                  src={`/images/teams/${trade.sender_team}_Logo.png`}
+                  alt={trade.sender_team}
+                  className="h-5 w-5 object-contain"
+                  onError={(e) => ((e.target as HTMLElement).style.display = "none")}
+                />
+                <span className="font-black text-xs">{trade.sender_team}</span>
+                <ArrowLeftRight className="h-3 w-3 text-muted-foreground" />
+                <img
+                  src={`/images/teams/${trade.receiver_team}_Logo.png`}
+                  alt={trade.receiver_team}
+                  className="h-5 w-5 object-contain"
+                  onError={(e) => ((e.target as HTMLElement).style.display = "none")}
+                />
+                <span className="font-black text-xs">{trade.receiver_team}</span>
+              </div>
+            ) : (
+              <>
+                <img
+                  src={`/images/teams/${partnerTeam}_Logo.png`}
+                  alt={partnerTeam}
+                  className="h-6 w-6 object-contain"
+                  onError={(e) => ((e.target as HTMLElement).style.display = "none")}
+                />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                    {isSender ? "Inviata a" : "Ricevuta da"}
+                  </span>
+                  <div className="font-extrabold text-xs truncate">{partnerTeamName}</div>
+                </div>
+              </>
+            )}
           </div>
 
           <Badge className={`text-[10px] font-bold ${statusCfg.badgeClass}`}>
@@ -526,21 +673,44 @@ const TradeCard: React.FC<TradeCardProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px] text-muted-foreground">
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px] text-muted-foreground flex-wrap gap-2">
           <div className="flex items-center gap-1 font-mono">
             <Clock className="h-3 w-3" />
             <span>{new Date(trade.created_at).toLocaleDateString("it-IT")}</span>
           </div>
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onOpenDetails}
-            className="h-7 text-xs font-bold"
-          >
-            {isAdminView ? "Esamina & Convalida" : "Visualizza Dettagli"}
-          </Button>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onOpenDetails}
+              className="h-7 text-xs font-bold"
+            >
+              Scheda Dettagli
+            </Button>
+
+            {isAdminView && onQuickReject && trade.status !== "completed" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onQuickReject}
+                className="h-7 text-xs font-bold text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+              >
+                <XCircle className="h-3.5 w-3.5 mr-1" /> Respingi
+              </Button>
+            )}
+
+            {isAdminView && onQuickApprove && trade.status !== "completed" && (
+              <Button
+                size="sm"
+                onClick={onQuickApprove}
+                className="h-7 text-xs font-black bg-purple-600 hover:bg-purple-500 text-white shadow-xs"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approva Scambio
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

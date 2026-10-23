@@ -430,12 +430,12 @@ const Navbar = () => {
                 }`}
               >
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <span>La Mia Squadra</span>
+                <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-68 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                  <span>Gestione Club</span>
+                  <span>{isAdmin ? "Amministrazione Lega" : "Gestione Club"}</span>
                   {user?.team ? (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold">
                       {user.team}
@@ -718,7 +718,7 @@ const Navbar = () => {
                     {/* Gruppo: La Mia Squadra */}
                     <div className="space-y-1 pt-2 border-t border-border/60">
                       <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 px-2 py-1 flex items-center gap-1.5 font-mono">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> La Mia Squadra
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> {isAdmin ? "Amministrazione" : "La Mia Squadra"}
                       </div>
                       {miaSquadraItems.map((item) => (
                         <Link

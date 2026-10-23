@@ -449,15 +449,15 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
               </Button>
             )}
 
-            {/* Azioni Admin quando 'pending_admin' */}
-            {isAdmin && trade.status === "pending_admin" && (
+            {/* Azioni Admin: sempre abilitate finché lo scambio non è concluso */}
+            {isAdmin && trade.status !== "completed" && trade.status !== "cancelled" && trade.status !== "admin_rejected" && (
               <>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleAdminReject}
                   disabled={actionLoading}
-                  className="h-8 text-xs text-rose-600 hover:bg-rose-500/10"
+                  className="h-8 text-xs font-bold text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
                 >
                   <XCircle className="h-3.5 w-3.5 mr-1" /> Respingi dalla Lega
                 </Button>
@@ -465,7 +465,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
                   size="sm"
                   onClick={handleAdminApprove}
                   disabled={actionLoading}
-                  className="h-8 text-xs font-black bg-purple-600 hover:bg-purple-500 text-white"
+                  className="h-8 text-xs font-black bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-500/20 px-3"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approva & Registra Scambio Ufficiale
                 </Button>

@@ -217,8 +217,8 @@ export async function fetchAdminPendingTrades(): Promise<EnrichedTrade[]> {
     const { data, error } = await supabase
       .from(TRADES_TABLE)
       .select("*")
-      .eq("status", "pending_admin")
-      .order("updated_at", { ascending: false });
+      .in("status", ["pending_admin", "pending"])
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.warn("fetchAdminPendingTrades query error:", error);
@@ -235,6 +235,28 @@ export async function fetchAdminPendingTrades(): Promise<EnrichedTrade[]> {
 /**
  * Carica tutte le trattative ufficiali concluse con successo (Bacheca pubblica).
  */
+/**
+ * Carica tutte le trattative per l'Admin (tutti gli stati).
+ */
+export async function fetchAllTradesForAdmin(): Promise<EnrichedTrade[]> {
+  try {
+    const { data, error } = await supabase
+      .from(TRADES_TABLE)
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("fetchAllTradesForAdmin query error:", error);
+      return [];
+    }
+
+    return await hydrateTrades(data || []);
+  } catch (err) {
+    console.error("fetchAllTradesForAdmin exception:", err);
+    return [];
+  }
+}
+
 export async function fetchCompletedTrades(): Promise<EnrichedTrade[]> {
   try {
     const { data, error } = await supabase
