@@ -6,7 +6,7 @@ export function getTeams() {
   const { data, isLoading, error } = useQuery<Team[]>({
     queryKey: ['teams'],
     queryFn: () => fetchTeams(),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   return {
@@ -21,7 +21,7 @@ export function getTeamById(teamId?: string) {
     queryKey: ['team', teamId],
     queryFn: () => fetchTeamById(teamId),
     enabled: !!teamId,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   return {

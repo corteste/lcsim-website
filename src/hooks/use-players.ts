@@ -6,7 +6,7 @@ export function getPlayers(fromTeam?: string) {
   const { data, isLoading, error } = useQuery<Player[]>({
     queryKey: ['players', fromTeam ?? 'all'],
     queryFn: () => (fromTeam !== undefined ? fetchPlayersByTeam(fromTeam) : fetchPlayers()),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   return {

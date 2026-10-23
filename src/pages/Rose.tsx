@@ -17,6 +17,7 @@ import {
   Shield,
   X,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 import {
   getRoleColor,
@@ -60,7 +61,7 @@ const ROLE_GROUPS = [
 ];
 
 const Rose = () => {
-  const { teams, loading: loadingTeams } = getTeams();
+  const { teams, loading: loadingTeams, refetch: refetchTeams } = getTeams();
 
   // Sort teams alphabetically by name
   const sortedTeams = useMemo(() => {
@@ -167,6 +168,17 @@ const Rose = () => {
           </div>
 
           <div className="flex items-center gap-3 self-start md:self-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchTeams()}
+              disabled={loadingTeams}
+              className="h-8 px-2.5 rounded-xl text-xs gap-1.5 border-border/80 bg-card hover:bg-muted"
+              title="Ricarica le rose aggiornate dal database"
+            >
+              <RotateCcw className={`h-3.5 w-3.5 ${loadingTeams ? "animate-spin text-emerald-500" : "text-muted-foreground"}`} />
+              <span>Aggiorna Rose</span>
+            </Button>
             <div className="px-3.5 py-1.5 rounded-xl border border-border/80 bg-card text-xs flex items-center gap-2 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-muted-foreground">Stagione Attiva:</span>

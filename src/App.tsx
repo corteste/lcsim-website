@@ -25,17 +25,9 @@ import Comunicati from "./pages/Comunicati";
 import OpponentScout from "./pages/OpponentScout";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
+import { queryClient } from "@/queryClient";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minuti di cache fresca
-      gcTime: 10 * 60 * 1000,    // 10 minuti di conservazione in memoria
-      refetchOnWindowFocus: false, // Disabilita chiamate inutili al cambio tab
-      retry: 1,
-    },
-  },
-});
+
 
 const App = () => (
   <AuthProvider>

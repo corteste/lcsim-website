@@ -1,3 +1,4 @@
+import { invalidateRostersAndTrades } from "@/queryClient";
 import { supabase } from "@/supabaseClient";
 import {
   Trade,
@@ -366,6 +367,7 @@ export async function acceptTrade(tradeId: string, teamId: string): Promise<{ su
       message: "✅ Proposta accettata da entrambe le società. Inviata all'Admin per l'approvazione ufficiale e registrazione in Serie A.",
     });
 
+    invalidateRostersAndTrades();
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err?.message || "Errore durante l'accettazione." };
@@ -517,6 +519,7 @@ export async function adminApproveTrade(
     });
 
     if (!rpcError && rpcData?.success) {
+      invalidateRostersAndTrades();
       return { success: true };
     }
 
