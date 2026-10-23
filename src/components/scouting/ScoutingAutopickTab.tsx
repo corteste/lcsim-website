@@ -450,7 +450,17 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                         </div>
                         <div className="text-[10px] text-muted-foreground flex items-center gap-2">
                           <span>{r.Età} anni</span>
-                          <span>{getNationalityFlag(r.Nazionalità)} {r.Nazionalità}</span>
+                          <span className="flex items-center gap-1 font-mono">
+                            <img
+                              src={getNationalityFlag(r.Nazionalità)}
+                              alt={r.Nazionalità}
+                              className="h-3 w-4.5 object-cover rounded-xs border border-border/60 shrink-0 inline-block"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                            <span>{r.Nazionalità}</span>
+                          </span>
                           {tokens > 0 && (
                             <span className="text-amber-500 font-bold flex items-center gap-0.5">
                               {renderStars(tokens)}
@@ -573,7 +583,17 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
 
                     <div className="flex flex-wrap items-center gap-2.5 text-xs text-muted-foreground mt-0.5">
                       <span>{rookie.Età} anni</span>
-                      <span>{getNationalityFlag(rookie.Nazionalità)} {rookie.Nazionalità}</span>
+                      <span className="flex items-center gap-1 font-mono">
+                        <img
+                          src={getNationalityFlag(rookie.Nazionalità)}
+                          alt={rookie.Nazionalità}
+                          className="h-3.5 w-5 object-cover rounded-xs border border-border/80 shrink-0 inline-block shadow-2xs"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                        <span>{rookie.Nazionalità}</span>
+                      </span>
                       {tokens > 0 ? (
                         <span className="text-amber-500 font-bold flex items-center gap-1">
                           Scouting: {renderStars(tokens)}
