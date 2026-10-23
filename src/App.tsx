@@ -23,11 +23,10 @@ import Trattative from "./pages/Trattative";
 import UfficialitaScambi from "./pages/UfficialitaScambi";
 import Comunicati from "./pages/Comunicati";
 import OpponentScout from "./pages/OpponentScout";
+import AdminAutomazioni from "./pages/admin/AdminAutomazioni";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
 import { queryClient } from "@/queryClient";
-
-
 
 const App = () => (
   <AuthProvider>
@@ -57,6 +56,8 @@ const App = () => (
                 <Route path="/mia-squadra/scouting" element={<Scouting />} />
                 <Route path="/mia-squadra/confronto-giocatori" element={<ConfrontoGiocatori />} />
                 <Route path="/mia-squadra/trattative" element={<Trattative />} />
+                <Route path="/admin/automazioni" element={<AdminAutomazioni />} />
+                <Route path="/amministrazione/automazioni" element={<AdminAutomazioni />} />
                 <Route path="/archivio/giocatori" element={<ArchivioGiocatori />} />
                 <Route path="/archivio/hall-of-fame" element={<HallOfFame />} />
                 <Route path="*" element={<NotFound />} />

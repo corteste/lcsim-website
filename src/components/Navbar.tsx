@@ -23,6 +23,7 @@ import {
   Menu,
   ArrowLeftRight,
   Megaphone,
+  Cpu,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -214,7 +215,7 @@ const Navbar = () => {
     location.pathname.startsWith("/giocatori");
   const isDraftActive = location.pathname.startsWith("/draft");
   const isArchivioActive = location.pathname.startsWith("/archivio");
-  const isMiaSquadraActive = location.pathname.startsWith("/mia-squadra");
+  const isMiaSquadraActive = location.pathname.startsWith("/mia-squadra") || location.pathname.startsWith("/admin") || location.pathname.startsWith("/amministrazione");
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-card/90 backdrop-blur-md shadow-xs transition-colors">
@@ -445,6 +446,31 @@ const Navbar = () => {
                     </Badge>
                   ) : null}
                 </div>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/admin/automazioni"
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
+                          location.pathname === "/admin/automazioni" ? "bg-amber-500/15 font-bold text-amber-600 dark:text-amber-400" : "hover:bg-amber-500/10 text-foreground"
+                        }`}
+                      >
+                        <div className="p-1.5 rounded-md bg-amber-500/15 text-amber-500 shrink-0">
+                          <Cpu className="h-4 w-4" />
+                        </div>
+                        <div className="flex items-center justify-between flex-1">
+                          <span className="text-sm font-bold leading-tight">
+                            Automazioni
+                          </span>
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 font-bold border-amber-500/40 text-amber-600 dark:text-amber-400">
+                            ADMIN
+                          </Badge>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1" />
+                  </>
+                )}
                 {miaSquadraItems.map((item) => {
                   const Icon = item.icon;
                   const isCurrent = location.pathname === item.path;

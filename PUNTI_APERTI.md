@@ -259,3 +259,81 @@ Espansione della pagina Tattica per andare oltre la semplice selezione del modul
 4. **Persistenza & Integrazione**:
    - Salvataggio delle configurazioni avanzate nel record di `an_team_tactic` (come campo JSONB strutturato `tactical_settings` o colonne dedicate) e tracciamento negli snapshot di `team_formation_history`.
    - Visualizzazione dei preset tattici nel report avversaria (`/prossimo-avversario`) e nel futuro Foglio Commento per commentatori e spettatori.
+
+
+---
+
+## 📌 10. Automatizzazione Applica Invecchiamenti Calciatori
+- **Stato**: 🟡 Da Discutere & Definire
+- **Priorità**: Alta (Procedura chiave di transizione tra stagioni sportive)
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), tabelle `an_player`, `ea_player_db`
+- **Tabelle coinvolte**: `an_player`, `ea_player_db`, eventuale tabella di log o snapshot archivio
+
+### Descrizione
+Procedura batch eseguibile dall'Admin per effettuare il passaggio d'anno/stagione sportiva su tutti i calciatori registrati nella Lega.
+
+### Punti Chiave da Discutere con l'Utente
+1. **Incremento Anagrafico**:
+   - Aumento di 1 anno (`Età = Età + 1`) per tutti i giocatori attivi.
+   - Sfasamento `DOB` / `birthdate` per mantenere l'esatta corrispondenza con il motore anagrafico di EA FC 25.
+2. **Curve di Decadimento & Sviluppo Attributi**:
+   - Definire se e come cambiano le statistiche fisiche e tecniche in base alla fascia d'età:
+     - *Fascia Giovani (Under 23)*: bonus naturale o stabilità?
+     - *Fascia Prime (24-29)*: mantenimento del picco di rendimento.
+     - *Fascia Declino (30-33)*: calo graduale degli attributi di velocità, accelerazione e resistenza?
+     - *Fascia Veterani (34+)*: decrementi più marcati e valutazione del ritiro.
+3. **Gestione Ritiri**:
+   - Criteri per contrassegnare un giocatore come `Squadra = 'RITIRATO'`: soglia d'età fissa (es. 38 o 40 anni) o valutazione individuale/OVR minimo?
+4. **Reversibilità e Sicurezza**:
+   - Backup automatico / snapshot dello stato delle rose prima del lancio, per poter annullare l'operazione in caso di errore.
+
+---
+
+## 📌 11. Automatizzazione Start / Stop Calciomercato
+- **Stato**: 🟡 Da Discutere & Definire
+- **Priorità**: Alta (Regolamentazione ufficiale delle sessioni di mercato)
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/pages/Trattative.tsx`, `src/pages/Roster.tsx`
+- **Tabelle coinvolte**: `league_settings` o configurazione stato globale
+
+### Descrizione
+Interruttore globale controllato dall'Admin per aprire e chiudere ufficialmente le finestre temporali di calciomercato della Lega.
+
+### Punti Chiave da Discutere con l'Utente
+1. **Regole con Mercato Chiuso**:
+   - Disabilitazione dell'invio e accettazione di nuove proposte di scambio in `/mia-squadra/trattative`.
+   - Blocco dei tagli calciatore in `/mia-squadra/roster`.
+   - I manager possono ancora visualizzare lo storico o consultare le rose, ma le azioni transazionali sono inibite con banner informativo.
+2. **Regole con Mercato Aperto**:
+   - Piena operatività per scambi di giocatori e scelte draft.
+   - Possibilità di configurare una data/ora di chiusura con countdown automatico per tutti gli utenti.
+3. **Eccezioni Admin**:
+   - L'Admin deve poter operare o forzare scambi anche a mercato chiuso in casi straordinari?
+
+---
+
+## 📌 12. Automatizzazione Blocca / Sblocca Rose
+- **Stato**: 🟡 Da Discutere & Definire
+- **Priorità**: Media-Alta (Integrità delle rose durante lo svolgimento delle giornate di campionato)
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/pages/Roster.tsx`, `src/pages/Tattica.tsx`
+- **Tabelle coinvolte**: `league_settings`, `an_player`, `an_team_tactic`
+
+### Descrizione
+Funzione per congelare istantaneamente l'intero organico di tutte le squadre (numeri di maglia, cambi ruoli, accessori, titolari e panchina) prima che le partite vengano simulate su EA FC 25.
+
+### Punti Chiave da Discutere con l'Utente
+1. **Perimetro del Blocco**:
+   - Blocca solo numeri di maglia e kit in Rosa, oppure anche l'inserimento/modifica delle formazioni in Tattica?
+   - Rapporto con le scadenze automatiche di giornata (`league_deadlines`): il blocco rose è un override manuale di emergenza o un'azione programmata autonoma?
+2. **Feedback per i Manager**:
+   - Banner esplicito in `/mia-squadra/roster` e `/mia-squadra/tattica`: *"Rose congelate dalla Lega per lo svolgimento delle partite"*.
+
+---
+
+## 📌 13. Hub Amministrazione Automazioni & Export Master Table EA FC 25
+- **Stato**: 🟢 Pagina & Export Operativi su dev (Discussione automatizzazioni registrata)
+- **Priorità**: Alta
+- **Moduli coinvolti**: Nuova pagina `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), Navbar, `src/services/eaPlayerDbService.ts`
+- **Tabelle coinvolte**: `ea_player_db`, `an_player`, `an_player_training`
+
+### Descrizione
+Sezione riservata agli amministratori (`is_admin = true`) per supervisionare le operazioni batch e automatizzazioni del campionato e scaricare in un clic il file `.tsv` a 137 colonne aggiornato da inserire nella cartella di EA FC 25.
