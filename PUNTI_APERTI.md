@@ -152,3 +152,47 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
     1. **Storico Partite**: Al termine della scadenza, la formazione attiva di ogni squadra viene duplicata/congelata per quella specifica giornata (`week`).
     2. **Alimentazione Foglio Commento**: Il Foglio Commento legge direttamente lo snapshot congelato della rispettiva giornata.
     3. **Ripristino Formazioni**: In `Tattica.tsx`, il manager può aprire una tendina *"Carica formazione passata"* per riutilizzare una disposizione usata nelle giornate precedenti.
+
+
+---
+
+## 📌 6. Sistema Giocatori Preferiti / Watchlist (Draft, Scouting & Free Agent)
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Media-Alta (Miglioramento essenziale per l'usabilità durante il mercato e il draft)
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Scouting.tsx`, `src/pages/ListaGiocatori.tsx` (Free Agent), Supabase
+- **Tabelle coinvolte**: Nuova tabella `team_player_favorites` (o `user_player_favorites`)
+
+### Valutazione Fattibilità: 🟢 Pienamente Fattibile & Immediata
+- **Descrizione**:
+  - Permette a ciascun manager di contrassegnare rapidamente qualsiasi calciatore (Rookie al Draft, prospetto nella pagina Scouting, o Free Agent svincolato) con una **stellina / segnalibro** (⭐).
+  - **Integrazione Trasversale**:
+    - **Pagina Scouting (`/scouting`)**: Il manager mentre spende token di scouting o analizza i report può cliccare sulla stellina per salvare il rookie tra i suoi preferiti.
+    - **Pagina Draft (`/draft`)**:
+      - Nel tabellone o nella modale di selezione della scelta compare il filtro rapido **"⭐ Solo Preferiti"**.
+      - I rookie preferiti hanno un'evidenziazione visiva distinta (es. bordo dorato o badge stellina) per essere individuati all'istante senza dover scorrere decine di profili durante il proprio turno.
+    - **Lista Giocatori / Mercato Free Agent**: Funziona identicamente per tenere d'occhio svincolati o talenti di altre squadre.
+  - **Architettura Tecnica**:
+    - Tabella Supabase: `team_player_favorites(id, team_id, player_id, created_at)` con vincolo univoco `(team_id, player_id)`.
+    - RLS per garantire che ciascun manager veda e modifichi solo la propria lista privata.
+
+---
+
+## 📌 7. Lista di Priorità Draft & Autopick per Manager Assenti
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Alta (Risolve il problema critico dei blocchi del Draft Live dovuti all'assenza di un manager)
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, Supabase RPC
+- **Tabelle coinvolte**: Nuova tabella `draft_team_wishlist` (o estensione di `an_draft_board`), collegamento con `team_player_favorites`
+
+### Valutazione Fattibilità: 🟢 Pienamente Fattibile & Consigliata
+- **Descrizione**:
+  - Sostituisce o potenzia la vecchia idea "degli interessi per ruolo" trasformandola in una **Priority Queue / Draft Board Personale**.
+  - Prima della serata del Draft, ciascun manager può comporre una lista ordinata dei Rookie desiderati (1°, 2°, 3°, 4°, ... fino a $N$ scelte).
+  - La lista può essere riordinata comodamente via Drag-and-Drop o pulsanti freccia (Su/Giù) e popolata con un semplice click a partire dai **Preferiti (Punto 6)**.
+  - **Meccanismo di Autopick (Scelta Automatica)**:
+    - Quando tocca alla squadra di un manager assente (opzione *"Assente / Autopick Attivo"* abilitata dal manager o attivata con un pulsante dall'Admin):
+      1. Il sistema scorre la lista di preferenza della squadra dall'alto (Rank 1).
+      2. Il primo rookie della lista **non ancora selezionato da altre squadre** viene automaticamente assegnato alla scelta corrente.
+      3. Viene registrato l'evento nel log del Draft (es. *"Scelta automatica da lista preferenze per assenza"*).
+    - **Strategia di Fallback**: Se tutti i rookie inseriti nella lista del manager sono già stati scelti da altri nei turni precedenti:
+      - *Opzione A*: L'autopick assegna il miglior rookie rimasto disponibile con l'Overall (o potenziale stimato) più alto.
+      - *Opzione B*: Notifica/avviso visivo all'Admin per una scelta manuale d'ufficio.
