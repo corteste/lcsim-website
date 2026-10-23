@@ -157,7 +157,7 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 6. Sistema Giocatori Preferiti / Watchlist (Draft, Scouting & Free Agent)
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Implementato su branch dev (Pronto per test)
 - **Priorità**: Media-Alta (Miglioramento essenziale per l'usabilità durante il mercato e il draft)
 - **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Scouting.tsx`, `src/pages/ListaGiocatori.tsx` (Free Agent), Supabase
 - **Tabelle coinvolte**: Nuova tabella `team_player_favorites` (o `user_player_favorites`)
@@ -178,7 +178,7 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 7. Lista di Priorità Draft & Autopick per Manager Assenti
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Implementato su branch dev (Pronto per test)
 - **Priorità**: Alta (Risolve il problema critico dei blocchi del Draft Live dovuti all'assenza di un manager)
 - **Moduli coinvolti**: `src/pages/Draft.tsx`, Supabase RPC
 - **Tabelle coinvolte**: Nuova tabella `draft_team_wishlist` (o estensione di `an_draft_board`), collegamento con `team_player_favorites`

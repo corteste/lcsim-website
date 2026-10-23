@@ -58,6 +58,10 @@ import {
 } from "@/utils/scoutingConfig";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
+import {
+  fetchTeamFavorites,
+  toggleTeamFavorite,
+} from "@/services/draftWishlistService";
 
 export interface RookieScoutingRecord {
   team_id: string;
@@ -180,6 +184,10 @@ const Scouting = () => {
   const [statusFilter, setStatusFilter] = useState<string>("ALL"); // ALL | SCOUTED | UNSCOUTED
   const [selectedRookieId, setSelectedRookieId] = useState<number | null>(null);
 
+  // Watchlist / Preferiti (Punto 6)
+  const [favoriteRookieIds, setFavoriteRookieIds] = useState<Set<number>>(new Set());
+  const [favoritesOnly, setFavoritesOnly] = useState<boolean>(false);
+
   // Filters for "recap" tab
   const [recapTierFilter, setRecapTierFilter] = useState<string>("ALL");
   const [recapRoleFilter, setRecapRoleFilter] = useState<string>("ALL");
@@ -250,6 +258,7 @@ const Scouting = () => {
   const filteredRookies = useMemo(() => {
     return rookies
       .filter((r) => {
+        if (favoritesOnly && !favoriteRookieIds.has(Number(r.ID))) return false;
         const tokens = scoutingMap[Number(r.ID)]?.tokens_spent ?? 0;
         if (statusFilter === "SCOUTED" && tokens === 0) return false;
         if (statusFilter === "UNSCOUTED" && tokens > 0) return false;
@@ -271,7 +280,7 @@ const Scouting = () => {
         const starsB = Number(b.Stelle) || 0;
         return starsB - starsA;
       });
-  }, [rookies, scoutingMap, statusFilter, roleFilter, searchQuery]);
+  }, [rookies, scoutingMap, statusFilter, roleFilter, searchQuery, favoritesOnly, favoriteRookieIds]);
 
   // Currently selected rookie in the Single Rookie Inspector
   const selectedRookie = useMemo(() => {
@@ -569,7 +578,20 @@ const Scouting = () => {
                     <CardTitle className="text-sm font-extrabold uppercase tracking-wider">
                       Lista Rookie ({filteredRookies.length})
                     </CardTitle>
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setFavoritesOnly((prev) => !prev)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors flex items-center gap-1 ${
+                          favoritesOnly
+                            ? "bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/50 shadow-xs"
+                            : "bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
+                        title="Filtra solo rookie contrassegnati con la stella"
+                      >
+                        <Star className={`h-2.5 w-2.5 ${favoritesOnly ? "fill-amber-500 text-amber-500" : ""}`} />
+                        <span>★ (${favoriteRookieIds.size})</span>
+                      </button>
                       {(
                         [
                           { id: "ALL", label: "Tutti" },

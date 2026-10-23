@@ -60,6 +60,14 @@ import {
 } from "@/utils/scoutingConfig";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
+import { DraftWishlistDrawer } from "@/components/draft/DraftWishlistDrawer";
+import {
+  fetchTeamFavorites,
+  toggleTeamFavorite,
+  fetchAutopickSetting,
+  fetchAllAutopickSettings,
+  executeAutopick,
+} from "@/services/draftWishlistService";
 
 export interface DraftPickRow {
   pick_overall: number;
@@ -119,6 +127,14 @@ const Draft = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [selectedRookieId, setSelectedRookieId] = useState<number | null>(null);
+
+  // Watchlist & Autopick State (Punti 6 e 7)
+  const [favoriteRookieIds, setFavoriteRookieIds] = useState<Set<number>>(new Set());
+  const [favoritesOnly, setFavoritesOnly] = useState<boolean>(false);
+  const [wishlistDrawerOpen, setWishlistDrawerOpen] = useState<boolean>(false);
+  const [isUserAutopickEnabled, setIsUserAutopickEnabled] = useState<boolean>(false);
+  const [allAutopickSettings, setAllAutopickSettings] = useState<Record<string, boolean>>({});
+  const [isAutopicking, setIsAutopicking] = useState<boolean>(false);
 
   // Admin dialog state
   const [adminModalOpen, setAdminModalOpen] = useState<boolean>(false);
@@ -278,6 +294,9 @@ const Draft = () => {
     return rookies
       .filter((r) => !draftedRookieIds.has(Number(r.ID)) && !r.Squadra)
       .filter((r) => {
+        if (favoritesOnly && !favoriteRookieIds.has(Number(r.ID))) {
+          return false;
+        }
         if (roleFilter !== "ALL") {
           const group = ROLE_GROUPS.find((g) => g.id === roleFilter);
           if (group && group.roles.length > 0 && !group.roles.includes(r.Posiz)) {
@@ -296,7 +315,7 @@ const Draft = () => {
         if (rp !== 0) return rp;
         return `${a.Cognome} ${a.Nome}`.localeCompare(`${b.Cognome} ${b.Nome}`);
       });
-  }, [rookies, draftedRookieIds, roleFilter, searchQuery]);
+  }, [rookies, draftedRookieIds, roleFilter, searchQuery, favoritesOnly, favoriteRookieIds]);
 
   const selectedRookie = useMemo(() => {
     if (selectedRookieId === null) return null;
@@ -717,6 +736,32 @@ const Draft = () => {
                     </Badge>
                   )}
                 </div>
+
+                {/* Autopick Squadra Badge */}
+                {allAutopickSettings[currentOnTheClockPick.team_id] && (
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 gap-1 text-[11px] font-bold"
+                  >
+                    <Bot className="h-3.5 w-3.5" />
+                    Autopick Attivo
+                  </Badge>
+                )}
+
+                {/* Pulsante Emergenza Admin per Autopick */}
+                {isAdmin && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAdminExecuteAutopick(currentOnTheClockPick)}
+                    disabled={isAutopicking || submitting}
+                    className="h-8 text-xs font-bold border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 gap-1.5"
+                    title="Esegui scelta automatica da lista preferenze squadra o miglior OVR"
+                  >
+                    <Bot className="h-3.5 w-3.5 text-amber-500" />
+                    <span>{isAutopicking ? "Selezione..." : `Autopick per ${currentOnTheClockPick.team_id}`}</span>
+                  </Button>
+                )}
 
                 {upcomingQueue.length > 0 && (
                   <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground pl-2">

@@ -41,6 +41,9 @@ import {
 import { getPlayers } from "@/hooks/use-players";
 import { getTeams } from "@/hooks/use-teams";
 import { Player } from "@/types/player";
+import { useAuth } from "@/context/AuthContext";
+import { fetchTeamFavorites, toggleTeamFavorite } from "@/services/draftWishlistService";
+import { toast } from "sonner";
 import PlayerDetails from "@/components/player/playerDetails";
 
 // Helper per estrarre il codice dello stato mercato
@@ -84,7 +87,7 @@ export const getMarketLabel = (code: string | null) => {
 
 type SortField = "OVR" | "Età" | "Nome" | "Posiz" | "XP";
 type SortDir = "asc" | "desc";
-type ScopeTab = "SERIE_A" | "ALL" | "SVINCOLATI" | "SERIE_B";
+type ScopeTab = "SERIE_A" | "ALL" | "SVINCOLATI" | "SERIE_B" | "FAVORITES";
 type ViewMode = "table" | "grid";
 
 const ROLE_GROUPS = [
@@ -200,6 +203,7 @@ const ListaGiocatori = () => {
       if (scopeTab === "SERIE_A" && !isSerieA) return false;
       if (scopeTab === "SVINCOLATI" && !isSvincolato) return false;
       if (scopeTab === "SERIE_B" && !isSerieB) return false;
+      if (scopeTab === "FAVORITES" && !favoritePlayerIds.has(Number(player.ID))) return false;
 
       // 2. Filtro Ricerca Testuale
       if (q) {
