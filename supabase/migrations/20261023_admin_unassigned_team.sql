@@ -2,7 +2,10 @@
 -- LCSIM - Aggiornamento Ruoli: Admin Neutro (Senza Squadra) e Manager APD
 -- ==============================================================================
 
--- 1. Aggiorna rpc_login per gestire utenti Admin senza alcuna squadra (team_id NULL)
+-- 1. Rimuove la versione precedente della funzione per consentire il cambio del tipo di ritorno
+DROP FUNCTION IF EXISTS public.rpc_login(text, text);
+
+-- 2. Ricrea rpc_login per gestire utenti Admin senza alcuna squadra (team_id NULL)
 CREATE OR REPLACE FUNCTION public.rpc_login(p_username text, p_password text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -53,7 +56,7 @@ BEGIN
 END;
 $$;
 
--- 2. Aggiorna utente 'admin': Super Admin neutrale, nessuna squadra assegnata
+-- 3. Imposta l'utente 'admin' come Super Admin neutrale, nessuna squadra assegnata
 UPDATE public.app_user
 SET 
     is_admin = true,
@@ -62,7 +65,7 @@ SET
     updated_at = timezone('utc'::text, now())
 WHERE username = 'admin';
 
--- 3. Aggiorna utente 'cotestekkio': Manager ufficiale APD (non admin)
+-- 4. Assicura che 'cotestekkio' sia manager APD non admin
 UPDATE public.app_user
 SET 
     is_admin = false,
