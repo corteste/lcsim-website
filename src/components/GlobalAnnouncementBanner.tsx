@@ -10,8 +10,10 @@ import {
 } from "@/services/announcementsService";
 import { LeagueAnnouncement } from "@/types/announcements";
 
+let memoryGlobalBanner: LeagueAnnouncement | null = null;
+
 export const GlobalAnnouncementBanner: React.FC = () => {
-  const [activeBanner, setActiveBanner] = useState<LeagueAnnouncement | null>(null);
+  const [activeBanner, setActiveBanner] = useState<LeagueAnnouncement | null>(() => memoryGlobalBanner);
 
   const loadBanner = useCallback(async () => {
     const all = await fetchAnnouncements();
@@ -21,8 +23,9 @@ export const GlobalAnnouncementBanner: React.FC = () => {
       if (isBannerDismissed(a.id)) return false;
       if (a.expires_at && new Date(a.expires_at) < now) return false;
       return true;
-    });
-    setActiveBanner(banner || null);
+    }) || null;
+    memoryGlobalBanner = banner;
+    setActiveBanner(banner);
   }, []);
 
   useEffect(() => {

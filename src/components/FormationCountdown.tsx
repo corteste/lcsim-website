@@ -30,6 +30,7 @@ import {
   updateDeadline,
   calculateCountdown,
   upsertDeadline,
+  getCachedActiveDeadline,
 } from "@/services/deadlineService";
 import { LeagueDeadline, DeadlineCountdownState } from "@/types/deadlines";
 import { useAuth } from "@/context/AuthContext";
@@ -48,15 +49,21 @@ export const FormationCountdown: React.FC<FormationCountdownProps> = ({
   const { user } = useAuth();
   const isAdmin = user?.isAdmin || false;
 
-  const [activeDeadline, setActiveDeadline] = useState<LeagueDeadline | null>(null);
-  const [countdown, setCountdown] = useState<DeadlineCountdownState>({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    totalMs: 0,
-    isExpired: false,
-    isUrgent: false,
+  const [activeDeadline, setActiveDeadline] = useState<LeagueDeadline | null>(() => getCachedActiveDeadline());
+  const [countdown, setCountdown] = useState<DeadlineCountdownState>(() => {
+    const cached = getCachedActiveDeadline();
+    if (cached) {
+      return calculateCountdown(cached.deadline, cached.is_force_closed);
+    }
+    return {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      totalMs: 0,
+      isExpired: false,
+      isUrgent: false,
+    };
   });
 
   // Admin Modal State

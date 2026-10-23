@@ -34,11 +34,13 @@ import {
 import { AppNotification } from "@/types/announcements";
 import { toast } from "sonner";
 
+let memoryNotifications: AppNotification[] = [];
+
 export const NotificationsMenu: React.FC = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => memoryNotifications);
   const [open, setOpen] = useState(false);
 
   const userKey = user?.id || user?.username || user?.team || undefined;
@@ -50,6 +52,7 @@ export const NotificationsMenu: React.FC = () => {
       userTeam,
       isAdmin,
     });
+    memoryNotifications = items;
     setNotifications(items);
   }, [userKey, userTeam, isAdmin]);
 

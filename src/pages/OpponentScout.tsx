@@ -90,6 +90,10 @@ export const OpponentScout: React.FC = () => {
   const [selectedFormationIdx, setSelectedFormationIdx] = useState<number>(0);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+
+  useEffect(() => {
     let isMounted = true;
     setLoading(true);
 

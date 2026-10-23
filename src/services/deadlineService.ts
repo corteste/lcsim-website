@@ -9,6 +9,12 @@ import {
 const DEADLINES_TABLE = "league_deadlines";
 const SNAPSHOTS_TABLE = "team_lineup_snapshots";
 
+let memoryActiveDeadline: LeagueDeadline | null = null;
+
+export function getCachedActiveDeadline(): LeagueDeadline | null {
+  return memoryActiveDeadline;
+}
+
 /**
  * Recupera la scadenza della giornata attualmente attiva.
  * Se nessuna è marcata come is_active, tenta di recuperare la prima scadenza futura o la più recente.
@@ -25,7 +31,8 @@ export async function fetchActiveDeadline(): Promise<LeagueDeadline | null> {
       .maybeSingle();
 
     if (!activeErr && activeData) {
-      return activeData as LeagueDeadline;
+      memoryActiveDeadline = activeData as LeagueDeadline;
+      return memoryActiveDeadline;
     }
 
     // 2. Fallback: la prima scadenza disponibile
@@ -37,7 +44,12 @@ export async function fetchActiveDeadline(): Promise<LeagueDeadline | null> {
       .limit(1)
       .maybeSingle();
 
-    return fallbackData ? (fallbackData as LeagueDeadline) : null;
+    if (fallbackData) {
+      memoryActiveDeadline = fallbackData as LeagueDeadline;
+      return memoryActiveDeadline;
+    }
+
+    return memoryActiveDeadline;
   } catch (err) {
     console.error("fetchActiveDeadline error:", err);
     return null;
