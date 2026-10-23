@@ -1121,7 +1121,21 @@ const Draft = () => {
                         className="h-8 pl-8 text-xs"
                       />
                     </div>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setFavoritesOnly((prev) => !prev)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                          favoritesOnly
+                            ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/50 ring-1 ring-amber-500/30 shadow-xs"
+                            : "bg-muted/60 text-muted-foreground hover:text-foreground border border-transparent"
+                        }`}
+                        title="Filtra solo i tuoi rookie preferiti (⭐)"
+                      >
+                        <Star className={`h-3.5 w-3.5 ${favoritesOnly ? "fill-amber-500 text-amber-500" : ""}`} />
+                        <span>Preferiti ({favoriteRookieIds.size})</span>
+                      </button>
+
                       {ROLE_GROUPS.map((g) => (
                         <button
                           key={g.id}
@@ -1174,8 +1188,11 @@ const Draft = () => {
                               >
                                 {rookie.Posiz}
                               </Badge>
-                              <span className="text-xs sm:text-sm font-semibold truncate">
+                              <span className="text-xs sm:text-sm font-semibold truncate flex items-center gap-1">
                                 {rookie.Nome} {rookie.Cognome}
+                                {favoriteRookieIds.has(rId) && (
+                                  <Star className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0 inline" />
+                                )}
                               </span>
                               {scoutTokens > 0 && (
                                 <Badge
@@ -1190,6 +1207,30 @@ const Draft = () => {
                             </button>
 
                             <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleFavorite(rId);
+                                }}
+                                className={`p-1 rounded-md transition-all ${
+                                  favoriteRookieIds.has(rId)
+                                    ? "text-amber-500 hover:text-amber-600 hover:scale-110"
+                                    : "text-muted-foreground/35 hover:text-amber-500 hover:scale-110"
+                                }`}
+                                title={
+                                  favoriteRookieIds.has(rId)
+                                    ? "Rimuovi dai preferiti"
+                                    : "Salva tra i preferiti (⭐)"
+                                }
+                              >
+                                <Star
+                                  className={`h-4 w-4 ${
+                                    favoriteRookieIds.has(rId) ? "fill-amber-500" : ""
+                                  }`}
+                                />
+                              </button>
+
                               <button
                                 type="button"
                                 title="Apri Report Scouting del rookie"
@@ -1235,8 +1276,22 @@ const Draft = () => {
                             >
                               {selectedRookie.Posiz}
                             </Badge>
-                            <span className="font-extrabold text-sm">
+                            <span className="font-extrabold text-sm flex items-center gap-1.5">
                               {selectedRookie.Nome} {selectedRookie.Cognome}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleFavorite(Number(selectedRookie.ID))}
+                                className="p-0.5 rounded text-muted-foreground hover:text-amber-500 transition-colors"
+                                title={favoriteRookieIds.has(Number(selectedRookie.ID)) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                              >
+                                <Star
+                                  className={`h-3.5 w-3.5 ${
+                                    favoriteRookieIds.has(Number(selectedRookie.ID))
+                                      ? "fill-amber-500 text-amber-500"
+                                      : "text-muted-foreground/40 hover:text-amber-500"
+                                  }`}
+                                />
+                              </button>
                             </span>
                           </div>
                         </div>
