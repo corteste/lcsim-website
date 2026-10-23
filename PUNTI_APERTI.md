@@ -183,16 +183,16 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 - **Moduli coinvolti**: `src/pages/Draft.tsx`, Supabase RPC
 - **Tabelle coinvolte**: Nuova tabella `draft_team_wishlist` (o estensione di `an_draft_board`), collegamento con `team_player_favorites`
 
-### Valutazione Fattibilità: 🟢 Pienamente Fattibile & Consigliata
+### Specifiche Approvate: 🟢 Pronte per lo Sviluppo
 - **Descrizione**:
   - Sostituisce o potenzia la vecchia idea "degli interessi per ruolo" trasformandola in una **Priority Queue / Draft Board Personale**.
-  - Prima della serata del Draft, ciascun manager può comporre una lista ordinata dei Rookie desiderati (1°, 2°, 3°, 4°, ... fino a $N$ scelte).
-  - La lista può essere riordinata comodamente via Drag-and-Drop o pulsanti freccia (Su/Giù) e popolata con un semplice click a partire dai **Preferiti (Punto 6)**.
-  - **Meccanismo di Autopick (Scelta Automatica)**:
-    - Quando tocca alla squadra di un manager assente (opzione *"Assente / Autopick Attivo"* abilitata dal manager o attivata con un pulsante dall'Admin):
-      1. Il sistema scorre la lista di preferenza della squadra dall'alto (Rank 1).
-      2. Il primo rookie della lista **non ancora selezionato da altre squadre** viene automaticamente assegnato alla scelta corrente.
-      3. Viene registrato l'evento nel log del Draft (es. *"Scelta automatica da lista preferenze per assenza"*).
-    - **Strategia di Fallback**: Se tutti i rookie inseriti nella lista del manager sono già stati scelti da altri nei turni precedenti:
-      - *Opzione A*: L'autopick assegna il miglior rookie rimasto disponibile con l'Overall (o potenziale stimato) più alto.
-      - *Opzione B*: Notifica/avviso visivo all'Admin per una scelta manuale d'ufficio.
+  - Prima della serata del Draft, ciascun manager può comporre la propria lista segreta ordinata dei Rookie desiderati (1°, 2°, 3°, 4°, ... fino a $N$ scelte).
+  - La lista è **100% privata e segreta** (RLS su Supabase), riordinabile via Drag-and-Drop o frecce Su/Giù e popolabile direttamente dai **Preferiti (Punto 6)**.
+  - **Attivazione Autopick**:
+    - **Manager**: Toggle dedicato nella pagina Draft / Mia Squadra (*"Attiva Autopick / Sono Assente al Draft"*).
+    - **Admin**: Pulsante d'emergenza nel pannello di controllo Draft per forzare l'esecuzione dell'autopick sulla squadra al turno corrente in caso di irreperibilità del manager.
+  - **Esecuzione Selezione Automatica**:
+    1. Il sistema scorre la lista di preferenza della squadra a partire dal Rank 1.
+    2. Il primo rookie non ancora draftato viene assegnato alla scelta corrente.
+  - **Strategia di Fallback (Fallback A Approvato)**:
+    - Se tutti i rookie presenti nella lista personale sono già stati chiamati da altre squadre nei turni precedenti, il sistema seleziona in automatico il rookie rimasto disponibile con l'**Overall (o potenziale stimato) più alto**.
