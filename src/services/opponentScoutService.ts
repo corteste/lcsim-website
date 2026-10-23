@@ -78,15 +78,18 @@ export async function findNextOpponentMatch(myTeamId: string): Promise<OpponentM
   if (!myTeamId) return null;
 
   try {
-    // 1. Cerca prima nella stagione 10 (o successiva) le partite non ancora giocate
+    // 1. Cerca nella tabella view_team_stats
     const { data: scheduleRows, error: sErr } = await supabase
       .from("view_team_stats")
-      .select("stag, week, home, away, home_gol, away_gol, home_minuti, stadium, referee, weather, date")
+      .select("stag, week, home, away, home_gol, away_gol, home_minuti, home_team, away_team")
       .or(`home.eq.${myTeamId},away.eq.${myTeamId}`)
       .order("stag", { ascending: false })
       .order("week", { ascending: true });
 
-    if (sErr) throw sErr;
+    if (sErr) {
+      console.error("findNextOpponentMatch view_team_stats error:", sErr);
+      return null;
+    }
     if (!scheduleRows || scheduleRows.length === 0) return null;
 
     // Filtra partite della stagione più recente disponibile
@@ -104,12 +107,25 @@ export async function findNextOpponentMatch(myTeamId: string): Promise<OpponentM
     const isHome = nextMatch.home === myTeamId;
     const opponentTeamId = isHome ? nextMatch.away : nextMatch.home;
 
-    // Recupera anagrafica squadra avversaria
-    const { data: opponentTeam } = await supabase
-      .from(TEAM_TABLE)
-      .select('TEAM_ID, NAME, NAME_ABBR, STADIUM')
-      .eq("TEAM_ID", opponentTeamId)
-      .maybeSingle();
+    // Recupera anagrafica dettagliata della partita da an_schedule
+    const [scheduleDetailsRes, opponentTeamRes] = await Promise.all([
+      supabase
+        .from("an_schedule")
+        .select("stadium, referee, weather, date")
+        .eq("stag", nextMatch.stag)
+        .eq("week", nextMatch.week)
+        .eq("home", nextMatch.home)
+        .eq("away", nextMatch.away)
+        .maybeSingle(),
+      supabase
+        .from(TEAM_TABLE)
+        .select("TEAM_ID, NAME, NAME_ABBR")
+        .eq("TEAM_ID", opponentTeamId)
+        .maybeSingle(),
+    ]);
+
+    const scheduleDetails = scheduleDetailsRes.data;
+    const opponentTeam = opponentTeamRes.data;
 
     return {
       week: nextMatch.week,
@@ -117,12 +133,12 @@ export async function findNextOpponentMatch(myTeamId: string): Promise<OpponentM
       isHome,
       myTeamId,
       opponentTeamId,
-      opponentTeamName: opponentTeam?.NAME || opponentTeamId,
+      opponentTeamName: opponentTeam?.NAME || (isHome ? nextMatch.away_team : nextMatch.home_team) || opponentTeamId,
       opponentTeamAbbr: opponentTeam?.NAME_ABBR || opponentTeamId,
-      stadium: nextMatch.stadium || opponentTeam?.STADIUM || "Stadio Comunale",
-      date: nextMatch.date || undefined,
-      weather: nextMatch.weather || undefined,
-      referee: nextMatch.referee || undefined,
+      stadium: scheduleDetails?.stadium || "Stadio Comunale",
+      date: scheduleDetails?.date || undefined,
+      weather: scheduleDetails?.weather || undefined,
+      referee: scheduleDetails?.referee || undefined,
     };
   } catch (err) {
     console.error("findNextOpponentMatch error:", err);
@@ -141,41 +157,43 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
     // 1. Dati base squadra e classifica
     const [teamRes, standingsRes, rosterRes] = await Promise.all([
       supabase.from(TEAM_TABLE).select('*').eq("TEAM_ID", opponentTeamId).maybeSingle(),
-      supabase.from("an_standings").select('*'),
+      supabase.from("an_standings").select('*').order("stag", { ascending: false }),
       supabase.from(PLAYER_TABLE).select('*').eq("Squadra", opponentTeamId),
     ]);
 
     const teamData = teamRes.data;
     if (!teamData) return null;
 
-    // Risoluzione posizione in classifica
-    const allStandings = (standingsRes.data || []) as any[];
-    // Ordina per punti desc, poi differenza reti desc
-    allStandings.sort((a, b) => {
-      const ptA = Number(a.points ?? a.Punti ?? 0);
-      const ptB = Number(b.points ?? b.Punti ?? 0);
+    // Risoluzione posizione in classifica (stagione più recente)
+    const rawStandings = (standingsRes.data || []) as any[];
+    const maxStag = rawStandings[0]?.stag;
+    const currentStandings = maxStag ? rawStandings.filter((s) => s.stag === maxStag) : rawStandings;
+
+    currentStandings.sort((a, b) => {
+      const ptA = Number(a.points ?? 0);
+      const ptB = Number(b.points ?? 0);
       if (ptB !== ptA) return ptB - ptA;
       const drA = Number(a.goal_difference ?? 0);
       const drB = Number(b.goal_difference ?? 0);
       return drB - drA;
     });
 
-    const rankIdx = allStandings.findIndex((s) => {
+    const rankIdx = currentStandings.findIndex((s) => {
       const tid = typeof s.team === "object" ? s.team?.TEAM_ID : s.team;
       return tid === opponentTeamId;
     });
 
-    const standingRow = rankIdx >= 0 ? allStandings[rankIdx] : null;
+    const standingRow = rankIdx >= 0 ? currentStandings[rankIdx] : null;
     const standingsInfo = standingRow
       ? {
           rank: rankIdx + 1,
-          points: Number(standingRow.points ?? standingRow.Punti ?? 0),
-          played: Number(standingRow.games_played ?? standingRow.Giocate ?? 0),
-          wins: Number(standingRow.won ?? standingRow.Vinte ?? 0),
-          draws: Number(standingRow.draw ?? standingRow.Pareggiate ?? 0),
-          losses: Number(standingRow.lost ?? standingRow.Perse ?? 0),
-          goalsFor: Number(standingRow.goal_made ?? standingRow.GolFatti ?? 0),
-          goalsAgainst: Number(standingRow.goal_suffered ?? standingRow.GolSubiti ?? 0),
+          points: Number(standingRow.points ?? 0),
+          played: Number(standingRow.games_played ?? 0),
+          wins: Number(standingRow.win ?? standingRow.won ?? 0),
+          draws: Number(standingRow.draws ?? standingRow.draw ?? 0),
+          losses: Number(standingRow.loss ?? standingRow.lost ?? 0),
+          goalsFor: Number(standingRow.goal_made ?? 0),
+          goalsAgainst: Number(standingRow.goal_conceded ?? standingRow.goal_suffered ?? 0),
           goalDiff: Number(standingRow.goal_difference ?? 0),
         }
       : undefined;
@@ -193,15 +211,19 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
     rawRoster.forEach((p) => playerMap.set(Number(p.ID), p));
 
     // 2. Ultimi incontri giocati & Calcolo Forma (V, N, P)
-    const { data: playedMatchesRows } = await supabase
+    const { data: playedMatchesRows, error: pmErr } = await supabase
       .from("view_team_stats")
-      .select("stag, week, home, away, home_gol, away_gol, home_minuti, date, home_team, away_team")
+      .select("stag, week, home, away, home_gol, away_gol, home_minuti, home_team, away_team")
       .or(`home.eq.${opponentTeamId},away.eq.${opponentTeamId}`)
       .not("home_minuti", "is", null)
       .gt("home_minuti", 0)
       .order("stag", { ascending: false })
       .order("week", { ascending: false })
       .limit(6);
+
+    if (pmErr) {
+      console.error("fetchOpponentScoutData playedMatchesRows error:", pmErr);
+    }
 
     const recentMatches: OpponentRecentMatch[] = [];
     const form: ("V" | "N" | "P")[] = [];

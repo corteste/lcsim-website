@@ -29,8 +29,10 @@ export const NextOpponentCard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
 
+  const teamId = effectiveTeam || user?.team || "";
+
   useEffect(() => {
-    if (!effectiveTeam) {
+    if (!teamId) {
       setMatchInfo(null);
       setScoutData(null);
       setLoading(false);
@@ -42,7 +44,7 @@ export const NextOpponentCard: React.FC = () => {
 
     async function loadOpponent() {
       try {
-        const next = await findNextOpponentMatch(effectiveTeam);
+        const next = await findNextOpponentMatch(teamId);
         if (!isMounted) return;
         setMatchInfo(next);
 
@@ -64,10 +66,10 @@ export const NextOpponentCard: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [effectiveTeam]);
+  }, [teamId]);
 
-  // Non mostrare nulla se l'utente non è autenticato
-  if (!user || !effectiveTeam) return null;
+  // Non mostrare nulla se l'utente non è autenticato o non ha una squadra
+  if (!user || !teamId) return null;
 
   if (loading) {
     return (
@@ -127,8 +129,8 @@ export const NextOpponentCard: React.FC = () => {
             {/* My Team */}
             <div className="flex items-center gap-2.5">
               <img
-                src={`/images/teams/${effectiveTeam}_Logo.png`}
-                alt={effectiveTeam}
+                src={`/images/teams/${teamId}_Logo.png`}
+                alt={teamId}
                 className="h-10 w-10 object-contain filter drop-shadow shrink-0"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
@@ -139,7 +141,7 @@ export const NextOpponentCard: React.FC = () => {
                   La Tua Squadra
                 </span>
                 <span className="text-xs font-black text-foreground">
-                  {effectiveTeamFullName || effectiveTeam}
+                  {effectiveTeamFullName || user?.teamFullName || teamId}
                 </span>
               </div>
             </div>
