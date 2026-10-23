@@ -31,6 +31,7 @@ export type PlayerStats = {
     VOTO: number;
     WEEK: number;
     Squadra: string;
+    NumeroMaglia?: number | null;
 };
 
 export type PlayerStatsAvg = {
