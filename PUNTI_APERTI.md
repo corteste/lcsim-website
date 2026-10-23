@@ -200,3 +200,62 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
   - **Esecuzione Selezione Automatica**:
     1. Il sistema scorre la graduatoria della squadra a partire dal Rank 1 e seleziona il primo rookie non ancora draftato.
     2. **Strategia di Fallback (Fallback A Approvato)**: Se tutti i rookie presenti nella graduatoria personale sono già stati chiamati da altre squadre nei turni precedenti (o se la lista è vuota), il sistema assegna in automatico il rookie rimasto disponibile con l'**Overall (OVR) più alto**.
+
+
+---
+
+## 📌 8. Gestione Tagli dei Giocatori nel Periodo di Calciomercato
+- **Stato**: 🟡 In attesa di implementazione / Da Progettare
+- **Priorità**: Alta (Funzionalità fondamentale per la gestione della rosa e delle finestre di mercato)
+- **Moduli coinvolti**: `src/pages/Roster.tsx` (`/mia-squadra/roster`), `src/pages/UfficialitaScambi.tsx` o nuova tab Tagli, Supabase
+- **Tabelle coinvolte**: `an_player`, tabella registro tagli (es. `market_releases` o `as_player_market`)
+
+### Descrizione
+Durante le finestre temporali di calciomercato (stabilite e abilitate dall'Admin), ciascun manager deve avere la possibilità di effettuare il **taglio / svincolo ufficiale** di uno o più calciatori della propria rosa per liberare slot e alleggerire l'organico in vista di nuovi scambi, draft o ingaggi.
+
+### Requisiti & Specifiche da Implementare
+1. **Finestra di Mercato & Abilitazione**:
+   - I tagli devono essere consentiti esclusivamente durante i periodi di mercato aperti (gestiti da un flag o configurazione Admin).
+   - Possibilità per l'Admin di impostare un numero massimo di tagli consentiti per sessione per ciascun club (se previsto dal regolamento).
+2. **Controllo Limiti di Rosa**:
+   - Validazione preventiva: il taglio non deve consentire alla squadra di scendere al di sotto del numero minimo di calciatori necessari per disputare le partite (es. minimo 16 o 18 giocatori).
+3. **Flusso Utente (Manager)**:
+   - Dalla schermata **La Mia Squadra > Roster** (`/mia-squadra/roster`), presenza di un'azione dedicata *"Taglia Giocatore"* (con icona forbici o cartellino svincolo).
+   - Modale di conferma con avviso di irreversibilità dell'operazione e riepilogo dati del calciatore (Nome, Ruolo, OVR, Età).
+4. **Effetto a Database**:
+   - Aggiornamento atomico del calciatore in `an_player`: passaggio di `"Squadra"` a `NULL` (o a uno status convenzionale di svincolato/Free Agent) e reset del `"NumeroMaglia"`.
+   - Rimozione automatica del calciatore da eventuali formazioni titolari o panchina salvate in `an_team_tactic`.
+   - Registrazione dell'evento in una tabella di log o nella bacheca ufficiale delle operazioni di mercato per trasparenza pubblica della Lega.
+
+---
+
+## 📌 9. Gestione Tattiche Avanzate nella Pagina Tattica
+- **Stato**: 🟡 In attesa di implementazione / Da Progettare
+- **Priorità**: Media-Alta (Arricchimento profondo della componente manageriale e tattica in stile EA FC 25)
+- **Moduli coinvolti**: `src/pages/Tattica.tsx` (`/mia-squadra/tattica`), `src/pages/OpponentScout.tsx`, eventuale Foglio Commento
+- **Tabelle coinvolte**: `an_team_tactic`, `team_formation_history`
+
+### Descrizione
+Espansione della pagina Tattica per andare oltre la semplice selezione del modulo e lo schieramento degli 11 titolari, consentendo ai manager di configurare l'intero assetto tattico della squadra (tattiche di squadra, istruzioni individuali e incarichi) in coerenza con le opzioni di simulazione EA Sports FC 25.
+
+### Requisiti & Specifiche da Implementare
+1. **Tattiche di Squadra (Team Tactics & Style)**:
+   - **Fase Difensiva**:
+     - Stile difensivo (es. *Equilibrato*, *Pressing sul primo controllo*, *Pressing costante*, *Ripiegamento*).
+     - Ampiezza difensiva (slider 1-100 o preset) e Profondità della linea (linea alta, media, bassa).
+   - **Fase Offensiva**:
+     - Costruzione di manovra (es. *Manovra veloce*, *Possesso palla*, *Lancio lungo*, *Equilibrato*).
+     - Creazione occasioni (es. *Passaggi diretti*, *Inserimenti offensivi*, *Equilibrato*).
+     - Ampiezza offensiva e presenza in area sui cross e sui calci piazzati (corner e punizioni).
+2. **Istruzioni Individuali per Ruolo / Calciatore (Player Roles & Instructions)**:
+   - Cliccando su un calciatore nel campo 2D, apertura di un pannello laterale o tab con istruzioni specifiche:
+     - **Portiere**: Uscite sui cross (*Prudente* / *Aggressivo*), Ruolo portiere-libero.
+     - **Terzini (TD/TS)**: Tipo di attacco (*Resta dietro in attacco*, *Equilibrato*, *Partecipa all'attacco*), Tipo di corsa (*Sovrapposizione*, *Invertito*).
+     - **Difensori Centrali (DC)**: Intercettazioni (*Normali*, *Aggressive*), Posizione difensiva.
+     - **Centrocampisti (CDC/CC/COC)**: Copertura (*Al centro*, *Sulle fasce*), Supporto offensivo (*Resta dietro*, *Avanza*, *Libero di svariare*).
+     - **Esterni & Attaccanti (ED/ES/AD/AS/ATT)**: Tagli e movimenti (*Taglia dentro*, *Resta largo*, *Inserisciti alle spalle*), Supporto in difesa (*Rientra*, *Resta in avanti*).
+3. **Incarichi Partita (Set Pieces & Hierarchy)**:
+   - Assegnazione formale dei ruoli chiave: Capitano (C), Vice-Capitano, Rigorista primario/secondario, Punizione corta, Punizione lunga, Calcio d'angolo sinistro, Calcio d'angolo destro.
+4. **Persistenza & Integrazione**:
+   - Salvataggio delle configurazioni avanzate nel record di `an_team_tactic` (come campo JSONB strutturato `tactical_settings` o colonne dedicate) e tracciamento negli snapshot di `team_formation_history`.
+   - Visualizzazione dei preset tattici nel report avversaria (`/prossimo-avversario`) e nel futuro Foglio Commento per commentatori e spettatori.
