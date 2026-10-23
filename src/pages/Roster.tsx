@@ -42,6 +42,12 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Tag,
+  Coins,
+  Check,
+  Store,
+  X,
+  TrendingUp,
 } from "lucide-react";
 import {
   getRoleColor,
@@ -58,7 +64,13 @@ import PlayerDetails from "@/components/player/playerDetails";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { supabase } from "@/supabaseClient";
-import { PLAYER_TABLE } from "@/constants/App";
+import { PLAYER_TABLE, PLAYER_MARKET_TABLE } from "@/constants/App";
+import {
+  MARKET_STATUS_OPTIONS,
+  getMarketStatusCode,
+  getMarketStatusOption,
+  MarketStatusCode,
+} from "@/types/marketStatus";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   JERSEY_STYLE_OPTIONS,
@@ -176,7 +188,7 @@ const getStatColorClass = (val: number | string | null | undefined) => {
 };
 
 const Roster = () => {
-  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
+  const { user, effectiveTeam, effectiveTeamFullName, isAdmin } = useAuth();
   const currentTeam = effectiveTeam;
   const currentTeamFullName = effectiveTeamFullName || currentTeam;
   const { players, loading } = getPlayers(currentTeam);
@@ -365,6 +377,81 @@ const Roster = () => {
     return players.filter((p) => p.NumeroMaglia !== null && p.NumeroMaglia !== undefined).length;
   }, [players]);
 
+  // Market status state & counts
+  const [marketFilterTab, setMarketFilterTab] = useState<string>("ALL");
+  const [savingMarketPlayerId, setSavingMarketPlayerId] = useState<number | null>(null);
+
+  const marketCounts = useMemo(() => {
+    let intCount = 0;
+    let fisCount = 0;
+    let traCount = 0;
+    let cedCount = 0;
+    let noneCount = 0;
+
+    for (const p of players) {
+      const code = getMarketStatusCode(p.MarketStatus);
+      if (code === "int") intCount++;
+      else if (code === "fis") fisCount++;
+      else if (code === "tra") traCount++;
+      else if (code === "ced") cedCount++;
+      else noneCount++;
+    }
+
+    return { intCount, fisCount, traCount, cedCount, noneCount };
+  }, [players]);
+
+  const marketFilteredPlayers = useMemo(() => {
+    return filteredPlayers.filter((p) => {
+      if (marketFilterTab === "ALL") return true;
+      const code = getMarketStatusCode(p.MarketStatus);
+      if (marketFilterTab === "none") return !code;
+      return code === marketFilterTab;
+    });
+  }, [filteredPlayers, marketFilterTab]);
+
+  const handleUpdateMarketStatus = async (
+    player: Player,
+    newStatusCode: MarketStatusCode | "none"
+  ) => {
+    if (player.Squadra !== currentTeam && !isAdmin) {
+      toast.error("Puoi modificare solo lo status dei giocatori della tua squadra!");
+      return;
+    }
+
+    setSavingMarketPlayerId(player.ID);
+    try {
+      if (newStatusCode === "none") {
+        const { error } = await supabase
+          .from(PLAYER_MARKET_TABLE)
+          .delete()
+          .eq("PLAYER_ID_FK", player.ID);
+        if (error) throw error;
+        toast.success(`Status di mercato di ${player.Nome} ${player.Cognome} rimosso.`);
+      } else {
+        const { error } = await supabase
+          .from(PLAYER_MARKET_TABLE)
+          .upsert({
+            PLAYER_ID_FK: player.ID,
+            Status: newStatusCode,
+          });
+        if (error) throw error;
+        const opt = MARKET_STATUS_OPTIONS.find((o) => o.code === newStatusCode);
+        toast.success(
+          `Status di ${player.Nome} ${player.Cognome} impostato su: ${opt?.label}`
+        );
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["players", currentTeam] });
+      await queryClient.invalidateQueries({ queryKey: ["players"] });
+    } catch (err: unknown) {
+      console.error("Errore salvataggio status mercato:", err);
+      const msg = err instanceof Error ? err.message : "Errore durante il salvataggio";
+      toast.error(msg);
+    } finally {
+      setSavingMarketPlayerId(null);
+    }
+  };
+
   // Open Kit Customizer Modal
   const handleOpenKitCustomizer = (player: Player) => {
     setEditingPlayer(player);
@@ -499,7 +586,7 @@ const Roster = () => {
               </div>
 
               {/* Telemetry KPI Widgets */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 shrink-0">
                 <div className="px-3.5 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
                     Giocatori
@@ -535,12 +622,21 @@ const Roster = () => {
                     {assignedNumbersCount}/{players.length}
                   </span>
                 </div>
+
+                <div className="px-3.5 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm col-span-2 sm:col-span-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                    Status Mercato
+                  </span>
+                  <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                    {players.length - marketCounts.noneCount}/{players.length}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* TABS: 1) ROSA GIOCATORI | 2) NUMERI DI MAGLIA & ACCESSORI */}
+        {/* TABS: 1) ROSA GIOCATORI | 2) STATUS DI MERCATO | 3) NUMERI DI MAGLIA & ACCESSORI */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <TabsList className="bg-card border border-border/80 p-1 h-auto flex flex-wrap gap-1">
@@ -550,6 +646,13 @@ const Roster = () => {
               >
                 <Users className="h-4 w-4" />
                 Rosa Giocatori ({players.length})
+              </TabsTrigger>
+              <TabsTrigger
+                value="market"
+                className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
+              >
+                <Tag className="h-4 w-4" />
+                Status di Mercato ({players.length - marketCounts.noneCount}/{players.length})
               </TabsTrigger>
               <TabsTrigger
                 value="kit-accessories"
@@ -693,6 +796,35 @@ const Roster = () => {
                             <span>•</span>
                             <span>Piede {player.Piede}</span>
                           </div>
+
+                          {/* Market Status Badge */}
+                          {(() => {
+                            const marketOpt = getMarketStatusOption(player.MarketStatus);
+                            if (marketOpt) {
+                              return (
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${marketOpt.badgeClass}`}
+                                    title={`Status di mercato: ${marketOpt.label} — ${marketOpt.description}`}
+                                  >
+                                    <Tag className="h-2.5 w-2.5" />
+                                    {marketOpt.label}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="mt-2 flex items-center gap-1.5">
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-dashed border-border/70 text-muted-foreground/60"
+                                  title="Nessuno status di mercato impostato"
+                                >
+                                  <Tag className="h-2.5 w-2.5 opacity-40" />
+                                  Non specificato
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* OVR Badge */}
@@ -1015,7 +1147,250 @@ const Roster = () => {
             )}
           </TabsContent>
 
-          {/* TAB 2: NUMERI DI MAGLIA & ACCESSORI MANAGEMENT BOARD */}
+          {/* TAB 2: STATUS DI MERCATO */}
+          <TabsContent value="market" className="m-0 space-y-4">
+            {/* Header info & counters */}
+            <Card className="border border-border/80 bg-card shadow-sm">
+              <CardContent className="p-4 sm:p-5 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-emerald-500" />
+                      <h3 className="text-sm font-extrabold uppercase tracking-wider">
+                        Gestione Status di Mercato dei Giocatori
+                      </h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Imposta la disponibilità sul mercato per ciascun calciatore della tua rosa. Lo status sarà visibile a tutti gli altri manager nella Lista Giocatori.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className="font-mono text-xs">
+                      Status Assegnati: {players.length - marketCounts.noneCount} / {players.length}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Status Legend & Quick Filter Pills */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-2 border-t border-border/60">
+                  <button
+                    type="button"
+                    onClick={() => setMarketFilterTab("ALL")}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      marketFilterTab === "ALL"
+                        ? "bg-muted border-primary shadow-sm"
+                        : "bg-card border-border hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground">Tutti</div>
+                    <div className="text-lg font-black font-mono text-foreground">{players.length}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">Tutti i giocatori</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMarketFilterTab("int")}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      marketFilterTab === "int"
+                        ? "bg-purple-500/20 border-purple-500 shadow-sm"
+                        : "bg-purple-500/5 border-purple-500/20 hover:bg-purple-500/10"
+                    }`}
+                  >
+                    <div className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400">Intoccabili</div>
+                    <div className="text-lg font-black font-mono text-purple-600 dark:text-purple-400">{marketCounts.intCount}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">Incedibili</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMarketFilterTab("fis")}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      marketFilterTab === "fis"
+                        ? "bg-blue-500/20 border-blue-500 shadow-sm"
+                        : "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
+                    }`}
+                  >
+                    <div className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400">Elementi Fissi</div>
+                    <div className="text-lg font-black font-mono text-blue-600 dark:text-blue-400">{marketCounts.fisCount}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">Solo offerte eccezionali</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMarketFilterTab("tra")}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      marketFilterTab === "tra"
+                        ? "bg-amber-500/20 border-amber-500 shadow-sm"
+                        : "bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10"
+                    }`}
+                  >
+                    <div className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400">In Trattativa</div>
+                    <div className="text-lg font-black font-mono text-amber-600 dark:text-amber-400">{marketCounts.traCount}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">Aperto ad offerte</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMarketFilterTab("ced")}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      marketFilterTab === "ced"
+                        ? "bg-emerald-500/20 border-emerald-500 shadow-sm"
+                        : "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
+                    }`}
+                  >
+                    <div className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Cedibili</div>
+                    <div className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400">{marketCounts.cedCount}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">Lista cessioni</div>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Players Market Board */}
+            {marketFilteredPlayers.length === 0 ? (
+              <Card className="p-10 text-center text-muted-foreground">
+                Nessun giocatore corrisponde ai filtri selezionati.
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {marketFilteredPlayers.map((player) => {
+                  const currentCode = getMarketStatusCode(player.MarketStatus);
+                  const currentOption = getMarketStatusOption(player.MarketStatus);
+                  const isSaving = savingMarketPlayerId === player.ID;
+                  const canEdit = player.Squadra === currentTeam || isAdmin;
+
+                  return (
+                    <Card
+                      key={player.ID}
+                      className="border border-border/80 hover:border-emerald-500/40 bg-card shadow-sm transition-all overflow-hidden p-4 flex flex-col justify-between gap-3.5"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Avatar with kit number */}
+                          <div className="relative shrink-0">
+                            <Avatar className="h-12 w-12 border border-border">
+                              <AvatarImage
+                                src={getPlayerImage(player.ID)}
+                                alt={`${player.Nome} ${player.Cognome}`}
+                              />
+                              <AvatarFallback className="text-xs">
+                                {player.Nome?.[0]}
+                                {player.Cognome?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            {player.NumeroMaglia && (
+                              <div className="absolute -bottom-1 -right-1 h-5 min-w-[20px] px-1 rounded bg-emerald-600 text-white font-mono font-black text-[10px] flex items-center justify-center border border-emerald-400 shadow-xs">
+                                #{player.NumeroMaglia}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
+                                  player.Posiz
+                                )}`}
+                              >
+                                {player.Posiz}
+                              </Badge>
+                              <span className="font-bold text-foreground text-sm truncate">
+                                {player.Nome} {player.Cognome}
+                              </span>
+                              <img
+                                src={getNationalityFlag(player.Nazionalità)}
+                                alt={player.Nazionalità}
+                                className="h-3 w-4 object-cover rounded-xs shrink-0"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                              <span>{player.Età} anni</span>
+                              <span>•</span>
+                              <span>Piede {player.Piede}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* OVR */}
+                        <div className="text-center shrink-0">
+                          <span className={`text-base font-black font-mono px-2 py-0.5 rounded border ${getValueColor(player.OVR ?? 0)}`}>
+                            {player.OVR}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Status Selector Section */}
+                      <div className="pt-2 border-t border-border/60 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground font-medium text-[11px]">
+                            Stato attuale:
+                          </span>
+                          {currentOption ? (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${currentOption.badgeClass}`}>
+                              <Tag className="h-3 w-3" />
+                              {currentOption.label}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground italic">
+                              Non impostato
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Status Buttons Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                          {MARKET_STATUS_OPTIONS.map((opt) => {
+                            const isSelected = currentCode === opt.code;
+                            return (
+                              <button
+                                key={opt.code}
+                                type="button"
+                                disabled={isSaving || !canEdit}
+                                onClick={() =>
+                                  handleUpdateMarketStatus(
+                                    player,
+                                    isSelected ? "none" : opt.code
+                                  )
+                                }
+                                title={opt.description}
+                                className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1 text-center ${
+                                  isSelected
+                                    ? `${opt.badgeClass} ring-2 ring-primary/40 font-black shadow-xs`
+                                    : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/80 hover:text-foreground"
+                                } ${!canEdit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                              >
+                                {isSelected && <Check className="h-3 w-3 shrink-0" />}
+                                <span className="truncate">{opt.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Clear Status Button (if set) */}
+                        {currentCode && canEdit && (
+                          <div className="flex justify-end pt-1">
+                            <button
+                              type="button"
+                              disabled={isSaving}
+                              onClick={() => handleUpdateMarketStatus(player, "none")}
+                              className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <X className="h-3 w-3" />
+                              Rimuovi status di mercato
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* TAB 3: NUMERI DI MAGLIA & ACCESSORI MANAGEMENT BOARD */}
           <TabsContent value="kit-accessories" className="m-0 space-y-4">
             <Card className="border border-border/80 bg-card shadow-sm">
               <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
