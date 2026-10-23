@@ -67,45 +67,93 @@ export async function fetchEAPlayerById(playerId: number): Promise<EAPlayerDBRow
   return (data as EAPlayerDBRow) ?? null;
 }
 
+export interface ExportResult {
+  content: string;
+  totalRows: number;
+  lcsimRowsCount: number;
+  isFullMaster: boolean;
+}
+
 /**
- * Exports all rows in public.ea_player_db (or patches a full DB_NEW TSV string)
- * in the exact 137-column tab-separated format required by EA FC 25.
+ * Exports the EA FC 25 database in the exact 137-column tab-separated format:
+ * - If fullMaster = true (default): loads the 21,067-row master template (/data/DB_NEW_MASTER.txt or baseTsvContent),
+ *   replaces the 318 LCSIM custom players with their latest stats/accessories from public.ea_player_db,
+ *   and returns the complete 21,067-row file ready for EA FC 25!
+ * - If fullMaster = false: returns only the 318 LCSIM player rows (with the 137-column header).
  */
-export async function exportEADatabaseTSV(baseTsvContent?: string): Promise<string> {
+export async function exportEADatabaseTSV(options?: {
+  baseTsvContent?: string;
+  fullMaster?: boolean;
+}): Promise<ExportResult> {
   const eaRows = await fetchEAPlayerDB();
   const rowMap = new Map<number, EAPlayerDBRow>();
   for (const r of eaRows) {
     rowMap.set(Number(r.playerid), r);
   }
 
-  if (baseTsvContent) {
-    const lines = baseTsvContent.split(/\r?\n/);
-    if (lines.length === 0) return '';
-    const headers = lines[0].split('\t').map((h) => h.trim()) as EADbColumn[];
-    const pidIdx = headers.indexOf('playerid');
-    if (pidIdx === -1) {
-      throw new Error('Colonna playerid non trovata nel file TSV di base.');
-    }
+  const shouldExportFullMaster = options?.fullMaster !== false;
+  let masterContent = options?.baseTsvContent;
 
-    const updatedLines = [lines[0]];
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      const cols = line.split('\t');
-      const pid = Number(cols[pidIdx]);
-      const dbRow = rowMap.get(pid);
-      if (dbRow) {
-        updatedLines.push(headers.map((col) => String(dbRow[col] ?? cols[headers.indexOf(col)] ?? 0)).join('\t'));
+  // Option B: Automatically fetch the static master file from public/data/DB_NEW_MASTER.txt
+  if (!masterContent && shouldExportFullMaster) {
+    try {
+      const resp = await fetch('/data/DB_NEW_MASTER.txt');
+      if (resp.ok) {
+        masterContent = await resp.text();
       } else {
-        updatedLines.push(line);
+        console.warn('Impossibile caricare /data/DB_NEW_MASTER.txt (status:', resp.status, '), fallback su righe LCSIM');
       }
+    } catch (fetchErr) {
+      console.warn('Errore fetch /data/DB_NEW_MASTER.txt, fallback su righe LCSIM:', fetchErr);
     }
-    return updatedLines.join('\r\n');
   }
 
+  // If we have master template content (full 21,067 rows), patch LCSIM rows
+  if (masterContent && masterContent.trim().length > 0) {
+    const lines = masterContent.split(/\r?\n/);
+    if (lines.length > 0) {
+      const headers = lines[0].split('\t').map((h) => h.trim()) as EADbColumn[];
+      const pidIdx = headers.indexOf('playerid');
+      if (pidIdx === -1) {
+        throw new Error('Colonna playerid non trovata nel file master.');
+      }
+
+      const updatedLines = [lines[0]];
+      let matchedCount = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+        const cols = line.split('\t');
+        const pid = Number(cols[pidIdx]);
+        const dbRow = rowMap.get(pid);
+        if (dbRow) {
+          updatedLines.push(headers.map((col) => String(dbRow[col] ?? cols[headers.indexOf(col)] ?? 0)).join('\t'));
+          matchedCount++;
+        } else {
+          updatedLines.push(line);
+        }
+      }
+
+      return {
+        content: updatedLines.join('\r\n'),
+        totalRows: updatedLines.length - 1,
+        lcsimRowsCount: matchedCount,
+        isFullMaster: true,
+      };
+    }
+  }
+
+  // Fallback / Standalone: Export only the LCSIM rows
   const headerLine = EA_DB_COLUMNS.join('\t');
   const dataLines = eaRows.map((row) =>
     EA_DB_COLUMNS.map((col) => String(row[col] ?? 0)).join('\t')
   );
-  return [headerLine, ...dataLines].join('\r\n');
+
+  return {
+    content: [headerLine, ...dataLines].join('\r\n'),
+    totalRows: eaRows.length,
+    lcsimRowsCount: eaRows.length,
+    isFullMaster: false,
+  };
 }

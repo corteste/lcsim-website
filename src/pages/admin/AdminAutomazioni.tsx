@@ -21,11 +21,12 @@ import {
   UploadCloud,
   FileText,
   Clock,
-  UserCheck
+  Sparkles,
+  CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
-import { exportEADatabaseTSV, fetchEAPlayerDB } from "@/services/eaPlayerDbService";
+import { exportEADatabaseTSV } from "@/services/eaPlayerDbService";
 
 interface AutomationStateItem {
   id: string;
@@ -43,7 +44,8 @@ export default function AdminAutomazioni() {
   const [isLoadingState, setIsLoadingState] = useState(true);
 
   // Export States
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingFull, setIsExportingFull] = useState(false);
+  const [isExportingSnippet, setIsExportingSnippet] = useState(false);
   const [patchModalOpen, setPatchModalOpen] = useState(false);
   const [patchFile, setPatchFile] = useState<File | null>(null);
   const [isPatching, setIsPatching] = useState(false);
@@ -183,21 +185,29 @@ export default function AdminAutomazioni() {
     }
   };
 
-  // Handler: Export Master Table (.tsv)
-  const handleExportMasterTable = async () => {
+  // Handler: Export Master Table (full 21,067 rows vs 318 rows)
+  const handleExport = async (fullMaster: boolean) => {
+    const isFull = fullMaster;
+    const setLoading = isFull ? setIsExportingFull : setIsExportingSnippet;
+
     try {
-      setIsExporting(true);
-      toast.info("Generazione del file Master Table EA FC 25 in corso...");
+      setLoading(true);
+      toast.info(
+        isFull
+          ? "Unione automatica del template master (21.067 righe) con i dati LCSIM da Supabase..."
+          : "Estrazione delle 318 righe calciatori LCSIM da Supabase..."
+      );
 
-      const tsvContent = await exportEADatabaseTSV();
-      const rows = await fetchEAPlayerDB();
+      const result = await exportEADatabaseTSV({ fullMaster: isFull });
 
-      const blob = new Blob([tsvContent], { type: "text/tab-separated-values;charset=utf-8" });
+      const blob = new Blob([result.content], { type: "text/tab-separated-values;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const dateStr = new Date().toISOString().slice(0, 10);
+      
+      // Filename: DB_NEW.txt is the default expected by EA FC 25
       link.href = url;
-      link.download = `DB_NEW_LCSIM_${dateStr}.tsv`;
+      link.download = isFull ? `DB_NEW.txt` : `DB_NEW_LCSIM_ROSTERS_${dateStr}.tsv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -205,23 +215,26 @@ export default function AdminAutomazioni() {
 
       // Record timestamp
       await recordAutomationRun("export_master_table", {
-        type: "tsv_download",
-        rows_count: rows.length,
-        columns: 137,
+        type: isFull ? "full_master_export" : "lcsim_rosters_only",
+        total_rows: result.totalRows,
+        lcsim_rows: result.lcsimRowsCount,
+        format: isFull ? "txt (EA FC 25)" : "tsv",
       });
 
       toast.success(
-        `Master Table esportata con successo! Scaricati ${rows.length} calciatori e 137 colonne EA FC 25.`
+        isFull
+          ? `File master DB_NEW.txt generato con successo! ${result.totalRows.toLocaleString()} calciatori inclusi con le 318 righe LCSIM aggiornate.`
+          : `Estratto LCSIM esportato con successo! Scaricati ${result.lcsimRowsCount} calciatori e 137 colonne.`
       );
     } catch (err: any) {
       console.error("Errore export Master Table:", err);
       toast.error(err.message || "Errore durante l'esportazione della Master Table.");
     } finally {
-      setIsExporting(false);
+      setLoading(false);
     }
   };
 
-  // Handler: Patch full DB_NEW file (21,067 rows)
+  // Handler: Patch custom external file
   const handlePatchFullFile = async () => {
     if (!patchFile) {
       toast.error("Seleziona prima il file master originale DB_NEW.txt");
@@ -229,17 +242,16 @@ export default function AdminAutomazioni() {
     }
     try {
       setIsPatching(true);
-      toast.info("Lettura e iniezione dei dati LCSIM nel file master...");
+      toast.info("Lettura e iniezione dei dati LCSIM nel file caricato...");
 
       const rawText = await patchFile.text();
-      const patchedTSV = await exportEADatabaseTSV(rawText);
+      const result = await exportEADatabaseTSV({ baseTsvContent: rawText });
 
-      const blob = new Blob([patchedTSV], { type: "text/tab-separated-values;charset=utf-8" });
+      const blob = new Blob([result.content], { type: "text/tab-separated-values;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      const dateStr = new Date().toISOString().slice(0, 10);
       link.href = url;
-      link.download = `DB_NEW_PATCHED_${dateStr}.txt`;
+      link.download = `DB_NEW.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -247,12 +259,13 @@ export default function AdminAutomazioni() {
 
       // Record timestamp
       await recordAutomationRun("export_master_table", {
-        type: "master_file_patch",
+        type: "custom_file_patch",
         source_filename: patchFile.name,
-        source_size: patchFile.size,
+        total_rows: result.totalRows,
+        lcsim_rows: result.lcsimRowsCount,
       });
 
-      toast.success("File master patchato con successo e pronto per EA FC 25!");
+      toast.success(`File patchato con successo! ${result.totalRows.toLocaleString()} righe pronte per EA FC 25.`);
       setPatchModalOpen(false);
       setPatchFile(null);
     } catch (err: any) {
@@ -291,12 +304,12 @@ export default function AdminAutomazioni() {
 
           <div className="flex items-center gap-2 shrink-0">
             <Button
-              onClick={handleExportMasterTable}
-              disabled={isExporting}
+              onClick={() => handleExport(true)}
+              disabled={isExportingFull || isExportingSnippet}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 shadow-md shadow-emerald-600/20"
             >
               <Download className="h-4 w-4" />
-              {isExporting ? "Generazione..." : "Esporta Master Table (.tsv)"}
+              {isExportingFull ? "Elaborazione..." : "Scarica DB_NEW.txt Completo"}
             </Button>
           </div>
         </div>
@@ -304,56 +317,72 @@ export default function AdminAutomazioni() {
         {/* Griglia Funzionalità Automazioni */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* 1. EXPORT MASTER TABLE (OPERATIVO) */}
+          {/* 1. EXPORT MASTER TABLE (OPERATIVO - OPZIONE B) */}
           <Card className="border-emerald-500/30 bg-gradient-to-br from-card via-card/95 to-emerald-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
             <div>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-1">
-                  <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 text-[10px] font-black uppercase tracking-wider">
-                    🟢 Operativo al 100%
+                  <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" /> Auto-Merge Template Attivo (Opzione B)
                   </Badge>
                   <FileSpreadsheet className="h-6 w-6 text-emerald-500" />
                 </div>
-                <CardTitle className="text-xl font-black">Export Master Table EA FC 25</CardTitle>
+                <CardTitle className="text-xl font-black">Export Master Database EA FC 25</CardTitle>
                 <CardDescription className="text-xs">
-                  Genera ed esporta il database master nel formato esatto TSV a 137 colonne compatibile con EA FC 25.
+                  Genera il file completo pronto per la cartella di EA FC 25 unendo automaticamente il database base con gli aggiornamenti LCSIM.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs space-y-2">
                   <div className="flex items-center justify-between font-semibold">
-                    <span className="text-muted-foreground">Calciatori esportati:</span>
-                    <span className="font-mono font-bold text-foreground">318 (Tutti i roster LCSIM)</span>
+                    <span className="text-muted-foreground">Righe totali generate:</span>
+                    <span className="font-mono font-bold text-foreground">21.067 (Tutto il gioco EA FC 25)</span>
+                  </div>
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="text-muted-foreground">Calciatori LCSIM iniettati:</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">318 aggiornati in tempo reale</span>
                   </div>
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Tracciato colonne:</span>
                     <span className="font-mono font-bold text-foreground">137 Colonne native EA FC 25</span>
                   </div>
                   <div className="flex items-center justify-between font-semibold">
-                    <span className="text-muted-foreground">Dati inclusi:</span>
-                    <span className="text-foreground">Base + Allenamenti + Kit/Accessori</span>
+                    <span className="text-muted-foreground">Destinazione file:</span>
+                    <span className="font-mono text-muted-foreground text-[11px]">Cartella di gioco EA FC 25 (`DB_NEW.txt`)</span>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <div className="flex flex-col gap-2 pt-1">
                   <Button
-                    onClick={handleExportMasterTable}
-                    disabled={isExporting}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-xs"
+                    onClick={() => handleExport(true)}
+                    disabled={isExportingFull || isExportingSnippet}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm"
                   >
-                    <Download className="h-3.5 w-3.5" />
-                    {isExporting ? "Generazione in corso..." : "Scarica File TSV (.tsv)"}
+                    <Download className="h-4 w-4" />
+                    {isExportingFull ? "Elaborazione in corso..." : "Scarica Database Completo (21.067 righe per EA FC 25)"}
                   </Button>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => setPatchModalOpen(true)}
-                    className="border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold gap-2 text-xs"
-                  >
-                    <UploadCloud className="h-3.5 w-3.5" />
-                    Patcha File Completo
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleExport(false)}
+                      disabled={isExportingFull || isExportingSnippet}
+                      className="flex-1 border-border/80 hover:bg-muted text-foreground font-semibold gap-2 text-xs"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-blue-500" />
+                      {isExportingSnippet ? "Esportazione..." : "Scarica solo 318 Calciatori LCSIM (.tsv)"}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => setPatchModalOpen(true)}
+                      className="border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold gap-2 text-xs"
+                    >
+                      <UploadCloud className="h-3.5 w-3.5" />
+                      Patcha File Personalizzato
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </div>
@@ -649,16 +678,16 @@ export default function AdminAutomazioni() {
         </div>
       </main>
 
-      {/* DIALOG: PATCH FILE MASTER COMPLETO (21,067 RIGHE) */}
+      {/* DIALOG: PATCH FILE MASTER PERSONALIZZATO */}
       <Dialog open={patchModalOpen} onOpenChange={setPatchModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-black">
               <UploadCloud className="h-5 w-5 text-emerald-500" />
-              Patcha File Master DB_NEW (.txt)
+              Patcha File Master Esterno (.txt)
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Carica il file originale <code className="font-mono font-bold">DB_NEW- Sheet217.txt</code> (21.067 righe) di EA FC 25: il sistema inietterà istantaneamente i 318 calciatori aggiornati della Lega e scaricherà il file completo pronto per il gioco.
+              Carica una versione personalizzata di <code className="font-mono font-bold">DB_NEW.txt</code>: il sistema inietterà istantaneamente i 318 calciatori aggiornati della Lega e scaricherà il file pronto per il gioco.
             </DialogDescription>
           </DialogHeader>
 
@@ -677,7 +706,7 @@ export default function AdminAutomazioni() {
               <label htmlFor="patchFileInput" className="cursor-pointer flex flex-col items-center gap-2">
                 <FileText className="h-8 w-8 text-muted-foreground" />
                 <span className="text-xs font-bold text-foreground">
-                  {patchFile ? patchFile.name : "Clicca per selezionare DB_NEW- Sheet217.txt"}
+                  {patchFile ? patchFile.name : "Clicca per selezionare un file .txt / .tsv"}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
                   Formato accettato: .txt / .tsv (separato da tabulazione)
