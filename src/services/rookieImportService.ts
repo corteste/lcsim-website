@@ -236,6 +236,7 @@ export function calculateStelle(ovr: number | null | undefined): number {
 
 // -------------------------------------------------------------
 // PARSER FILE 1: MASTER DATA (137 COLONNE EA FC 25)
+// Supporta sia file con riga di intestazione sia file di soli dati
 // -------------------------------------------------------------
 export function parseRookieMasterFile(content: string): {
   headers: string[];
@@ -243,25 +244,40 @@ export function parseRookieMasterFile(content: string): {
   error?: string;
 } {
   const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length < 2) {
+  if (lines.length < 1) {
     return { headers: [], rows: new Map(), error: 'Il File 1 (Master Data) è vuoto o privo di righe dati.' };
   }
 
-  const delimiter = lines[0].includes('\t') ? '\t' : ',';
-  const headers = lines[0].split(delimiter).map((h) => h.trim().toLowerCase());
-  const pidIdx = headers.indexOf('playerid');
+  const delimiter = lines[0].includes('\t') ? '\t' : (lines[0].includes(';') ? ';' : ',');
+  const firstRowCols = lines[0].split(delimiter).map((c) => c.trim());
 
+  // Rilevamento automatico: la prima riga contiene l'intestazione oppure direttamente i dati?
+  const hasHeader = firstRowCols.some((col) => col.toLowerCase() === 'playerid');
+
+  let headers: string[];
+  let startIndex = 0;
+
+  if (hasHeader) {
+    headers = firstRowCols.map((h) => h.toLowerCase());
+    startIndex = 1;
+  } else {
+    // Intestazione assente: si adotta l'ordine ufficiale a 137 colonne native di EA FC 25
+    headers = [...EA_DB_COLUMNS];
+    startIndex = 0;
+  }
+
+  const pidIdx = headers.indexOf('playerid');
   if (pidIdx === -1) {
     return {
       headers,
       rows: new Map(),
-      error: 'Colonna obbligatoria "playerid" non trovata nell\'intestazione del File 1.',
+      error: 'Colonna obbligatoria "playerid" non identificata nel File 1.',
     };
   }
 
   const rows = new Map<number, EAPlayerDBRow>();
 
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = startIndex; i < lines.length; i++) {
     const cols = lines[i].split(delimiter).map((c) => c.trim());
     if (cols.length < pidIdx + 1) continue;
     const pid = Number(cols[pidIdx]);
@@ -277,7 +293,7 @@ export function parseRookieMasterFile(content: string): {
   }
 
   if (rows.size === 0) {
-    return { headers, rows: new Map(), error: 'Nessuna riga valida trovata nel File 1.' };
+    return { headers, rows: new Map(), error: 'Nessuna riga valida estratta dal File 1.' };
   }
 
   return { headers, rows };
@@ -285,13 +301,14 @@ export function parseRookieMasterFile(content: string): {
 
 // -------------------------------------------------------------
 // PARSER FILE 2: ANAGRAFICA (ID, Nome, Cognome, Squadra)
+// Supporta sia file con riga di intestazione sia file di soli dati
 // -------------------------------------------------------------
 export function parseRookieAnagraficaFile(content: string): {
   rookies: RookieAnagraficaRow[];
   error?: string;
 } {
   const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length < 2) {
+  if (lines.length < 1) {
     return { rookies: [], error: 'Il File 2 (Anagrafica) è vuoto o privo di righe.' };
   }
 
@@ -301,25 +318,39 @@ export function parseRookieAnagraficaFile(content: string): {
   else if (firstLine.includes(';')) delimiter = ';';
   else if (firstLine.includes(',')) delimiter = ',';
 
-  const rawHeaders = firstLine.split(delimiter).map((h) => h.trim().toLowerCase());
-  const idIdx = rawHeaders.findIndex((h) => h === 'id' || h === 'playerid');
-  const nomeIdx = rawHeaders.findIndex((h) => h === 'nome' || h === 'name' || h === 'firstname');
-  const cognomeIdx = rawHeaders.findIndex((h) => h === 'cognome' || h === 'lastname' || h === 'surname');
-  const squadraIdx = rawHeaders.findIndex((h) => h === 'squadra' || h === 'team' || h === 'team_id');
+  const firstRowCols = firstLine.split(delimiter).map((h) => h.trim());
+  const rawHeaders = firstRowCols.map((h) => h.toLowerCase());
 
+  let idIdx = rawHeaders.findIndex((h) => h === 'id' || h === 'playerid');
+  let nomeIdx = rawHeaders.findIndex((h) => h === 'nome' || h === 'name' || h === 'firstname');
+  let cognomeIdx = rawHeaders.findIndex((h) => h === 'cognome' || h === 'lastname' || h === 'surname');
+  let squadraIdx = rawHeaders.findIndex((h) => h === 'squadra' || h === 'team' || h === 'team_id');
+
+  let startIndex = 1;
+
+  // Se la prima riga non contiene intestazioni testuali ma inizia già con un ID numerico
   if (idIdx === -1 || nomeIdx === -1 || cognomeIdx === -1) {
-    return {
-      rookies: [],
-      error:
-        'Intestazioni mancanti nel File 2. Sono richieste le 4 colonne: ID, Nome, Cognome, Squadra (trovate: ' +
-        rawHeaders.join(', ') +
-        ')',
-    };
+    const firstColNum = Number(firstRowCols[0]);
+    if (!isNaN(firstColNum) && firstColNum > 0 && firstRowCols.length >= 3) {
+      // Intestazione assente: ordine predefinito (Col 0: ID, Col 1: Nome, Col 2: Cognome, Col 3: Squadra)
+      idIdx = 0;
+      nomeIdx = 1;
+      cognomeIdx = 2;
+      squadraIdx = firstRowCols.length >= 4 ? 3 : -1;
+      startIndex = 0;
+    } else {
+      return {
+        rookies: [],
+        error:
+          'Intestazioni mancanti o non riconosciute nel File 2. Sono richieste le colonne: ID, Nome, Cognome, Squadra (oppure le 4 colonne dirette senza intestazione). Trovate: ' +
+          rawHeaders.join(', '),
+      };
+    }
   }
 
   const rookies: RookieAnagraficaRow[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = startIndex; i < lines.length; i++) {
     const cols = lines[i].split(delimiter).map((c) => c.trim());
     if (cols.length <= Math.max(idIdx, nomeIdx, cognomeIdx)) continue;
 

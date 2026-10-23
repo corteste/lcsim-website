@@ -187,7 +187,7 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
                       File 1: Master Data EA FC 25
                     </h4>
                     <p className="text-[11px] text-muted-foreground">
-                      Tracciato 137 colonne (TSV / TXT)
+                      Tracciato 137 colonne (TSV / TXT) • Con o senza intestazione
                     </p>
                   </div>
                 </div>
@@ -234,7 +234,7 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
                       File 2: Anagrafica Rookie
                     </h4>
                     <p className="text-[11px] text-muted-foreground">
-                      4 Colonne: ID, Nome, Cognome, Squadra
+                      4 Colonne: ID, Nome, Cognome, Squadra • Con o senza intestazione
                     </p>
                   </div>
                 </div>
