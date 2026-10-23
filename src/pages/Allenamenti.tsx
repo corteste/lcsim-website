@@ -27,7 +27,7 @@ import { getRoleColor, getValueColor, getPlayerImage, getNationalityFlag } from 
 export type StatKey =
   | "PREP"  | "POSP"  | "RINP"  | "RIFP"  | "TUFP"  | "CONT"  | "SCIV"  | "MARC"  | "AGGR"  | "INTR"  | "PASC"  | "PASL"  | "CRSS"  | "CTRP"
   | "VISI"  | "EFFT"  | "PTIR"  | "TIRD"  | "TIRV"  | "DRBL"  | "PIAZ"  | "FINA"  | "ACCL"  | "VELO"  | "AGIL"  | "RESI"  | "EQLB"  | "FRZA"
-  | "TSTA"  | "RIFL"  | "ELEV"  | "PNIZ"  | "CRIG";
+  | "TSTA"  | "RIFL"  | "ELEV"  | "PNIZ"  | "CRIG"  | "FRED";
 
 export const statMeta: Record<StatKey, { label: string; short: string }> = {
   PREP: { label: "Presa", short: "PREP" },
@@ -63,6 +63,7 @@ export const statMeta: Record<StatKey, { label: string; short: string }> = {
   ELEV: { label: "Elevazione", short: "ELEV" },
   PNIZ: { label: "Calci di Punizione", short: "PNIZ" },
   CRIG: { label: "Rigori", short: "CRIG" },
+  FRED: { label: "Freddezza", short: "FRED" },
 };
 
 export interface GroupRowDef {
@@ -87,10 +88,83 @@ export const groupRows: GroupRowDef[] = [
   { key: "FISV", label: "FIS Velocità", category: "FIS", subs: ["ACCL", "VELO", "AGIL"], icon: Zap, colorClass: "text-yellow-500", bgClass: "bg-yellow-500/10 border-yellow-500/20" },
   { key: "FISP", label: "FIS Potenza", category: "FIS", subs: ["RESI", "EQLB", "FRZA"], icon: Dumbbell, colorClass: "text-purple-500", bgClass: "bg-purple-500/10 border-purple-500/20" },
   { key: "FISR", label: "FIS Prontezza", category: "FIS", subs: ["TSTA", "RIFL", "ELEV"], icon: Activity, colorClass: "text-indigo-500", bgClass: "bg-indigo-500/10 border-indigo-500/20" },
-  { key: "CALC", label: "Calci Piazzati", category: "CALC", subs: ["PNIZ", "CRIG"], icon: Swords, colorClass: "text-sky-500", bgClass: "bg-sky-500/10 border-sky-500/20" },
+  { key: "CALC", label: "Calci Piazzati", category: "CALC", subs: ["PNIZ", "CRIG", "FRED"], icon: Swords, colorClass: "text-sky-500", bgClass: "bg-sky-500/10 border-sky-500/20" },
 ];
 
-const COST_PER_POINT = 1;
+/**
+ * Calcola il costo base XP in base al valore di riferimento del gruppo (media o max).
+ * Regole utente:
+ * media >90 --> 50xp
+ * media >80 --> 30xp
+ * media >70 --> 15xp
+ * media >60 --> 8xp
+ * media >50 --> 5xp
+ * media >30 --> 3xp
+ * media <=30 --> 1xp
+ */
+export function getBaseXpCost(value: number): number {
+  if (value > 90) return 50;
+  if (value > 80) return 30;
+  if (value > 70) return 15;
+  if (value > 60) return 8;
+  if (value > 50) return 5;
+  if (value > 30) return 3;
+  return 1;
+}
+
+/**
+ * Calcola il valore di riferimento per il gruppo ad un dato livello di incremento.
+ * - Per i Calci Piazzati (CALC), il valore si basa sul massimo tra PNIZ, CRIG e FRED.
+ * - Per le altre categorie, si calcola la media aritmetica dei sotto-attributi.
+ * Ogni attributo è limitato al cap di 99.
+ */
+export function getGroupReferenceValue(
+  group: GroupRowDef,
+  baseStats: Record<StatKey, number>,
+  levelOffset: number = 0
+): number {
+  if (group.key === "CALC") {
+    const pniz = Math.min(99, (baseStats.PNIZ ?? 0) + levelOffset);
+    const crig = Math.min(99, (baseStats.CRIG ?? 0) + levelOffset);
+    const fred = Math.min(99, (baseStats.FRED ?? 0) + levelOffset);
+    return Math.max(pniz, crig, fred);
+  }
+  const sum = group.subs.reduce((acc, subKey) => {
+    return acc + Math.min(99, (baseStats[subKey] ?? 0) + levelOffset);
+  }, 0);
+  return group.subs.length > 0 ? sum / group.subs.length : 0;
+}
+
+/**
+ * Calcola il costo del singolo tick (livello successivo) per un gruppo.
+ * - Se la categoria è 'POR' (Portiere), il costo è raddoppiato (x2).
+ */
+export function getSingleTickCost(
+  group: GroupRowDef,
+  baseStats: Record<StatKey, number>,
+  currentLevel: number
+): number {
+  const refVal = getGroupReferenceValue(group, baseStats, currentLevel);
+  const baseCost = getBaseXpCost(refVal);
+  const isGoalkeeper = group.category === "POR";
+  return baseCost * (isGoalkeeper ? 2 : 1);
+}
+
+/**
+ * Calcola il costo totale XP per portare un gruppo da 0 a totalLevels livelli.
+ * Ogni singolo tick viene valutato dinamicamente con la media/max aggiornata.
+ */
+export function calculateGroupCost(
+  group: GroupRowDef,
+  baseStats: Record<StatKey, number>,
+  totalLevels: number
+): number {
+  let cost = 0;
+  for (let lvl = 0; lvl < totalLevels; lvl++) {
+    cost += getSingleTickCost(group, baseStats, lvl);
+  }
+  return cost;
+}
 
 const emptyIncreases = (): Record<string, number> =>
   groupRows.reduce((acc, r) => {
@@ -139,7 +213,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 0, PASL: 0, CRSS: 0, CTRP: 0, VISI: 0, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
     ACCL: 0, VELO: 0, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 11, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 11, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'DC': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -147,7 +221,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 5, PASL: 0, CRSS: 0, CTRP: 4, VISI: 0, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
     ACCL: 0, VELO: 2, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 10,
-    TSTA: 10, RIFL: 5, ELEV: 3, PNIZ: 0, CRIG: 0,
+    TSTA: 10, RIFL: 5, ELEV: 3, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'DFC': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -155,7 +229,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 5, PASL: 0, CRSS: 0, CTRP: 4, VISI: 0, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
     ACCL: 0, VELO: 2, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 10,
-    TSTA: 10, RIFL: 5, ELEV: 3, PNIZ: 0, CRIG: 0,
+    TSTA: 10, RIFL: 5, ELEV: 3, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'TS': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -163,7 +237,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
     ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
-    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'TD': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -171,7 +245,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
     ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
-    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'TER': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -179,7 +253,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
     ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
-    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'CDC': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -187,7 +261,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 10, PASL: 10, CRSS: 0, CTRP: 7, VISI: 4, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
     ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 4,
-    TSTA: 0, RIFL: 10, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 10, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'CC': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -195,7 +269,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 15, PASL: 13, CRSS: 0, CTRP: 14, VISI: 13, EFFT: 0,
     PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 7, PIAZ: 6, FINA: 2,
     ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'CEN': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -203,7 +277,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 15, PASL: 13, CRSS: 0, CTRP: 14, VISI: 13, EFFT: 0,
     PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 7, PIAZ: 6, FINA: 2,
     ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'COC': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -211,7 +285,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 16, PASL: 4, CRSS: 0, CTRP: 15, VISI: 14, EFFT: 0,
     PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 13, PIAZ: 9, FINA: 7,
     ACCL: 4, VELO: 3, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 3, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 3, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'ED': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -219,7 +293,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 9, PASL: 0, CRSS: 12, CTRP: 12, VISI: 7, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
     ACCL: 7, VELO: 6, AGIL: 3, RESI: 5, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'ES': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -227,7 +301,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 9, PASL: 0, CRSS: 12, CTRP: 12, VISI: 7, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
     ACCL: 7, VELO: 6, AGIL: 3, RESI: 5, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'AD': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -235,7 +309,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 4, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
     ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'AS': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -243,7 +317,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 4, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
     ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'AT': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -251,7 +325,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 9, PASL: 0, CRSS: 0, CTRP: 15, VISI: 8, EFFT: 0,
     PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 14, PIAZ: 13, FINA: 18,
     ACCL: 5, VELO: 4, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 0,
-    TSTA: 2, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 2, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'ATT': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
@@ -259,7 +333,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
     PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 7, PIAZ: 13, FINA: 18,
     ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
-    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
 };
 
@@ -456,15 +530,17 @@ const Allenamenti = () => {
     [player?.Posiz, postStats, preOverall]
   );
 
-  // Calcolo Costo Totale XP
+  // Calcolo Costo Totale XP (Dinamico basato su media/max e tick-by-tick)
   const totalCost = useMemo(() => {
     let cost = 0;
     for (const row of groupRows) {
       const inc = increases[row.key] ?? 0;
-      cost += inc * row.subs.length * COST_PER_POINT;
+      if (inc > 0) {
+        cost += calculateGroupCost(row, preStats, inc);
+      }
     }
     return cost;
-  }, [increases]);
+  }, [increases, preStats]);
 
   const xpAvailable = player?.XP ?? 0;
   const xpRemaining = xpAvailable - totalCost;
@@ -486,22 +562,38 @@ const Allenamenti = () => {
   const setIncrease = (key: string, value: number) => {
     const clamped = Math.max(0, Math.min(25, value));
     const currentVal = increases[key] ?? 0;
-    const diff = clamped - currentVal;
-    if (diff === 0) return;
+    if (clamped === currentVal) return;
 
     const group = groupRows.find((g) => g.key === key);
     if (!group) return;
 
-    const diffCost = diff * group.subs.length * COST_PER_POINT;
+    // Se si sta aumentando
+    if (clamped > currentVal) {
+      // Verifica se tutti gli attributi hanno già raggiunto il cap di 99
+      const allMaxed = group.subs.every((s) => (preStats[s] ?? 0) + currentVal >= 99);
+      if (allMaxed) {
+        toast({
+          title: "Limite Raggiunto",
+          description: "Tutti gli attributi di questo gruppo hanno già raggiunto il valore massimo (99).",
+        });
+        return;
+      }
 
-    // Se si sta aumentando ma non ci sono abbastanza XP, blocca
-    if (diff > 0 && xpRemaining < diffCost) {
-      toast({
-        title: "XP Insufficienti",
-        description: `Servono ${diffCost} XP per questo aumento, ne hai a disposizione ${xpRemaining}.`,
-        variant: "destructive",
-      });
-      return;
+      // Calcolo costo dinamico per i livelli aggiuntivi
+      let diffCost = 0;
+      for (let lvl = currentVal; lvl < clamped; lvl++) {
+        diffCost += getSingleTickCost(group, preStats, lvl);
+      }
+
+      // Se non ci sono abbastanza XP, blocca
+      if (xpRemaining < diffCost) {
+        toast({
+          title: "XP Insufficienti",
+          description: `Servono ${diffCost} XP per questo aumento, ne hai a disposizione ${xpRemaining}.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIncreases((prev) => ({
@@ -657,12 +749,15 @@ const Allenamenti = () => {
     () =>
       groupRows
         .filter((g) => (increases[g.key] ?? 0) > 0)
-        .map((g) => ({
-          ...g,
-          inc: increases[g.key],
-          cost: increases[g.key] * g.subs.length * COST_PER_POINT,
-        })),
-    [increases]
+        .map((g) => {
+          const inc = increases[g.key] ?? 0;
+          return {
+            ...g,
+            inc,
+            cost: calculateGroupCost(g, preStats, inc),
+          };
+        }),
+    [increases, preStats]
   );
 
   // Giocatori filtrati per ricerca e ruolo
@@ -1018,16 +1113,30 @@ const Allenamenti = () => {
                 </Card>
 
                 {/* Guida Rapida / Istruzioni */}
-                <Card className="border-border/60 bg-muted/20 text-xs p-3.5 space-y-2">
+                <Card className="border-border/60 bg-muted/20 text-xs p-3.5 space-y-2.5">
                   <div className="flex items-center gap-1.5 font-bold text-foreground">
                     <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                    <span>Come funzionano gli allenamenti</span>
+                    <span>Regolamento Costi XP Dinamici</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    • Gli attributi sono suddivisi in <strong>12 blocchi da 2-3 statistiche</strong>.<br />
-                    • Ogni punto aggiunto a un gruppo costa <strong>1 XP per ciascun sotto-attributo</strong>.<br />
-                    • Premi <strong>Salva Allenamenti</strong> per registrare le modifiche; potrai sempre ridurle o resettarle ai valori originari del database.
-                  </p>
+                  <div className="text-[11px] text-muted-foreground leading-relaxed space-y-2">
+                    <p>
+                      • Il costo in XP per ciascun livello viene calcolato in base alla <strong>media degli attributi</strong> del gruppo (o al <strong>valore più alto</strong> per i Calci Piazzati):
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[10px] font-mono">
+                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;90 &rarr; 50 XP</span>
+                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;80 &rarr; 30 XP</span>
+                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;70 &rarr; 15 XP</span>
+                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;60 &rarr; 8 XP</span>
+                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;50 &rarr; 5 XP</span>
+                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;30 &rarr; 3 XP</span>
+                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&le;30 &rarr; 1 XP</span>
+                      <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30 font-bold">POR: Costo x2</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      • <strong>Dinamico tick-by-tick</strong>: ad ogni punto assegnato la media aumenta e il costo del tick successivo si adatta in tempo reale.<br />
+                      • <strong>Calci Piazzati</strong>: non si calcola la media, ma il valore max tra Punizioni (PNIZ), Rigori (CRIG) e Freddezza (FRED).
+                    </p>
+                  </div>
                 </Card>
               </div>
 
@@ -1058,10 +1167,14 @@ const Allenamenti = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         {groupRows.map((g) => {
                           const inc = increases[g.key] ?? 0;
-                          const stepCost = g.subs.length * COST_PER_POINT;
-                          const groupTotalCost = inc * stepCost;
+                          const nextTickCost = getSingleTickCost(g, preStats, inc);
+                          const groupTotalCost = calculateGroupCost(g, preStats, inc);
+                          const refVal = getGroupReferenceValue(g, preStats, inc);
+                          const isPOR = g.category === "POR";
+                          const isCALC = g.key === "CALC";
+                          const allMaxed = g.subs.every((s) => (preStats[s] ?? 0) + inc >= 99);
                           const hasChange = inc > 0;
-                          const canIncrement = inc < 25 && xpRemaining >= stepCost;
+                          const canIncrement = inc < 25 && !allMaxed && xpRemaining >= nextTickCost;
                           const IconComp = g.icon;
 
                           return (
@@ -1080,7 +1193,7 @@ const Allenamenti = () => {
                                     <IconComp className="h-4 w-4" />
                                   </div>
                                   <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
                                       <h3 className="text-sm font-extrabold text-foreground truncate">{g.label}</h3>
                                       {hasChange && (
                                         <Badge className="bg-emerald-500 text-white font-mono text-[10px] px-1.5 py-0">
@@ -1088,8 +1201,25 @@ const Allenamenti = () => {
                                         </Badge>
                                       )}
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground font-mono">
-                                      {stepCost} XP / livello ({g.subs.length} attributi)
+                                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono flex-wrap">
+                                      <span>
+                                        {isCALC ? "Max" : "Media"}:{" "}
+                                        <strong className="text-foreground">
+                                          {isCALC ? Math.round(refVal) : (Math.round(refVal * 10) / 10).toFixed(1)}
+                                        </strong>
+                                      </span>
+                                      <span>•</span>
+                                      <span className={nextTickCost >= 30 ? "text-amber-500 font-semibold" : ""}>
+                                        Prox: <strong>{nextTickCost} XP</strong>{isPOR ? " (x2)" : ""}
+                                      </span>
+                                      {hasChange && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                            Tot: {groupTotalCost} XP
+                                          </span>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -1122,9 +1252,11 @@ const Allenamenti = () => {
                                     onClick={() => setIncrease(g.key, inc + 1)}
                                     disabled={!canIncrement}
                                     title={
-                                      xpRemaining < stepCost
-                                        ? `Servono ${stepCost} XP disponibili`
-                                        : "Aumenta gruppo (+1 a tutti)"
+                                      allMaxed
+                                        ? "Tutti gli attributi del gruppo hanno raggiunto 99"
+                                        : xpRemaining < nextTickCost
+                                        ? `Servono ${nextTickCost} XP disponibili (ne hai ${xpRemaining})`
+                                        : `Aumenta di 1 livello (costo: ${nextTickCost} XP)`
                                     }
                                   >
                                     <Plus className="h-3 w-3" />

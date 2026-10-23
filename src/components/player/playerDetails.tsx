@@ -319,6 +319,7 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
             <StatCardGroup title="Calci Piazzati" icon={Flame} colorClass="bg-orange-500/10 text-orange-600 dark:text-orange-400">
               <StatBar label="Punizioni" code="PNIZ" value={currentPlayer.PNIZ} />
               <StatBar label="Rigori" code="CRIG" value={currentPlayer.CRIG} />
+              <StatBar label="Freddezza" code="FRED" value={currentPlayer.FRED} />
             </StatCardGroup>
 
             {/* Portiere */}

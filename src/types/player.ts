@@ -58,6 +58,7 @@ export type Player = {
     EQLB: number | null;
     PNIZ: number | null;
     CRIG: number | null;
+    FRED?: number | null;
     MABI: number | null;
     Tratti: string | null;
     RuoloInCampo: string | null;
