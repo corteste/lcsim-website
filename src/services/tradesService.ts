@@ -438,6 +438,73 @@ export async function cancelTrade(tradeId: string, teamId: string): Promise<{ su
  * L'Admin approva ed esegue lo scambio.
  * Tenta prima l'RPC atomica rpc_execute_trade; se non presente, esegue il fallback client-side.
  */
+/**
+ * Funzione di supporto per il fallback client-side: trasferisce calciatori gestendo
+ * i conflitti di numero di maglia assegnando un numero casuale (1..99) libero nella destinazione.
+ */
+async function transferPlayersWithJerseyResolution(
+  playerIds: number[],
+  targetTeam: string
+) {
+  if (playerIds.length === 0) return;
+
+  // 1. Numeri attualmente occupati nella squadra di destinazione
+  const { data: existingPlayers, error: exErr } = await supabase
+    .from(PLAYER_TABLE)
+    .select("NumeroMaglia")
+    .eq("Squadra", targetTeam);
+
+  if (exErr) throw exErr;
+
+  const takenNumbers = new Set<number>();
+  (existingPlayers || []).forEach((p: any) => {
+    if (p.NumeroMaglia != null) {
+      takenNumbers.add(Number(p.NumeroMaglia));
+    }
+  });
+
+  // 2. Dati dei giocatori da trasferire
+  const { data: incomingPlayers, error: inErr } = await supabase
+    .from(PLAYER_TABLE)
+    .select("ID, NumeroMaglia")
+    .in("ID", playerIds);
+
+  if (inErr) throw inErr;
+
+  // 3. Assegna squadra ed eventuale numero casuale tra 1 e 99 se in conflitto
+  for (const p of incomingPlayers || []) {
+    const curJersey = p.NumeroMaglia != null ? Number(p.NumeroMaglia) : null;
+    let newJersey = curJersey;
+
+    if (curJersey !== null && takenNumbers.has(curJersey)) {
+      // Trova un numero libero tra 1 e 99
+      const available: number[] = [];
+      for (let n = 1; n <= 99; n++) {
+        if (!takenNumbers.has(n)) {
+          available.push(n);
+        }
+      }
+      newJersey = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : null;
+    }
+
+    if (newJersey !== null) {
+      takenNumbers.add(newJersey);
+    }
+
+    const payload: { Squadra: string; NumeroMaglia?: number | null } = { Squadra: targetTeam };
+    if (newJersey !== curJersey) {
+      payload.NumeroMaglia = newJersey;
+    }
+
+    const { error: updErr } = await supabase
+      .from(PLAYER_TABLE)
+      .update(payload)
+      .eq("ID", p.ID);
+
+    if (updErr) throw updErr;
+  }
+}
+
 export async function adminApproveTrade(
   trade: EnrichedTrade,
   adminUsername: string
@@ -456,22 +523,24 @@ export async function adminApproveTrade(
     // 2. Se l'RPC non esiste o fallisce per mancanza di migrazione SQL, fallback client-side
     console.warn("RPC rpc_execute_trade not available or failed, executing client-side trade execution fallback:", rpcError);
 
-    // a. Sposta calciatori offerti dal sender al receiver
-    if (trade.offered_player_ids.length > 0) {
-      const { error: pErr1 } = await supabase
+    const allTradedPlayerIds = [...trade.offered_player_ids, ...trade.requested_player_ids];
+
+    // Disassocia temporaneamente tutti i calciatori per azzerare conflitti intermedi su uq_an_player_team_jersey
+    if (allTradedPlayerIds.length > 0) {
+      await supabase
         .from(PLAYER_TABLE)
-        .update({ Squadra: trade.receiver_team })
-        .in("ID", trade.offered_player_ids);
-      if (pErr1) throw pErr1;
+        .update({ Squadra: null })
+        .in("ID", allTradedPlayerIds);
     }
 
-    // b. Sposta calciatori richiesti dal receiver al sender
+    // a. Sposta calciatori offerti dal sender al receiver con risoluzione conflitti numero di maglia
+    if (trade.offered_player_ids.length > 0) {
+      await transferPlayersWithJerseyResolution(trade.offered_player_ids, trade.receiver_team);
+    }
+
+    // b. Sposta calciatori richiesti dal receiver al sender con risoluzione conflitti numero di maglia
     if (trade.requested_player_ids.length > 0) {
-      const { error: pErr2 } = await supabase
-        .from(PLAYER_TABLE)
-        .update({ Squadra: trade.sender_team })
-        .in("ID", trade.requested_player_ids);
-      if (pErr2) throw pErr2;
+      await transferPlayersWithJerseyResolution(trade.requested_player_ids, trade.sender_team);
     }
 
     // c. Sposta scelte del draft offerte dal sender al receiver
