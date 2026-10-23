@@ -63,7 +63,6 @@ import {
 } from "@/utils/scoutingConfig";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
-import { DraftWishlistDrawer } from "@/components/draft/DraftWishlistDrawer";
 import {
   fetchTeamFavorites,
   toggleTeamFavorite,
@@ -134,7 +133,6 @@ const Draft = () => {
   // Watchlist & Autopick State (Punti 6 e 7)
   const [favoriteRookieIds, setFavoriteRookieIds] = useState<Set<number>>(new Set());
   const [favoritesOnly, setFavoritesOnly] = useState<boolean>(false);
-  const [wishlistDrawerOpen, setWishlistDrawerOpen] = useState<boolean>(false);
   const [isUserAutopickEnabled, setIsUserAutopickEnabled] = useState<boolean>(false);
   const [allAutopickSettings, setAllAutopickSettings] = useState<Record<string, boolean>>({});
   const [isAutopicking, setIsAutopicking] = useState<boolean>(false);
@@ -279,18 +277,16 @@ const Draft = () => {
 
   // Caricamento impostazioni autopick squadra (Punto 7)
   const loadAutopickSettings = useCallback(async () => {
-    if (!activeUserTeamId) return;
     try {
-      const enabled = await fetchAutopickSetting(activeUserTeamId);
-      setIsUserAutopickEnabled(enabled);
-      if (isAdmin) {
-        const all = await fetchAllAutopickSettings();
-        setAllAutopickSettings(all);
+      const all = await fetchAllAutopickSettings();
+      setAllAutopickSettings(all);
+      if (activeUserTeamId) {
+        setIsUserAutopickEnabled(Boolean(all[activeUserTeamId]));
       }
     } catch (err) {
-      console.error("Errore caricamento autopick setting:", err);
+      console.error("Errore caricamento autopick settings:", err);
     }
-  }, [activeUserTeamId, isAdmin]);
+  }, [activeUserTeamId]);
 
   useEffect(() => {
     loadAutopickSettings();
@@ -864,7 +860,7 @@ const Draft = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleAdminExecuteAutopick(currentOnTheClockPick)}
+                    onClick={() => handleTriggerAutopick(currentOnTheClockPick)}
                     disabled={isAutopicking || submitting}
                     className="h-8 text-xs font-bold border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 gap-1.5"
                     title="Esegui scelta automatica da lista preferenze squadra o miglior OVR"
@@ -1205,45 +1201,27 @@ const Draft = () => {
                     )}
                   </div>
 
-                  {/* Action Bar: Priorità Draft & Autopick (Punti 6 e 7) */}
-                  <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap items-center justify-between gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setWishlistDrawerOpen(true)}
-                      className={`h-8 gap-1.5 text-xs font-bold rounded-lg border transition-all ${
-                        isUserAutopickEnabled
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/20"
-                          : "bg-muted/50 hover:bg-muted text-foreground border-border"
-                      }`}
-                    >
-                      <ListOrdered className="h-3.5 w-3.5 text-emerald-500" />
-                      <span>Priorità & Autopick</span>
-                      {isUserAutopickEnabled && (
-                        <Badge
-                          variant="outline"
-                          className="text-[9px] px-1 py-0 bg-emerald-500/20 text-emerald-600 border-emerald-500/40 uppercase font-black"
-                        >
-                          ON
-                        </Badge>
-                      )}
-                    </Button>
-
-                    {(isAdmin || (currentOnTheClockPick && currentOnTheClockPick.team_id === activeUserTeamId)) && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleTriggerAutopick(currentOnTheClockPick)}
-                        disabled={isAutopicking || !currentOnTheClockPick}
-                        className="h-8 gap-1.5 text-xs font-bold rounded-lg border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                        title="Esegui scelta immediata in base alla Wishlist della squadra on-the-clock (o Fallback miglior OVR)"
-                      >
-                        <Bot className={`h-3.5 w-3.5 ${isAutopicking ? "animate-spin" : ""}`} />
-                        <span>{isAutopicking ? "Scelta..." : "Esegui Autopick"}</span>
-                      </Button>
+                  {/* Badge Notifica Autopick per la squadra attiva */}
+                  <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    {isUserAutopickEnabled ? (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold">
+                        <Bot className="h-4 w-4 text-emerald-500 shrink-0" />
+                        <span>Autopick Attivo per {activeUserTeamId}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-muted-foreground py-0.5">
+                        <Bot className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                        <span>Autopick non attivo</span>
+                      </div>
                     )}
+
+                    <Link
+                      to="/mia-squadra/scouting?tab=autopick"
+                      className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 ml-auto"
+                    >
+                      <span>Imposta Graduatoria in Scouting</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
                   </div>
                 </CardHeader>
 
@@ -1919,21 +1897,6 @@ const Draft = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Drawer Lista Priorità & Autopick (Punto 7) */}
-      {activeUserTeamId && (
-        <DraftWishlistDrawer
-          open={wishlistDrawerOpen}
-          onOpenChange={setWishlistDrawerOpen}
-          teamId={activeUserTeamId}
-          teamFullName={activeUserTeam?.NAME}
-          availableRookies={availableRookies}
-          favoriteRookieIds={favoriteRookieIds}
-          onWishlistChanged={() => {
-            loadFavorites();
-            loadAutopickSettings();
-          }}
-        />
-      )}
     </div>
   );
 };

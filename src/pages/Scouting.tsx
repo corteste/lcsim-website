@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import {
   Card,
@@ -31,6 +32,8 @@ import {
   Shield,
   RefreshCw,
   RotateCcw,
+  Bot,
+  ListOrdered,
 } from "lucide-react";
 import { supabase } from "@/supabaseClient";
 import {
@@ -41,6 +44,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
+import { ScoutingAutopickTab } from "@/components/scouting/ScoutingAutopickTab";
 import { Player } from "@/types/player";
 import {
   getRoleColor,
@@ -167,7 +171,7 @@ const ScoutingStatBar = ({
 };
 
 const Scouting = () => {
-  const { user, isAdmin, effectiveTeam } = useAuth();
+  const { user, isAdmin, effectiveTeam, availableTeams } = useAuth();
   const activeTeamId = effectiveTeam;
 
   const [rookies, setRookies] = useState<Player[]>([]);
@@ -175,8 +179,30 @@ const Scouting = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
 
-  // Active tab: "single" (Scheda Singolo Rookie) or "recap" (Recap Rookie Scoutati)
-  const [activeTab, setActiveTab] = useState<string>("single");
+  // Active tab: "single" (Scheda Singolo Rookie), "recap" (Recap Rookie Scoutati) o "autopick" (Graduatoria Draft)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "single";
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab");
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (newTab === "single") next.delete("tab");
+        else next.set("tab", newTab);
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   // Filters for Left Rookie List in "single" tab
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -592,8 +618,8 @@ const Scouting = () => {
           </div>
         </div>
 
-        {/* MAIN TABS: 1) SCHEDA SINGOLO ROOKIE | 2) RECAP ROOKIE SCOUTATI */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+        {/* MAIN TABS: 1) SCHEDA SINGOLO ROOKIE | 2) RECAP ROOKIE SCOUTATI | 3) GRADUATORIA & AUTOPICK */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
           <TabsList className="bg-card border border-border/80 p-1 h-auto flex flex-wrap gap-1 w-full sm:w-auto">
             <TabsTrigger
               value="single"
@@ -608,6 +634,13 @@ const Scouting = () => {
             >
               <Layers className="h-4 w-4" />
               Recap Rookie Scoutati ({scoutedRookiesCount})
+            </TabsTrigger>
+            <TabsTrigger
+              value="autopick"
+              className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
+            >
+              <Bot className="h-4 w-4" />
+              Graduatoria Draft &amp; Autopick
             </TabsTrigger>
           </TabsList>
 
@@ -1497,6 +1530,32 @@ const Scouting = () => {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* TAB 3: GRADUATORIA DRAFT & AUTOPICK (PUNTO 7) */}
+          <TabsContent value="autopick" className="m-0">
+            <ScoutingAutopickTab
+              teamId={activeTeamId}
+              teamFullName={
+                isAdmin
+                  ? availableTeams?.find((t) => t.team_id === activeTeamId)?.name
+                  : user?.teamFullName
+              }
+              allRookies={rookies}
+              favoriteRookieIds={favoriteRookieIds}
+              scoutingTokensByRookie={useMemo(() => {
+                const map: Record<number, number> = {};
+                Object.entries(scoutingMap).forEach(([id, rec]) => {
+                  map[Number(id)] = rec.tokens_spent || 0;
+                });
+                return map;
+              }, [scoutingMap])}
+              onInspectRookie={(rookieId) => {
+                setSelectedRookieId(rookieId);
+                handleTabChange("single");
+              }}
+              onFavoritesUpdated={loadFavorites}
+            />
           </TabsContent>
         </Tabs>
       </main>
