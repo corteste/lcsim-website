@@ -12,93 +12,163 @@ export interface AccessoryColorOption {
 }
 
 /**
- * 1. Stile Divisa (JerseyStyle)
- * 0 = Normale / Fuori dai pantaloncini (Untucked)
- * 1 = Dentro i pantaloncini (Tucked)
+ * 1. Stile Divisa (JerseyStyle / jerseystylecode)
+ * 0 = Tucked In
+ * 1 = Untucked
+ * 2 = Half Tuck
  */
 export const JERSEY_STYLE_OPTIONS: AccessoryOption[] = [
-  { code: 0, label: "Fuori dai pantaloncini (Standard)", description: "Maglia lasciata cadere fuori dai pantaloncini" },
-  { code: 1, label: "Dentro i pantaloncini (Rimboccata)", description: "Maglia infilata all'interno della cintura" },
+  { code: 0, label: "Tucked In (Dentro i pantaloncini)", description: "Maglia infilata all'interno dei pantaloncini" },
+  { code: 1, label: "Untucked (Fuori dai pantaloncini)", description: "Maglia lasciata cadere fuori dai pantaloncini" },
+  { code: 2, label: "Half Tuck (Mezza rimboccata)", description: "Maglia parzialmente infilata nei pantaloncini" },
 ];
 
 /**
- * 2. Vestibilità Divisa (JerseyFit)
- * 0 = Normale / Standard
- * 1 = Aderente / Tight
+ * 2. Vestibilità Divisa (JerseyFit / jerseyfit)
+ * 0 = Normal
+ * 1 = Tight
+ * 2 = Team Kit Fit
  */
 export const JERSEY_FIT_OPTIONS: AccessoryOption[] = [
-  { code: 0, label: "Standard / Normale", description: "Vestibilità classica e comoda" },
-  { code: 1, label: "Attillata / Aderente (Slim Fit)", description: "Taglio aderente al corpo del calciatore" },
+  { code: 0, label: "Normal (Normale)", description: "Vestibilità standard classica" },
+  { code: 1, label: "Tight (Attillata / Slim Fit)", description: "Taglio aderente al corpo del calciatore" },
+  { code: 2, label: "Team Kit Fit (Fit Squadra)", description: "Vestibilità predefinita del kit squadra" },
 ];
 
 /**
- * 3. Lunghezza Maniche (SleeveLength)
+ * 3. Lunghezza Maniche (SleeveLength / jerseysleevelengthcode)
+ * 0 = Short
+ * 1 = Long
+ * 2 = Long and Turtleneck
+ * 3 = Seasonal Undershirt
+ * 4 = Seasonal Undershirt and Turtleneck
  */
 export const SLEEVE_LENGTH_OPTIONS: AccessoryOption[] = [
-  { code: 0, label: "Maniche corte", description: "Divisa standard a maniche corte" },
-  { code: 1, label: "Maniche lunghe", description: "Divisa con maniche lunghe in tessuto gara" },
-  { code: 2, label: "Sottomaglia termica maniche lunghe", description: "Sottomaglia compressiva a maniche lunghe sotto la divisa" },
-  { code: 3, label: "Manicotti / Scaldabraccia", description: "Manicotti elastici separati per le braccia" },
-  { code: 4, label: "Sottomaglia maniche corte", description: "Sottomaglia a mezza manica" },
+  { code: 0, label: "Short (Maniche corte)", description: "Divisa standard a maniche corte" },
+  { code: 1, label: "Long (Maniche lunghe)", description: "Divisa a maniche lunghe" },
+  { code: 2, label: "Long and Turtleneck (Maniche lunghe + Dolcevita)", description: "Maniche lunghe con colletto alto/scaldacollo" },
+  { code: 3, label: "Seasonal Undershirt (Sottomaglia stagionale)", description: "Sottomaglia termica stagionale a maniche lunghe" },
+  { code: 4, label: "Seasonal Undershirt and Turtleneck (Sottomaglia + Dolcevita)", description: "Sottomaglia termica stagionale con collo alto" },
+  { code: 5, label: "Opzione 5 (-)", description: "Variante EA FC #5" },
+  { code: 6, label: "Opzione 6 (-)", description: "Variante EA FC #6" },
+  { code: 7, label: "Opzione 7 (-)", description: "Variante EA FC #7" },
 ];
 
 /**
- * 4. Divisa Invernale / Stagionale (SeasonalJersey)
+ * 4. Divisa Stagionale (SeasonalJersey / hasseasonaljersey)
+ * 0 = Short
+ * 1 = Long
+ * 2 = Long and Turtleneck
+ * 3 = Seasonal Undershirt
+ * 4 = Seasonal Undershirt and Turtleneck
  */
 export const SEASONAL_JERSEY_OPTIONS: AccessoryOption[] = [
-  { code: 0, label: "Nessuna variazione invernale", description: "Assetto standard per ogni temperatura" },
-  { code: 1, label: "Maniche lunghe invernali", description: "Maniche lunghe pesanti per temperature rigide" },
-  { code: 2, label: "Sottomaglia + Scaldacollo", description: "Sottomaglia termica e collare protettivo antivento" },
-  { code: 3, label: "Scaldacollo / Fascia collo", description: "Scaldacollo tubolare in microfibra" },
-  { code: 4, label: "Guanti invernali termici", description: "Guanti in neoprene da campo per temperature basse" },
+  { code: 0, label: "Short (Maniche corte)", description: "Assetto standard a maniche corte" },
+  { code: 1, label: "Long (Maniche lunghe)", description: "Assetto stagionale a maniche lunghe" },
+  { code: 2, label: "Long and Turtleneck (Maniche lunghe + Dolcevita)", description: "Maniche lunghe e collo alto" },
+  { code: 3, label: "Seasonal Undershirt (Sottomaglia stagionale)", description: "Sottomaglia termica stagionale" },
+  { code: 4, label: "Seasonal Undershirt and Turtleneck (Sottomaglia + Dolcevita)", description: "Sottomaglia termica + collo alto" },
+  { code: 5, label: "Opzione 5 (-)", description: "Variante EA FC #5" },
+  { code: 6, label: "Opzione 6 (-)", description: "Variante EA FC #6" },
+  { code: 7, label: "Opzione 7 (-)", description: "Variante EA FC #7" },
 ];
 
 /**
- * 5. Altezza Calzettoni (SockLength)
+ * 4b. Stile Pantaloncini Portiere (ShortStyle / shortstyle)
+ * 0 = GK Shorts
+ * 1 = GK Pants
+ */
+export const SHORT_STYLE_OPTIONS: AccessoryOption[] = [
+  { code: 0, label: "GK Shorts (Pantaloncini corti)", description: "Pantaloncini corti da portiere" },
+  { code: 1, label: "GK Pants (Pantaloni lunghi)", description: "Pantaloni lunghi da portiere" },
+];
+
+/**
+ * 4c. Sottopantaloncini (UndershortStyle / undershortstyle)
+ */
+export const UNDERSHORT_STYLE_OPTIONS: AccessoryOption[] = [
+  { code: 0, label: "0 (-)", description: "Standard" },
+  { code: 1, label: "1 (-)", description: "Scaldamuscoli / Sottopantaloncini" },
+];
+
+/**
+ * 5. Altezza Calzettoni (SockLength / socklengthcode)
+ * 0 = Average
+ * 1 = Short
+ * 2 = High
+ * 3 = Ankle
+ * 4 = Average no Shinpad
+ * 5 = Bellingham cut out socks
  */
 export const SOCK_LENGTH_OPTIONS: AccessoryOption[] = [
-  { code: 0, label: "Normale (Sotto il ginocchio)", description: "Altezza classica da regolamento" },
-  { code: 1, label: "Bassi / Caviglia", description: "Calzettoni abbassati verso il parastinco" },
-  { code: 2, label: "Alti (Sopra il ginocchio)", description: "Calzettoni tirati fino alla parte bassa della coscia" },
-  { code: 3, label: "Medi / Arrotolati", description: "Calzettoni a mezza gamba con risvolto" },
+  { code: 0, label: "Average (Normale)", description: "Altezza media standard sotto il ginocchio" },
+  { code: 1, label: "Short (Bassi)", description: "Calzettoni bassi" },
+  { code: 2, label: "High (Alti sopra il ginocchio)", description: "Calzettoni alti fin sopra il ginocchio" },
+  { code: 3, label: "Ankle (Alla caviglia)", description: "Calzettoni molto bassi alla caviglia" },
+  { code: 4, label: "Average no Shinpad (Medi senza parastinco visibile)", description: "Altezza media senza ingombro parastinco" },
+  { code: 5, label: "Bellingham cut out socks (Calzettoni forati stile Bellingham)", description: "Calzettoni con fori posteriori sul polpaccio" },
 ];
 
 /**
- * 6. Accessori Giocatore (Accessory1, Accessory2, Accessory3, Accessory4)
+ * 6. Accessori Giocatore (Accessory1..4 / accessorycode1..4)
  */
 export const ACCESSORY_OPTIONS: AccessoryOption[] = [
-  { code: 0, label: "Nessuno", category: "Base", description: "Nessun accessorio equipaggiato in questo slot" },
-  { code: 6, label: "Polsino sinistro singolo", category: "Polsini", description: "Polsino in spugna sul braccio sinistro" },
-  { code: 7, label: "Polsino destro singolo", category: "Polsini", description: "Polsino in spugna sul braccio destro" },
-  { code: 8, label: "Polsini su entrambe le braccia", category: "Polsini", description: "Coppia di polsini in spugna abbinati" },
-  { code: 9, label: "Fascia / Nastro polso sinistro", category: "Fasciature", description: "Fasciatura medica/sportiva stretta al polso sinistro" },
-  { code: 10, label: "Fascia / Nastro polso destro", category: "Fasciature", description: "Fasciatura medica/sportiva stretta al polso destro" },
-  { code: 11, label: "Fasciatura entrambi i polsi", category: "Fasciature", description: "Nastro protettivo su entrambi i polsi" },
-  { code: 12, label: "Nastro dita mano sinistra", category: "Fasciature", description: "Fasciatura compressiva dita della mano sinistra" },
-  { code: 14, label: "Nastro dita mano destra", category: "Fasciature", description: "Fasciatura compressiva dita della mano destra" },
-  { code: 16, label: "Fascia da braccio elastica", category: "Fasce", description: "Fascia elastica di tenuta/supporto sul bicipite" },
-  { code: 22, label: "Nastro su entrambe le caviglie", category: "Cavigliere", description: "Fasciatura di rinforzo sui calzettoni a livello caviglia" },
-  { code: 23, label: "Nastro caviglia sinistra", category: "Cavigliere", description: "Nastro di rinforzo sulla caviglia sinistra" },
-  { code: 24, label: "Nastro caviglia destra", category: "Cavigliere", description: "Nastro di rinforzo sulla caviglia destra" },
-  { code: 25, label: "Reggi-parastinco / Shin guard stay", category: "Parastinchi", description: "Fascia elastica ferma-parastinco sotto il ginocchio" },
-  { code: 26, label: "Maschera protettiva viso", category: "Protezioni", description: "Maschera in carbonio protettiva per il setto nasale/zigomo" },
-  { code: 27, label: "Caschetto protettivo", category: "Protezioni", description: "Caschetto imbottito da campo stile Cech" },
+  { code: 0, label: "No (Nessuno)", category: "Base", description: "Nessun accessorio equipaggiato in questo slot" },
+  { code: 6, label: "Left Hand Tape (Fasciatura mano sinistra)", category: "Mani & Polsi", description: "Nastro protettivo sulla mano sinistra" },
+  { code: 7, label: "Right Hand Tape (Fasciatura mano destra)", category: "Mani & Polsi", description: "Nastro protettivo sulla mano destra" },
+  { code: 8, label: "Left Wristle Tape (Polsino/Nastro polso sinistro)", category: "Mani & Polsi", description: "Fasciatura/polsino corto sul polso sinistro" },
+  { code: 9, label: "Right Wristle Tape (Polsino/Nastro polso destro)", category: "Mani & Polsi", description: "Fasciatura/polsino corto sul polso destro" },
+  { code: 10, label: "Left Knee Tape (Fasciatura ginocchio sinistro)", category: "Ginocchia & Gambe", description: "Nastro sotto il ginocchio sinistro" },
+  { code: 11, label: "Right Knee Tape (Fasciatura ginocchio destro)", category: "Ginocchia & Gambe", description: "Nastro sotto il ginocchio destro" },
+  { code: 12, label: "Left Knee Tutor (Tutore ginocchio sinistro)", category: "Ginocchia & Gambe", description: "Fascia/tutore elastico sul ginocchio sinistro" },
+  { code: 13, label: "Right Knee Tutor (Tutore ginocchio destro)", category: "Ginocchia & Gambe", description: "Fascia/tutore elastico sul ginocchio destro" },
+  { code: 14, label: "Ankle Tape (Fasciatura caviglie)", category: "Ginocchia & Gambe", description: "Nastro di supporto sulle caviglie" },
+  { code: 16, label: "Gloves (Guanti invernali)", category: "Guanti", description: "Guanti da movimento per basse temperature" },
+  { code: 22, label: "Left Finger Tape (Nastro dita mano sinistra)", category: "Mani & Polsi", description: "Fasciatura sulle dita della mano sinistra" },
+  { code: 23, label: "Right Finger Tape (Nastro dita mano destra)", category: "Mani & Polsi", description: "Fasciatura sulle dita della mano destra" },
+  { code: 24, label: "Left Wide Wristle Tape (Fascia larga polso sinistro)", category: "Mani & Polsi", description: "Polsino/fascia ampia sul polso sinistro" },
+  { code: 25, label: "Right Wide Wristle Tape (Fascia larga polso destro)", category: "Mani & Polsi", description: "Polsino/fascia ampia sul polso destro" },
+  { code: 26, label: "Left Bracelet (Braccialetto sinistro)", category: "Mani & Polsi", description: "Braccialetto sottile al polso sinistro" },
+  { code: 27, label: "Right Bracelet (Braccialetto destro)", category: "Mani & Polsi", description: "Braccialetto sottile al polso destro" },
+  { code: 150, label: "Facemask_150 (Maschera protettiva 150)", category: "Protezioni", description: "Maschera facciale protettiva modello 150" },
+  { code: 151, label: "Facemask_151 (Maschera protettiva 151)", category: "Protezioni", description: "Maschera facciale protettiva modello 151" },
+  { code: 154, label: "Facemask_154 (Maschera protettiva 154)", category: "Protezioni", description: "Maschera facciale protettiva modello 154" },
+  { code: 156, label: "Osimhen Facemask (Maschera stile Osimhen)", category: "Protezioni", description: "Maschera in carbonio modello Osimhen" },
+  { code: 158, label: "Facemask_158 (Maschera protettiva 158)", category: "Protezioni", description: "Maschera facciale protettiva modello 158" },
+  { code: 190, label: "Knee Brace (Tutore rigido ginocchio)", category: "Ginocchia & Gambe", description: "Ginocchiera/tutore ortopedico completo" },
 ];
 
 /**
- * 7. Colori Accessori (Colour, Colour_1, Colour_2, Colour_3)
+ * 7. Colori Accessori (Colour, Colour_1, Colour_2, Colour_3 / accessorycolourcode1..4)
+ * 0 White, 1 Black, 2 Blue, 3 Red, 4 Yellow, 5 Dark Green, 6 Orange,
+ * 7 Violet, 8 Brown, 9 Pink, 10 Bordeaux, 11 Cyan, 12 Dark Blue
  */
 export const ACCESSORY_COLOR_OPTIONS: AccessoryColorOption[] = [
-  { code: 0, label: "Colore sociale squadra (Predefinito)", hex: "#10b981" },
-  { code: 1, label: "Bianco", hex: "#ffffff" },
-  { code: 2, label: "Nero", hex: "#171717" },
-  { code: 3, label: "Rosso", hex: "#ef4444" },
-  { code: 4, label: "Blu Royal", hex: "#2563eb" },
-  { code: 5, label: "Giallo", hex: "#eab308" },
-  { code: 6, label: "Verde", hex: "#22c55e" },
-  { code: 7, label: "Arancione", hex: "#f97316" },
-  { code: 10, label: "Grigio Chiaro", hex: "#cbd5e1" },
-  { code: 11, label: "Grigio Scuro / Antracite", hex: "#475569" },
+  { code: 0, label: "White (Bianco)", hex: "#ffffff" },
+  { code: 1, label: "Black (Nero)", hex: "#171717" },
+  { code: 2, label: "Blue (Blu)", hex: "#2563eb" },
+  { code: 3, label: "Red (Rosso)", hex: "#ef4444" },
+  { code: 4, label: "Yellow (Giallo)", hex: "#eab308" },
+  { code: 5, label: "Dark Green (Verde Scuro)", hex: "#15803d" },
+  { code: 6, label: "Orange (Arancione)", hex: "#f97316" },
+  { code: 7, label: "Violet (Viola)", hex: "#7c3aed" },
+  { code: 8, label: "Brown (Marrone)", hex: "#78350f" },
+  { code: 9, label: "Pink (Rosa)", hex: "#ec4899" },
+  { code: 10, label: "Bordeaux (Granata / Bordeaux)", hex: "#881337" },
+  { code: 11, label: "Cyan (Ciano / Azzurro)", hex: "#06b6d4" },
+  { code: 12, label: "Dark Blue (Blu Scuro / Navy)", hex: "#1e3a8a" },
+];
+
+/**
+ * 7b. Emotion (Emotion / emotion)
+ * 1 Cold, 2 Calm, 3 Average, 4 Hot Temper, 5 Explosive
+ */
+export const EMOTION_OPTIONS: AccessoryOption[] = [
+  { code: 1, label: "Cold (Freddo / Glaciale)" },
+  { code: 2, label: "Calm (Calmo)" },
+  { code: 3, label: "Average (Normale)" },
+  { code: 4, label: "Hot Temper (Fumantino)" },
+  { code: 5, label: "Explosive (Esplosivo)" },
 ];
 
 /**
@@ -111,6 +181,7 @@ export const GK_GLOVES_OPTIONS: AccessoryOption[] = [
   { code: 15, label: "Adidas Copa Pro", category: "Adidas", description: "Guanti Adidas classici con lattice URG 2.0" },
   { code: 35, label: "Puma Future Grip Hybrid", category: "Puma", description: "Guanti Puma Future con taglio ibrido" },
   { code: 64, label: "Reusch Attrakt Freegel", category: "Reusch", description: "Guanti specialistici Reusch con sistema Freegel" },
+  { code: 75, label: "Modello EA FC #75", category: "EA Sports", description: "Guanti da portiere modello #75" },
   { code: 141, label: "Puma Ultra Grip 1 RC", category: "Puma", description: "Guanti Puma Ultra ultraleggeri" },
   { code: 167, label: "Uhlsport Speed Contact Supergrip+", category: "Uhlsport", description: "Guanti Uhlsport con mescola Supergrip+" },
 ];
@@ -169,6 +240,11 @@ export function getAccessoryLabel(code: number | null | undefined): string {
 export function getAccessoryColorLabel(code: number | null | undefined): { label: string; hex: string } {
   const opt = ACCESSORY_COLOR_OPTIONS.find((o) => o.code === Number(code));
   return opt ? { label: opt.label, hex: opt.hex } : { label: `Colore #${code ?? 0}`, hex: "#64748b" };
+}
+
+export function getEmotionLabel(code: number | null | undefined): string {
+  const opt = EMOTION_OPTIONS.find((o) => o.code === Number(code));
+  return opt ? opt.label : `Emotion #${code ?? 3}`;
 }
 
 export function getGKGlovesLabel(code: number | null | undefined): string {

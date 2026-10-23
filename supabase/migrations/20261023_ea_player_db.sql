@@ -400,7 +400,7 @@ BEGIN
     IF (p_mask & 64) <> 0 THEN v_items := array_append(v_items, 'Pinged Pass' || v_suf); END IF;
     IF (p_mask & 128) <> 0 THEN v_items := array_append(v_items, 'Long Ball Pass' || v_suf); END IF;
     IF (p_mask & 256) <> 0 THEN v_items := array_append(v_items, 'Tiki Taka' || v_suf); END IF;
-    IF (p_mask & 512) <> 0 THEN v_items := array_append(v_items, 'Whipped Pass' || v_suf); END IF;
+    IF (p_mask & 512) <> 0 THEN v_items := array_append(v_items, 'Whipped Cross' || v_suf); END IF;
     IF (p_mask & 1024) <> 0 THEN v_items := array_append(v_items, 'Jockey' || v_suf); END IF;
     IF (p_mask & 2048) <> 0 THEN v_items := array_append(v_items, 'Block' || v_suf); END IF;
     IF (p_mask & 4096) <> 0 THEN v_items := array_append(v_items, 'Intercept' || v_suf); END IF;
@@ -419,8 +419,8 @@ BEGIN
     IF (p_mask & 33554432) <> 0 THEN v_items := array_append(v_items, 'Acrobatic' || v_suf); END IF;
     IF (p_mask & 67108864) <> 0 THEN v_items := array_append(v_items, 'Long Throw' || v_suf); END IF;
     IF (p_mask & 134217728) <> 0 THEN v_items := array_append(v_items, 'Aerial' || v_suf); END IF;
-    IF (p_mask & 268435456) <> 0 THEN v_items := array_append(v_items, 'Footwork' || v_suf); END IF;
-    IF (p_mask & 536870912) <> 0 THEN v_items := array_append(v_items, 'Far Reach' || v_suf); END IF;
+    IF (p_mask & 268435456) <> 0 THEN v_items := array_append(v_items, 'Far Throw' || v_suf); END IF;
+    IF (p_mask & 536870912) <> 0 THEN v_items := array_append(v_items, 'Footwork' || v_suf); END IF;
 
     IF array_length(v_items, 1) IS NULL THEN
         RETURN NULL;
@@ -445,7 +445,7 @@ BEGIN
 
     IF (p_mask & 1) <> 0 THEN v_items := array_append(v_items, 'Cross Claimer'); END IF;
     IF (p_mask & 2) <> 0 THEN v_items := array_append(v_items, 'Rush Out'); END IF;
-    IF (p_mask & 4) <> 0 THEN v_items := array_append(v_items, 'Far Throw'); END IF;
+    IF (p_mask & 4) <> 0 THEN v_items := array_append(v_items, 'Far Reach'); END IF;
     IF (p_mask & 8) <> 0 THEN v_items := array_append(v_items, 'Quick Reflexes'); END IF;
     IF (p_mask & 16) <> 0 THEN v_items := array_append(v_items, 'Long Shot Taker'); END IF;
     IF (p_mask & 32) <> 0 THEN v_items := array_append(v_items, 'Early Crosser'); END IF;
@@ -720,6 +720,7 @@ BEGIN
             WHEN 'pinged pass' THEN 64
             WHEN 'long ball pass' THEN 128
             WHEN 'tiki taka' THEN 256
+            WHEN 'whipped cross' THEN 512
             WHEN 'whipped pass' THEN 512
             WHEN 'jockey' THEN 1024
             WHEN 'block' THEN 2048
@@ -739,8 +740,8 @@ BEGIN
             WHEN 'acrobatic' THEN 33554432
             WHEN 'long throw' THEN 67108864
             WHEN 'aerial' THEN 134217728
-            WHEN 'footwork' THEN 268435456
-            WHEN 'far reach' THEN 536870912
+            WHEN 'far throw' THEN 268435456
+            WHEN 'footwork' THEN 536870912
             ELSE 0
         END;
     END LOOP;
@@ -768,7 +769,7 @@ BEGIN
         v_mask := v_mask | CASE v_clean
             WHEN 'cross claimer' THEN 1
             WHEN 'rush out' THEN 2
-            WHEN 'far throw' THEN 4
+            WHEN 'far reach' THEN 4
             WHEN 'quick reflexes' THEN 8
             WHEN 'long shot taker' THEN 16
             WHEN 'early crosser' THEN 32
