@@ -157,42 +157,45 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 6. Sistema Giocatori Preferiti / Watchlist (Draft, Scouting & Free Agent)
-- **Stato**: 🟢 Implementato su branch dev (Pronto per test)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Media-Alta (Miglioramento essenziale per l'usabilità durante il mercato e il draft)
 - **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Scouting.tsx`, `src/pages/ListaGiocatori.tsx` (Free Agent), Supabase
-- **Tabelle coinvolte**: Nuova tabella `team_player_favorites` (o `user_player_favorites`)
+- **Tabelle coinvolte**: Tabella `team_player_favorites`
 
-### Valutazione Fattibilità: 🟢 Pienamente Fattibile & Immediata
+### Valutazione Fattibilità: 🟢 Pienamente Implementato
 - **Descrizione**:
   - Permette a ciascun manager di contrassegnare rapidamente qualsiasi calciatore (Rookie al Draft, prospetto nella pagina Scouting, o Free Agent svincolato) con una **stellina / segnalibro** (⭐).
   - **Integrazione Trasversale**:
     - **Pagina Scouting (`/scouting`)**: Il manager mentre spende token di scouting o analizza i report può cliccare sulla stellina per salvare il rookie tra i suoi preferiti.
     - **Pagina Draft (`/draft`)**:
       - Nel tabellone o nella modale di selezione della scelta compare il filtro rapido **"⭐ Solo Preferiti"**.
-      - I rookie preferiti hanno un'evidenziazione visiva distinta (es. bordo dorato o badge stellina) per essere individuati all'istante senza dover scorrere decine di profili durante il proprio turno.
+      - I rookie preferiti hanno un'evidenziazione visiva distinta (bordo dorato e badge stellina) per essere individuati all'istante senza dover scorrere decine di profili durante il proprio turno.
     - **Lista Giocatori / Mercato Free Agent**: Funziona identicamente per tenere d'occhio svincolati o talenti di altre squadre.
   - **Architettura Tecnica**:
-    - Tabella Supabase: `team_player_favorites(id, team_id, player_id, created_at)` con vincolo univoco `(team_id, player_id)`.
+    - Tabella Supabase: `team_player_favorites(id, team_id, player_id, player_type, created_at)` con vincolo univoco `(team_id, player_id, player_type)`.
     - RLS per garantire che ciascun manager veda e modifichi solo la propria lista privata.
 
 ---
 
 ## 📌 7. Lista di Priorità Draft & Autopick per Manager Assenti
-- **Stato**: 🟢 Implementato su branch dev (Pronto per test)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Alta (Risolve il problema critico dei blocchi del Draft Live dovuti all'assenza di un manager)
-- **Moduli coinvolti**: `src/pages/Draft.tsx`, Supabase RPC
-- **Tabelle coinvolte**: Nuova tabella `draft_team_wishlist` (o estensione di `an_draft_board`), collegamento con `team_player_favorites`
+- **Moduli coinvolti**: `src/pages/Scouting.tsx` (tab graduatoria & autopick), `src/pages/Draft.tsx` (badge notifica & trigger emergenza), Supabase
+- **Tabelle coinvolte**: Tabelle `draft_team_wishlist`, `draft_autopick_settings`, collegamento con `team_player_favorites`
 
-### Specifiche Approvate: 🟢 Pronte per lo Sviluppo
+### Specifiche Implementate: 🟢 Rilasciate in Produzione
 - **Descrizione**:
-  - Sostituisce o potenzia la vecchia idea "degli interessi per ruolo" trasformandola in una **Priority Queue / Draft Board Personale**.
-  - Prima della serata del Draft, ciascun manager può comporre la propria lista segreta ordinata dei Rookie desiderati (1°, 2°, 3°, 4°, ... fino a $N$ scelte).
-  - La lista è **100% privata e segreta** (RLS su Supabase), riordinabile via Drag-and-Drop o frecce Su/Giù e popolabile direttamente dai **Preferiti (Punto 6)**.
+  - Trasforma l'esperienza del Draft consentendo di comporre la propria **Graduatoria Personale di Rookie**.
+  - **Scheda Dedicata nello Scouting (`/mia-squadra/scouting?tab=autopick`)**:
+    - Permette di ordinare i rookie preferiti dal Rank #1 in giù, con frecce Su/Giù e rimozione.
+    - Pulsante rapido **"⭐ Importa dai Preferiti"**: carica con un clic tutti i prospetti con la stella nella lista di priorità.
+    - Ricerca e inserimento manuale di ulteriori rookie con filtri per ruolo.
   - **Attivazione Autopick**:
-    - **Manager**: Toggle dedicato nella pagina Draft / Mia Squadra (*"Attiva Autopick / Sono Assente al Draft"*).
-    - **Admin**: Pulsante d'emergenza nel pannello di controllo Draft per forzare l'esecuzione dell'autopick sulla squadra al turno corrente in caso di irreperibilità del manager.
+    - **Manager**: Toggle dedicato nella scheda Scouting (*"Autopick per Assenza la sera del Draft"*).
+    - **Admin**: Pulsante d'emergenza nella barra "ON THE CLOCK" della Draft Room per forzare l'esecuzione dell'autopick sulla squadra al turno corrente.
+  - **Draft Room (`/draft`)**:
+    - Badge di notifica per la propria squadra (`🤖 Autopick Attivo per [Team]`) con link alla configurazione in Scouting.
+    - Badge `🤖 Autopick Attivo` nella barra in evidenza per la squadra On The Clock.
   - **Esecuzione Selezione Automatica**:
-    1. Il sistema scorre la lista di preferenza della squadra a partire dal Rank 1.
-    2. Il primo rookie non ancora draftato viene assegnato alla scelta corrente.
-  - **Strategia di Fallback (Fallback A Approvato)**:
-    - Se tutti i rookie presenti nella lista personale sono già stati chiamati da altre squadre nei turni precedenti, il sistema seleziona in automatico il rookie rimasto disponibile con l'**Overall (o potenziale stimato) più alto**.
+    1. Il sistema scorre la graduatoria della squadra a partire dal Rank 1 e seleziona il primo rookie non ancora draftato.
+    2. **Strategia di Fallback (Fallback A Approvato)**: Se tutti i rookie presenti nella graduatoria personale sono già stati chiamati da altre squadre nei turni precedenti (o se la lista è vuota), il sistema assegna in automatico il rookie rimasto disponibile con l'**Overall (OVR) più alto**.
