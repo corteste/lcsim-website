@@ -556,73 +556,374 @@ CREATE TRIGGER trg_sync_ea_to_an_player
     WHEN (pg_trigger_depth() < 1)
     EXECUTE FUNCTION public.fn_sync_ea_to_an_player();
 
--- 6. Trigger inverso: Sincronizzazione da public.an_player -> public.ea_player_db
--- Mantiene allineata ea_player_db quando un manager o l'admin aggiorna attributi (Allenamenti) o kit/accessori (Rosa)
+-- 5b. Funzioni di Codifica Inversa (Etichette LCSIM -> Codici EA FC 25)
+
+CREATE OR REPLACE FUNCTION public.encode_ea_position(p_pos TEXT)
+RETURNS BIGINT
+LANGUAGE sql
+IMMUTABLE
+AS $$
+    SELECT CASE UPPER(TRIM(COALESCE(p_pos, '')))
+        WHEN 'POR' THEN 0
+        WHEN 'TD' THEN 3
+        WHEN 'DFD' THEN 3
+        WHEN 'TER' THEN 3
+        WHEN 'DC' THEN 5
+        WHEN 'DFC' THEN 5
+        WHEN 'TS' THEN 7
+        WHEN 'DFS' THEN 7
+        WHEN 'CDC' THEN 10
+        WHEN 'ED' THEN 12
+        WHEN 'CC' THEN 14
+        WHEN 'CEN' THEN 14
+        WHEN 'ES' THEN 16
+        WHEN 'COC' THEN 18
+        WHEN 'TRQ' THEN 18
+        WHEN 'AT' THEN 21
+        WHEN 'SP' THEN 21
+        WHEN 'AD' THEN 23
+        WHEN 'ATT' THEN 25
+        WHEN 'AC' THEN 25
+        WHEN 'PC' THEN 25
+        WHEN 'AS' THEN 27
+        ELSE NULL
+    END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.encode_ea_role(p_role_label TEXT, p_pos TEXT)
+RETURNS BIGINT
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+    v_clean TEXT;
+    v_pos TEXT := UPPER(TRIM(COALESCE(p_pos, '')));
+    v_is_plusplus BOOLEAN := false;
+    v_base BIGINT;
+BEGIN
+    IF p_role_label IS NULL OR TRIM(p_role_label) = '' THEN
+        RETURN 0;
+    END IF;
+
+    v_clean := TRIM(p_role_label);
+    IF v_clean LIKE '%++' THEN
+        v_is_plusplus := true;
+        v_clean := TRIM(REGEXP_REPLACE(v_clean, '\+\+$', ''));
+    ELSIF v_clean LIKE '%+' THEN
+        v_clean := TRIM(REGEXP_REPLACE(v_clean, '\+$', ''));
+    END IF;
+
+    v_base := CASE LOWER(v_clean)
+        WHEN 'portiere classico' THEN 1
+        WHEN 'portiere fuori dai pali' THEN 2
+        WHEN 'portiere di movimento' THEN 2
+        WHEN 'terzino' THEN CASE WHEN v_pos IN ('TS', 'DFS') THEN 7 ELSE 3 END
+        WHEN 'terzino difensivo' THEN CASE WHEN v_pos IN ('TS', 'DFS') THEN 7 ELSE 3 END
+        WHEN 'falso difensore' THEN CASE WHEN v_pos IN ('TS', 'DFS') THEN 8 ELSE 4 END
+        WHEN 'tornante' THEN CASE WHEN v_pos IN ('TS', 'DFS') THEN 9 ELSE 5 END
+        WHEN 'terzino di spinta' THEN CASE WHEN v_pos IN ('TS', 'DFS') THEN 10 ELSE 6 END
+        WHEN 'terzino offensivo' THEN CASE WHEN v_pos IN ('TS', 'DFS') THEN 10 ELSE 6 END
+        WHEN 'difensore' THEN 11
+        WHEN 'stopper' THEN 12
+        WHEN 'regista difensivo' THEN 13
+        WHEN 'difensore regista' THEN 13
+        WHEN 'centrocampista di contenimento' THEN CASE WHEN v_pos = 'CDC' THEN 14 ELSE 19 END
+        WHEN 'centromediano' THEN 15
+        WHEN 'regista arretrato' THEN CASE WHEN v_pos = 'CDC' THEN 16 ELSE 20 END
+        WHEN 'regista basso' THEN CASE WHEN v_pos = 'CDC' THEN 16 ELSE 20 END
+        WHEN 'centrocampista d''ampiezza' THEN 17
+        WHEN 'box to box' THEN 18
+        WHEN 'box-to-box' THEN 18
+        WHEN 'regista' THEN CASE WHEN v_pos IN ('COC', 'TRQ') THEN 31 ELSE 21 END
+        WHEN 'mezzala' THEN CASE WHEN v_pos IN ('COC', 'TRQ') THEN 33 ELSE 22 END
+        WHEN 'ala' THEN CASE
+            WHEN v_pos = 'ED' THEN 23
+            WHEN v_pos = 'ES' THEN 27
+            WHEN v_pos = 'AD' THEN 35
+            WHEN v_pos = 'AS' THEN 38
+            ELSE 23
+        END
+        WHEN 'ala classica' THEN CASE
+            WHEN v_pos = 'ED' THEN 23
+            WHEN v_pos = 'ES' THEN 27
+            WHEN v_pos = 'AD' THEN 35
+            WHEN v_pos = 'AS' THEN 38
+            ELSE 23
+        END
+        WHEN 'esterno di centrocampo' THEN CASE WHEN v_pos = 'ES' THEN 28 ELSE 24 END
+        WHEN 'regista largo' THEN CASE
+            WHEN v_pos = 'ED' THEN 25
+            WHEN v_pos = 'ES' THEN 29
+            WHEN v_pos = 'AD' THEN 37
+            WHEN v_pos = 'AS' THEN 40
+            ELSE 25
+        END
+        WHEN 'attaccante interno' THEN CASE
+            WHEN v_pos = 'ED' THEN 26
+            WHEN v_pos = 'ES' THEN 30
+            WHEN v_pos = 'AD' THEN 36
+            WHEN v_pos = 'AS' THEN 39
+            ELSE 26
+        END
+        WHEN 'ala invertita' THEN CASE
+            WHEN v_pos = 'ED' THEN 26
+            WHEN v_pos = 'ES' THEN 30
+            WHEN v_pos = 'AD' THEN 36
+            WHEN v_pos = 'AS' THEN 39
+            ELSE 26
+        END
+        WHEN 'attaccante ombra' THEN 32
+        WHEN 'trequartista' THEN 31
+        WHEN '10 vecchia scuola' THEN 34
+        WHEN 'attaccante avanzato' THEN 41
+        WHEN 'seconda punta' THEN 41
+        WHEN 'rapace' THEN 42
+        WHEN 'finalizzatore' THEN 42
+        WHEN 'falso 9' THEN 43
+        WHEN 'falso nove' THEN 43
+        WHEN 'torre' THEN 44
+        WHEN 'boa' THEN 44
+        ELSE 0
+    END;
+
+    IF v_base = 0 THEN
+        RETURN 0;
+    END IF;
+
+    RETURN CASE WHEN v_is_plusplus THEN v_base + 100 ELSE v_base END;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.encode_ea_trait1(p_traits TEXT)
+RETURNS BIGINT
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+    v_mask BIGINT := 0;
+    v_item TEXT;
+    v_clean TEXT;
+BEGIN
+    IF p_traits IS NULL OR TRIM(p_traits) = '' THEN
+        RETURN 0;
+    END IF;
+
+    FOREACH v_item IN ARRAY string_to_array(p_traits, ',') LOOP
+        v_clean := LOWER(TRIM(REGEXP_REPLACE(v_item, '\+$', '')));
+        v_mask := v_mask | CASE v_clean
+            WHEN 'finesse shot' THEN 1
+            WHEN 'chip shot' THEN 2
+            WHEN 'power shot' THEN 4
+            WHEN 'dead ball' THEN 8
+            WHEN 'power header' THEN 16
+            WHEN 'incisive pass' THEN 32
+            WHEN 'pinged pass' THEN 64
+            WHEN 'long ball pass' THEN 128
+            WHEN 'tiki taka' THEN 256
+            WHEN 'whipped pass' THEN 512
+            WHEN 'jockey' THEN 1024
+            WHEN 'block' THEN 2048
+            WHEN 'intercept' THEN 4096
+            WHEN 'anticipate' THEN 8192
+            WHEN 'slide tackle' THEN 16384
+            WHEN 'bruiser' THEN 32768
+            WHEN 'technical' THEN 65536
+            WHEN 'rapid' THEN 131072
+            WHEN 'flair' THEN 262144
+            WHEN 'first touch' THEN 524288
+            WHEN 'trickster' THEN 1048576
+            WHEN 'press proven' THEN 2097152
+            WHEN 'quick step' THEN 4194304
+            WHEN 'relentless' THEN 8388608
+            WHEN 'trivela' THEN 16777216
+            WHEN 'acrobatic' THEN 33554432
+            WHEN 'long throw' THEN 67108864
+            WHEN 'aerial' THEN 134217728
+            WHEN 'footwork' THEN 268435456
+            WHEN 'far reach' THEN 536870912
+            ELSE 0
+        END;
+    END LOOP;
+
+    RETURN v_mask;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.encode_ea_trait2(p_traits TEXT)
+RETURNS BIGINT
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+    v_mask BIGINT := 0;
+    v_item TEXT;
+    v_clean TEXT;
+BEGIN
+    IF p_traits IS NULL OR TRIM(p_traits) = '' THEN
+        RETURN 0;
+    END IF;
+
+    FOREACH v_item IN ARRAY string_to_array(p_traits, ',') LOOP
+        v_clean := LOWER(TRIM(REGEXP_REPLACE(v_item, '\+$', '')));
+        v_mask := v_mask | CASE v_clean
+            WHEN 'cross claimer' THEN 1
+            WHEN 'rush out' THEN 2
+            WHEN 'far throw' THEN 4
+            WHEN 'quick reflexes' THEN 8
+            WHEN 'long shot taker' THEN 16
+            WHEN 'early crosser' THEN 32
+            WHEN 'solid player' THEN 64
+            WHEN 'team player' THEN 128
+            WHEN 'one club player' THEN 256
+            WHEN 'injury prone' THEN 512
+            WHEN 'leadership' THEN 1024
+            ELSE 0
+        END;
+    END LOOP;
+
+    RETURN v_mask;
+END;
+$$;
+
+-- 6. Funzione centralizzata per ricalcolare ea_player_db (base an_player + aumenti an_player_training)
+CREATE OR REPLACE FUNCTION public.recompute_ea_player_from_an_and_training(p_player_id BIGINT)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_an RECORD;
+    v_tr RECORD;
+    v_inc JSONB := '{}'::JSONB;
+    v_port BIGINT := 0;
+    v_porf BIGINT := 0;
+    v_diff BIGINT := 0;
+    v_difm BIGINT := 0;
+    v_cenp BIGINT := 0;
+    v_ceng BIGINT := 0;
+    v_attt BIGINT := 0;
+    v_attc BIGINT := 0;
+    v_fisv BIGINT := 0;
+    v_fisp BIGINT := 0;
+    v_fisr BIGINT := 0;
+    v_calc BIGINT := 0;
+    v_silver_str TEXT;
+    v_gold_str TEXT;
+BEGIN
+    SELECT * INTO v_an FROM public.an_player WHERE "ID" = p_player_id;
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
+
+    SELECT * INTO v_tr FROM public.an_player_training WHERE "PlayerID" = p_player_id;
+    IF FOUND AND v_tr.increases IS NOT NULL THEN
+        v_inc := v_tr.increases::JSONB;
+        v_port := COALESCE((v_inc->>'PORT')::BIGINT, 0);
+        v_porf := COALESCE((v_inc->>'PORF')::BIGINT, 0);
+        v_diff := COALESCE((v_inc->>'DIFF')::BIGINT, 0);
+        v_difm := COALESCE((v_inc->>'DIFM')::BIGINT, 0);
+        v_cenp := COALESCE((v_inc->>'CENP')::BIGINT, 0);
+        v_ceng := COALESCE((v_inc->>'CENG')::BIGINT, 0);
+        v_attt := COALESCE((v_inc->>'ATTT')::BIGINT, 0);
+        v_attc := COALESCE((v_inc->>'ATTC')::BIGINT, 0);
+        v_fisv := COALESCE((v_inc->>'FISV')::BIGINT, 0);
+        v_fisp := COALESCE((v_inc->>'FISP')::BIGINT, 0);
+        v_fisr := COALESCE((v_inc->>'FISR')::BIGINT, 0);
+        v_calc := COALESCE((v_inc->>'CALC')::BIGINT, 0);
+    END IF;
+
+    v_silver_str := CONCAT_WS(', ', NULLIF(TRIM(COALESCE(v_an."Trait1", '')), ''), NULLIF(TRIM(COALESCE(v_an."Trait2", '')), ''));
+    v_gold_str   := CONCAT_WS(', ', NULLIF(TRIM(COALESCE(v_an."IconTrait1", '')), ''), NULLIF(TRIM(COALESCE(v_an."IconTrait2", '')), ''));
+
+    UPDATE public.ea_player_db
+    SET
+        birthdate = COALESCE(v_an."DOB", birthdate),
+        height = COALESCE(v_an."Altezza", height),
+        weight = COALESCE(v_an."Peso", weight),
+        preferredposition1 = COALESCE(public.encode_ea_position(v_an."Posiz"), preferredposition1),
+        role1 = CASE WHEN v_an."Role1" IS NOT NULL THEN public.encode_ea_role(v_an."Role1", v_an."Posiz") ELSE 0 END,
+        role2 = CASE WHEN v_an."Role2" IS NOT NULL THEN public.encode_ea_role(v_an."Role2", v_an."Posiz") ELSE 0 END,
+        role3 = CASE WHEN v_an."Role3" IS NOT NULL THEN public.encode_ea_role(v_an."Role3", v_an."Posiz") ELSE role3 END,
+        trait1 = public.encode_ea_trait1(v_silver_str),
+        trait2 = public.encode_ea_trait2(v_silver_str),
+        icontrait1 = public.encode_ea_trait1(v_gold_str),
+        icontrait2 = public.encode_ea_trait2(v_gold_str),
+        overallrating = COALESCE(v_tr.post_ovr, v_an."OVR", overallrating),
+        potential = GREATEST(COALESCE(v_tr.post_ovr, v_an."OVR", overallrating), COALESCE(v_an."POTN", potential)),
+        bodytypecode = COALESCE(v_an."BodyType", bodytypecode),
+        emotion = COALESCE(v_an."Emotion", emotion),
+        -- PORT (PREP, POSP, RINP)
+        gkhandling = LEAST(99, COALESCE(v_an."PREP", gkhandling) + v_port),
+        gkpositioning = LEAST(99, COALESCE(v_an."POSP", gkpositioning) + v_port),
+        gkkicking = LEAST(99, COALESCE(v_an."RINP", gkkicking) + v_port),
+        -- PORF (RIFP, TUFP)
+        gkreflexes = LEAST(99, COALESCE(v_an."RIFP", gkreflexes) + v_porf),
+        gkdiving = LEAST(99, COALESCE(v_an."TUFP", gkdiving) + v_porf),
+        -- DIFF (CONT, SCIV)
+        standingtackle = LEAST(99, COALESCE(v_an."CONT", standingtackle) + v_diff),
+        slidingtackle = LEAST(99, COALESCE(v_an."SCIV", slidingtackle) + v_diff),
+        -- DIFM (MARC, AGGR, INTR)
+        defensiveawareness = LEAST(99, COALESCE(v_an."MARC", defensiveawareness) + v_difm),
+        aggression = LEAST(99, COALESCE(v_an."AGGR", aggression) + v_difm),
+        interceptions = LEAST(99, COALESCE(v_an."INTR", interceptions) + v_difm),
+        -- CENP (PASC, PASL, CRSS)
+        shortpassing = LEAST(99, COALESCE(v_an."PASC", shortpassing) + v_cenp),
+        longpassing = LEAST(99, COALESCE(v_an."PASL", longpassing) + v_cenp),
+        crossing = LEAST(99, COALESCE(v_an."CRSS", crossing) + v_cenp),
+        -- CENG (CTRP, VISI, EFFT)
+        ballcontrol = LEAST(99, COALESCE(v_an."CTRP", ballcontrol) + v_ceng),
+        vision = LEAST(99, COALESCE(v_an."VISI", vision) + v_ceng),
+        curve = LEAST(99, COALESCE(v_an."EFFT", curve) + v_ceng),
+        -- ATTT (PTIR, TIRD, TIRV)
+        shotpower = LEAST(99, COALESCE(v_an."PTIR", shotpower) + v_attt),
+        longshots = LEAST(99, COALESCE(v_an."TIRD", longshots) + v_attt),
+        volleys = LEAST(99, COALESCE(v_an."TIRV", volleys) + v_attt),
+        -- ATTC (DRBL, PIAZ, FINA)
+        dribbling = LEAST(99, COALESCE(v_an."DRBL", dribbling) + v_attc),
+        positioning = LEAST(99, COALESCE(v_an."PIAZ", positioning) + v_attc),
+        finishing = LEAST(99, COALESCE(v_an."FINA", finishing) + v_attc),
+        -- FISV (ACCL, VELO, AGIL)
+        acceleration = LEAST(99, COALESCE(v_an."ACCL", acceleration) + v_fisv),
+        sprintspeed = LEAST(99, COALESCE(v_an."VELO", sprintspeed) + v_fisv),
+        agility = LEAST(99, COALESCE(v_an."AGIL", agility) + v_fisv),
+        -- FISP (RESI, EQLB, FRZA)
+        stamina = LEAST(99, COALESCE(v_an."RESI", stamina) + v_fisp),
+        balance = LEAST(99, COALESCE(v_an."EQLB", balance) + v_fisp),
+        strength = LEAST(99, COALESCE(v_an."FRZA", strength) + v_fisp),
+        -- FISR (TSTA, RIFL, ELEV)
+        headingaccuracy = LEAST(99, COALESCE(v_an."TSTA", headingaccuracy) + v_fisr),
+        reactions = LEAST(99, COALESCE(v_an."RIFL", reactions) + v_fisr),
+        jumping = LEAST(99, COALESCE(v_an."ELEV", jumping) + v_fisr),
+        -- CALC (PNIZ, CRIG, FRED)
+        freekickaccuracy = LEAST(99, COALESCE(v_an."PNIZ", freekickaccuracy) + v_calc),
+        penalties = LEAST(99, COALESCE(v_an."CRIG", penalties) + v_calc),
+        composure = LEAST(99, COALESCE(v_an."FRED", composure) + v_calc),
+        -- Kit & Accessori
+        jerseystylecode = COALESCE(v_an."JerseyStyle", jerseystylecode),
+        jerseyfit = COALESCE(v_an."JerseyFit", jerseyfit),
+        jerseysleevelengthcode = COALESCE(v_an."SleeveLength", jerseysleevelengthcode),
+        hasseasonaljersey = COALESCE(v_an."SeasonalJersey", hasseasonaljersey),
+        gkglovetypecode = COALESCE(v_an."GKGloves", gkglovetypecode),
+        shoetypecode = COALESCE(v_an."Shoe", shoetypecode),
+        socklengthcode = COALESCE(v_an."SockLength", socklengthcode),
+        accessorycode1 = COALESCE(v_an."Accessory1", accessorycode1),
+        accessorycolourcode1 = COALESCE(v_an."Colour", accessorycolourcode1),
+        accessorycode2 = COALESCE(v_an."Accessory2", accessorycode2),
+        accessorycolourcode2 = COALESCE(v_an."Colour_1", accessorycolourcode2),
+        accessorycode3 = COALESCE(v_an."Accessory3", accessorycode3),
+        accessorycolourcode3 = COALESCE(v_an."Colour_2", accessorycolourcode3),
+        accessorycode4 = COALESCE(v_an."Accessory4", accessorycode4),
+        accessorycolourcode4 = COALESCE(v_an."Colour_3", accessorycolourcode4)
+    WHERE playerid = p_player_id;
+END;
+$$;
+
+-- 7. Trigger inverso su public.an_player -> public.ea_player_db
 CREATE OR REPLACE FUNCTION public.fn_sync_an_to_ea_player()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    UPDATE public.ea_player_db
-    SET
-        birthdate = COALESCE(NEW."DOB", birthdate),
-        height = COALESCE(NEW."Altezza", height),
-        weight = COALESCE(NEW."Peso", weight),
-        overallrating = COALESCE(NEW."OVR", overallrating),
-        potential = COALESCE(NEW."POTN", potential),
-        bodytypecode = COALESCE(NEW."BodyType", bodytypecode),
-        emotion = COALESCE(NEW."Emotion", emotion),
-        composure = COALESCE(NEW."FRED", composure),
-        gkreflexes = COALESCE(NEW."RIFP", gkreflexes),
-        gkhandling = COALESCE(NEW."PREP", gkhandling),
-        gkdiving = COALESCE(NEW."TUFP", gkdiving),
-        gkpositioning = COALESCE(NEW."POSP", gkpositioning),
-        gkkicking = COALESCE(NEW."RINP", gkkicking),
-        defensiveawareness = COALESCE(NEW."MARC", defensiveawareness),
-        standingtackle = COALESCE(NEW."CONT", standingtackle),
-        aggression = COALESCE(NEW."AGGR", aggression),
-        slidingtackle = COALESCE(NEW."SCIV", slidingtackle),
-        interceptions = COALESCE(NEW."INTR", interceptions),
-        shortpassing = COALESCE(NEW."PASC", shortpassing),
-        longpassing = COALESCE(NEW."PASL", longpassing),
-        crossing = COALESCE(NEW."CRSS", crossing),
-        ballcontrol = COALESCE(NEW."CTRP", ballcontrol),
-        vision = COALESCE(NEW."VISI", vision),
-        curve = COALESCE(NEW."EFFT", curve),
-        positioning = COALESCE(NEW."PIAZ", positioning),
-        shotpower = COALESCE(NEW."PTIR", shotpower),
-        longshots = COALESCE(NEW."TIRD", longshots),
-        dribbling = COALESCE(NEW."DRBL", dribbling),
-        volleys = COALESCE(NEW."TIRV", volleys),
-        headingaccuracy = COALESCE(NEW."TSTA", headingaccuracy),
-        finishing = COALESCE(NEW."FINA", finishing),
-        acceleration = COALESCE(NEW."ACCL", acceleration),
-        sprintspeed = COALESCE(NEW."VELO", sprintspeed),
-        stamina = COALESCE(NEW."RESI", stamina),
-        strength = COALESCE(NEW."FRZA", strength),
-        agility = COALESCE(NEW."AGIL", agility),
-        jumping = COALESCE(NEW."ELEV", jumping),
-        reactions = COALESCE(NEW."RIFL", reactions),
-        balance = COALESCE(NEW."EQLB", balance),
-        freekickaccuracy = COALESCE(NEW."PNIZ", freekickaccuracy),
-        penalties = COALESCE(NEW."CRIG", penalties),
-        jerseystylecode = COALESCE(NEW."JerseyStyle", jerseystylecode),
-        jerseyfit = COALESCE(NEW."JerseyFit", jerseyfit),
-        jerseysleevelengthcode = COALESCE(NEW."SleeveLength", jerseysleevelengthcode),
-        hasseasonaljersey = COALESCE(NEW."SeasonalJersey", hasseasonaljersey),
-        gkglovetypecode = COALESCE(NEW."GKGloves", gkglovetypecode),
-        shoetypecode = COALESCE(NEW."Shoe", shoetypecode),
-        socklengthcode = COALESCE(NEW."SockLength", socklengthcode),
-        accessorycode1 = COALESCE(NEW."Accessory1", accessorycode1),
-        accessorycolourcode1 = COALESCE(NEW."Colour", accessorycolourcode1),
-        accessorycode2 = COALESCE(NEW."Accessory2", accessorycode2),
-        accessorycolourcode2 = COALESCE(NEW."Colour_1", accessorycolourcode2),
-        accessorycode3 = COALESCE(NEW."Accessory3", accessorycode3),
-        accessorycolourcode3 = COALESCE(NEW."Colour_2", accessorycolourcode3),
-        accessorycode4 = COALESCE(NEW."Accessory4", accessorycode4),
-        accessorycolourcode4 = COALESCE(NEW."Colour_3", accessorycolourcode4)
-    WHERE playerid = NEW."ID";
-
+    PERFORM public.recompute_ea_player_from_an_and_training(NEW."ID");
     RETURN NEW;
 END;
 $$;
@@ -633,3 +934,34 @@ CREATE TRIGGER trg_sync_an_to_ea_player
     FOR EACH ROW
     WHEN (pg_trigger_depth() < 1)
     EXECUTE FUNCTION public.fn_sync_an_to_ea_player();
+
+-- 8. Trigger su public.an_player_training -> public.ea_player_db
+-- Quando un manager salva, modifica o resetta gli allenamenti in /mia-squadra/allenamenti,
+-- aggiorna immediatamente i valori finali in public.ea_player_db!
+CREATE OR REPLACE FUNCTION public.fn_sync_training_to_ea_player()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_pid BIGINT;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        v_pid := OLD."PlayerID";
+    ELSE
+        v_pid := NEW."PlayerID";
+    END IF;
+
+    PERFORM public.recompute_ea_player_from_an_and_training(v_pid);
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_sync_training_to_ea_player ON public.an_player_training;
+CREATE TRIGGER trg_sync_training_to_ea_player
+    AFTER INSERT OR UPDATE OR DELETE ON public.an_player_training
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_sync_training_to_ea_player();
