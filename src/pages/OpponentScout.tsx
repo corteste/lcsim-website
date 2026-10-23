@@ -42,14 +42,6 @@ import { getMarketStatusOption } from "@/types/marketStatus";
 import { EA_FC25_FORMATIONS } from "@/pages/Tattica";
 import PlayerDetails from "@/components/player/playerDetails";
 
-const ROLE_GROUPS = [
-  { id: "ALL", label: "Tutti i Ruoli", roles: [] as string[] },
-  { id: "POR", label: "Portieri", roles: ["POR"] },
-  { id: "DIF", label: "Difensori", roles: ["DC", "TD", "TS"] },
-  { id: "CEN", label: "Centrocampisti", roles: ["CDC", "CC", "ED", "ES", "COC"] },
-  { id: "ATT", label: "Attaccanti", roles: ["AD", "AS", "AT", "ATT"] },
-];
-
 function getPlayerCardStats(p: Player) {
   const isGK = p.Posiz === "POR";
   if (isGK) {
@@ -90,9 +82,8 @@ export const OpponentScout: React.FC = () => {
   const [scoutData, setScoutData] = useState<OpponentScoutData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Filtri Roster
+  // Selezione giocatore per ispezione
   const [activeTab, setActiveTab] = useState<string>("roster");
-  const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   // Formazioni
@@ -160,18 +151,7 @@ export const OpponentScout: React.FC = () => {
     ""
   ).toUpperCase();
 
-  // Roster filtrato per ruolo
-  const filteredRoster = useMemo(() => {
-    return rawRoster.filter((p) => {
-      if (roleFilter !== "ALL") {
-        const group = ROLE_GROUPS.find((g) => g.id === roleFilter);
-        if (group && group.roles.length > 0 && !group.roles.includes(p.Posiz)) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [rawRoster, roleFilter]);
+
 
   // Posizioni tattiche per il campo 2D
   const formationDef = useMemo(() => {
@@ -436,35 +416,6 @@ export const OpponentScout: React.FC = () => {
               {/* TAB 1: ROSA COMPLETA - UN GIOCATORE PER RIGA              */}
               {/* ========================================================= */}
               <TabsContent value="roster" className="space-y-4">
-                {/* Role Filters & Count Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-2xl border border-border/80 shadow-xs">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">
-                      Filtra per Ruolo:
-                    </span>
-                    {ROLE_GROUPS.map((grp) => (
-                      <Button
-                        key={grp.id}
-                        type="button"
-                        size="sm"
-                        variant={roleFilter === grp.id ? "default" : "outline"}
-                        onClick={() => setRoleFilter(grp.id)}
-                        className={`h-8 text-xs font-bold rounded-xl transition-all ${
-                          roleFilter === grp.id
-                            ? "bg-emerald-600 text-white"
-                            : "bg-muted/30 text-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {grp.label}
-                      </Button>
-                    ))}
-                  </div>
-
-                  <Badge variant="secondary" className="font-mono text-xs font-bold">
-                    {filteredRoster.length} Giocatori
-                  </Badge>
-                </div>
-
                 {/* Informative hint banner */}
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400">
                   <Info className="h-4 w-4 shrink-0" />
@@ -492,14 +443,14 @@ export const OpponentScout: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/60">
-                        {filteredRoster.length === 0 ? (
+                        {rawRoster.length === 0 ? (
                           <tr>
                             <td colSpan={10} className="py-12 text-center text-muted-foreground text-sm font-semibold">
-                              Nessun giocatore trovato con i filtri correnti.
+                              Nessun giocatore registrato in rosa per questa squadra.
                             </td>
                           </tr>
                         ) : (
-                          filteredRoster.map((player) => {
+                          rawRoster.map((player) => {
                             const marketOpt = getMarketStatusOption(player.MarketStatus);
                             const stats = getPlayerCardStats(player);
 
