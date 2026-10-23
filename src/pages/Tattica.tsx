@@ -2047,9 +2047,12 @@ const Tattica = () => {
                                       {occupant.OVR}
                                     </span>
 
-                                    {/* Numero slot in basso a sinistra */}
-                                    <span className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[9px] font-bold font-mono w-4 h-4 rounded-full flex items-center justify-center border border-white/60 shadow">
-                                      {slotIdx + 1}
+                                    {/* Numero maglia giocatore in basso a sinistra */}
+                                    <span
+                                      className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[9px] font-bold font-mono min-w-4 h-4 px-1 rounded-full flex items-center justify-center border border-white/60 shadow"
+                                      title={occupant.NumeroMaglia ? `Maglia #${occupant.NumeroMaglia}` : `Posizione #${slotIdx + 1}`}
+                                    >
+                                      {occupant.NumeroMaglia ?? slotIdx + 1}
                                     </span>
                                   </div>
 
