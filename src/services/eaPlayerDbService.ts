@@ -120,6 +120,7 @@ export async function exportEADatabaseTSV(options?: {
 
       const updatedLines = [lines[0]];
       let matchedCount = 0;
+      const consumedIds = new Set<number>();
 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
@@ -130,15 +131,25 @@ export async function exportEADatabaseTSV(options?: {
         if (dbRow) {
           updatedLines.push(headers.map((col) => String(dbRow[col] ?? cols[headers.indexOf(col)] ?? 0)).join('\t'));
           matchedCount++;
+          consumedIds.add(pid);
         } else {
           updatedLines.push(line);
+        }
+      }
+
+      // Aggiungi in coda eventuali nuovi calciatori/rookie presenti in ea_player_db ma non nel template base
+      let addedExtraCount = 0;
+      for (const [pid, dbRow] of rowMap.entries()) {
+        if (!consumedIds.has(pid)) {
+          updatedLines.push(headers.map((col) => String(dbRow[col] ?? 0)).join('\t'));
+          addedExtraCount++;
         }
       }
 
       return {
         content: updatedLines.join('\r\n'),
         totalRows: updatedLines.length - 1,
-        lcsimRowsCount: matchedCount,
+        lcsimRowsCount: matchedCount + addedExtraCount,
         isFullMaster: true,
       };
     }

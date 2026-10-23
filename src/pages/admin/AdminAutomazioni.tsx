@@ -27,6 +27,8 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
 import { exportEADatabaseTSV } from "@/services/eaPlayerDbService";
+import { ImportRookieModal } from "@/components/admin/ImportRookieModal";
+import { Users } from "lucide-react";
 
 interface AutomationStateItem {
   id: string;
@@ -49,6 +51,7 @@ export default function AdminAutomazioni() {
   const [patchModalOpen, setPatchModalOpen] = useState(false);
   const [patchFile, setPatchFile] = useState<File | null>(null);
   const [isPatching, setIsPatching] = useState(false);
+  const [rookieModalOpen, setRookieModalOpen] = useState(false);
 
   // Placeholder Dialog States
   const [infoModal, setInfoModal] = useState<{
@@ -61,34 +64,33 @@ export default function AdminAutomazioni() {
     detailsToRecord?: Record<string, any>;
   } | null>(null);
 
-  // Fetch automation states on load
-  useEffect(() => {
-    async function loadAutomationStates() {
-      try {
-        setIsLoadingState(true);
-        const { data, error } = await supabase
-          .from("league_automation_state")
-          .select("*");
+  // Fetch automation states
+  const loadAutomationStates = async () => {
+    try {
+      setIsLoadingState(true);
+      const { data, error } = await supabase
+        .from("league_automation_state")
+        .select("*");
 
-        if (error) throw error;
+      if (error) throw error;
 
-        const map: Record<string, AutomationStateItem> = {};
-        for (const item of (data || []) as AutomationStateItem[]) {
-          map[item.id] = item;
-        }
-        setStateMap(map);
-      } catch (err) {
-        console.warn("Impossibile caricare league_automation_state, uso fallback locale:", err);
-        // Fallback localStorage
-        try {
-          const raw = localStorage.getItem("lcsim_automation_state");
-          if (raw) setStateMap(JSON.parse(raw));
-        } catch (_) {}
-      } finally {
-        setIsLoadingState(false);
+      const map: Record<string, AutomationStateItem> = {};
+      for (const item of (data || []) as AutomationStateItem[]) {
+        map[item.id] = item;
       }
+      setStateMap(map);
+    } catch (err) {
+      console.warn("Impossibile caricare league_automation_state, uso fallback locale:", err);
+      try {
+        const raw = localStorage.getItem("lcsim_automation_state");
+        if (raw) setStateMap(JSON.parse(raw));
+      } catch (_) {}
+    } finally {
+      setIsLoadingState(false);
     }
+  };
 
+  useEffect(() => {
     loadAutomationStates();
   }, []);
 
@@ -317,31 +319,31 @@ export default function AdminAutomazioni() {
         {/* Griglia Funzionalità Automazioni */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* 1. EXPORT MASTER TABLE (OPERATIVO - OPZIONE B) */}
+          {/* 1. EXPORT MASTER TABLE */}
           <Card className="border-emerald-500/30 bg-gradient-to-br from-card via-card/95 to-emerald-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
             <div>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-1">
                   <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" /> Auto-Merge Template Attivo (Opzione B)
+                    <Sparkles className="h-3 w-3" /> Auto-Merge Template Attivo
                   </Badge>
                   <FileSpreadsheet className="h-6 w-6 text-emerald-500" />
                 </div>
                 <CardTitle className="text-xl font-black">Export Master Database EA FC 25</CardTitle>
                 <CardDescription className="text-xs">
-                  Genera il file completo pronto per la cartella di EA FC 25 unendo automaticamente il database base con gli aggiornamenti LCSIM.
+                  Genera il file completo pronto per la cartella di EA FC 25 unendo automaticamente il database base con gli aggiornamenti LCSIM e i rookie.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs space-y-2">
                   <div className="flex items-center justify-between font-semibold">
-                    <span className="text-muted-foreground">Righe totali generate:</span>
-                    <span className="font-mono font-bold text-foreground">21.067 (Tutto il gioco EA FC 25)</span>
+                    <span className="text-muted-foreground">Righe generate:</span>
+                    <span className="font-mono font-bold text-foreground">21.067+ (EA FC 25 + Rookie aggiunti)</span>
                   </div>
                   <div className="flex items-center justify-between font-semibold">
-                    <span className="text-muted-foreground">Calciatori LCSIM iniettati:</span>
-                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">318 aggiornati in tempo reale</span>
+                    <span className="text-muted-foreground">Calciatori & Rookie LCSIM:</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">Aggiornati in tempo reale da ea_player_db</span>
                   </div>
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Tracciato colonne:</span>
@@ -357,32 +359,21 @@ export default function AdminAutomazioni() {
                   <Button
                     onClick={() => handleExport(true)}
                     disabled={isExportingFull || isExportingSnippet}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-emerald-600/20"
                   >
                     <Download className="h-4 w-4" />
-                    {isExportingFull ? "Elaborazione in corso..." : "Scarica Database Completo (21.067 righe per EA FC 25)"}
+                    {isExportingFull ? "Elaborazione in corso..." : "Scarica Database Completo (DB_NEW.txt per EA FC 25)"}
                   </Button>
 
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => handleExport(false)}
-                      disabled={isExportingFull || isExportingSnippet}
-                      className="flex-1 border-border/80 hover:bg-muted text-foreground font-semibold gap-2 text-xs"
-                    >
-                      <FileText className="h-3.5 w-3.5 text-blue-500" />
-                      {isExportingSnippet ? "Esportazione..." : "Scarica solo 318 Calciatori LCSIM (.tsv)"}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      onClick={() => setPatchModalOpen(true)}
-                      className="border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold gap-2 text-xs"
-                    >
-                      <UploadCloud className="h-3.5 w-3.5" />
-                      Patcha File Personalizzato
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleExport(false)}
+                    disabled={isExportingFull || isExportingSnippet}
+                    className="w-full border-border/80 hover:bg-muted text-foreground font-semibold gap-2 text-xs"
+                  >
+                    <FileText className="h-3.5 w-3.5 text-blue-500" />
+                    {isExportingSnippet ? "Esportazione..." : "Scarica solo Calciatori LCSIM (.tsv)"}
+                  </Button>
                 </div>
               </CardContent>
             </div>
@@ -395,6 +386,66 @@ export default function AdminAutomazioni() {
               </span>
               <span className="font-semibold text-foreground truncate max-w-[240px]">
                 {formatLastRun(stateMap["export_master_table"]?.last_run_at, stateMap["export_master_table"]?.last_run_by)}
+              </span>
+            </div>
+          </Card>
+
+          {/* 2. IMPORTA CLASSE ROOKIE */}
+          <Card className="border-blue-500/30 bg-gradient-to-br from-card via-card/95 to-blue-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <Badge className="bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" /> Procedura Ufficiale Draft
+                  </Badge>
+                  <Users className="h-6 w-6 text-blue-500" />
+                </div>
+                <CardTitle className="text-xl font-black">Importa Classe Rookie</CardTitle>
+                <CardDescription className="text-xs">
+                  Carica i 2 file sincronizzati (Master Data 137 colonne + Anagrafica) per aggiungere i rookie alla Master Table e popolare la tabella an_rookie.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs space-y-2">
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="text-muted-foreground">File 1 (Master Data):</span>
+                    <span className="font-mono font-bold text-foreground">137 Colonne EA (Aggiunte a Master Table)</span>
+                  </div>
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="text-muted-foreground">File 2 (Anagrafica):</span>
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">4 Colonne (ID, Nome, Cognome, Squadra)</span>
+                  </div>
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="text-muted-foreground">Destinazione Draft:</span>
+                    <span className="font-mono font-bold text-foreground">Tabella public.an_rookie</span>
+                  </div>
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="text-muted-foreground">Integrità archivio:</span>
+                    <span className="font-mono text-muted-foreground text-[11px]">Nessuna sovrascrittura su calciatori attivi</span>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <Button
+                    onClick={() => setRookieModalOpen(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-blue-600/20"
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                    Avvia Importazione Classe Rookie (2 File)
+                  </Button>
+                </div>
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-blue-500" />
+                Ultima esecuzione:
+              </span>
+              <span className="font-semibold text-foreground truncate max-w-[240px]">
+                {formatLastRun(stateMap["import_rookie_class"]?.last_run_at, stateMap["import_rookie_class"]?.last_run_by)}
               </span>
             </div>
           </Card>
@@ -732,6 +783,14 @@ export default function AdminAutomazioni() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* MODALE: IMPORTA CLASSE ROOKIE */}
+      <ImportRookieModal
+        open={rookieModalOpen}
+        onOpenChange={setRookieModalOpen}
+        onSuccess={loadAutomationStates}
+        authorName={user?.name || user?.team || "Super Admin"}
+      />
 
       {/* DIALOG: INFO PUNTO APERTO PLACEHOLDER */}
       <Dialog open={!!infoModal} onOpenChange={(open) => !open && setInfoModal(null)}>

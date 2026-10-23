@@ -331,11 +331,18 @@ Funzione per congelare istantaneamente l'intero organico di tutte le squadre (nu
 
 ---
 
-## 📌 13. Hub Amministrazione Automazioni & Export Master Table EA FC 25
-- **Stato**: 🟢 Pagina & Export Operativi su dev (Discussione automatizzazioni registrata)
+## 📌 13. Hub Amministrazione Automazioni, Export Master Table & Import Classe Rookie
+- **Stato**: 🟢 Operativo su dev (Export autonomo & Procedura Import Rookie 2-File integrata)
 - **Priorità**: Alta
-- **Moduli coinvolti**: Nuova pagina `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), Navbar, `src/services/eaPlayerDbService.ts`
-- **Tabelle coinvolte**: `ea_player_db`, `an_player`, `an_player_training`
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), `src/components/admin/ImportRookieModal.tsx`, `src/services/rookieImportService.ts`, `src/services/eaPlayerDbService.ts`
+- **Tabelle coinvolte**: `ea_player_db`, `an_rookie`, `an_player`, `league_automation_state`
 
-### Descrizione
-Sezione riservata agli amministratori (`is_admin = true`) per supervisionare le operazioni batch e automatizzazioni del campionato e scaricare in un clic il file `.tsv` a 137 colonne aggiornato da inserire nella cartella di EA FC 25.
+### Descrizione & Architettura
+Sezione riservata al Super Admin con blocchi separati per:
+1. **Export Master Table EA FC 25**:
+   - Generazione file completo `DB_NEW.txt` a 137 colonne (21.067 righe base EA FC 25 + calciatori e rookie LCSIM aggiornati in tempo reale).
+   - Download opzionale del solo snippet calciatori LCSIM.
+2. **Importa Classe Rookie (Procedura a 2 File)**:
+   - **File 1 (Master Data)**: file con le 137 colonne EA FC 25 dei nuovi rookie, aggiunto alla master table (`ea_player_db`) senza sovrascrivere l'archivio esistente.
+   - **File 2 (Anagrafica)**: file a 4 colonne (`ID`, `Nome`, `Cognome`, `Squadra`), associato tramite l'`ID` al Master Data.
+   - **Destinazione Rookie**: i dati decodificati vengono inseriti direttamente in `public.an_rookie` per popolare la lista dei rookie del Draft.
