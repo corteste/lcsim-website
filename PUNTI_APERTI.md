@@ -65,3 +65,38 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
      - *(Opzione raccomandata: Opzione A integrata nell'area Admin del sito per massima comodità)*.
 3. **Calcolo Classifiche**:
    - Assicurarsi che dopo l'inserimento delle statistiche venga invocata o attivata la procedura di aggiornamento classifica (`standings_processed = true`).
+
+
+---
+
+## 📌 2. Sistema di Messaggistica Interna, Proposte di Scambio & Comunicazioni Admin
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Media-Alta (Potente miglioramento dell'esperienza utente e della gestione di lega)
+- **Moduli coinvolti**: Navbar (Badge notifiche), Nuova sezione Posta/Messaggi (`/inbox` o `/mercato/scambi`), Bacheca Comunicazioni Admin
+
+### 2.1 Modulo Proposte di Scambio Giocatori (Market Trades)
+- **Obiettivo**: Permettere ai manager delle squadre di formulare, negoziare, accettare o rifiutare scambi di calciatori direttamente dalla piattaforma web.
+- **Funzionalità chiave**:
+  - **Composizione Scambio**: Selezione squadra destinataria, selezione di uno o più giocatori offerti (dalla propria rosa), selezione di uno o più giocatori richiesti (dalla rosa avversaria), eventuale conguaglio crediti/budget e messaggio testuale di accompagnamento.
+  - **Workflow di Trattativa**:
+    - *In Attesa (Pending)*: Notifica immediata al destinatario.
+    - *Accetta (Accepted)*: Lo scambio viene approvato. Possibilità di esecuzione automatica (scambio `Squadra` dei giocatori in `an_player`) o validazione finale dell'Admin di Lega.
+    - *Rifiuta (Rejected)*: Possibilità di indicare una motivazione.
+    - *Controproposta (Counter-offer)*: Crea una nuova versione invertita con modifiche ai giocatori o crediti.
+    - *Annulla (Cancelled)*: Il mittente può ritirare la proposta finché non è stata accettata.
+  - **Tabelle Supabase suggerite**:
+    - `market_trades` (`id`, `sender_team`, `receiver_team`, `offered_player_ids`, `requested_player_ids`, `offered_credits`, `requested_credits`, `status`, `notes`, `created_at`, `updated_at`, `expires_at`).
+    - `trade_messages` (`id`, `trade_id`, `sender_team`, `content`, `created_at`, `is_read`).
+
+### 2.2 Modulo Comunicazioni Ufficiali Admin (Broadcast & Bacheca Lega)
+- **Obiettivo**: Consentire agli Admin di trasmettere annunci, avvisi di sistema, scadenze di mercato o decisioni del giudice sportivo a tutte le squadre contemporaneamente.
+- **Funzionalità chiave**:
+  - **Bacheca Annunci Ufficiali**: Pagina o feed pubblico con categorie (Regolamento, Mercato, Giornate, Disciplinare).
+  - **Alert Banner Globale / Pop-up**: Avvisi visibili in cima a tutte le pagine per scadenze imminenti o notizie urgenti.
+  - **Posta Ufficiale nei Messaggi**: Recapito di messaggi prioritari della Lega nell'inbox di ciascun manager con tracciamento dello stato di lettura.
+  - **Tabelle Supabase suggerite**:
+    - `league_announcements` (`id`, `title`, `content`, `category`, `priority`, `is_pinned`, `created_at`, `expires_at`).
+    - `announcement_reads` (`announcement_id`, `team_id`, `read_at`).
+
+### 2.3 Integrazione Notifiche Realtime
+- Icona posta/notifiche nella Navbar con contatore `Badge` numerico in tempo reale (sfruttando Supabase Realtime Channels su `market_trades` e `league_announcements`).
