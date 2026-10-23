@@ -39,16 +39,26 @@ import {
   UserPlus,
   Layers,
   EyeOff,
+  Eye,
   Repeat,
   LayoutGrid,
+  Compass,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/supabaseClient";
-import { DRAFT_BOARD_TABLE, ROOKIE_TABLE } from "@/constants/App";
+import { DRAFT_BOARD_TABLE, ROOKIE_TABLE, ROOKIE_SCOUTING_TABLE } from "@/constants/App";
 import { useAuth } from "@/context/AuthContext";
 import { getTeams } from "@/hooks/use-teams";
 import { getStandings } from "@/hooks/use-standings";
-import { getRoleColor } from "@/utils/functions";
+import { getRoleColor, getValueColor } from "@/utils/functions";
 import { Player } from "@/types/player";
+import {
+  SCOUTING_DEPARTMENTS,
+  isDepartmentUnlocked,
+  getOvrDisplayByTokens,
+  getTierBadgeStyle,
+} from "@/utils/scoutingConfig";
+import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
 
 export interface DraftPickRow {
@@ -95,7 +105,9 @@ const Draft = () => {
   const { standings } = getStandings();
 
   const [picks, setPicks] = useState<DraftPickRow[]>([]);
-  const [rookies, setRookies] = useState<Pick<Player, "ID" | "Nome" | "Cognome" | "Posiz" | "Squadra">[]>([]);
+  const [rookies, setRookies] = useState<Player[]>([]);
+  const [scoutingByRookie, setScoutingByRookie] = useState<Record<number, number>>({});
+  const [inspectedRookie, setInspectedRookie] = useState<Player | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -160,7 +172,7 @@ const Draft = () => {
           .order("pick_overall", { ascending: true }),
         supabase
           .from(ROOKIE_TABLE)
-          .select("ID, Nome, Cognome, Posiz, Squadra")
+          .select("*")
           .order("Cognome", { ascending: true }),
       ]);
 
@@ -169,7 +181,7 @@ const Draft = () => {
 
       const boardRows = (boardRes.data ?? []) as DraftPickRow[];
       setPicks(boardRows);
-      setRookies((rookiesRes.data ?? []) as Pick<Player, "ID" | "Nome" | "Cognome" | "Posiz" | "Squadra">[]);
+      setRookies((rookiesRes.data ?? []) as Player[]);
 
       const r1 = boardRows
         .filter((p) => p.round === 1)
@@ -208,6 +220,24 @@ const Draft = () => {
     if (!activeUserTeamId) return null;
     return teamMap.get(activeUserTeamId) ?? null;
   }, [activeUserTeamId, teamMap]);
+
+  useEffect(() => {
+    if (!activeUserTeamId) {
+      setScoutingByRookie({});
+      return;
+    }
+    supabase
+      .from(ROOKIE_SCOUTING_TABLE)
+      .select("rookie_id, tokens_spent")
+      .eq("team_id", activeUserTeamId)
+      .then(({ data }) => {
+        const map: Record<number, number> = {};
+        for (const row of data ?? []) {
+          map[Number(row.rookie_id)] = Number(row.tokens_spent) || 0;
+        }
+        setScoutingByRookie(map);
+      });
+  }, [activeUserTeamId]);
 
   // Check if the logged-in user (or Admin) can currently confirm the pick
   const isUserTeamOnTheClock = useMemo(() => {
@@ -1022,14 +1052,17 @@ const Draft = () => {
 
                 {/* 2. ROOKIE SELECTOR & CONFIRM BUTTON */}
                 <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                       <UserPlus className="h-3.5 w-3.5 text-emerald-500" />
                       Rookie Disponibili ({availableRookies.length})
                     </span>
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Valori nascosti (Pre-Scouting)
-                    </span>
+                    <Link
+                      to="/mia-squadra/scouting"
+                      className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                    >
+                      <Compass className="h-3 w-3" /> Vai allo Scouting
+                    </Link>
                   </div>
 
                   {/* Search & Role group filter */}
@@ -1069,21 +1102,25 @@ const Draft = () => {
                       </div>
                     ) : (
                       availableRookies.map((rookie) => {
-                        const isSelected = Number(selectedRookieId) === Number(rookie.ID);
+                        const rId = Number(rookie.ID);
+                        const isSelected = Number(selectedRookieId) === rId;
+                        const scoutTokens = scoutingByRookie[rId] ?? 0;
                         return (
-                          <button
+                          <div
                             key={rookie.ID}
-                            type="button"
-                            onClick={() =>
-                              setSelectedRookieId(isSelected ? null : Number(rookie.ID))
-                            }
-                            className={`w-full px-3 py-2.5 text-left flex items-center justify-between gap-2 transition-colors ${
+                            className={`w-full px-3 py-2 flex items-center justify-between gap-2 transition-colors ${
                               isSelected
                                 ? "bg-emerald-500/15 text-foreground font-bold"
                                 : "hover:bg-muted/60"
                             }`}
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedRookieId(isSelected ? null : rId)
+                              }
+                              className="flex items-center gap-2 min-w-0 flex-1 text-left"
+                            >
                               <Badge
                                 variant="outline"
                                 className={`text-[10px] font-bold w-11 justify-center shrink-0 ${getRoleColor(
@@ -1095,16 +1132,42 @@ const Draft = () => {
                               <span className="text-xs sm:text-sm font-semibold truncate">
                                 {rookie.Nome} {rookie.Cognome}
                               </span>
-                            </div>
+                              {scoutTokens > 0 && (
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[9px] font-mono px-1.5 py-0 shrink-0 ${getTierBadgeStyle(
+                                    scoutTokens
+                                  )}`}
+                                >
+                                  🔭 {scoutTokens}G
+                                </Badge>
+                              )}
+                            </button>
 
-                            {isSelected ? (
-                              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground font-mono">
-                                Seleziona
-                              </span>
-                            )}
-                          </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                title="Apri Report Scouting del rookie"
+                                onClick={() => setInspectedRookie(rookie)}
+                                className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedRookieId(isSelected ? null : rId)
+                                }
+                                className="text-[10px] text-muted-foreground font-mono"
+                              >
+                                {isSelected ? (
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                ) : (
+                                  "Scegli"
+                                )}
+                              </button>
+                            </div>
+                          </div>
                         );
                       })
                     )}
@@ -1454,6 +1517,153 @@ const Draft = () => {
               Chiudi
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* QUICK SCOUTING REPORT MODAL */}
+      <Dialog
+        open={!!inspectedRookie}
+        onOpenChange={(open) => !open && setInspectedRookie(null)}
+      >
+        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+          {inspectedRookie && (() => {
+            const tokens = scoutingByRookie[Number(inspectedRookie.ID)] ?? 0;
+            const ovrInfo = getOvrDisplayByTokens(inspectedRookie.OVR, tokens);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs font-extrabold ${getRoleColor(
+                          inspectedRookie.Posiz
+                        )}`}
+                      >
+                        {inspectedRookie.Posiz}
+                      </Badge>
+                      <span>
+                        {inspectedRookie.Nome} {inspectedRookie.Cognome}
+                      </span>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`font-mono text-xs ${getTierBadgeStyle(tokens)}`}
+                    >
+                      Scouting {activeUserTeamId}: {tokens}G
+                    </Badge>
+                  </DialogTitle>
+                  <DialogDescription className="text-xs flex flex-wrap items-center gap-3 pt-1">
+                    <span>Età: <strong>{inspectedRookie.Età}a</strong></span>
+                    <span>•</span>
+                    <span>Altezza: <strong>{inspectedRookie.Altezza}cm</strong></span>
+                    <span>•</span>
+                    <span>Peso: <strong>{inspectedRookie.Peso}kg</strong></span>
+                    <span>•</span>
+                    <span>Piede: <strong>{inspectedRookie.Piede}</strong></span>
+                    <span>•</span>
+                    <span className="inline-flex items-center gap-1">
+                      Stelle: {renderStars(inspectedRookie.Stelle, "h-3.5 w-3.5")}
+                    </span>
+                    <span>•</span>
+                    <span>OVR: <strong className="font-mono">{ovrInfo.label}</strong></span>
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3 py-2">
+                  {tokens === 0 ? (
+                    <div className="p-4 rounded-xl bg-muted/40 border border-dashed border-border text-center space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Non hai ancora speso gettoni scouting su questo rookie. Sono visibili solo i dati fisici di base e le Stelle.
+                      </p>
+                      <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
+                        <Link to="/mia-squadra/scouting">
+                          Vai al Centro Scouting per sbloccare gli attributi
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-1.5 text-xs">
+                        <Badge variant="secondary">Role 1: {inspectedRookie.Role1 || "Standard"}</Badge>
+                        <Badge variant="secondary">P. Debole: {inspectedRookie.PiedeDebole || "⭐⭐⭐"}</Badge>
+                        {tokens >= 2 && inspectedRookie.Trait1 && (
+                          <Badge variant="outline">{inspectedRookie.Trait1}</Badge>
+                        )}
+                        {tokens >= 3 && inspectedRookie.IconTrait1 && (
+                          <Badge variant="outline" className="text-amber-500 border-amber-500/40">
+                            ★ {inspectedRookie.IconTrait1}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {SCOUTING_DEPARTMENTS.map((dept) => {
+                          const unlocked = isDepartmentUnlocked(
+                            dept.key,
+                            inspectedRookie.Posiz,
+                            tokens
+                          );
+                          return (
+                            <div
+                              key={dept.key}
+                              className="p-2.5 rounded-xl border border-border/80 bg-muted/20 space-y-1.5"
+                            >
+                              <div className="text-[11px] font-bold uppercase flex items-center justify-between">
+                                <span>{dept.title}</span>
+                                <span className="font-mono text-[10px] text-muted-foreground">
+                                  {unlocked ? "Sbloccato" : "Bloccato"}
+                                </span>
+                              </div>
+                              {unlocked ? (
+                                <div className="grid grid-cols-2 gap-1">
+                                  {dept.stats.map((st) => {
+                                    const v = Number(inspectedRookie[st.code]) || 0;
+                                    return (
+                                      <div
+                                        key={String(st.code)}
+                                        className="flex items-center justify-between text-xs px-1.5 py-0.5 rounded bg-background/80 border border-border/50"
+                                      >
+                                        <span className="font-mono text-[10px] text-muted-foreground">
+                                          {String(st.code)}
+                                        </span>
+                                        <span className={`font-mono font-bold ${getValueColor(v)}`}>
+                                          {v}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="text-[11px] text-muted-foreground italic py-1">
+                                  Attributi coperti per questa fascia
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="flex items-center justify-between gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/mia-squadra/scouting">Apri in Centro Scouting</Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSelectedRookieId(Number(inspectedRookie.ID));
+                      setInspectedRookie(null);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    Seleziona per il Draft
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

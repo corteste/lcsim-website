@@ -4,3 +4,5 @@ export const TEAM_TABLE = "an_team";
 export const TEAM_TACTIC_TABLE = "an_team_tactic";
 export const ROOKIE_TABLE = "an_rookie";
 export const DRAFT_BOARD_TABLE = "an_draft_board";
+export const ROOKIE_SCOUTING_TABLE = "an_rookie_scouting";
+export const MAX_SCOUTING_TOKENS = 60;

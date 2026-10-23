@@ -46,6 +46,7 @@ const Navbar = () => {
     { path: "/mia-squadra/roster", label: "Roster" },
     { path: "/mia-squadra/tattica", label: "Tattica" },
     { path: "/mia-squadra/allenamenti", label: "Allenamenti" },
+    { path: "/mia-squadra/scouting", label: "Scouting" },
     { path: "/mia-squadra/confronto-giocatori", label: "Confronto Giocatori" },
   ];
 
