@@ -60,7 +60,14 @@ import {
   isDepartmentUnlocked,
   getOvrDisplayByTokens,
   getTierBadgeStyle,
+  getStatDisplayByTokens,
+  getRookieTraitsCount,
+  isWeakFootUnlocked,
+  isSkillMovesUnlocked,
+  isRole1Unlocked,
+  isEmotionUnlocked,
 } from "@/utils/scoutingConfig";
+import { getEmotionLabel } from "@/constants/accessories";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
 import {
@@ -1757,7 +1764,11 @@ const Draft = () => {
         <DialogContent className="max-w-3xl xl:max-w-4xl max-h-[88vh] overflow-y-auto">
           {inspectedRookie && (() => {
             const tokens = scoutingByRookie[Number(inspectedRookie.ID)] ?? 0;
-            const ovrInfo = getOvrDisplayByTokens(inspectedRookie.OVR, tokens);
+            const ovrInfo = getOvrDisplayByTokens(
+              inspectedRookie.OVR,
+              tokens,
+              inspectedRookie.Stelle
+            );
             return (
               <>
                 <DialogHeader>
@@ -1795,7 +1806,7 @@ const Draft = () => {
                       Stelle: {renderStars(inspectedRookie.Stelle, "h-3.5 w-3.5")}
                     </span>
                     <span>•</span>
-                    <span>OVR: <strong className="font-mono">{ovrInfo.label}</strong></span>
+                    <span>OVR: <strong className="font-mono">{ovrInfo.isExact ? ovrInfo.label : `${ovrInfo.stars}★ (Valore esatto a 5G)`}</strong></span>
                   </DialogDescription>
                 </DialogHeader>
 
@@ -1814,9 +1825,24 @@ const Draft = () => {
                   ) : (
                     <div className="space-y-3">
                       <div className="flex flex-wrap gap-1.5 text-xs">
-                        <Badge variant="secondary">Role 1: {inspectedRookie.Role1 || "Standard"}</Badge>
-                        <Badge variant="secondary">P. Debole: {inspectedRookie.PiedeDebole || "⭐⭐⭐"}</Badge>
-                        {tokens >= 2 && inspectedRookie.Trait1 && (
+                        {tokens >= 3 && (
+                          <>
+                            <Badge variant="secondary">Role 1: {inspectedRookie.Role1 || "Standard"}</Badge>
+                            <Badge variant="secondary">P. Debole: {inspectedRookie.PiedeDebole || "⭐⭐⭐"}</Badge>
+                            <Badge variant="secondary">Skill: {inspectedRookie.MABI || "⭐⭐⭐"}</Badge>
+                          </>
+                        )}
+                        {tokens >= 2 && (
+                          <Badge variant="outline" className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30">
+                            Emotion: {getEmotionLabel(inspectedRookie.Emotion)}
+                          </Badge>
+                        )}
+                        {tokens === 2 && (
+                          <Badge variant="outline" className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30">
+                            {getRookieTraitsCount(inspectedRookie)} Tratti posseduti
+                          </Badge>
+                        )}
+                        {tokens >= 3 && inspectedRookie.Trait1 && (
                           <Badge variant="outline">{inspectedRookie.Trait1}</Badge>
                         )}
                         {tokens >= 3 && inspectedRookie.IconTrait1 && (
@@ -1833,6 +1859,7 @@ const Draft = () => {
                             inspectedRookie.Posiz,
                             tokens
                           );
+                          const rangeLabel = tokens >= 2 ? "Range 3" : "Range 10";
                           return (
                             <div
                               key={dept.key}
@@ -1841,13 +1868,14 @@ const Draft = () => {
                               <div className="text-[11px] font-bold uppercase flex items-center justify-between">
                                 <span>{dept.title}</span>
                                 <span className="font-mono text-[10px] text-muted-foreground">
-                                  {unlocked ? "Sbloccato" : "Bloccato"}
+                                  {unlocked ? rangeLabel : "Bloccato"}
                                 </span>
                               </div>
                               {unlocked ? (
                                 <div className="grid grid-cols-2 gap-1">
                                   {dept.stats.map((st) => {
                                     const v = Number(inspectedRookie[st.code]) || 0;
+                                    const disp = getStatDisplayByTokens(v, tokens);
                                     return (
                                       <div
                                         key={String(st.code)}
@@ -1856,8 +1884,8 @@ const Draft = () => {
                                         <span className="font-mono text-[10px] text-muted-foreground">
                                           {String(st.code)}
                                         </span>
-                                        <span className={`font-mono font-bold ${getValueColor(v)}`}>
-                                          {v}
+                                        <span className={`font-mono font-bold ${getValueColor(disp.midpoint)}`}>
+                                          {disp.label}
                                         </span>
                                       </div>
                                     );

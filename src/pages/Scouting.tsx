@@ -59,7 +59,18 @@ import {
   getRequiredTokensForField,
   getOvrDisplayByTokens,
   getTierBadgeStyle,
+  getStatDisplayByTokens,
+  getRookieTraitsCount,
+  isWeakFootUnlocked,
+  isSkillMovesUnlocked,
+  isRole1Unlocked,
+  isEmotionUnlocked,
+  isExactOvrUnlocked,
+  isOvrPerRoleUnlocked,
+  getTraitVisibility,
 } from "@/utils/scoutingConfig";
+import { calculatePlayerRoleOveralls } from "@/utils/playerOvrCalculator";
+import { getEmotionLabel } from "@/constants/accessories";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
 import {
@@ -103,19 +114,16 @@ const ScoutingStatBar = ({
   label,
   code,
   value,
-  unlocked,
-  requiredTokens,
+  tokensSpent,
 }: {
   label: string;
   code: string;
   value: number | null | undefined;
-  unlocked: boolean;
-  requiredTokens: number;
+  tokensSpent: number;
 }) => {
-  const numVal = Number(value) || 0;
-  const pct = Math.min(Math.max(numVal, 0), 99);
+  const displayInfo = getStatDisplayByTokens(value, tokensSpent);
 
-  if (!unlocked) {
+  if (!displayInfo.isUnlocked) {
     return (
       <div className="p-2.5 rounded-lg bg-muted/25 border border-dashed border-border/60 flex items-center justify-between gap-2 opacity-75">
         <div className="flex items-center gap-2 min-w-0">
@@ -127,11 +135,13 @@ const ScoutingStatBar = ({
           </span>
         </div>
         <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-muted-foreground bg-background/80 px-2 py-0.5 rounded border border-border/50 shrink-0">
-          <Lock className="h-2.5 w-2.5" /> {requiredTokens}G
+          <Lock className="h-2.5 w-2.5" /> 1G
         </span>
       </div>
     );
   }
+
+  const pct = Math.min(Math.max(displayInfo.midpoint, 0), 99);
 
   return (
     <div className="p-2.5 rounded-lg bg-card/80 border border-border/70 shadow-sm">
@@ -144,22 +154,27 @@ const ScoutingStatBar = ({
             {label}
           </span>
         </div>
-        <span
-          className={`text-sm font-black font-mono ${getValueColor(
-            numVal
-          )} shrink-0`}
-        >
-          {numVal || "-"}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[9px] font-mono uppercase px-1 py-0.5 rounded bg-muted/70 text-muted-foreground font-semibold">
+            {displayInfo.rangeType === "10" ? "Range 10" : "Range 3"}
+          </span>
+          <span
+            className={`text-xs sm:text-sm font-black font-mono ${getValueColor(
+              displayInfo.midpoint
+            )}`}
+          >
+            {displayInfo.label}
+          </span>
+        </div>
       </div>
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            numVal >= 85
+            displayInfo.midpoint >= 85
               ? "bg-gradient-to-r from-blue-500 to-cyan-500"
-              : numVal >= 78
+              : displayInfo.midpoint >= 78
               ? "bg-gradient-to-r from-emerald-500 to-green-500"
-              : numVal >= 70
+              : displayInfo.midpoint >= 70
               ? "bg-gradient-to-r from-amber-500 to-yellow-500"
               : "bg-gradient-to-r from-orange-500 to-rose-500"
           }`}
@@ -492,13 +507,25 @@ const Scouting = () => {
 
   // Helper to get top unlocked attributes for a scouted rookie in the Recap view
   const getTopUnlockedAttributes = (rookie: Player, tokensSpent: number) => {
-    const unlockedStats: { code: string; label: string; val: number }[] = [];
+    if (tokensSpent < 1) return [];
+    const unlockedStats: {
+      code: string;
+      label: string;
+      val: number;
+      rangeLabel: string;
+      midpoint: number;
+    }[] = [];
     for (const dept of SCOUTING_DEPARTMENTS) {
-      if (isDepartmentUnlocked(dept.key, rookie.Posiz, tokensSpent)) {
-        for (const st of dept.stats) {
-          const v = Number(rookie[st.code]) || 0;
-          unlockedStats.push({ code: String(st.code), label: st.label, val: v });
-        }
+      for (const st of dept.stats) {
+        const v = Number(rookie[st.code]) || 0;
+        const display = getStatDisplayByTokens(v, tokensSpent);
+        unlockedStats.push({
+          code: String(st.code),
+          label: st.label,
+          val: v,
+          rangeLabel: display.label,
+          midpoint: display.midpoint,
+        });
       }
     }
     return unlockedStats.sort((a, b) => b.val - a.val).slice(0, 6);
@@ -808,37 +835,36 @@ const Scouting = () => {
                     <div className="p-5 md:p-6 bg-gradient-to-br from-emerald-500/10 via-card to-muted/30 border-b border-border/70">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
                         <div className="flex items-start sm:items-center gap-4">
-                          {/* OVR / Mysterious Badge */}
+                          {/* OVR / Star System Badge */}
                           {(() => {
                             const ovrInfo = getOvrDisplayByTokens(
                               selectedRookie.OVR,
-                              selectedRookieTokens
+                              selectedRookieTokens,
+                              selectedRookie.Stelle
                             );
                             return (
                               <div
-                                className={`h-20 w-20 rounded-2xl flex flex-col items-center justify-center border-2 shadow-lg shrink-0 ${
+                                className={`h-20 w-24 rounded-2xl flex flex-col items-center justify-center border-2 shadow-lg shrink-0 ${
                                   ovrInfo.isExact
                                     ? "bg-emerald-600 text-white border-emerald-400"
-                                    : ovrInfo.isRange
-                                    ? "bg-purple-600/90 text-white border-purple-400"
-                                    : "bg-muted text-muted-foreground border-border"
+                                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40"
                                 }`}
                               >
                                 <span className="text-[9px] font-bold uppercase tracking-widest opacity-85">
-                                  {ovrInfo.isExact
-                                    ? "OVR Esatto"
-                                    : ovrInfo.isRange
-                                    ? "Stima OVR"
-                                    : "Overall"}
+                                  {ovrInfo.isExact ? "OVR Esatto" : "Valutazione"}
                                 </span>
-                                <span className="text-xl sm:text-2xl font-black font-mono leading-tight mt-0.5">
-                                  {ovrInfo.label}
-                                </span>
-                                {!ovrInfo.isExact && (
-                                  <span className="text-[8px] font-mono opacity-75">
-                                    {ovrInfo.isRange ? "Esatto a 5G" : "3G / 5G"}
+                                {ovrInfo.isExact ? (
+                                  <span className="text-2xl font-black font-mono leading-tight mt-0.5 text-white">
+                                    {ovrInfo.label}
                                   </span>
+                                ) : (
+                                  <div className="flex items-center gap-0.5 mt-1">
+                                    {renderStars(selectedRookie.Stelle, "h-4 w-4")}
+                                  </div>
                                 )}
+                                <span className="text-[8px] font-mono opacity-80 mt-0.5">
+                                  {ovrInfo.isExact ? "Scouting 100%" : "Esatto a 5G"}
+                                </span>
                               </div>
                             );
                           })()}
@@ -1084,20 +1110,20 @@ const Scouting = () => {
                     </CardContent>
                   </Card>
 
-                  {/* 3. SECONDARY PROFILE FIELDS: ROLES, WEAK FOOT, SKILL MOVES & TRAITS */}
+                  {/* 3. SECONDARY PROFILE FIELDS: ROLES, WEAK FOOT, SKILL MOVES & EMOTION */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Ruoli, Piede Debole & Skill (Unlocked at 1G) */}
+                    {/* Ruolo Tattico, Piede Debole, Skill (3G) & Emotion (2G) */}
                     <Card className="border border-border/80 bg-card shadow-sm">
                       <CardHeader className="py-3 px-4 bg-muted/30 border-b border-border/60 flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-xs font-extrabold uppercase tracking-wider flex items-center gap-2">
                           <Compass className="h-4 w-4 text-sky-500" />
-                          Specializzazioni Ruolo &amp; Tecnica
+                          Specializzazione, Tecnica &amp; Emotion
                         </CardTitle>
                         <Badge
                           variant="outline"
                           className="text-[10px] font-mono bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30"
                         >
-                          {selectedRookieTokens >= 1 ? "Sbloccato (1G)" : "Richiede 1G"}
+                          Emotion 2G • Tecnica 3G
                         </Badge>
                       </CardHeader>
                       <CardContent className="p-4 grid grid-cols-2 gap-2.5">
@@ -1105,117 +1131,152 @@ const Scouting = () => {
                           {
                             label: "Piede Debole",
                             val: selectedRookie.PiedeDebole || "⭐⭐⭐",
-                            req: getRequiredTokensForField("PiedeDebole"),
+                            req: 3,
+                            unlocked: isWeakFootUnlocked(selectedRookieTokens),
                           },
                           {
-                            label: "Mosse Abilità (Skill)",
+                            label: "Mosse Abilità",
                             val: selectedRookie.MABI || "⭐⭐⭐",
-                            req: getRequiredTokensForField("MABI"),
+                            req: 3,
+                            unlocked: isSkillMovesUnlocked(selectedRookieTokens),
                           },
                           {
-                            label: "Specializzazione 1",
+                            label: "Ruolo Tattico (Role 1)",
                             val: selectedRookie.Role1 || "Standard",
-                            req: getRequiredTokensForField("Role1"),
+                            req: 3,
+                            unlocked: isRole1Unlocked(selectedRookieTokens),
                           },
                           {
-                            label: "Specializzazione 2",
-                            val: selectedRookie.Role2 || "-",
-                            req: getRequiredTokensForField("Role2"),
+                            label: "Emotion (Temperamento)",
+                            val: getEmotionLabel(selectedRookie.Emotion),
+                            req: 2,
+                            unlocked: isEmotionUnlocked(selectedRookieTokens),
                           },
-                        ].map((item, idx) => {
-                          const unlocked = selectedRookieTokens >= item.req;
-                          return (
-                            <div
-                              key={idx}
-                              className="p-2.5 rounded-xl border border-border/70 bg-muted/20 flex flex-col justify-between"
-                            >
-                              <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                                {item.label}
+                        ].map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="p-2.5 rounded-xl border border-border/70 bg-muted/20 flex flex-col justify-between"
+                          >
+                            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+                              {item.label}
+                            </span>
+                            {item.unlocked ? (
+                              <span className="text-xs sm:text-sm font-bold text-foreground mt-1">
+                                {item.val}
                               </span>
-                              {unlocked ? (
-                                <span className="text-xs sm:text-sm font-bold text-foreground mt-1">
-                                  {item.val}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground mt-1">
-                                  <Lock className="h-3 w-3" /> Sblocca a {item.req}G
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground mt-1">
+                                <Lock className="h-3 w-3" /> Sblocca a {item.req}G
+                              </span>
+                            )}
+                          </div>
+                        ))}
                       </CardContent>
                     </Card>
 
-                    {/* Tratti Base (2G) & Tratti Icona (3G) */}
+                    {/* Tratti & PlayStyles (Conteggio a 2G • Nomi esatti a 3G) */}
                     <Card className="border border-border/80 bg-card shadow-sm">
                       <CardHeader className="py-3 px-4 bg-muted/30 border-b border-border/60 flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-xs font-extrabold uppercase tracking-wider flex items-center gap-2">
                           <Award className="h-4 w-4 text-amber-500" />
-                          Tratti &amp; PlayStyles Speciali
+                          Tratti &amp; PlayStyles
                         </CardTitle>
                         <Badge
                           variant="outline"
                           className="text-[10px] font-mono bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30"
                         >
-                          Base 2G • Icona 3G
+                          Conteggio 2G • Esatti 3G
                         </Badge>
                       </CardHeader>
-                      <CardContent className="p-4 grid grid-cols-2 gap-2.5">
-                        {[
-                          {
-                            label: "Tratto 1",
-                            val: selectedRookie.Trait1 || "Nessuno",
-                            req: getRequiredTokensForField("Trait1"),
-                            isIcon: false,
-                          },
-                          {
-                            label: "Tratto 2",
-                            val: selectedRookie.Trait2 || "Nessuno",
-                            req: getRequiredTokensForField("Trait2"),
-                            isIcon: false,
-                          },
-                          {
-                            label: "Tratto Icona 1",
-                            val: selectedRookie.IconTrait1 || "Nessuno",
-                            req: getRequiredTokensForField("IconTrait1"),
-                            isIcon: true,
-                          },
-                          {
-                            label: "Tratto Icona 2",
-                            val: selectedRookie.IconTrait2 || "Nessuno",
-                            req: getRequiredTokensForField("IconTrait2"),
-                            isIcon: true,
-                          },
-                        ].map((item, idx) => {
-                          const unlocked = selectedRookieTokens >= item.req;
+                      <CardContent className="p-4">
+                        {(() => {
+                          const traitVis = getTraitVisibility(selectedRookieTokens);
+                          const traitsCount = getRookieTraitsCount(selectedRookie);
+
+                          if (traitVis === "none") {
+                            return (
+                              <div className="p-4 rounded-xl bg-muted/20 border border-dashed border-border/70 text-center space-y-1.5">
+                                <Lock className="h-5 w-5 text-muted-foreground mx-auto opacity-60" />
+                                <div className="text-xs font-semibold text-muted-foreground">
+                                  Tratti oscurati
+                                </div>
+                                <p className="text-[11px] text-muted-foreground/80">
+                                  Richiede almeno 2 Gettoni per svelare il numero di tratti e 3 Gettoni per i nomi completi.
+                                </p>
+                              </div>
+                            );
+                          }
+
+                          if (traitVis === "count") {
+                            return (
+                              <div className="space-y-3">
+                                <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between">
+                                  <div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                                      Numero di Tratti
+                                    </span>
+                                    <span className="text-base font-extrabold text-foreground">
+                                      {traitsCount} {traitsCount === 1 ? "Tratto posseduto" : "Tratti posseduti"}
+                                    </span>
+                                  </div>
+                                  <Badge variant="outline" className="font-mono text-xs text-indigo-500 border-indigo-500/40">
+                                    Fascia 2G
+                                  </Badge>
+                                </div>
+                                <div className="p-2 rounded-lg bg-muted/30 border border-dashed border-border/60 text-center text-[11px] text-muted-foreground flex items-center justify-center gap-1.5">
+                                  <Lock className="h-3 w-3" /> I nomi esatti e i PlayStyles sono sbloccabili a 3 Gettoni.
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // traitVis === "exact" (3G o 5G)
                           return (
-                            <div
-                              key={idx}
-                              className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                                unlocked && item.isIcon
-                                  ? "border-amber-500/30 bg-amber-500/5"
-                                  : "border-border/70 bg-muted/20"
-                              }`}
-                            >
-                              <span className="text-[10px] font-semibold uppercase text-muted-foreground flex items-center gap-1">
-                                {item.isIcon && (
-                                  <Sparkles className="h-3 w-3 text-amber-500" />
-                                )}
-                                {item.label}
-                              </span>
-                              {unlocked ? (
-                                <span className="text-xs sm:text-sm font-bold text-foreground mt-1">
-                                  {item.val}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground mt-1">
-                                  <Lock className="h-3 w-3" /> Sblocca a {item.req}G
-                                </span>
-                              )}
+                            <div className="grid grid-cols-2 gap-2.5">
+                              {[
+                                {
+                                  label: "Tratto 1",
+                                  val: selectedRookie.Trait1 || "Nessuno",
+                                  isIcon: false,
+                                },
+                                {
+                                  label: "Tratto 2",
+                                  val: selectedRookie.Trait2 || "Nessuno",
+                                  isIcon: false,
+                                },
+                                {
+                                  label: "Tratto Icona 1",
+                                  val: selectedRookie.IconTrait1 || "Nessuno",
+                                  isIcon: true,
+                                },
+                                {
+                                  label: "Tratto Icona 2",
+                                  val: selectedRookie.IconTrait2 || "Nessuno",
+                                  isIcon: true,
+                                },
+                              ].map((item, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                                    item.isIcon
+                                      ? "border-amber-500/30 bg-amber-500/5"
+                                      : "border-border/70 bg-muted/20"
+                                  }`}
+                                >
+                                  <span className="text-[10px] font-semibold uppercase text-muted-foreground flex items-center gap-1">
+                                    {item.isIcon && (
+                                      <Sparkles className="h-3 w-3 text-amber-500" />
+                                    )}
+                                    {item.label}
+                                  </span>
+                                  <span className="text-xs sm:text-sm font-bold text-foreground mt-1">
+                                    {item.val}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
                           );
-                        })}
+                        })()}
                       </CardContent>
                     </Card>
                   </div>
@@ -1223,15 +1284,13 @@ const Scouting = () => {
                   {/* 4. ALL 6 ATTRIBUTE DEPARTMENTS (33 INDIVIDUAL STATS) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {SCOUTING_DEPARTMENTS.map((dept) => {
-                      const reqTokens = getRequiredTokensForDepartment(
-                        dept.key,
-                        selectedRookie.Posiz
-                      );
-                      const unlocked = isDepartmentUnlocked(
-                        dept.key,
-                        selectedRookie.Posiz,
-                        selectedRookieTokens
-                      );
+                      const isUnlocked = selectedRookieTokens >= 1;
+                      const rangeBadge =
+                        selectedRookieTokens >= 2
+                          ? "Dettaglio (Range 3)"
+                          : selectedRookieTokens === 1
+                          ? "Stima (Range 10)"
+                          : "Bloccato (1G)";
 
                       return (
                         <Card
@@ -1248,13 +1307,13 @@ const Scouting = () => {
                               variant="outline"
                               className="text-[10px] font-mono bg-background/80"
                             >
-                              {unlocked ? (
+                              {isUnlocked ? (
                                 <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
-                                  <Unlock className="h-2.5 w-2.5" /> Visibile
+                                  <Unlock className="h-2.5 w-2.5" /> {rangeBadge}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                  <Lock className="h-2.5 w-2.5" /> Fascia {reqTokens}G
+                                  <Lock className="h-2.5 w-2.5" /> {rangeBadge}
                                 </span>
                               )}
                             </Badge>
@@ -1267,8 +1326,7 @@ const Scouting = () => {
                                 code={String(st.code)}
                                 label={st.label}
                                 value={selectedRookie[st.code] as number | null}
-                                unlocked={unlocked}
-                                requiredTokens={reqTokens}
+                                tokensSpent={selectedRookieTokens}
                               />
                             ))}
                           </CardContent>
@@ -1276,6 +1334,120 @@ const Scouting = () => {
                       );
                     })}
                   </div>
+
+                  {/* 5. OVERALL PER RUOLO (Sbloccato a 5 Gettoni) */}
+                  <Card className="border border-border/80 bg-card shadow-sm overflow-hidden">
+                    <CardHeader className="py-3 px-4 bg-muted/30 border-b border-border/60 flex flex-row items-center justify-between space-y-0">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-emerald-500" />
+                        <CardTitle className="text-xs font-extrabold uppercase tracking-wider">
+                          Overall per Ruolo (Rendimento Tattico Simulatore)
+                        </CardTitle>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-mono ${
+                          selectedRookieTokens >= 5
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {selectedRookieTokens >= 5 ? "Sbloccato (5G)" : "Richiede 5G"}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      {selectedRookieTokens >= 5 ? (() => {
+                        const roleEval = calculatePlayerRoleOveralls(selectedRookie);
+                        return (
+                          <div className="space-y-4">
+                            {/* Ruolo Principale + Ruoli Secondari Riconosciuti */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                              <div className="p-3 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/40 flex items-center justify-between">
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                                    Ruolo Principale
+                                  </span>
+                                  <span className="text-sm font-extrabold">{roleEval.primaryRole.role}</span>
+                                </div>
+                                <span className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                                  {roleEval.primaryRole.ovr}
+                                </span>
+                              </div>
+
+                              {roleEval.secondaryRoles.length > 0 ? (
+                                roleEval.secondaryRoles.map((sec) => (
+                                  <div
+                                    key={sec.role}
+                                    className="p-3 rounded-xl bg-card border border-border/80 flex items-center justify-between"
+                                  >
+                                    <div>
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                        Ruolo Secondario
+                                      </span>
+                                      <span className="text-sm font-extrabold">{sec.role}</span>
+                                    </div>
+                                    <span
+                                      className={`text-xl font-black font-mono ${getValueColor(
+                                        sec.ovr
+                                      )}`}
+                                    >
+                                      {sec.ovr}
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="p-3 rounded-xl bg-muted/20 border border-dashed border-border/70 flex items-center justify-center text-xs text-muted-foreground col-span-2">
+                                  Nessuna posizione secondaria specificata nei dati master.
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Griglia completa di adattabilità sul campo */}
+                            <div>
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block mb-2">
+                                Adattabilità &amp; OVR su tutte le posizioni in campo:
+                              </span>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-1.5">
+                                {roleEval.allPitchRoles.map((item) => (
+                                  <div
+                                    key={item.role}
+                                    className={`p-2 rounded-lg border text-center transition-all ${
+                                      item.isPrimary
+                                        ? "bg-emerald-500/20 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-extrabold ring-1 ring-emerald-500/40"
+                                        : item.isSecondary
+                                        ? "bg-sky-500/15 border-sky-500/40 text-foreground font-bold"
+                                        : "bg-muted/30 border-border/60 text-muted-foreground"
+                                    }`}
+                                  >
+                                    <div className="text-[10px] font-mono uppercase">{item.role}</div>
+                                    <div
+                                      className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
+                                        item.isPrimary
+                                          ? "text-emerald-600 dark:text-emerald-400"
+                                          : getValueColor(item.ovr)
+                                      }`}
+                                    >
+                                      {item.ovr}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })() : (
+                        <div className="p-6 rounded-xl bg-muted/20 border border-dashed border-border text-center space-y-2">
+                          <Lock className="h-6 w-6 text-muted-foreground mx-auto opacity-60" />
+                          <div className="text-xs font-bold text-foreground">
+                            Overall per Ruolo non disponibile
+                          </div>
+                          <p className="text-[11px] text-muted-foreground max-w-md mx-auto">
+                            Spendendo 5 gettoni scouting su questo rookie sbloccherai l&apos;Overall calcolato per ciascun ruolo in campo (posizioni secondarie e mappa tattica completa).
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               ) : (
                 <Card className="p-12 text-center text-muted-foreground">
@@ -1357,7 +1529,7 @@ const Scouting = () => {
                 {scoutedRookiesList.map((r) => {
                   const rId = Number(r.ID);
                   const tokens = scoutingMap[rId]?.tokens_spent ?? 0;
-                  const ovrInfo = getOvrDisplayByTokens(r.OVR, tokens);
+                  const ovrInfo = getOvrDisplayByTokens(r.OVR, tokens, r.Stelle);
                   const topStats = getTopUnlockedAttributes(r, tokens);
                   const nextTiers = SCOUTING_TIERS.filter(
                     (t) => t.tokens > tokens
@@ -1426,7 +1598,7 @@ const Scouting = () => {
                             </Badge>
                             <div className="px-2.5 py-1 rounded-lg bg-background border border-border/80 text-center">
                               <span className="text-[9px] uppercase font-bold text-muted-foreground block leading-none">
-                                OVR
+                                {ovrInfo.isExact ? "OVR Esatto" : "Valutazione"}
                               </span>
                               <span className="font-mono font-black text-sm">
                                 {ovrInfo.label}
@@ -1438,13 +1610,36 @@ const Scouting = () => {
                         {/* Unlocked Role/Traits summary */}
                         <CardContent className="p-4 space-y-3">
                           <div className="flex flex-wrap gap-1.5 text-[11px]">
-                            <Badge variant="secondary" className="font-medium">
-                              Role 1: {r.Role1 || "Standard"}
-                            </Badge>
-                            <Badge variant="secondary" className="font-medium">
-                              P. Debole: {r.PiedeDebole || "⭐⭐⭐"}
-                            </Badge>
-                            {tokens >= 2 && r.Trait1 && (
+                            {tokens >= 3 && (
+                              <>
+                                <Badge variant="secondary" className="font-medium">
+                                  Role 1: {r.Role1 || "Standard"}
+                                </Badge>
+                                <Badge variant="secondary" className="font-medium">
+                                  P. Debole: {r.PiedeDebole || "⭐⭐⭐"}
+                                </Badge>
+                                <Badge variant="secondary" className="font-medium">
+                                  Skill: {r.MABI || "⭐⭐⭐"}
+                                </Badge>
+                              </>
+                            )}
+                            {tokens >= 2 && (
+                              <Badge
+                                variant="outline"
+                                className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30"
+                              >
+                                Emotion: {getEmotionLabel(r.Emotion)}
+                              </Badge>
+                            )}
+                            {tokens === 2 && (
+                              <Badge
+                                variant="outline"
+                                className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
+                              >
+                                {getRookieTraitsCount(r)} Tratti posseduti
+                              </Badge>
+                            )}
+                            {tokens >= 3 && r.Trait1 && (
                               <Badge
                                 variant="outline"
                                 className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
@@ -1478,10 +1673,10 @@ const Scouting = () => {
                                   </span>
                                   <span
                                     className={`font-mono text-xs font-black ${getValueColor(
-                                      st.val
+                                      st.midpoint
                                     )}`}
                                   >
-                                    {st.val}
+                                    {st.rangeLabel}
                                   </span>
                                 </div>
                               ))}

@@ -65,6 +65,7 @@ import {
   getRequiredTokensForField,
   getOvrDisplayByTokens,
   getTierBadgeStyle,
+  getStatDisplayByTokens,
   ScoutingDeptKey,
 } from "@/utils/scoutingConfig";
 import PlayerDetails from "@/components/player/playerDetails";
@@ -261,27 +262,22 @@ function getPlayerStatValue(
   }
 
   // Rookie scouting rule
-  const unlocked = isDepartmentUnlocked(
-    dept,
-    player.Posiz,
-    player.scoutingTokens
-  );
-  if (!unlocked) {
-    const req = getRequiredTokensForDepartment(dept, player.Posiz);
+  if (player.scoutingTokens < 1) {
     return {
       isRevealed: false,
       numericVal: null,
       displayVal: "?",
-      requiredTokens: req,
+      requiredTokens: 1,
     };
   }
 
   const raw = player[statKey];
   const n = raw !== null && raw !== undefined ? Number(raw) : null;
+  const disp = getStatDisplayByTokens(n, player.scoutingTokens);
   return {
     isRevealed: true,
-    numericVal: n,
-    displayVal: n !== null ? String(n) : "—",
+    numericVal: disp.midpoint,
+    displayVal: disp.label,
   };
 }
 
@@ -301,7 +297,11 @@ function getPlayerOvr(player: ComparisonPlayer): {
     };
   }
 
-  const ovrInfo = getOvrDisplayByTokens(player.OVR, player.scoutingTokens);
+  const ovrInfo = getOvrDisplayByTokens(
+    player.OVR,
+    player.scoutingTokens,
+    (player as any).Stelle
+  );
   if (player.scoutingTokens >= 5) {
     return {
       isRevealed: true,
@@ -310,19 +310,11 @@ function getPlayerOvr(player: ComparisonPlayer): {
       isRange: false,
     };
   }
-  if (player.scoutingTokens >= 3) {
-    return {
-      isRevealed: true,
-      displayVal: ovrInfo.label,
-      numericVal: player.OVR ?? 0,
-      isRange: true,
-    };
-  }
   return {
-    isRevealed: false,
-    displayVal: "?",
-    numericVal: null,
-    isRange: false,
+    isRevealed: true,
+    displayVal: `${ovrInfo.stars}★`,
+    numericVal: ovrInfo.stars * 15,
+    isRange: true,
   };
 }
 

@@ -14,9 +14,9 @@ export const SCOUTING_TIERS: {
     tokens: 1,
     label: "1 Gettone",
     shortLabel: "1G",
-    title: "Fascia 1 • Osservazione Base",
+    title: "Fascia 1 • Stima Abilità (Range 10)",
     description:
-      "Sblocca Piede Debole, Mosse Abilità, Specializzazioni Ruolo (Role 1/2) e il reparto attributi primario del ruolo.",
+      "Sblocca la stima di tutte le abilità tecniche e fisiche con decadi fisse (es. 70-79).",
     badgeClass:
       "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
   },
@@ -24,9 +24,9 @@ export const SCOUTING_TIERS: {
     tokens: 2,
     label: "2 Gettoni",
     shortLabel: "2G",
-    title: "Fascia 2 • Analisi Atletica & Tratti",
+    title: "Fascia 2 • Precisione Abilità (Range 3), Emotion & Conteggio Tratti",
     description:
-      "Sblocca anche l'intero reparto Fisico & Velocità, i Calci Piazzati e i Tratti Base (Trait 1 & 2).",
+      "Affina le abilità a range di 3 (es. 70-72, 73-75, 76-79), svela l'attitudine emotiva (Emotion) e il conteggio dei tratti posseduti.",
     badgeClass:
       "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
   },
@@ -34,9 +34,9 @@ export const SCOUTING_TIERS: {
     tokens: 3,
     label: "3 Gettoni",
     shortLabel: "3G",
-    title: "Fascia 3 • Report Tecnico Avanzato",
+    title: "Fascia 3 • Tratti Esatti, Ruolo Tattico (Role 1), Piede Debole & Mosse Abilità",
     description:
-      "Sblocca i reparti tecnici secondari, i Tratti Icona (Icon Trait 1 & 2) e una stima ristretta dell'Overall.",
+      "Svela i nomi di tutti i tratti (base e icona), la specializzazione tattica Role 1 e il valore esatto di Piede Debole e Mosse Abilità.",
     badgeClass:
       "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
   },
@@ -44,9 +44,9 @@ export const SCOUTING_TIERS: {
     tokens: 5,
     label: "5 Gettoni",
     shortLabel: "5G",
-    title: "Fascia 4 • Scouting Completo (100%)",
+    title: "Fascia 4 • Scouting Completo & Overall per Ruolo",
     description:
-      "Sblocca l'Overall esatto e il 100% di tutte le caratteristiche e i 33 attributi del rookie.",
+      "Sblocca l'Overall numerico esatto e l'Overall ricalcolato per ciascun ruolo in campo in base ai pesi del simulatore.",
     badgeClass:
       "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
   },
@@ -144,98 +144,209 @@ export const SCOUTING_DEPARTMENTS: {
 ];
 
 /**
- * Returns the primary department for a given player role (unlocked at 1 token).
+ * Range di 10 (Opzione A - Decadi fisse):
+ * 74 -> 70-79, 63 -> 60-69, 85 -> 80-89
  */
-export function getPrimaryDepartmentForRole(posiz: string): ScoutingDeptKey {
-  if (posiz === "POR") return "POR";
-  if (["DC", "TD", "TS"].includes(posiz)) return "DIF";
-  if (["CDC", "CC", "ED", "ES", "COC"].includes(posiz)) return "PAS";
-  return "ATT";
+export function getStatRange10(value: number | null | undefined): string {
+  const val = Math.max(0, Math.min(99, Number(value) || 0));
+  const decade = Math.floor(val / 10) * 10;
+  return `${decade}-${Math.min(99, decade + 9)}`;
 }
 
 /**
- * Returns the secondary technical department for a given player role (unlocked at 3 tokens).
+ * Range di 3:
+ * Ogni decina divisa in 3 blocchi:
+ * - 0..2 -> X0 - X2 (es. 70-72)
+ * - 3..5 -> X3 - X5 (es. 73-75)
+ * - 6..9 -> X6 - X9 (es. 76-79)
  */
-export function getSecondaryDepartmentsForRole(posiz: string): ScoutingDeptKey[] {
-  if (posiz === "POR") return ["PAS", "DIF"];
-  if (["DC", "TD", "TS"].includes(posiz)) return ["PAS", "ATT"];
-  if (["CDC", "CC", "ED", "ES", "COC"].includes(posiz)) return ["DIF", "ATT"];
-  return ["PAS", "DIF"];
+export function getStatRange3(value: number | null | undefined): string {
+  const val = Math.max(0, Math.min(99, Number(value) || 0));
+  const decade = Math.floor(val / 10) * 10;
+  const unit = val % 10;
+  if (unit <= 2) {
+    return `${decade}-${decade + 2}`;
+  } else if (unit <= 5) {
+    return `${decade + 3}-${decade + 5}`;
+  } else {
+    return `${decade + 6}-${Math.min(99, decade + 9)}`;
+  }
+}
+
+export interface StatDisplayResult {
+  label: string;
+  isUnlocked: boolean;
+  midpoint: number;
+  rangeType: "none" | "10" | "3";
 }
 
 /**
- * Minimum tokens required to unlock a specific department for a player of role `posiz`.
+ * Returns formatted stat display label and midpoint based on spent tokens.
+ * - 0 Gettoni: Locked (??)
+ * - 1 Gettone: Range di 10 (es. 70-79)
+ * - 2, 3, 5 Gettoni: Range di 3 (es. 73-75)
  */
-export function getRequiredTokensForDepartment(
-  dept: ScoutingDeptKey,
-  posiz: string
-): 1 | 2 | 3 | 5 {
-  const primary = getPrimaryDepartmentForRole(posiz);
-  if (dept === primary) return 1;
-  if (dept === "FIS" || dept === "CPZ") return 2;
-  const secondary = getSecondaryDepartmentsForRole(posiz);
-  if (secondary.includes(dept)) return 3;
-  return 5;
-}
-
-export function isDepartmentUnlocked(
-  dept: ScoutingDeptKey,
-  posiz: string,
+export function getStatDisplayByTokens(
+  value: number | null | undefined,
   tokensSpent: number
-): boolean {
-  if (tokensSpent >= 5) return true;
-  const req = getRequiredTokensForDepartment(dept, posiz);
-  return tokensSpent >= req;
+): StatDisplayResult {
+  const num = Math.max(0, Math.min(99, Number(value) || 0));
+  if (tokensSpent < 1) {
+    return { label: "??", isUnlocked: false, midpoint: 0, rangeType: "none" };
+  }
+  if (tokensSpent === 1) {
+    const decade = Math.floor(num / 10) * 10;
+    return {
+      label: getStatRange10(num),
+      isUnlocked: true,
+      midpoint: decade + 4.5,
+      rangeType: "10",
+    };
+  }
+  // tokensSpent >= 2 (2, 3, 5 Gettoni)
+  const decade = Math.floor(num / 10) * 10;
+  const unit = num % 10;
+  let mid = decade + 1;
+  if (unit <= 2) mid = decade + 1;
+  else if (unit <= 5) mid = decade + 4;
+  else mid = decade + 7.5;
+
+  return {
+    label: getStatRange3(num),
+    isUnlocked: true,
+    midpoint: mid,
+    rangeType: "3",
+  };
 }
 
 /**
- * Checks if extra profile fields are unlocked:
- * - PiedeDebole, MABI, Role1, Role2 -> 1 token
- * - Trait1, Trait2 -> 2 tokens
- * - IconTrait1, IconTrait2 -> 3 tokens
- * - Exact OVR -> 5 tokens (at 3 tokens an approximate range is shown)
+ * Checks overall display:
+ * - 0, 1, 2, 3 gettoni: Sistema a stelle (es. 3★)
+ * - 5 gettoni: Valore Esatto (es. 71)
  */
+export function getOvrDisplayByTokens(
+  ovr: number | null | undefined,
+  tokensSpent: number,
+  stars?: number | null | undefined
+): { label: string; isExact: boolean; isRange: boolean; stars: number } {
+  const exactVal = Number(ovr) || 70;
+  const starVal = Number(stars) || 3;
+  if (tokensSpent >= 5) {
+    return { label: `${exactVal}`, isExact: true, isRange: false, stars: starVal };
+  }
+  return { label: `${starVal}★`, isExact: false, isRange: false, stars: starVal };
+}
+
+/**
+ * Counts non-empty traits on a rookie.
+ */
+export function getRookieTraitsCount(rookie: {
+  Trait1?: string | null;
+  Trait2?: string | null;
+  IconTrait1?: string | null;
+  IconTrait2?: string | null;
+  Tratti?: string | null;
+}): number {
+  const traits = [rookie.Trait1, rookie.Trait2, rookie.IconTrait1, rookie.IconTrait2]
+    .filter((t): t is string => Boolean(t && t.trim() !== "" && t !== "Nessuno" && t !== "-"));
+  if (traits.length > 0) return traits.length;
+  if (rookie.Tratti && rookie.Tratti.trim() !== "" && rookie.Tratti !== "Nessuno") {
+    return rookie.Tratti.split(",").filter((t) => t.trim().length > 0).length;
+  }
+  return 0;
+}
+
+/**
+ * Unlocking rules for profile fields
+ */
+export function isWeakFootUnlocked(tokensSpent: number): boolean {
+  return tokensSpent >= 3;
+}
+
+export function isSkillMovesUnlocked(tokensSpent: number): boolean {
+  return tokensSpent >= 3;
+}
+
+export function isRole1Unlocked(tokensSpent: number): boolean {
+  return tokensSpent >= 3;
+}
+
+export function isEmotionUnlocked(tokensSpent: number): boolean {
+  return tokensSpent >= 2;
+}
+
+export function isExactOvrUnlocked(tokensSpent: number): boolean {
+  return tokensSpent >= 5;
+}
+
+export function isOvrPerRoleUnlocked(tokensSpent: number): boolean {
+  return tokensSpent >= 5;
+}
+
+export function getTraitVisibility(tokensSpent: number): "none" | "count" | "exact" {
+  if (tokensSpent >= 3) return "exact";
+  if (tokensSpent >= 2) return "count";
+  return "none";
+}
+
 export function getRequiredTokensForField(
   field:
     | "PiedeDebole"
     | "MABI"
     | "Role1"
     | "Role2"
+    | "Emotion"
+    | "TraitsCount"
     | "Trait1"
     | "Trait2"
     | "IconTrait1"
     | "IconTrait2"
     | "OVR"
+    | "OvrPerRole"
 ): 1 | 2 | 3 | 5 {
   switch (field) {
+    case "Emotion":
+    case "TraitsCount":
+      return 2;
     case "PiedeDebole":
     case "MABI":
     case "Role1":
     case "Role2":
-      return 1;
     case "Trait1":
     case "Trait2":
-      return 2;
     case "IconTrait1":
     case "IconTrait2":
       return 3;
     case "OVR":
+    case "OvrPerRole":
       return 5;
   }
 }
 
-export function getOvrDisplayByTokens(
-  ovr: number | null | undefined,
+/**
+ * All departments unlock simultaneously at 1G (showing range of 10)
+ * and refine at 2G+ (showing range of 3).
+ */
+export function isDepartmentUnlocked(
+  _dept: ScoutingDeptKey,
+  _posiz: string,
   tokensSpent: number
-): { label: string; isExact: boolean; isRange: boolean } {
-  const val = Number(ovr) || 70;
-  if (tokensSpent >= 5) {
-    return { label: `${val}`, isExact: true, isRange: false };
-  }
-  if (tokensSpent >= 3) {
-    return { label: `${val - 2}–${val + 2}`, isExact: false, isRange: true };
-  }
-  return { label: "??", isExact: false, isRange: false };
+): boolean {
+  return tokensSpent >= 1;
+}
+
+export function getRequiredTokensForDepartment(
+  _dept: ScoutingDeptKey,
+  _posiz: string
+): 1 | 2 | 3 | 5 {
+  return 1;
+}
+
+export function getPrimaryDepartmentForRole(posiz: string): ScoutingDeptKey {
+  if (posiz === "POR") return "POR";
+  if (["DC", "TD", "TS"].includes(posiz)) return "DIF";
+  if (["CDC", "CC", "ED", "ES", "COC"].includes(posiz)) return "PAS";
+  return "ATT";
 }
 
 export function getTierBadgeStyle(tokensSpent: number): string {
