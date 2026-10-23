@@ -111,7 +111,7 @@ const ROLE_GROUPS: { id: string; label: string; roles: string[] }[] = [
 ];
 
 const Draft = () => {
-  const { user, isAdmin, selectedTeamId, setSelectedTeamId } = useAuth();
+  const { user, isAdmin, effectiveTeam, adminSelectedTeam, setAdminSelectedTeam } = useAuth();
   const { teams } = getTeams();
   const { standings } = getStandings();
 
@@ -229,11 +229,8 @@ const Draft = () => {
   // Effective team for the right-hand user panel
   const activeUserTeamId = useMemo(() => {
     if (!user) return null;
-    if (isAdmin) {
-      return selectedTeamId || currentOnTheClockPick?.team_id || teams[0]?.TEAM_ID || null;
-    }
-    return user.team;
-  }, [user, isAdmin, selectedTeamId, currentOnTheClockPick, teams]);
+    return effectiveTeam || null;
+  }, [user, effectiveTeam]);
 
   const activeUserTeam = useMemo(() => {
     if (!activeUserTeamId) return null;
@@ -257,6 +254,117 @@ const Draft = () => {
         setScoutingByRookie(map);
       });
   }, [activeUserTeamId]);
+
+  // Caricamento preferiti squadra (⭐ Punto 6)
+  const loadFavorites = useCallback(async () => {
+    if (!activeUserTeamId) {
+      setFavoriteRookieIds(new Set());
+      return;
+    }
+    try {
+      const favs = await fetchTeamFavorites(activeUserTeamId, "rookie");
+      setFavoriteRookieIds(favs);
+    } catch (err) {
+      console.error("Errore caricamento preferiti draft:", err);
+    }
+  }, [activeUserTeamId]);
+
+  useEffect(() => {
+    if (activeUserTeamId) {
+      loadFavorites();
+    } else {
+      setFavoriteRookieIds(new Set());
+    }
+  }, [activeUserTeamId, loadFavorites]);
+
+  // Caricamento impostazioni autopick squadra (Punto 7)
+  const loadAutopickSettings = useCallback(async () => {
+    if (!activeUserTeamId) return;
+    try {
+      const enabled = await fetchAutopickSetting(activeUserTeamId);
+      setIsUserAutopickEnabled(enabled);
+      if (isAdmin) {
+        const all = await fetchAllAutopickSettings();
+        setAllAutopickSettings(all);
+      }
+    } catch (err) {
+      console.error("Errore caricamento autopick setting:", err);
+    }
+  }, [activeUserTeamId, isAdmin]);
+
+  useEffect(() => {
+    loadAutopickSettings();
+  }, [loadAutopickSettings]);
+
+  // Toggle preferiti (⭐)
+  const handleToggleFavorite = async (rookieId: number) => {
+    if (!activeUserTeamId) {
+      toast.error("Accedi o seleziona una squadra per salvare i preferiti.");
+      return;
+    }
+
+    setFavoriteRookieIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(rookieId)) next.delete(rookieId);
+      else next.add(rookieId);
+      return next;
+    });
+
+    const res = await toggleTeamFavorite(activeUserTeamId, rookieId, "rookie");
+    if (res.error) {
+      toast.error("Errore salvataggio preferito");
+      loadFavorites();
+    } else {
+      toast.success(
+        res.isFavorite
+          ? "Rookie aggiunto ai preferiti (⭐)!"
+          : "Rookie rimosso dai preferiti"
+      );
+    }
+  };
+
+  // Esecuzione Autopick (Punto 7)
+  const handleTriggerAutopick = async (targetPick?: DraftPickRow | null) => {
+    const pick = targetPick || currentOnTheClockPick;
+    if (!user) return;
+    if (!pick || pick.rookie_id !== null) {
+      toast.error("Nessuna scelta attiva da assegnare con l'autopick.");
+      return;
+    }
+
+    setIsAutopicking(true);
+    try {
+      const res = await executeAutopick({
+        pickOverall: pick.pick_overall,
+        pickingTeamId: pick.team_id,
+        executedBy: user.username,
+      });
+
+      if (!res.success || !res.rookie) {
+        toast.error(res.error || "Errore durante l'esecuzione dell'autopick");
+        return;
+      }
+
+      if (res.source === "wishlist") {
+        toast.success(
+          `🤖 Autopick #${pick.pick_overall} (${pick.team_id}): ${res.rookie.Nome} ${res.rookie.Cognome} (dalla lista priorità #${res.rank})!`
+        );
+      } else {
+        toast.info(
+          `🤖 Autopick #${pick.pick_overall} (${pick.team_id}): ${res.rookie.Nome} ${res.rookie.Cognome} (Fallback miglior OVR: ${res.rookie.OVR})!`
+        );
+      }
+
+      await fetchDraftData(true);
+      await loadFavorites();
+      await loadAutopickSettings();
+    } catch (err: any) {
+      console.error("Errore autopick:", err);
+      toast.error("Errore imprevisto durante l'autopick");
+    } finally {
+      setIsAutopicking(false);
+    }
+  };
 
   // Check if the logged-in user (or Admin) can currently confirm the pick
   const isUserTeamOnTheClock = useMemo(() => {
@@ -1051,7 +1159,7 @@ const Draft = () => {
                     {isAdmin && (
                       <Select
                         value={activeUserTeamId || ""}
-                        onValueChange={(val) => setSelectedTeamId(val)}
+                        onValueChange={(val) => setAdminSelectedTeam(val)}
                       >
                         <SelectTrigger className="h-8 w-[125px] text-xs font-mono">
                           <SelectValue placeholder="Squadra" />
@@ -1094,6 +1202,47 @@ const Draft = () => {
                       <div className="p-2.5 rounded-xl bg-muted/60 border border-border text-xs text-muted-foreground text-center">
                         Tutte le scelte per {activeUserTeamId} sono state completate.
                       </div>
+                    )}
+                  </div>
+
+                  {/* Action Bar: Priorità Draft & Autopick (Punti 6 e 7) */}
+                  <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setWishlistDrawerOpen(true)}
+                      className={`h-8 gap-1.5 text-xs font-bold rounded-lg border transition-all ${
+                        isUserAutopickEnabled
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/20"
+                          : "bg-muted/50 hover:bg-muted text-foreground border-border"
+                      }`}
+                    >
+                      <ListOrdered className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>Priorità & Autopick</span>
+                      {isUserAutopickEnabled && (
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] px-1 py-0 bg-emerald-500/20 text-emerald-600 border-emerald-500/40 uppercase font-black"
+                        >
+                          ON
+                        </Badge>
+                      )}
+                    </Button>
+
+                    {(isAdmin || (currentOnTheClockPick && currentOnTheClockPick.team_id === activeUserTeamId)) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleTriggerAutopick(currentOnTheClockPick)}
+                        disabled={isAutopicking || !currentOnTheClockPick}
+                        className="h-8 gap-1.5 text-xs font-bold rounded-lg border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
+                        title="Esegui scelta immediata in base alla Wishlist della squadra on-the-clock (o Fallback miglior OVR)"
+                      >
+                        <Bot className={`h-3.5 w-3.5 ${isAutopicking ? "animate-spin" : ""}`} />
+                        <span>{isAutopicking ? "Scelta..." : "Esegui Autopick"}</span>
+                      </Button>
                     )}
                   </div>
                 </CardHeader>
@@ -1769,6 +1918,22 @@ const Draft = () => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Drawer Lista Priorità & Autopick (Punto 7) */}
+      {activeUserTeamId && (
+        <DraftWishlistDrawer
+          open={wishlistDrawerOpen}
+          onOpenChange={setWishlistDrawerOpen}
+          teamId={activeUserTeamId}
+          teamFullName={activeUserTeam?.NAME}
+          availableRookies={availableRookies}
+          favoriteRookieIds={favoriteRookieIds}
+          onWishlistChanged={() => {
+            loadFavorites();
+            loadAutopickSettings();
+          }}
+        />
+      )}
     </div>
   );
 };

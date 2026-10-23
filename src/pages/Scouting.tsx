@@ -167,8 +167,8 @@ const ScoutingStatBar = ({
 };
 
 const Scouting = () => {
-  const { user, isAdmin, selectedTeamId } = useAuth();
-  const activeTeamId = isAdmin ? selectedTeamId || user?.team || "COS" : user?.team || "";
+  const { user, isAdmin, effectiveTeam } = useAuth();
+  const activeTeamId = effectiveTeam;
 
   const [rookies, setRookies] = useState<Player[]>([]);
   const [scoutingMap, setScoutingMap] = useState<Record<number, RookieScoutingRecord>>({});
