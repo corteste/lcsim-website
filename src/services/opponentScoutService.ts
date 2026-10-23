@@ -43,6 +43,7 @@ export interface OpponentFormationItem {
 
 export interface OpponentScoutData {
   team: {
+    id: string;
     team_id: string;
     name: string;
     name_abbr: string;
@@ -386,6 +387,7 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
 
     return {
       team: {
+        id: teamData.TEAM_ID,
         team_id: teamData.TEAM_ID,
         name: teamData.NAME,
         name_abbr: teamData.NAME_ABBR || teamData.NAME,

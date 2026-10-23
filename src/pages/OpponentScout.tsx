@@ -15,7 +15,6 @@ import {
   Layers,
   Users,
   Activity,
-  Search,
   ChevronRight,
   Shield,
   Trophy,
@@ -51,6 +50,35 @@ const ROLE_GROUPS = [
   { id: "ATT", label: "Attaccanti", roles: ["AD", "AS", "AT", "ATT"] },
 ];
 
+function getPlayerCardStats(p: Player) {
+  const isGK = p.Posiz === "POR";
+  if (isGK) {
+    return [
+      { label: "TUF", value: p.TUFP ?? 0 },
+      { label: "PRE", value: p.PREP ?? 0 },
+      { label: "RIN", value: p.RINP ?? 0 },
+      { label: "RIF", value: p.RIFP ?? 0 },
+      { label: "POS", value: p.POSP ?? 0 },
+      { label: "FIS", value: p.FRZA ?? 0 },
+    ];
+  }
+  const pac = Math.round(((p.VELO || 0) + (p.ACCL || p.VELO || 0)) / 2);
+  const sho = Math.round(((p.FINA || 0) + (p.POTN || 0) + (p.TIRD || 0)) / 3);
+  const pas = Math.round(((p.PASC || 0) + (p.PASL || 0) + (p.VISI || 0)) / 3);
+  const dri = Math.round(((p.DRBL || 0) + (p.CTRP || 0) + (p.AGIL || 0)) / 3);
+  const def = Math.round(((p.MARC || 0) + (p.CONT || 0) + (p.INTR || 0)) / 3);
+  const phy = Math.round(((p.FRZA || 0) + (p.RESI || 0) + (p.ELEV || 0)) / 3);
+
+  return [
+    { label: "PAC", value: pac },
+    { label: "TIR", value: sho },
+    { label: "PAS", value: pas },
+    { label: "DRI", value: dri },
+    { label: "DIF", value: def },
+    { label: "FIS", value: phy },
+  ];
+}
+
 export const OpponentScout: React.FC = () => {
   const navigate = useNavigate();
   const { teamId: paramTeamId } = useParams<{ teamId?: string }>();
@@ -64,7 +92,6 @@ export const OpponentScout: React.FC = () => {
 
   // Filtri Roster
   const [activeTab, setActiveTab] = useState<string>("roster");
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
@@ -124,7 +151,16 @@ export const OpponentScout: React.FC = () => {
   const formations = scoutData?.formations || [];
   const currentFormation = formations[selectedFormationIdx] || formations[formations.length - 1] || formations[0];
 
-  // Roster filtrato
+  const myTeamLogoId = (myTeamId || "").toUpperCase();
+  const opponentTeamId = (
+    scoutData?.team?.team_id ||
+    scoutData?.team?.id ||
+    matchInfo?.opponentTeamId ||
+    paramTeamId ||
+    ""
+  ).toUpperCase();
+
+  // Roster filtrato per ruolo
   const filteredRoster = useMemo(() => {
     return rawRoster.filter((p) => {
       if (roleFilter !== "ALL") {
@@ -133,15 +169,9 @@ export const OpponentScout: React.FC = () => {
           return false;
         }
       }
-      if (searchQuery.trim() !== "") {
-        const q = searchQuery.toLowerCase().trim();
-        const num = p.NumeroMaglia ? String(p.NumeroMaglia) : "";
-        const full = `${p.Nome} ${p.Cognome} ${p.Posiz} ${num}`.toLowerCase();
-        return full.includes(q);
-      }
       return true;
     });
-  }, [rawRoster, roleFilter, searchQuery]);
+  }, [rawRoster, roleFilter]);
 
   // Posizioni tattiche per il campo 2D
   const formationDef = useMemo(() => {
@@ -253,8 +283,8 @@ export const OpponentScout: React.FC = () => {
                   {/* Left: My Team */}
                   <div className="flex items-center gap-4 md:justify-start">
                     <img
-                      src={`/images/teams/${myTeamId}_Logo.png`}
-                      alt={myTeamId}
+                      src={`/images/teams/${myTeamLogoId}_Logo.png`}
+                      alt={myTeamLogoId}
                       className="h-16 w-16 sm:h-20 sm:w-20 object-contain filter drop-shadow shrink-0"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
@@ -297,15 +327,15 @@ export const OpponentScout: React.FC = () => {
                         )}
                       </div>
                       <h2 className="text-lg sm:text-xl font-black text-foreground truncate">
-                        {opponentTeam?.name || matchInfo?.opponentTeamName || scoutData.team.id}
+                        {opponentTeam?.name || matchInfo?.opponentTeamName || opponentTeamId}
                       </h2>
                       <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        {scoutData.team.id} • {standings?.points ?? 0} Punti
+                        {opponentTeamId} • {standings?.points ?? 0} Punti
                       </span>
                     </div>
                     <img
-                      src={`/images/teams/${scoutData.team.id}_Logo.png`}
-                      alt={scoutData.team.name}
+                      src={`/images/teams/${opponentTeamId}_Logo.png`}
+                      alt={opponentTeam?.name || opponentTeamId}
                       className="h-16 w-16 sm:h-20 sm:w-20 object-contain filter drop-shadow shrink-0 order-1 md:order-2"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
@@ -406,20 +436,12 @@ export const OpponentScout: React.FC = () => {
               {/* TAB 1: ROSA COMPLETA - UN GIOCATORE PER RIGA              */}
               {/* ========================================================= */}
               <TabsContent value="roster" className="space-y-4">
-                {/* Search & Filters */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-4 rounded-2xl border border-border/80 shadow-sm">
-                  <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Cerca giocatore per nome, cognome, ruolo o numero..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 h-10 text-xs sm:text-sm bg-muted/30 border-border"
-                    />
-                  </div>
-
-                  {/* Role filter pills */}
-                  <div className="flex flex-wrap items-center gap-1.5">
+                {/* Role Filters & Count Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-2xl border border-border/80 shadow-xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">
+                      Filtra per Ruolo:
+                    </span>
                     {ROLE_GROUPS.map((grp) => (
                       <Button
                         key={grp.id}
@@ -437,6 +459,10 @@ export const OpponentScout: React.FC = () => {
                       </Button>
                     ))}
                   </div>
+
+                  <Badge variant="secondary" className="font-mono text-xs font-bold">
+                    {filteredRoster.length} Giocatori
+                  </Badge>
                 </div>
 
                 {/* Informative hint banner */}
@@ -454,15 +480,15 @@ export const OpponentScout: React.FC = () => {
                       <thead>
                         <tr className="border-b border-border bg-muted/50 text-[11px] font-bold uppercase text-muted-foreground tracking-wider select-none">
                           <th className="py-3.5 px-3 text-center w-12">#</th>
-                          <th className="py-3.5 px-4">Giocatore</th>
+                          <th className="py-3.5 px-4 min-w-[170px]">Giocatore</th>
                           <th className="py-3.5 px-3 text-center w-16">Ruolo</th>
                           <th className="py-3.5 px-3 text-center w-16">OVR</th>
-                          <th className="py-3.5 px-3 text-center w-16">Età</th>
-                          <th className="py-3.5 px-3 text-center w-20">Altezza</th>
+                          <th className="py-3.5 px-3 min-w-[280px]">Statistiche Chiave</th>
+                          <th className="py-3.5 px-2 text-center w-16">FRED</th>
+                          <th className="py-3.5 px-2 text-center w-14">Età</th>
                           <th className="py-3.5 px-3 text-center w-20">Piede</th>
-                          <th className="py-3.5 px-3 text-center w-16">XP</th>
-                          <th className="py-3.5 px-4 text-center w-40">Status Mercato</th>
-                          <th className="py-3.5 px-4 text-right">Azione</th>
+                          <th className="py-3.5 px-3 text-center w-36">Status Mercato</th>
+                          <th className="py-3.5 px-3 text-right w-20">Azione</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/60">
@@ -475,6 +501,7 @@ export const OpponentScout: React.FC = () => {
                         ) : (
                           filteredRoster.map((player) => {
                             const marketOpt = getMarketStatusOption(player.MarketStatus);
+                            const stats = getPlayerCardStats(player);
 
                             return (
                               <tr
@@ -538,14 +565,41 @@ export const OpponentScout: React.FC = () => {
                                   </span>
                                 </td>
 
-                                {/* Età */}
-                                <td className="py-3 px-3 text-center font-mono text-muted-foreground font-semibold">
-                                  {player.Età ?? "—"}
+                                {/* Statistiche Chiave FC 25 */}
+                                <td className="py-3 px-3">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {stats.map((st, sIdx) => (
+                                      <div
+                                        key={sIdx}
+                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/40 border border-border/60 text-[11px] font-mono shadow-2xs"
+                                        title={`${st.label}: ${st.value}`}
+                                      >
+                                        <span className="text-[9px] font-bold text-muted-foreground uppercase">{st.label}</span>
+                                        <span className={`font-black ${getValueColor(st.value)}`}>{st.value}</span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </td>
 
-                                {/* Altezza */}
-                                <td className="py-3 px-3 text-center font-mono text-muted-foreground">
-                                  {player.Altezza ? `${player.Altezza} cm` : "—"}
+                                {/* Freddezza (FRED) */}
+                                <td className="py-3 px-2 text-center font-mono">
+                                  {player.FRED !== null && player.FRED !== undefined && Number(player.FRED) > 0 ? (
+                                    <span
+                                      className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-black border ${getValueColor(
+                                        Number(player.FRED)
+                                      )} bg-background`}
+                                      title={`Freddezza: ${player.FRED}`}
+                                    >
+                                      {player.FRED}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground/40 text-xs">—</span>
+                                  )}
+                                </td>
+
+                                {/* Età */}
+                                <td className="py-3 px-2 text-center font-mono text-muted-foreground font-semibold">
+                                  {player.Età ?? "—"}
                                 </td>
 
                                 {/* Piede */}
@@ -558,13 +612,8 @@ export const OpponentScout: React.FC = () => {
                                   )}
                                 </td>
 
-                                {/* XP */}
-                                <td className="py-3 px-3 text-center font-mono text-muted-foreground font-semibold">
-                                  {player.XP ?? 0}
-                                </td>
-
                                 {/* Status Mercato */}
-                                <td className="py-3 px-4 text-center">
+                                <td className="py-3 px-3 text-center">
                                   {marketOpt ? (
                                     <span
                                       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold border ${marketOpt.badgeClass}`}
@@ -580,7 +629,7 @@ export const OpponentScout: React.FC = () => {
                                 </td>
 
                                 {/* Pulsante Azione */}
-                                <td className="py-3 px-4 text-right">
+                                <td className="py-3 px-3 text-right">
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -875,15 +924,15 @@ export const OpponentScout: React.FC = () => {
                           {/* Opponent club team */}
                           <div className="flex items-center gap-2.5 min-w-0">
                             <img
-                              src={`/images/teams/${scoutData.team.id}_Logo.png`}
-                              alt={scoutData.team.name}
+                              src={`/images/teams/${opponentTeamId}_Logo.png`}
+                              alt={opponentTeam?.name || opponentTeamId}
                               className="h-9 w-9 object-contain filter drop-shadow shrink-0"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
                               }}
                             />
                             <span className="font-bold text-sm text-foreground truncate">
-                              {scoutData.team.id}
+                              {opponentTeamId}
                             </span>
                           </div>
 
