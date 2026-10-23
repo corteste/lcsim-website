@@ -5,26 +5,36 @@ import { useEffect, useMemo, useState } from "react";
 import { Player } from "@/types/player";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, TrendingUp, Award, Save } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { 
+  Plus, Minus, TrendingUp, Award, Save, RotateCcw, 
+  CheckCircle2, Clock, Sparkles, Shield, Zap, Flame, 
+  Dumbbell, Target, Activity, Swords, ArrowRight, Search, 
+  ChevronRight, AlertCircle, RefreshCw, Star
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TraitSystem from "@/components/training/TraitSystem";
 import RoleSystem from "@/components/training/RoleSystem";
 import { useAuth } from "@/context/AuthContext";
+import AdminTeamSelector from "@/components/AdminTeamSelector";
+import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { supabase } from "@/supabaseClient";
 import { PLAYER_TABLE, PLAYER_TABLE_TRAINING } from "@/constants/App";
+import { useQueryClient } from "@tanstack/react-query";
+import { getRoleColor, getValueColor, getPlayerImage, getNationalityFlag } from "@/utils/functions";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
-type StatKey =
+export type StatKey =
   | "PREP"  | "POSP"  | "RINP"  | "RIFP"  | "TUFP"  | "CONT"  | "SCIV"  | "MARC"  | "AGGR"  | "INTR"  | "PASC"  | "PASL"  | "CRSS"  | "CTRP"
   | "VISI"  | "EFFT"  | "PTIR"  | "TIRD"  | "TIRV"  | "DRBL"  | "PIAZ"  | "FINA"  | "ACCL"  | "VELO"  | "AGIL"  | "RESI"  | "EQLB"  | "FRZA"
   | "TSTA"  | "RIFL"  | "ELEV"  | "PNIZ"  | "CRIG";
 
-const statMeta: Record<StatKey, { label: string; short?: string }> = {
-  PREP: { label: "POR Presa", short: "PREP" },
-  POSP: { label: "POR Posizionamento", short: "RIFP" },
-  RINP: { label: "POR Rinvio", short: "RINP" },
-  RIFP: { label: "POR Riflessi", short: "RIFP" },
-  TUFP: { label: "POR Tuffo", short: "TUFP" },
+export const statMeta: Record<StatKey, { label: string; short: string }> = {
+  PREP: { label: "Presa", short: "PREP" },
+  POSP: { label: "Posizionamento", short: "POSP" },
+  RINP: { label: "Rinvio", short: "RINP" },
+  RIFP: { label: "Riflessi", short: "RIFP" },
+  TUFP: { label: "Tuffo", short: "TUFP" },
   CONT: { label: "Contrasto", short: "CONT" },
   SCIV: { label: "Scivolata", short: "SCIV" },
   MARC: { label: "Marcatura", short: "MARC" },
@@ -37,51 +47,67 @@ const statMeta: Record<StatKey, { label: string; short?: string }> = {
   VISI: { label: "Visione di Gioco", short: "VISI" },
   EFFT: { label: "Effetto", short: "EFFT" },
   PTIR: { label: "Potenza Tiro", short: "PTIR" },
-  TIRD: { label: "Tiri dala Distanza", short: "TIRD" },
+  TIRD: { label: "Tiri da Fuori", short: "TIRD" },
   TIRV: { label: "Tiri al Volo", short: "TIRV" },
   DRBL: { label: "Dribbling", short: "DRBL" },
   PIAZ: { label: "Piazzamento", short: "PIAZ" },
   FINA: { label: "Finalizzazione", short: "FINA" },
   ACCL: { label: "Accelerazione", short: "ACCL" },
-  VELO: { label: "Velocità", short: "VELO" },
+  VELO: { label: "Velocità Scatto", short: "VELO" },
   AGIL: { label: "Agilità", short: "AGIL" },
   RESI: { label: "Resistenza", short: "RESI" },
   EQLB: { label: "Equilibrio", short: "EQLB" },
-  FRZA: { label: "Forza", short: "FRZA" },
+  FRZA: { label: "Forza Fisica", short: "FRZA" },
   TSTA: { label: "Colpi di Testa", short: "TSTA" },
-  RIFL: { label: "Riflessi", short: "RIFL" },
+  RIFL: { label: "Reattività", short: "RIFL" },
   ELEV: { label: "Elevazione", short: "ELEV" },
-  PNIZ: { label: "Punizioni", short: "PNIZ" },
+  PNIZ: { label: "Calci di Punizione", short: "PNIZ" },
   CRIG: { label: "Rigori", short: "CRIG" },
 };
 
-const groupRows: { key: string; label: string; subs: StatKey[] }[] = [
-  { key: "PORT", label: "POR Tecnico", subs: ["PREP", "POSP", "RINP"] },
-  { key: "PORF", label: "POR Fisico", subs: ["RIFP", "TUFP"] },
-  { key: "DIFF", label: "DIF Fisico", subs: ["CONT", "SCIV"] },
-  { key: "DIFM", label: "DIF Mentale", subs: ["MARC", "AGGR","INTR"] },
-  { key: "CENP", label: "CEN Passaggi", subs: ["PASC", "PASL", "CRSS"] },
-  { key: "CENG", label: "CEN Gestione", subs: ["CTRP", "VISI", "EFFT"] },
-  { key: "ATTT", label: "ATT Tiri", subs: ["PTIR", "TIRD","TIRV"] },
-  { key: "ATTC", label: "ATT Controllo", subs: ["DRBL", "PIAZ","FINA"] },
-  { key: "FISV", label: "FIS Velocità", subs: ["ACCL", "VELO", "AGIL"] },
-  { key: "FISP", label: "FIS Potenza", subs: ["RESI", "EQLB", "FRZA"] },
-  { key: "FISR", label: "FIS Prontezza", subs: ["TSTA", "RIFL", "ELEV"] },
-  { key: "CALC", label: "Calci piazzati", subs: ["PNIZ","CRIG"] },
+export interface GroupRowDef {
+  key: string;
+  label: string;
+  category: "POR" | "DIF" | "CEN" | "ATT" | "FIS" | "CALC";
+  subs: StatKey[];
+  icon: typeof Shield;
+  colorClass: string;
+  bgClass: string;
+}
+
+export const groupRows: GroupRowDef[] = [
+  { key: "PORT", label: "POR Tecnico", category: "POR", subs: ["PREP", "POSP", "RINP"], icon: Shield, colorClass: "text-amber-500", bgClass: "bg-amber-500/10 border-amber-500/20" },
+  { key: "PORF", label: "POR Fisico", category: "POR", subs: ["RIFP", "TUFP"], icon: Activity, colorClass: "text-orange-500", bgClass: "bg-orange-500/10 border-orange-500/20" },
+  { key: "DIFF", label: "DIF Fisico", category: "DIF", subs: ["CONT", "SCIV"], icon: Shield, colorClass: "text-blue-500", bgClass: "bg-blue-500/10 border-blue-500/20" },
+  { key: "DIFM", label: "DIF Mentale", category: "DIF", subs: ["MARC", "AGGR", "INTR"], icon: Target, colorClass: "text-cyan-500", bgClass: "bg-cyan-500/10 border-cyan-500/20" },
+  { key: "CENP", label: "CEN Passaggi", category: "CEN", subs: ["PASC", "PASL", "CRSS"], icon: Zap, colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10 border-emerald-500/20" },
+  { key: "CENG", label: "CEN Gestione", category: "CEN", subs: ["CTRP", "VISI", "EFFT"], icon: Sparkles, colorClass: "text-teal-500", bgClass: "bg-teal-500/10 border-teal-500/20" },
+  { key: "ATTT", label: "ATT Tiri", category: "ATT", subs: ["PTIR", "TIRD", "TIRV"], icon: Flame, colorClass: "text-rose-500", bgClass: "bg-rose-500/10 border-rose-500/20" },
+  { key: "ATTC", label: "ATT Controllo", category: "ATT", subs: ["DRBL", "PIAZ", "FINA"], icon: Dumbbell, colorClass: "text-pink-500", bgClass: "bg-pink-500/10 border-pink-500/20" },
+  { key: "FISV", label: "FIS Velocità", category: "FIS", subs: ["ACCL", "VELO", "AGIL"], icon: Zap, colorClass: "text-yellow-500", bgClass: "bg-yellow-500/10 border-yellow-500/20" },
+  { key: "FISP", label: "FIS Potenza", category: "FIS", subs: ["RESI", "EQLB", "FRZA"], icon: Dumbbell, colorClass: "text-purple-500", bgClass: "bg-purple-500/10 border-purple-500/20" },
+  { key: "FISR", label: "FIS Prontezza", category: "FIS", subs: ["TSTA", "RIFL", "ELEV"], icon: Activity, colorClass: "text-indigo-500", bgClass: "bg-indigo-500/10 border-indigo-500/20" },
+  { key: "CALC", label: "Calci Piazzati", category: "CALC", subs: ["PNIZ", "CRIG"], icon: Swords, colorClass: "text-sky-500", bgClass: "bg-sky-500/10 border-sky-500/20" },
 ];
 
 const COST_PER_POINT = 1;
 
-// helper: crea oggetto vuoto con tutte le StatKey a 0
-const emptyStats = (): Record<StatKey, number> =>
-  (Object.keys(statMeta) as StatKey[]).reduce((acc, k) => { acc[k] = 0; return acc; }, {} as Record<StatKey, number>);
+const emptyIncreases = (): Record<string, number> =>
+  groupRows.reduce((acc, r) => {
+    acc[r.key] = 0;
+    return acc;
+  }, {} as Record<string, number>);
 
-// mappa un Player (DB) nel formato Record<StatKey, number> in modo robusto
-const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number> => {
+const emptyStats = (): Record<StatKey, number> =>
+  (Object.keys(statMeta) as StatKey[]).reduce((acc, k) => {
+    acc[k] = 0;
+    return acc;
+  }, {} as Record<StatKey, number>);
+
+export const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number> => {
   const out = emptyStats();
   if (!p) return out;
 
-  // possibili sorgenti: campi flat p[KEY], p.stats oggetto, p.Attributi JSON/string
   const sources: any[] = [];
   if ((p as any).stats && typeof (p as any).stats === "object") sources.push((p as any).stats);
   if ((p as any).Attributi) {
@@ -90,7 +116,6 @@ const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number>
       if (parsed && typeof parsed === "object") sources.push(parsed);
     } catch { /* ignore */ }
   }
-  // row fields
   sources.push(p);
 
   for (const k of Object.keys(statMeta) as StatKey[]) {
@@ -98,7 +123,6 @@ const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number>
     for (const src of sources) {
       if (!src) continue;
       if (src[k] !== undefined && src[k] !== null) { v = src[k]; break; }
-      // some DB use lowercase keys
       if (src[k.toLowerCase()] !== undefined && src[k.toLowerCase()] !== null) { v = src[k.toLowerCase()]; break; }
     }
     out[k] = Number.isFinite(Number(v)) ? Number(v) : 0;
@@ -108,7 +132,7 @@ const mapPlayerToStats = (p: Player | undefined | null): Record<StatKey, number>
 };
 
 // Pesi per la media ponderata basata sul ruolo
-const roleWeights: Record<string, Record<StatKey, number>> = {
+export const roleWeights: Record<string, Record<StatKey, number>> = {
   'POR': {
     PREP: 21, POSP: 21, RINP: 5, RIFP: 21, TUFP: 21,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
@@ -141,14 +165,6 @@ const roleWeights: Record<string, Record<StatKey, number>> = {
     ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
     TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
-  'DFS': {
-    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
-    PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
-    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
-    ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
-    TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-  },
   'TD': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
@@ -157,7 +173,7 @@ const roleWeights: Record<string, Record<StatKey, number>> = {
     ACCL: 5, VELO: 7, AGIL: 0, RESI: 8, EQLB: 0, FRZA: 0,
     TSTA: 4, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
-  'DFD': {
+  'TER': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 11, SCIV: 14, MARC: 8, AGGR: 0, INTR: 12,
     PASC: 7, PASL: 0, CRSS: 9, CTRP: 7, VISI: 0, EFFT: 0,
@@ -167,525 +183,1179 @@ const roleWeights: Record<string, Record<StatKey, number>> = {
   },
   'CDC': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 12, SCIV: 5, MARC: 9, AGGR: 5, INTR: 14,
-    PASC: 14, PASL: 10, CRSS: 0, CTRP: 10, VISI: 4, EFFT: 0,
+    CONT: 12, SCIV: 9, MARC: 9, AGGR: 5, INTR: 14,
+    PASC: 10, PASL: 10, CRSS: 0, CTRP: 7, VISI: 4, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 0, PIAZ: 0, FINA: 0,
     ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 4,
-    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 10, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
   'CC': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 5, SCIV: 0, MARC: 0, AGGR: 0, INTR: 5,
-    PASC: 17, PASL: 13, CRSS: 0, CTRP: 14, VISI: 13, EFFT: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 5,
+    PASC: 15, PASL: 13, CRSS: 0, CTRP: 14, VISI: 13, EFFT: 0,
     PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 7, PIAZ: 6, FINA: 2,
     ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
-  'ED': {
+  'CEN': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 11, PASL: 5, CRSS: 10, CTRP: 13, VISI: 7, EFFT: 0,
-    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
-    ACCL: 7, VELO: 6, AGIL: 0, RESI: 5, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
-  },
-  'ES': {
-    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 11, PASL: 5, CRSS: 10, CTRP: 13, VISI: 7, EFFT: 0,
-    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
-    ACCL: 7, VELO: 6, AGIL: 0, RESI: 5, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 5,
+    PASC: 15, PASL: 13, CRSS: 0, CTRP: 14, VISI: 13, EFFT: 0,
+    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 7, PIAZ: 6, FINA: 2,
+    ACCL: 0, VELO: 0, AGIL: 0, RESI: 6, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
   'COC': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
     PASC: 16, PASL: 4, CRSS: 0, CTRP: 15, VISI: 14, EFFT: 0,
-    PTIR: 0, TIRD: 5, TIRV: 0, DRBL: 13, PIAZ: 9, FINA: 7,
+    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 13, PIAZ: 9, FINA: 7,
     ACCL: 4, VELO: 3, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
-    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+    TSTA: 0, RIFL: 3, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
-  'TRQ': {
+  'ED': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 16, PASL: 4, CRSS: 0, CTRP: 15, VISI: 14, EFFT: 0,
-    PTIR: 0, TIRD: 5, TIRV: 0, DRBL: 13, PIAZ: 9, FINA: 7,
-    ACCL: 4, VELO: 3, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
+    PASC: 9, PASL: 0, CRSS: 12, CTRP: 12, VISI: 7, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
+    ACCL: 7, VELO: 6, AGIL: 3, RESI: 5, EQLB: 0, FRZA: 0,
+    TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
+  },
+  'ES': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 9, PASL: 0, CRSS: 12, CTRP: 12, VISI: 7, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 15, PIAZ: 8, FINA: 6,
+    ACCL: 7, VELO: 6, AGIL: 3, RESI: 5, EQLB: 0, FRZA: 0,
     TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
   'AD': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
-    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
+    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 4, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
     ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
     TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
   'AS': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
-    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
+    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 4, EFFT: 0,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
     ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
     TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
   'AT': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
-    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
-    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
-    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-  },
-  'AC': {
-    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
-    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
-    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
-    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-  },
-  'PC': {
-    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
-    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
-    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
-    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
-  },
-  'SP': {
-    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
-    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
-    ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
-    TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
+    PASC: 9, PASL: 0, CRSS: 0, CTRP: 15, VISI: 8, EFFT: 0,
+    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 14, PIAZ: 13, FINA: 18,
+    ACCL: 5, VELO: 4, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 0,
+    TSTA: 2, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
   'ATT': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
     PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
-    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
+    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 7, PIAZ: 13, FINA: 18,
     ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
     TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0,
   },
 };
 
-const computeOverall = (stats: Record<StatKey, number>, role: string) => {
-  const weights = roleWeights[role] || {};
-  let totalWeighted = 0;
+export const calcOverall = (
+  role: string | undefined | null,
+  stats: Record<StatKey, number>,
+  fallbackOvr: number = 70
+): number => {
+  if (!role) return fallbackOvr;
+  const weights = roleWeights[role.toUpperCase()];
+  if (!weights) return fallbackOvr;
+
   let totalWeight = 0;
-  for (const key in stats) {
-    const weight = weights[key as StatKey] || 0;
-    totalWeighted += stats[key as StatKey] * weight;
-    totalWeight += weight;
+  let weightedSum = 0;
+
+  for (const [key, weight] of Object.entries(weights) as [StatKey, number][]) {
+    if (weight > 0) {
+      totalWeight += weight;
+      weightedSum += (stats[key] ?? 0) * weight;
+    }
   }
-  if (totalWeight === 0) return 0;
-  return Math.round(totalWeighted / totalWeight);
+
+  if (totalWeight === 0) return fallbackOvr;
+  return Math.round(weightedSum / totalWeight);
+};
+
+interface TrainingRecord {
+  id?: string;
+  PlayerID: number;
+  Squadra: string;
+  status: "draft" | "confirmed";
+  increases: Record<string, number>;
+  xp_cost: number;
+  pre_ovr: number;
+  post_ovr: number;
+  base_snapshot?: Record<string, any>;
+  updated_at: string;
+  confirmed_at?: string | null;
+}
+
+const normalizeIncreases = (inc: any): Record<string, number> => {
+  const base = emptyIncreases();
+  if (!inc || typeof inc !== "object") return base;
+  for (const k of Object.keys(base)) {
+    if (typeof inc[k] === "number") base[k] = Math.max(0, inc[k]);
+  }
+  return base;
+};
+
+const hasAnyIncrease = (inc: Record<string, number>): boolean => {
+  return Object.values(inc).some((v) => v > 0);
+};
+
+const areIncreasesEqual = (a: Record<string, number>, b: Record<string, number>): boolean => {
+  const normA = normalizeIncreases(a);
+  const normB = normalizeIncreases(b);
+  for (const k of Object.keys(normA)) {
+    if ((normA[k] || 0) !== (normB[k] || 0)) return false;
+  }
+  return true;
 };
 
 const Allenamenti = () => {
-  const { user } = useAuth();
-  const userTeam = user?.team;
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
+  const currentTeam = effectiveTeam;
+  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [xpSpentExtra, setXpSpentExtra] = useState(0);
 
-  // Fetch players from Supabase directly
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [trainingMap, setTrainingMap] = useState<Record<number, TrainingRecord>>({});
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // Filtro ruolo & ricerca per la rosa
+  const [roleFilter, setRoleFilter] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Stato aumenti per il giocatore attualmente selezionato
+  const [increases, setIncreases] = useState<Record<string, number>>(emptyIncreases);
+
+  // Stati operativi UI
+  const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  // Caricamento giocatori e allenamenti salvati da Supabase
   useEffect(() => {
-    async function fetchPlayers() {
-      if (!userTeam) return;
+    async function fetchTeamTrainingData() {
+      if (!currentTeam) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        // fetch base players
-        const { data: basePlayers, error: baseError } = await supabase
-          .from(PLAYER_TABLE)
-          .select("*")
-          .eq("Squadra", userTeam);
-        if (baseError) throw baseError;
+        const [playersRes, trainingRes] = await Promise.all([
+          supabase
+            .from(PLAYER_TABLE)
+            .select("*")
+            .eq("Squadra", currentTeam)
+            .order("OVR", { ascending: false }),
+          supabase
+            .from(PLAYER_TABLE_TRAINING)
+            .select("*")
+            .eq("Squadra", currentTeam),
+        ]);
 
-        // fetch all training deltas (we'll match them client-side)
-        const { data: trainingRows, error: trainingError } = await supabase
-          .from(PLAYER_TABLE_TRAINING)
-          .select("*");
-        if (trainingError) throw trainingError;
+        if (playersRes.error) throw playersRes.error;
+        if (trainingRes.error) throw trainingRes.error;
 
-        const base = basePlayers || [];
-        const training = trainingRows || [];
+        const basePlayers = (playersRes.data || []) as Player[];
+        const records = (trainingRes.data || []) as TrainingRecord[];
 
-        // helper: find matching training row for a base player by heuristics
-        const baseIds = new Set((base as any[]).map((p: any) => p.ID ?? p.id));
+        const tMap: Record<number, TrainingRecord> = {};
+        for (const r of records) {
+          tMap[Number(r.PlayerID)] = r;
+        }
 
-        const merged = (base as any[]).map((p: any) => {
-          // find a training row that references this player id in any numeric field
-          const match = (training as any[]).find((t) => {
-            for (const k of Object.keys(t)) {
-              const v = t[k];
-              if ((typeof v === "number" || (typeof v === "string" && /^[0-9]+$/.test(v))) && baseIds.has(Number(v))) return true;
-            }
-            return false;
-          });
+        setPlayers(basePlayers);
+        setTrainingMap(tMap);
 
-          // apply deltas (if any) to create displayed values while keeping base available
-          const mergedRow: any = { ...p };
-          mergedRow.__base = { ...p };
-          if (match) {
-            mergedRow.__training = match;
-            for (const key of Object.keys(match)) {
-              // if match has a stat key (uppercase) and numeric delta, add to base
-              if (key.length >= 2 && key.toUpperCase() === key && statMeta[key as StatKey]) {
-                const baseVal = Number(p[key] ?? p[key.toLowerCase()] ?? 0);
-                const delta = Number(match[key] ?? 0);
-                mergedRow[key] = baseVal + delta;
-              }
-            }
+        // Seleziona il primo giocatore o mantiene il selezionato se appartiene alla nuova squadra
+        const currentStillExists = basePlayers.some((p) => Number(p.ID) === selectedId);
+        if (basePlayers.length > 0 && (!currentStillExists || selectedId === null)) {
+          const firstId = Number(basePlayers[0].ID);
+          setSelectedId(firstId);
+          const rec = tMap[firstId];
+          if (rec && rec.increases) {
+            setIncreases(normalizeIncreases(rec.increases));
+          } else {
+            setIncreases(emptyIncreases());
           }
-          return mergedRow;
-        });
-
-        setPlayers(merged || []);
+        }
       } catch (err) {
-        console.error("Error fetching players:", err);
+        console.error("Error fetching training data:", err);
+        toast({
+          title: "Errore caricamento",
+          description: "Impossibile caricare i dati degli allenamenti.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     }
-    fetchPlayers();
-  }, [userTeam]);
 
+    fetchTeamTrainingData();
+  }, [currentTeam]);
+
+  // Giocatore attualmente selezionato (valori originali da an_player)
   const player = useMemo(() => {
     if (!selectedId) return null;
-    return players.find((p) => (p as any).ID === selectedId || (p as any).id === selectedId) ?? null;
+    return players.find((p) => Number(p.ID) === selectedId) ?? null;
   }, [players, selectedId]);
 
-  // aumenti per gruppo
-  const [increases, setIncreases] = useState<Record<string, number>>(() =>
-    groupRows.reduce((acc, r) => {
-      acc[r.key] = 0;
-      return acc;
-    }, {} as Record<string, number>)
-  );
+  const currentTrainingRecord = useMemo(() => {
+    if (!selectedId) return null;
+    return trainingMap[selectedId] ?? null;
+  }, [trainingMap, selectedId]);
 
-  // reset increases when player changes
+  // Quando si cambia giocatore dalla lista, carica i suoi allenamenti correnti
   const handlePlayerChange = (id: number) => {
     setSelectedId(id);
-    setXpSpentExtra(0);
-    setIncreases((prev) => {
-      const fresh = { ...prev };
-      for (const k of Object.keys(fresh)) fresh[k] = 0;
-      return fresh;
-    });
-  };
-
-  const setIncrease = (groupKey: string, value: number) => {
-    const newVal = Math.max(0, Math.min(25, Math.round(value)));
-    setIncreases({ ...increases, [groupKey]: newVal });
-  };
-
-  const preStats = useMemo(() => mapPlayerToStats(player), [player]);
-  // applica gli aumenti di gruppo a ciascun sotto-attributo (post)
-  const postStats = useMemo(() => {
-    const out = { ...preStats };
-    for (const g of groupRows) {
-      const inc = increases[g.key] || 0;
-      for (const sub of g.subs) out[sub] = (preStats[sub] ?? 0) + inc;
+    const rec = trainingMap[id];
+    if (rec && rec.increases) {
+      setIncreases(normalizeIncreases(rec.increases));
+    } else {
+      setIncreases(emptyIncreases());
     }
-    return out;
+  };
+
+  // Statistiche di base del giocatore prima degli allenamenti
+  const preStats = useMemo(() => mapPlayerToStats(player), [player]);
+
+  // Statistiche post-training = preStats + aumenti di ciascun gruppo
+  const postStats = useMemo(() => {
+    const next = { ...preStats };
+    for (const row of groupRows) {
+      const inc = increases[row.key] ?? 0;
+      if (inc > 0) {
+        for (const sub of row.subs) {
+          next[sub] = Math.min(99, (next[sub] ?? 0) + inc);
+        }
+      }
+    }
+    return next;
   }, [preStats, increases]);
 
-  const totalCost = groupRows.reduce((s, g) => s + (increases[g.key] || 0) * g.subs.length * COST_PER_POINT, 0);
-  const xpAvailable = player ? Number((player as any).XP ?? (player as any).xp ?? 0) : 0;
-  const xpRemaining = xpAvailable - totalCost - xpSpentExtra;
+  // Calcolo Overall pre e post
+  const preOverall = useMemo(
+    () => calcOverall(player?.Posiz, preStats, player?.OVR ?? 70),
+    [player?.Posiz, preStats, player?.OVR]
+  );
 
-  const handleExtraXpSpent = (cost: number) => setXpSpentExtra((prev) => prev + cost);
+  const postOverall = useMemo(
+    () => calcOverall(player?.Posiz, postStats, preOverall),
+    [player?.Posiz, postStats, preOverall]
+  );
 
-  const preOverall = computeOverall(preStats, (player as any)?.Posiz ?? '');
-  const postOverall = computeOverall(postStats, (player as any)?.Posiz ?? '');
+  // Calcolo Costo Totale XP
+  const totalCost = useMemo(() => {
+    let cost = 0;
+    for (const row of groupRows) {
+      const inc = increases[row.key] ?? 0;
+      cost += inc * row.subs.length * COST_PER_POINT;
+    }
+    return cost;
+  }, [increases]);
 
-  const handlePlayerUpdate = (updatedPlayer: Player) => {
-    setPlayers(prev => prev.map(p => {
-      const pId = (p as any).ID ?? (p as any).id;
-      const updatedId = (updatedPlayer as any).ID ?? (updatedPlayer as any).id;
-      return pId === updatedId ? updatedPlayer : p;
+  const xpAvailable = player?.XP ?? 0;
+  const xpRemaining = xpAvailable - totalCost;
+
+  // Verifica se ci sono modifiche attive e se differiscono dallo stato salvato
+  const hasActiveIncreases = useMemo(() => hasAnyIncrease(increases), [increases]);
+
+  const hasSavedTraining = useMemo(() => {
+    if (!currentTrainingRecord) return false;
+    return hasAnyIncrease(normalizeIncreases(currentTrainingRecord.increases));
+  }, [currentTrainingRecord]);
+
+  const hasUnsavedChanges = useMemo(() => {
+    const saved = currentTrainingRecord ? normalizeIncreases(currentTrainingRecord.increases) : emptyIncreases();
+    return !areIncreasesEqual(increases, saved);
+  }, [increases, currentTrainingRecord]);
+
+  // Gestione incremento/decremento singolo gruppo
+  const setIncrease = (key: string, value: number) => {
+    const clamped = Math.max(0, Math.min(25, value));
+    const currentVal = increases[key] ?? 0;
+    const diff = clamped - currentVal;
+    if (diff === 0) return;
+
+    const group = groupRows.find((g) => g.key === key);
+    if (!group) return;
+
+    const diffCost = diff * group.subs.length * COST_PER_POINT;
+
+    // Se si sta aumentando ma non ci sono abbastanza XP, blocca
+    if (diff > 0 && xpRemaining < diffCost) {
+      toast({
+        title: "XP Insufficienti",
+        description: `Servono ${diffCost} XP per questo aumento, ne hai a disposizione ${xpRemaining}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIncreases((prev) => ({
+      ...prev,
+      [key]: clamped,
     }));
-    setXpSpentExtra(0);
   };
 
-  const handleSave = async () => {
+  // Funzione SALVA ALLENAMENTI
+  const handleSaveTraining = async () => {
     if (!player) return;
-    setIsSaving(true);
-    try {
-      const playerId = (player as any).__base?.ID ?? (player as any).__base?.id ?? (player as any).ID ?? (player as any).id;
+    if (xpRemaining < 0) {
+      toast({
+        title: "Attenzione",
+        description: "Il costo degli allenamenti supera gli XP a disposizione.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      // compute deltas between postStats and base stats
-      const baseStats = mapPlayerToStats((player as any).__base ?? player);
-      const deltas: Record<string, any> = {};
-      for (const key of Object.keys(statMeta) as StatKey[]) {
-        const delta = (postStats[key] ?? 0) - (baseStats[key] ?? 0);
-        deltas[key] = delta;
+    setIsSaving(true);
+    const playerId = Number(player.ID);
+
+    try {
+      if (!hasActiveIncreases) {
+        await supabase
+          .from(PLAYER_TABLE_TRAINING)
+          .delete()
+          .eq("PlayerID", playerId);
+
+        setTrainingMap((prev) => {
+          const next = { ...prev };
+          delete next[playerId];
+          return next;
+        });
+
+        toast({
+          title: "Valori originali salvati",
+          description: `Allenamenti azzerati per ${player.Nome} ${player.Cognome}.`,
+        });
+        return;
       }
 
-      // update base player's XP only
-      const { data: updatedBase, error: xpError } = await supabase
-        .from(PLAYER_TABLE)
-        .update({ XP: xpRemaining })
-        .eq("ID", playerId)
-        .select();
-      if (xpError) throw xpError;
+      const nowIso = new Date().toISOString();
+      const payload = {
+        PlayerID: playerId,
+        Squadra: currentTeam || player.Squadra,
+        status: "draft" as const,
+        increases: normalizeIncreases(increases),
+        xp_cost: totalCost,
+        pre_ovr: preOverall,
+        post_ovr: postOverall,
+        base_snapshot: {
+          Nome: player.Nome,
+          Cognome: player.Cognome,
+          Posiz: player.Posiz,
+          OVR: preOverall,
+          XP: player.XP,
+          stats: preStats,
+        },
+        updated_at: nowIso,
+      };
 
-      // upsert training deltas into training table, using PlayerID as reference
-      const trainingPayload: Record<string, any> = { PlayerID: playerId };
-      for (const k of Object.keys(deltas)) trainingPayload[k] = deltas[k];
-      trainingPayload.UpdatedAt = new Date().toISOString();
-
-      const { data: upsertData, error: upsertError } = await supabase
+      const { data, error } = await supabase
         .from(PLAYER_TABLE_TRAINING)
-        .upsert(trainingPayload, { onConflict: 'PlayerID' })
-        .select();
-      if (upsertError) throw upsertError;
+        .upsert(payload, { onConflict: "PlayerID" })
+        .select()
+        .single();
 
-      // update local state: merge base and training
-      setPlayers(prev => prev.map(p => {
-        const pId = (p as any).__base?.ID ?? (p as any).__base?.id ?? (p as any).ID ?? (p as any).id;
-        if (pId !== playerId) return p;
-        const base = (p as any).__base ?? p;
-        const trainingRow = (upsertData && upsertData.length > 0) ? upsertData[0] : trainingPayload;
-        const mergedRow: any = { ...base, __base: { ...base }, __training: trainingRow };
-        for (const key of Object.keys(statMeta) as StatKey[]) {
-          mergedRow[key] = (Number(base[key] ?? base[key?.toLowerCase()] ?? 0) + Number(trainingRow[key] ?? 0));
-        }
-        return mergedRow;
+      if (error) throw error;
+
+      setTrainingMap((prev) => ({
+        ...prev,
+        [playerId]: data as TrainingRecord,
       }));
 
-      setXpSpentExtra(0);
-      setIncreases(prev => {
-        const fresh = { ...prev };
-        for (const k of Object.keys(fresh)) fresh[k] = 0;
-        return fresh;
-      });
+      queryClient.invalidateQueries({ queryKey: ["player_training", playerId] });
 
       toast({
-        title: "Allenamento salvato",
-        description: `Dati salvati per ${(player as any).Nome ?? ""} ${(player as any).Cognome ?? ""}.`,
+        title: "Allenamenti Salvati!",
+        description: `Stato salvato per ${player.Nome} ${player.Cognome}. OVR stimato: ${postOverall} (+${postOverall - preOverall}).`,
       });
-    } catch (err) {
-      console.error(err);
-      toast({ title: "Errore", description: "Salvataggio fallito.", variant: "destructive" });
+    } catch (err: any) {
+      console.error("Errore salvataggio allenamenti:", err);
+      toast({
+        title: "Errore durante il salvataggio",
+        description: err.message || "Impossibile salvare gli allenamenti.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
-  // UI: se player non selezionato mostra lista vuota / caricamento
+  // Funzione RESET VALORI ORIGINALI
+  const handleResetToOriginal = async () => {
+    if (!player) return;
+    setIsResetting(true);
+    const playerId = Number(player.ID);
+
+    try {
+      setIncreases(emptyIncreases());
+
+      if (trainingMap[playerId]) {
+        const { error } = await supabase
+          .from(PLAYER_TABLE_TRAINING)
+          .delete()
+          .eq("PlayerID", playerId);
+
+        if (error) throw error;
+
+        setTrainingMap((prev) => {
+          const next = { ...prev };
+          delete next[playerId];
+          return next;
+        });
+      }
+
+      toast({
+        title: "Valori Originali Ripristinati",
+        description: `Gli allenamenti di ${player.Nome} ${player.Cognome} sono tornati ai valori originali.`,
+      });
+    } catch (err: any) {
+      console.error("Errore reset:", err);
+      toast({
+        title: "Errore reset",
+        description: "Impossibile ripristinare i valori originali.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handlePlayerUpdate = (updatedPlayer: Player) => {
+    setPlayers((prev) =>
+      prev.map((p) => (p.ID === updatedPlayer.ID ? updatedPlayer : p))
+    );
+  };
+
+  const playerWithPreviewStats = useMemo(() => {
+    if (!player) return null;
+    return {
+      ...player,
+      OVR: postOverall,
+      XP: xpRemaining,
+      stats: postStats,
+    };
+  }, [player, postOverall, xpRemaining, postStats]);
+
+  // Elenco dei gruppi migliorati per il riepilogo
+  const activeGroupsSummary = useMemo(
+    () =>
+      groupRows
+        .filter((g) => (increases[g.key] ?? 0) > 0)
+        .map((g) => ({
+          ...g,
+          inc: increases[g.key],
+          cost: increases[g.key] * g.subs.length * COST_PER_POINT,
+        })),
+    [increases]
+  );
+
+  // Giocatori filtrati per ricerca e ruolo
+  const filteredPlayers = useMemo(() => {
+    return players.filter((p) => {
+      // Filtro ruolo
+      if (roleFilter !== "ALL") {
+        if (roleFilter === "POR" && p.Posiz !== "POR") return false;
+        if (roleFilter === "DIF" && !["DC", "TD", "TS", "DFC", "TER"].includes(p.Posiz)) return false;
+        if (roleFilter === "CEN" && !["CDC", "CC", "ED", "ES", "COC", "CEN"].includes(p.Posiz)) return false;
+        if (roleFilter === "ATT" && !["AD", "AS", "AT", "ATT"].includes(p.Posiz)) return false;
+      }
+      // Filtro ricerca nome
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const fullName = `${p.Nome} ${p.Cognome}`.toLowerCase();
+        if (!fullName.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [players, roleFilter, searchQuery]);
+
+  // Calcolo impatto OVR per singolo attributo per il giocatore attivo
+  const playerRoleWeights = useMemo(() => {
+    if (!player?.Posiz) return {};
+    return roleWeights[player.Posiz.toUpperCase()] || {};
+  }, [player?.Posiz]);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Allenamenti</h1>
-          <p className="text-muted-foreground">Pianifica gli allenamenti per singoli giocatori</p>
-        </div>
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {!user ? (
+          <RequireAuthPrompt
+            title="Centro Allenamenti & Sviluppo XP"
+            description="Accedi con il tuo account o scegli una squadra libera per gestire gli allenamenti e l'assegnazione dei punti XP."
+          />
+        ) : (
+          <>
+            {/* Selettore Admin Globale */}
+            <AdminTeamSelector />
 
-        <div className="grid grid-cols-12 gap-6">
-          {/* left column: selezione e riepilogo XP */}
-          <div className="col-span-12 lg:col-span-2">
-            <Card className="shadow-lg border-primary/10">
-              <CardHeader className="bg-gradient-to-br from-accent/10 to-primary/10">
+            {/* Header Broadcast */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-border/80">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                    Centro Sviluppo • {effectiveTeamFullName || currentTeam || "Squadra"}
+                  </span>
+                </div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                  Centro Allenamenti & Sviluppo XP
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Potenzia i tuoi calciatori assegnando i punti XP ai gruppi di attributi dedicati.
+                </p>
+              </div>
+
+              {/* Status Pill */}
+              {player && (
                 <div className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-primary" />
-                  <CardTitle>Giocatore</CardTitle>
+                  {hasUnsavedChanges ? (
+                    <Badge variant="outline" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 px-3 py-1.5 text-xs font-semibold gap-1.5 shadow-sm">
+                      <Clock className="h-3.5 w-3.5 animate-pulse" />
+                      Modifiche non salvate
+                    </Badge>
+                  ) : hasSavedTraining ? (
+                    <Badge variant="outline" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 px-3 py-1.5 text-xs font-semibold gap-1.5 shadow-sm">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Allenamento Salvato a Sistema
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground px-3 py-1.5 text-xs">
+                      Valori Originali di Default
+                    </Badge>
+                  )}
                 </div>
-                <CardDescription>Seleziona e visualizza XP</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <select
-                    value={selectedId ?? ""}
-                    onChange={(e) => handlePlayerChange(Number(e.target.value))}
-                    className="w-full p-2 border rounded bg-card"
-                  >
-                    <option value="">Seleziona...</option>
-                    {players.map((p) => (
-                      <option key={(p as any).ID ?? (p as any).id} value={(p as any).ID ?? (p as any).id}>
-                        {(p as any).Nome ?? (p as any).name} {(p as any).Cognome ?? (p as any).surname} ({(p as any).Posiz ?? (p as any).pos})
-                      </option>
-                    ))}
-                  </select>
+              )}
+            </div>
 
-                  <div className="text-center py-6 border rounded">
-                    <div className="text-sm text-muted-foreground">Punti XP Totale</div>
-                    <div className="text-4xl font-bold">{xpAvailable}</div>
-                  </div>
+            {/* ========================================================================= */}
+            {/* TELEMETRY COMMAND HUD: RECAP COMPLETO OVERALL & XP (RICHIESTA UTENTE)     */}
+            {/* ========================================================================= */}
+            {player && (
+              <div className="rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-card/90 shadow-xl p-4 sm:p-5 backdrop-blur-md">
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  
+                  {/* Calciatore Profilo Rapido */}
+                  <div className="col-span-12 lg:col-span-4 flex items-center gap-3.5 pr-0 lg:pr-4 lg:border-r border-border/70">
+                    <div className="relative shrink-0">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-border/80 bg-muted/30 shadow-md">
+                        <img
+                          src={getPlayerImage(Number(player.ID))}
+                          alt={`${player.Nome} ${player.Cognome}`}
+                          className="w-full h-full object-cover object-top"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/images/players/MConti.png";
+                          }}
+                        />
+                      </div>
+                      <Badge className={`absolute -bottom-1 -right-1 text-[10px] px-1.5 py-0 font-bold border ${getRoleColor(player.Posiz)}`}>
+                        {player.Posiz}
+                      </Badge>
+                    </div>
 
-                  <div className="text-center py-4 border rounded">
-                    <div className="text-sm text-muted-foreground">Costo XP Totale</div>
-                    <div className="text-2xl font-bold">{totalCost}</div>
-                    <div className={`mt-2 ${xpRemaining < 0 ? "text-red-500" : "text-foreground"}`}>
-                      Punti XP Rimasti: {xpRemaining}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-base sm:text-lg text-foreground truncate">
+                          {player.Nome} {player.Cognome}
+                        </span>
+                        {player.Nazionalità && (
+                          <img
+                            src={getNationalityFlag(player.Nazionalità)}
+                            alt={player.Nazionalità}
+                            className="h-3.5 w-3.5 object-contain shrink-0"
+                          />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                        <span>{player.Età} anni</span>
+                        <span>•</span>
+                        <span>Piede: {player.Piede || "Dx"}</span>
+                        <span>•</span>
+                        <span>{player.Altezza || "180"} cm</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="text-xs text-muted-foreground">
-                    Aumento massimo per gruppo: 25
+                  {/* Recap XP: Disponibili, Usati, Rimanenti */}
+                  <div className="col-span-12 sm:col-span-7 lg:col-span-4 grid grid-cols-3 gap-2 px-0 lg:px-2">
+                    {/* XP Disponibili */}
+                    <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
+                        Punti Disponibili
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black font-mono text-foreground mt-0.5">
+                        {xpAvailable}
+                      </div>
+                      <span className="text-[9px] text-muted-foreground font-medium">XP totali</span>
+                    </div>
+
+                    {/* XP Usati al Momento */}
+                    <div className={`p-2.5 rounded-xl border text-center transition-all ${
+                      totalCost > 0 ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400" : "bg-muted/20 border-border/60 text-muted-foreground"
+                    }`}>
+                      <div className="text-[10px] font-bold uppercase tracking-wider truncate">
+                        Punti Usati
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black font-mono mt-0.5">
+                        {totalCost > 0 ? `-${totalCost}` : "0"}
+                      </div>
+                      <span className="text-[9px] font-medium">Costo attuale</span>
+                    </div>
+
+                    {/* XP Rimanenti */}
+                    <div className={`p-2.5 rounded-xl border text-center transition-all ${
+                      xpRemaining < 0 
+                        ? "bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 animate-pulse" 
+                        : "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                    }`}>
+                      <div className="text-[10px] font-bold uppercase tracking-wider truncate">
+                        XP Rimanenti
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black font-mono mt-0.5">
+                        {xpRemaining}
+                      </div>
+                      <span className="text-[9px] font-medium">Saldo residuo</span>
+                    </div>
                   </div>
 
-                  <Button
-                    className="w-full mt-2"
-                    disabled={!player || totalCost === 0 || xpRemaining < 0 || isSaving}
-                    onClick={handleSave}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSaving ? "Salvataggio..." : "Applica Allenamento"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  {/* Recap Overall: PRE vs POST */}
+                  <div className="col-span-12 sm:col-span-5 lg:col-span-4 flex items-center justify-between sm:justify-end gap-3 pl-0 lg:pl-3 lg:border-l border-border/70">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      {/* Pre Overall */}
+                      <div className="text-center p-2 rounded-xl bg-muted/40 border border-border/70 min-w-[65px]">
+                        <span className="text-[9px] uppercase font-bold text-muted-foreground block">
+                          Pre OVR
+                        </span>
+                        <span className="text-xl sm:text-2xl font-black font-mono text-muted-foreground">
+                          {preOverall}
+                        </span>
+                      </div>
 
-          {/* center: tab section */}
-          <div className="col-span-12 lg:col-span-8">
-            <Tabs defaultValue="attributi" className="w-full">
-              <TabsList className="w-full grid grid-cols-3">
-                <TabsTrigger value="attributi">Dettaglio Attributi</TabsTrigger>
-                <TabsTrigger value="ruolo">Ruolo & Ruolo+</TabsTrigger>
-                <TabsTrigger value="tratti">Tratti</TabsTrigger>
-              </TabsList>
+                      <ArrowRight className="h-4 w-4 text-emerald-500 shrink-0" />
 
-              <TabsContent value="attributi">
-                <Card className="shadow-lg border-primary/10">
-                  <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      <CardTitle>Dettaglio Attributi</CardTitle>
+                      {/* Post Overall */}
+                      <div className={`text-center p-2 rounded-xl border min-w-[75px] transition-all ${
+                        postOverall > preOverall 
+                          ? "bg-emerald-500/20 border-emerald-500/50 shadow-md" 
+                          : "bg-muted/40 border-border/70"
+                      }`}>
+                        <span className="text-[9px] uppercase font-bold text-foreground block">
+                          Post OVR
+                        </span>
+                        <div className="flex items-center justify-center gap-1">
+                          <span className={`text-xl sm:text-2xl font-black font-mono ${
+                            postOverall > preOverall ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
+                          }`}>
+                            {postOverall}
+                          </span>
+                          {postOverall > preOverall && (
+                            <Badge className="bg-emerald-500 text-white text-[9px] px-1 py-0 font-bold h-4">
+                              +{postOverall - preOverall}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <CardDescription>Gestisci gli allenamenti per gruppo di attributi</CardDescription>
+
+                    {/* Azioni Rapide Salva/Reset nel Command Bar */}
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        disabled={!player || !hasUnsavedChanges || xpRemaining < 0 || isSaving || isResetting}
+                        onClick={handleSaveTraining}
+                        className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
+                      >
+                        <Save className="h-3.5 w-3.5 mr-1.5" />
+                        {isSaving ? "Salvataggio..." : "Salva"}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!player || (!hasActiveIncreases && !hasSavedTraining) || isResetting || isSaving}
+                        onClick={handleResetToOriginal}
+                        className="h-7 px-2 text-[11px] font-semibold text-muted-foreground hover:text-rose-500 hover:border-rose-500/40"
+                      >
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Reset
+                      </Button>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* CORPO DELLA PAGINA: SIDEBAR CALCIATORI + BLOCCHI ATTRIBUTI A TRE A TRE     */}
+            {/* ========================================================================= */}
+            <div className="grid grid-cols-12 gap-6 items-start">
+              
+              {/* ------------------------------------------------------------- */}
+              {/* COLONNA SINISTRA: SELETTORE CALCIATORE DELLA ROSA              */}
+              {/* ------------------------------------------------------------- */}
+              <div className="col-span-12 lg:col-span-3 space-y-4">
+                <Card className="shadow-lg border-border/80 overflow-hidden">
+                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-emerald-500" />
+                        <CardTitle className="text-sm font-bold">Rosa della Squadra</CardTitle>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
+                        {players.length} Giocatori
+                      </Badge>
+                    </div>
                   </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {groupRows.map((g) => {
-                        const inc = increases[g.key] ?? 0;
-                        const cost = inc * g.subs.length * COST_PER_POINT;
-                        const hasChange = inc > 0;
+                  <CardContent className="p-3 space-y-3">
+                    {/* Campo ricerca per nome */}
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Cerca calciatore..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-8 h-8 text-xs bg-muted/20 border-border/70"
+                      />
+                    </div>
 
-                        return (
-                          <Card key={g.key} className={`transition-all duration-300 hover:shadow-md ${hasChange ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
-                            <CardHeader className="pb-2 pt-4 px-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <CardTitle className="text-sm font-semibold">{g.label}</CardTitle>
-                                  {hasChange && (
-                                    <Badge variant="secondary" className="text-xs animate-fade-in">
-                                      +{inc}
-                                    </Badge>
-                                  )}
+                    {/* Filtro per Ruolo Rapido */}
+                    <div className="grid grid-cols-5 gap-1">
+                      {["ALL", "POR", "DIF", "CEN", "ATT"].map((r) => (
+                        <Button
+                          key={r}
+                          size="sm"
+                          variant={roleFilter === r ? "default" : "outline"}
+                          onClick={() => setRoleFilter(r)}
+                          className={`h-7 text-[10px] px-1 font-bold ${
+                            roleFilter === r ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                          }`}
+                        >
+                          {r}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Lista Giocatori */}
+                    <div className="max-h-[500px] overflow-y-auto space-y-1.5 pr-1">
+                      {filteredPlayers.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground">
+                          Nessun giocatore trovato.
+                        </div>
+                      ) : (
+                        filteredPlayers.map((p) => {
+                          const pId = Number(p.ID);
+                          const isSelected = pId === selectedId;
+                          const rec = trainingMap[pId];
+                          const hasSaved = rec && hasAnyIncrease(normalizeIncreases(rec.increases));
+
+                          return (
+                            <div
+                              key={pId}
+                              onClick={() => handlePlayerChange(pId)}
+                              className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-2.5 ${
+                                isSelected
+                                  ? "bg-emerald-500/10 border-emerald-500/50 shadow-sm"
+                                  : "hover:bg-muted/40 border-border/50"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-8 h-8 rounded-lg overflow-hidden border border-border/80 bg-muted/30 shrink-0">
+                                  <img
+                                    src={getPlayerImage(pId)}
+                                    alt={p.Cognome}
+                                    className="w-full h-full object-cover object-top"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = "/images/players/MConti.png";
+                                    }}
+                                  />
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="min-w-0">
+                                  <div className="font-bold text-xs text-foreground truncate">
+                                    {p.Nome?.[0]}. {p.Cognome}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                    <Badge variant="outline" className={`text-[9px] px-1 py-0 h-3.5 ${getRoleColor(p.Posiz)}`}>
+                                      {p.Posiz}
+                                    </Badge>
+                                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                      {p.XP ?? 0} XP
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {hasSaved && (
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" title="Allenamento salvato" />
+                                )}
+                                <span className={`text-xs font-black font-mono ${getValueColor(p.OVR ?? 70)}`}>
+                                  {p.OVR}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Guida Rapida / Istruzioni */}
+                <Card className="border-border/60 bg-muted/20 text-xs p-3.5 space-y-2">
+                  <div className="flex items-center gap-1.5 font-bold text-foreground">
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Come funzionano gli allenamenti</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    • Gli attributi sono suddivisi in <strong>12 blocchi da 2-3 statistiche</strong>.<br />
+                    • Ogni punto aggiunto a un gruppo costa <strong>1 XP per ciascun sotto-attributo</strong>.<br />
+                    • Premi <strong>Salva Allenamenti</strong> per registrare le modifiche; potrai sempre ridurle o resettarle ai valori originari del database.
+                  </p>
+                </Card>
+              </div>
+
+              {/* ------------------------------------------------------------- */}
+              {/* COLONNA CENTRALE: I BLOCCHI ATTRIBUTI A TRE A TRE (GRIGLIA)   */}
+              {/* ------------------------------------------------------------- */}
+              <div className="col-span-12 lg:col-span-6 space-y-4">
+                <Tabs defaultValue="attributi" className="w-full">
+                  <TabsList className="w-full grid grid-cols-3 h-11 bg-muted/40 p-1 rounded-xl">
+                    <TabsTrigger value="attributi" className="font-bold text-xs sm:text-sm gap-1.5">
+                      <TrendingUp className="h-4 w-4" /> Gruppi Attributi
+                    </TabsTrigger>
+                    <TabsTrigger value="ruolo" className="font-bold text-xs sm:text-sm gap-1.5">
+                      <Award className="h-4 w-4" /> Ruolo & Ruolo+
+                    </TabsTrigger>
+                    <TabsTrigger value="tratti" className="font-bold text-xs sm:text-sm gap-1.5">
+                      <Sparkles className="h-4 w-4" /> Tratti & Stili
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* TAB 1: I 12 BLOCCHI ATTRIBUTI A TRE A TRE */}
+                  <TabsContent value="attributi" className="mt-4 space-y-4">
+                    {!player ? (
+                      <Card className="p-12 text-center text-muted-foreground border-dashed">
+                        Seleziona un giocatore dalla rosa a sinistra per iniziare l'allenamento.
+                      </Card>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        {groupRows.map((g) => {
+                          const inc = increases[g.key] ?? 0;
+                          const stepCost = g.subs.length * COST_PER_POINT;
+                          const groupTotalCost = inc * stepCost;
+                          const hasChange = inc > 0;
+                          const canIncrement = inc < 25 && xpRemaining >= stepCost;
+                          const IconComp = g.icon;
+
+                          return (
+                            <Card
+                              key={g.key}
+                              className={`transition-all duration-200 overflow-hidden border ${
+                                hasChange
+                                  ? "border-emerald-500/50 bg-gradient-to-b from-emerald-500/[0.05] to-transparent shadow-md"
+                                  : "border-border/80 hover:border-border bg-card"
+                              }`}
+                            >
+                              {/* Header del Blocco di 3 Attributi */}
+                              <div className="p-3.5 border-b border-border/50 bg-muted/20 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={`p-2 rounded-lg border ${g.bgClass} ${g.colorClass} shrink-0`}>
+                                    <IconComp className="h-4 w-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <h3 className="text-sm font-extrabold text-foreground truncate">{g.label}</h3>
+                                      {hasChange && (
+                                        <Badge className="bg-emerald-500 text-white font-mono text-[10px] px-1.5 py-0">
+                                          +{inc}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground font-mono">
+                                      {stepCost} XP / livello ({g.subs.length} attributi)
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Stepper Controlli [-] [Valore] [+] */}
+                                <div className="flex items-center gap-1 bg-background/80 p-1 rounded-xl border border-border/70 shadow-sm shrink-0">
                                   <Button
                                     size="icon"
-                                    variant="outline"
-                                    className="h-6 w-6"
-                                    onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) - 1)}
-                                    disabled={inc === 0}
+                                    variant="ghost"
+                                    className="h-6 w-6 rounded-lg hover:bg-muted text-muted-foreground"
+                                    onClick={() => setIncrease(g.key, inc - 1)}
+                                    disabled={inc <= 0}
+                                    title="Diminuisci di 1 livello (fino all'originale)"
                                   >
                                     <Minus className="h-3 w-3" />
                                   </Button>
-                                  <input
-                                    min={0}
-                                    max={25}
-                                    value={inc}
-                                    onChange={(e) => setIncrease(g.key, Number(e.target.value || 0))}
-                                    className="w-10 px-1 py-0.5 text-center text-sm border rounded bg-background focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                                  />
+
+                                  <span className={`w-7 text-center font-mono text-xs font-bold ${
+                                    hasChange ? "text-emerald-600 dark:text-emerald-400 font-extrabold" : "text-muted-foreground"
+                                  }`}>
+                                    +{inc}
+                                  </span>
+
                                   <Button
                                     size="icon"
-                                    variant="outline"
-                                    className="h-6 w-6"
-                                    onClick={() => setIncrease(g.key, (increases[g.key] ?? 0) + 1)}
-                                    disabled={inc >= 25}
+                                    variant="ghost"
+                                    className={`h-6 w-6 rounded-lg ${
+                                      canIncrement ? "hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : "text-muted-foreground opacity-40"
+                                    }`}
+                                    onClick={() => setIncrease(g.key, inc + 1)}
+                                    disabled={!canIncrement}
+                                    title={
+                                      xpRemaining < stepCost
+                                        ? `Servono ${stepCost} XP disponibili`
+                                        : "Aumenta gruppo (+1 a tutti)"
+                                    }
                                   >
                                     <Plus className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </div>
-                            </CardHeader>
-                            <CardContent className="pt-1 pb-3 px-4">
-                              <div className="space-y-0.5">
-                                <div className="flex items-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pb-0.5">
-                                  <span className="flex-1">Attr</span>
-                                  <span className="w-10 text-center">Pre</span>
-                                  <span className="w-10 text-center">Post</span>
-                                </div>
-                                {g.subs.map((s) => (
-                                  <div key={s} className={`flex items-center py-0.5 px-2 rounded transition-colors ${hasChange ? 'bg-primary/5' : 'hover:bg-muted/30'}`}>
-                                    <span className="flex-1 text-xs text-foreground">{statMeta[s].label}</span>
-                                    <span className="w-10 text-center font-mono text-xs text-muted-foreground">{preStats[s]}</span>
-                                    <span className={`w-10 text-center font-mono text-xs font-semibold ${hasChange ? 'text-primary' : 'text-foreground'}`}>
-                                      {postStats[s]}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
+
+                              {/* I 3 Sotto-Attributi del Blocco */}
+                              <CardContent className="p-3 space-y-2">
+                                {g.subs.map((s) => {
+                                  const origVal = preStats[s];
+                                  const newVal = postStats[s];
+                                  const diff = newVal - origVal;
+                                  const weight = playerRoleWeights[s] || 0;
+                                  const isKeyForRole = weight >= 10;
+
+                                  return (
+                                    <div
+                                      key={s}
+                                      className={`p-2 rounded-lg transition-all ${
+                                        diff > 0 
+                                          ? "bg-emerald-500/10 border border-emerald-500/20" 
+                                          : "bg-muted/15 hover:bg-muted/30 border border-transparent"
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between text-xs mb-1">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                          <span className="font-semibold text-foreground truncate">
+                                            {statMeta[s].label}
+                                          </span>
+                                          <span className="text-[10px] font-mono text-muted-foreground">
+                                            ({statMeta[s].short})
+                                          </span>
+                                          {isKeyForRole && (
+                                            <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold" title="Attributo fondamentale per il calcolo OVR del ruolo">
+                                              ★ OVR {weight}%
+                                            </Badge>
+                                          )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 font-mono shrink-0">
+                                          <span className="text-xs text-muted-foreground font-medium">
+                                            {origVal}
+                                          </span>
+                                          <ArrowRight className="h-3 w-3 text-muted-foreground opacity-50" />
+                                          <span className={`text-xs font-black ${
+                                            diff > 0 ? "text-emerald-600 dark:text-emerald-400 font-extrabold" : "text-foreground"
+                                          }`}>
+                                            {newVal}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Mini Barra Progressiva a due colori */}
+                                      <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden flex">
+                                        <div
+                                          className="h-full bg-primary/40 rounded-l-full"
+                                          style={{ width: `${Math.min(100, (origVal / 99) * 100)}%` }}
+                                        />
+                                        {diff > 0 && (
+                                          <div
+                                            className="h-full bg-emerald-500 animate-pulse"
+                                            style={{ width: `${Math.min(100 - (origVal / 99) * 100, (diff / 99) * 100)}%` }}
+                                          />
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* TAB 2: RUOLO & RUOLO+ */}
+                  <TabsContent value="ruolo" className="mt-4">
+                    {playerWithPreviewStats ? (
+                      <RoleSystem
+                        player={playerWithPreviewStats}
+                        xpAvailable={xpRemaining}
+                        onXpChange={() => {}}
+                        onPlayerUpdate={handlePlayerUpdate}
+                      />
+                    ) : (
+                      <Card className="py-12 text-center text-muted-foreground">
+                        Seleziona un giocatore
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  {/* TAB 3: TRATTI */}
+                  <TabsContent value="tratti" className="mt-4">
+                    {playerWithPreviewStats ? (
+                      <TraitSystem
+                        player={playerWithPreviewStats}
+                        xpAvailable={xpRemaining}
+                        onXpChange={() => {}}
+                        onPlayerUpdate={handlePlayerUpdate}
+                      />
+                    ) : (
+                      <Card className="py-12 text-center text-muted-foreground">
+                        Seleziona un giocatore
+                      </Card>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
+
+              {/* ------------------------------------------------------------- */}
+              {/* COLONNA DESTRA: RIEPILOGO DETTAGLIATO MODIFICHE & IMPATTO      */}
+              {/* ------------------------------------------------------------- */}
+              <div className="col-span-12 lg:col-span-3 space-y-4">
+                
+                {/* Scheda Riepilogo Generale */}
+                <Card className="shadow-lg border-border/80 overflow-hidden">
+                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-emerald-500" />
+                      <CardTitle className="text-sm font-bold">Riepilogo Avanzamento</CardTitle>
                     </div>
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-4">
+                    
+                    {/* Visualizzatore OVR Grande */}
+                    <div className="p-3.5 rounded-xl bg-gradient-to-br from-card to-muted/30 border border-border/80 text-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">
+                        Crescita Overall Valutata
+                      </span>
+                      <div className="flex items-center justify-center gap-3">
+                        <div>
+                          <span className="text-xs text-muted-foreground block">Base</span>
+                          <span className="text-2xl font-black font-mono text-muted-foreground">{preOverall}</span>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-emerald-500" />
+                        <div>
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 block font-bold">Nuovo</span>
+                          <span className="text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">{postOverall}</span>
+                        </div>
+                      </div>
+                      {postOverall > preOverall && (
+                        <div className="mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>+ {postOverall - preOverall} Punti OVR complessivi</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Elenco dei gruppi incrementati */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        <span>Gruppi Allenati</span>
+                        <span>{activeGroupsSummary.length} Attivi</span>
+                      </div>
+
+                      {activeGroupsSummary.length === 0 ? (
+                        <div className="p-4 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground leading-relaxed">
+                          Nessun gruppo ancora potenziato.<br />
+                          Usa i tasti <strong>+</strong> nella griglia centrale per spendere XP.
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                          {activeGroupsSummary.map((item) => (
+                            <div
+                              key={item.key}
+                              className="p-2.5 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between text-xs"
+                            >
+                              <div>
+                                <span className="font-bold text-foreground">{item.label}</span>
+                                <span className="block text-[10px] text-muted-foreground font-mono">
+                                  {item.subs.join(" • ")}
+                                </span>
+                              </div>
+                              <div className="text-right font-mono">
+                                <span className="font-extrabold text-emerald-600 dark:text-emerald-400 block">
+                                  +{item.inc} liv.
+                                </span>
+                                <span className="text-[10px] text-amber-500 font-semibold">
+                                  -{item.cost} XP
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottone di salvataggio fisso in sidebar */}
+                    <div className="pt-2 space-y-2">
+                      <Button
+                        className="w-full font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md h-10"
+                        disabled={!player || !hasUnsavedChanges || xpRemaining < 0 || isSaving || isResetting}
+                        onClick={handleSaveTraining}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {isSaving ? "Salvataggio..." : "Salva Allenamenti"}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="w-full text-xs font-semibold text-muted-foreground hover:text-rose-500 hover:border-rose-500/40"
+                        disabled={!player || (!hasActiveIncreases && !hasSavedTraining) || isResetting || isSaving}
+                        onClick={handleResetToOriginal}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                        Reset ai Valori Originali
+                      </Button>
+                    </div>
+
+                    {/* Stato Ultimo Salvataggio */}
+                    {hasSavedTraining && currentTrainingRecord?.updated_at && (
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Ultimo Salvataggio a DB</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          OVR {currentTrainingRecord.pre_ovr} &rarr; {currentTrainingRecord.post_ovr} ({currentTrainingRecord.xp_cost} XP spesi)<br />
+                          {new Date(currentTrainingRecord.updated_at).toLocaleString("it-IT")}
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </div>
 
-              <TabsContent value="ruolo">
-                {player ? (
-                  <RoleSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} onPlayerUpdate={handlePlayerUpdate} />
-                ) : (
-                  <Card><CardContent className="py-8 text-center text-muted-foreground">Seleziona un giocatore</CardContent></Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="tratti">
-                {player ? (
-                  <TraitSystem player={player} xpAvailable={xpRemaining} onXpChange={handleExtraXpSpent} onPlayerUpdate={handlePlayerUpdate} />
-                ) : (
-                  <Card><CardContent className="py-8 text-center text-muted-foreground">Seleziona un giocatore</CardContent></Card>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* right column: OVR e riepilogo */}
-          <div className="col-span-12 lg:col-span-2">
-            <Card className="shadow-lg border-primary/10">
-              <CardHeader className="bg-gradient-to-br from-accent/10 to-primary/10">
-                <div className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-primary" />
-                  <CardTitle>Riepilogo</CardTitle>
-                </div>
-                <CardDescription>Overall del giocatore</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="text-center py-6 rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 border border-border transition-all hover:shadow-md">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pre-Allenamento</div>
-                    <div className="text-4xl font-bold text-foreground">{preOverall}</div>
-                  </div>
-                  <div className="text-center py-6 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 shadow-lg transition-all hover:shadow-xl">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Post-Allenamento</div>
-                    <div className="text-4xl font-bold text-primary">{postOverall}</div>
-                    {postOverall > preOverall && (
-                      <Badge variant="secondary" className="mt-2 animate-fade-in">+{postOverall - preOverall}</Badge>
-                    )}
-                  </div>
-                  <div className="mt-4 p-3 text-xs text-muted-foreground bg-muted/30 rounded-lg border border-border">
-                    Cambiamenti in tempo reale. Premi "Applica" per consumare XP.
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

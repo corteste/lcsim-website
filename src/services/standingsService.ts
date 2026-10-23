@@ -4,7 +4,7 @@ import { supabase } from "@/supabaseClient";
 export async function fetchStandings(season?: number): Promise<Standings[]> {
   let query = supabase
     .from('an_standings')
-    .select('*, team:AN_TEAM(*)')
+    .select('*, team:an_team(*)')
     .order('points', { ascending: false })
     .order('goal_difference', { ascending: false });
 

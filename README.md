@@ -25,7 +25,7 @@ Cronologia allenamenti?
 **Parte personale squadre**
 
 - Lista roster completo con valori
-- Pagina gestione miglioramenti allenamento, salvare con pulsante i nuovi valori in tabella TAB_PLAYER_TRAINING: nella pagina di admin confronto tra questa tabella e AN_PLAYER in modo da far risaltare le modifiche degli attributi
+- Pagina gestione miglioramenti allenamento, salvare con pulsante i nuovi valori in tabella an_player_training: nella pagina di admin confronto tra questa tabella e an_player in modo da far risaltare le modifiche degli attributi
     Pulsante SALVA per salvare temporaneamente a DB, pulsante CONFERMA che disabilita la possibilità di fare altre modifiche (alternativa disabilitare modifica dopo un certo giorno)
 - Pagina confronto rosa e rookies
 - Nella pagina roster possiblità di ordinamento per età, overall, posizione + possibilità ordinare per attributo che verrebbe mostrato nella riga di recap

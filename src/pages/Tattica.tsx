@@ -1,551 +1,2104 @@
 import Navbar from "@/components/Navbar";
 import PlayerDetails from "@/components/player/playerDetails";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Users, NotebookTabs, Shield, ClipboardList, Sparkles } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Save,
+  Users,
+  Shield,
+  ClipboardList,
+  Sparkles,
+  RotateCcw,
+  Search,
+  Wand2,
+  X,
+  Info,
+  CheckCircle2,
+  Clock,
+  ArrowLeftRight,
+  UserPlus,
+  AlertTriangle,
+  GripVertical,
+} from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
-import { PLAYER_TABLE } from "../constants/App";
+import { PLAYER_TABLE, TEAM_TACTIC_TABLE } from "../constants/App";
 import { Player } from "../types/player";
-import { getRoleColor, getValueColor } from "@/utils/functions";
+import { getRoleColor, getValueColor, getPlayerImage, getPosGroup } from "@/utils/functions";
 import { useAuth } from "@/context/AuthContext";
+import AdminTeamSelector from "@/components/AdminTeamSelector";
+import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 
-type FormationType = '4-4-2' | '4-3-3' | '3-5-2' | '4-2-3-1' | '3-4-3';
+// ============================================================================
+// ORDINAMENTO RUOLI UFFICIALE DEL PROGETTO (da Rose.tsx)
+// ============================================================================
+export const ROLE_PRIORITY: Record<string, number> = {
+  POR: 0,
+  DC: 1,
+  TD: 2,
+  TS: 3,
+  CDC: 4,
+  CC: 5,
+  ED: 6,
+  ES: 7,
+  COC: 8,
+  AD: 9,
+  AS: 10,
+  AT: 11,
+  ATT: 12,
+};
 
-const Tattica = () => {
-  const [selected, setSelected] = useState<{ player: Player } | null>(null);
-  const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
-  const [dragOverPlayer, setDragOverPlayer] = useState<Player | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [formation, setFormation] = useState<FormationType>('4-4-2');
-  //const { players } = getPlayers("APD");
-  const { user } = useAuth();
-  const userTeam = user?.team;
-  
-    useEffect(() => {
-      async function fetchPlayers() {
-        const { data, error } = await supabase.from(PLAYER_TABLE).select("*").eq('Squadra', userTeam); // filtrare per squadra dell'utente
-        console.log(data);
-        if (error) console.error(error);
-        else setPlayers(data || []);
-      }
-      fetchPlayers();
-    }, []);
+export function sortPlayersByRole(list: Player[]): Player[] {
+  return list.slice().sort((a, b) => {
+    const prioA = ROLE_PRIORITY[a.Posiz] ?? 99;
+    const prioB = ROLE_PRIORITY[b.Posiz] ?? 99;
+    if (prioA !== prioB) return prioA - prioB;
+    return (b.OVR ?? 0) - (a.OVR ?? 0);
+  });
+}
 
-  const handleSaveFormation = () => {
-    toast.success("Formazione salvata con successo!");
+// ============================================================================
+// MODULI UFFICIALI EA SPORTS FC 25 (31 Moduli divisi per Difesa a 3, 4, 5)
+// ============================================================================
+export interface SlotPosition {
+  x: string;
+  y: string;
+  label: string;
+}
+
+export interface FormationDef {
+  id: string;
+  name: string;
+  category: "Difesa a 4" | "Difesa a 3" | "Difesa a 5";
+  positions: SlotPosition[]; // 11 posizioni (0 = POR, 1..10 = giocatori di movimento)
+}
+
+export const EA_FC25_FORMATIONS: FormationDef[] = [
+  // ================= DIFESA A 4 =================
+  {
+    id: "4-4-2",
+    name: "4-4-2 (Classico)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "16%", y: "47%", label: "ES" },
+      { x: "38%", y: "50%", label: "CC" },
+      { x: "62%", y: "50%", label: "CC" },
+      { x: "84%", y: "47%", label: "ED" },
+      { x: "37%", y: "18%", label: "ATT" },
+      { x: "63%", y: "18%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-4-2-holding",
+    name: "4-4-2 (Contenimento)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "16%", y: "48%", label: "ES" },
+      { x: "39%", y: "56%", label: "CDC" },
+      { x: "61%", y: "56%", label: "CDC" },
+      { x: "84%", y: "48%", label: "ED" },
+      { x: "37%", y: "18%", label: "ATT" },
+      { x: "63%", y: "18%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-3-3",
+    name: "4-3-3 (Classico)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "28%", y: "50%", label: "CC" },
+      { x: "50%", y: "53%", label: "CC" },
+      { x: "72%", y: "50%", label: "CC" },
+      { x: "18%", y: "22%", label: "AS" },
+      { x: "50%", y: "16%", label: "ATT" },
+      { x: "82%", y: "22%", label: "AD" },
+    ],
+  },
+  {
+    id: "4-3-3-holding",
+    name: "4-3-3 (Contenimento)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "50%", y: "58%", label: "CDC" },
+      { x: "30%", y: "46%", label: "CC" },
+      { x: "70%", y: "46%", label: "CC" },
+      { x: "18%", y: "22%", label: "AS" },
+      { x: "50%", y: "16%", label: "ATT" },
+      { x: "82%", y: "22%", label: "AD" },
+    ],
+  },
+  {
+    id: "4-3-3-defending",
+    name: "4-3-3 (Difensivo)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "34%", y: "57%", label: "CDC" },
+      { x: "66%", y: "57%", label: "CDC" },
+      { x: "50%", y: "44%", label: "CC" },
+      { x: "18%", y: "22%", label: "AS" },
+      { x: "50%", y: "16%", label: "ATT" },
+      { x: "82%", y: "22%", label: "AD" },
+    ],
+  },
+  {
+    id: "4-3-3-attack",
+    name: "4-3-3 (Offensivo)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "32%", y: "53%", label: "CC" },
+      { x: "68%", y: "53%", label: "CC" },
+      { x: "50%", y: "38%", label: "COC" },
+      { x: "18%", y: "22%", label: "AS" },
+      { x: "50%", y: "16%", label: "ATT" },
+      { x: "82%", y: "22%", label: "AD" },
+    ],
+  },
+  {
+    id: "4-3-3-false9",
+    name: "4-3-3 (Falso 9)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "50%", y: "58%", label: "CDC" },
+      { x: "30%", y: "47%", label: "CC" },
+      { x: "70%", y: "47%", label: "CC" },
+      { x: "18%", y: "20%", label: "AS" },
+      { x: "50%", y: "28%", label: "COC" },
+      { x: "82%", y: "20%", label: "AD" },
+    ],
+  },
+  {
+    id: "4-2-3-1",
+    name: "4-2-3-1 (Largo)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "37%", y: "57%", label: "CDC" },
+      { x: "63%", y: "57%", label: "CDC" },
+      { x: "18%", y: "36%", label: "ES" },
+      { x: "50%", y: "37%", label: "COC" },
+      { x: "82%", y: "36%", label: "ED" },
+      { x: "50%", y: "16%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-2-3-1-narrow",
+    name: "4-2-3-1 (Stretto)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "37%", y: "57%", label: "CDC" },
+      { x: "63%", y: "57%", label: "CDC" },
+      { x: "26%", y: "36%", label: "COC" },
+      { x: "50%", y: "38%", label: "COC" },
+      { x: "74%", y: "36%", label: "COC" },
+      { x: "50%", y: "16%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-2-1-3",
+    name: "4-2-1-3",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "36%", y: "56%", label: "CDC" },
+      { x: "64%", y: "56%", label: "CDC" },
+      { x: "50%", y: "39%", label: "COC" },
+      { x: "18%", y: "22%", label: "AS" },
+      { x: "50%", y: "16%", label: "ATT" },
+      { x: "82%", y: "22%", label: "AD" },
+    ],
+  },
+  {
+    id: "4-1-2-1-2-narrow",
+    name: "4-1-2-1-2 (Stretto)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "50%", y: "60%", label: "CDC" },
+      { x: "30%", y: "48%", label: "CC" },
+      { x: "70%", y: "48%", label: "CC" },
+      { x: "50%", y: "35%", label: "COC" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-1-2-1-2-wide",
+    name: "4-1-2-1-2 (Largo)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "50%", y: "60%", label: "CDC" },
+      { x: "18%", y: "47%", label: "ES" },
+      { x: "82%", y: "47%", label: "ED" },
+      { x: "50%", y: "35%", label: "COC" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-3-1-2",
+    name: "4-3-1-2",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "28%", y: "52%", label: "CC" },
+      { x: "50%", y: "55%", label: "CC" },
+      { x: "72%", y: "52%", label: "CC" },
+      { x: "50%", y: "35%", label: "COC" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-3-2-1",
+    name: "4-3-2-1 (Albero di Natale)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "28%", y: "53%", label: "CC" },
+      { x: "50%", y: "55%", label: "CC" },
+      { x: "72%", y: "53%", label: "CC" },
+      { x: "34%", y: "34%", label: "COC" },
+      { x: "66%", y: "34%", label: "COC" },
+      { x: "50%", y: "16%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-2-2-2",
+    name: "4-2-2-2",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "36%", y: "56%", label: "CDC" },
+      { x: "64%", y: "56%", label: "CDC" },
+      { x: "26%", y: "36%", label: "COC" },
+      { x: "74%", y: "36%", label: "COC" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-1-4-1",
+    name: "4-1-4-1",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "50%", y: "60%", label: "CDC" },
+      { x: "16%", y: "43%", label: "ES" },
+      { x: "38%", y: "45%", label: "CC" },
+      { x: "62%", y: "45%", label: "CC" },
+      { x: "84%", y: "43%", label: "ED" },
+      { x: "50%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-4-1-1",
+    name: "4-4-1-1 (Attacco)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "16%", y: "50%", label: "ES" },
+      { x: "38%", y: "53%", label: "CC" },
+      { x: "62%", y: "53%", label: "CC" },
+      { x: "84%", y: "50%", label: "ED" },
+      { x: "50%", y: "33%", label: "COC" },
+      { x: "50%", y: "16%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-5-1",
+    name: "4-5-1 (Attacco)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "50%", y: "55%", label: "CC" },
+      { x: "16%", y: "44%", label: "ES" },
+      { x: "36%", y: "36%", label: "COC" },
+      { x: "64%", y: "36%", label: "COC" },
+      { x: "84%", y: "44%", label: "ED" },
+      { x: "50%", y: "16%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-5-1-flat",
+    name: "4-5-1 (Piatto)",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "14%", y: "46%", label: "ES" },
+      { x: "32%", y: "50%", label: "CC" },
+      { x: "50%", y: "52%", label: "CC" },
+      { x: "68%", y: "50%", label: "CC" },
+      { x: "86%", y: "46%", label: "ED" },
+      { x: "50%", y: "16%", label: "ATT" },
+    ],
+  },
+  {
+    id: "4-2-4",
+    name: "4-2-4",
+    category: "Difesa a 4",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "16%", y: "73%", label: "TS" },
+      { x: "38%", y: "76%", label: "DC" },
+      { x: "62%", y: "76%", label: "DC" },
+      { x: "84%", y: "73%", label: "TD" },
+      { x: "38%", y: "52%", label: "CC" },
+      { x: "62%", y: "52%", label: "CC" },
+      { x: "16%", y: "24%", label: "AS" },
+      { x: "38%", y: "17%", label: "ATT" },
+      { x: "62%", y: "17%", label: "ATT" },
+      { x: "84%", y: "24%", label: "AD" },
+    ],
+  },
+
+  // ================= DIFESA A 3 =================
+  {
+    id: "3-5-2",
+    name: "3-5-2",
+    category: "Difesa a 3",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "26%", y: "75%", label: "DC" },
+      { x: "50%", y: "77%", label: "DC" },
+      { x: "74%", y: "75%", label: "DC" },
+      { x: "38%", y: "56%", label: "CDC" },
+      { x: "62%", y: "56%", label: "CDC" },
+      { x: "15%", y: "45%", label: "ES" },
+      { x: "50%", y: "38%", label: "COC" },
+      { x: "85%", y: "45%", label: "ED" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "3-4-1-2",
+    name: "3-4-1-2",
+    category: "Difesa a 3",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "26%", y: "75%", label: "DC" },
+      { x: "50%", y: "77%", label: "DC" },
+      { x: "74%", y: "75%", label: "DC" },
+      { x: "15%", y: "48%", label: "ES" },
+      { x: "38%", y: "52%", label: "CC" },
+      { x: "62%", y: "52%", label: "CC" },
+      { x: "85%", y: "48%", label: "ED" },
+      { x: "50%", y: "34%", label: "COC" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "3-4-2-1",
+    name: "3-4-2-1",
+    category: "Difesa a 3",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "26%", y: "75%", label: "DC" },
+      { x: "50%", y: "77%", label: "DC" },
+      { x: "74%", y: "75%", label: "DC" },
+      { x: "15%", y: "48%", label: "ES" },
+      { x: "38%", y: "52%", label: "CC" },
+      { x: "62%", y: "52%", label: "CC" },
+      { x: "85%", y: "48%", label: "ED" },
+      { x: "34%", y: "33%", label: "COC" },
+      { x: "66%", y: "33%", label: "COC" },
+      { x: "50%", y: "16%", label: "ATT" },
+    ],
+  },
+  {
+    id: "3-4-3",
+    name: "3-4-3 (Piatto)",
+    category: "Difesa a 3",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "26%", y: "75%", label: "DC" },
+      { x: "50%", y: "77%", label: "DC" },
+      { x: "74%", y: "75%", label: "DC" },
+      { x: "15%", y: "48%", label: "ES" },
+      { x: "38%", y: "51%", label: "CC" },
+      { x: "62%", y: "51%", label: "CC" },
+      { x: "85%", y: "48%", label: "ED" },
+      { x: "20%", y: "22%", label: "AS" },
+      { x: "50%", y: "16%", label: "ATT" },
+      { x: "80%", y: "22%", label: "AD" },
+    ],
+  },
+  {
+    id: "3-4-3-diamond",
+    name: "3-4-3 (Rombo)",
+    category: "Difesa a 3",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "26%", y: "75%", label: "DC" },
+      { x: "50%", y: "77%", label: "DC" },
+      { x: "74%", y: "75%", label: "DC" },
+      { x: "50%", y: "58%", label: "CDC" },
+      { x: "18%", y: "47%", label: "ES" },
+      { x: "82%", y: "47%", label: "ED" },
+      { x: "50%", y: "36%", label: "COC" },
+      { x: "20%", y: "21%", label: "AS" },
+      { x: "50%", y: "15%", label: "ATT" },
+      { x: "80%", y: "21%", label: "AD" },
+    ],
+  },
+  {
+    id: "3-1-4-2",
+    name: "3-1-4-2",
+    category: "Difesa a 3",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "26%", y: "75%", label: "DC" },
+      { x: "50%", y: "77%", label: "DC" },
+      { x: "74%", y: "75%", label: "DC" },
+      { x: "50%", y: "60%", label: "CDC" },
+      { x: "15%", y: "44%", label: "ES" },
+      { x: "38%", y: "46%", label: "CC" },
+      { x: "62%", y: "46%", label: "CC" },
+      { x: "85%", y: "44%", label: "ED" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+
+  // ================= DIFESA A 5 =================
+  {
+    id: "5-3-2",
+    name: "5-3-2 (Contenimento)",
+    category: "Difesa a 5",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "14%", y: "70%", label: "TS" },
+      { x: "32%", y: "76%", label: "DC" },
+      { x: "50%", y: "78%", label: "DC" },
+      { x: "68%", y: "76%", label: "DC" },
+      { x: "86%", y: "70%", label: "TD" },
+      { x: "50%", y: "56%", label: "CDC" },
+      { x: "32%", y: "45%", label: "CC" },
+      { x: "68%", y: "45%", label: "CC" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "5-2-1-2",
+    name: "5-2-1-2",
+    category: "Difesa a 5",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "14%", y: "70%", label: "TS" },
+      { x: "32%", y: "76%", label: "DC" },
+      { x: "50%", y: "78%", label: "DC" },
+      { x: "68%", y: "76%", label: "DC" },
+      { x: "86%", y: "70%", label: "TD" },
+      { x: "36%", y: "52%", label: "CC" },
+      { x: "64%", y: "52%", label: "CC" },
+      { x: "50%", y: "35%", label: "COC" },
+      { x: "37%", y: "17%", label: "ATT" },
+      { x: "63%", y: "17%", label: "ATT" },
+    ],
+  },
+  {
+    id: "5-2-3",
+    name: "5-2-3",
+    category: "Difesa a 5",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "14%", y: "70%", label: "TS" },
+      { x: "32%", y: "76%", label: "DC" },
+      { x: "50%", y: "78%", label: "DC" },
+      { x: "68%", y: "76%", label: "DC" },
+      { x: "86%", y: "70%", label: "TD" },
+      { x: "36%", y: "50%", label: "CC" },
+      { x: "64%", y: "50%", label: "CC" },
+      { x: "20%", y: "22%", label: "AS" },
+      { x: "50%", y: "16%", label: "ATT" },
+      { x: "80%", y: "22%", label: "AD" },
+    ],
+  },
+  {
+    id: "5-4-1",
+    name: "5-4-1 (Piatto)",
+    category: "Difesa a 5",
+    positions: [
+      { x: "50%", y: "90%", label: "POR" },
+      { x: "14%", y: "70%", label: "TS" },
+      { x: "32%", y: "76%", label: "DC" },
+      { x: "50%", y: "78%", label: "DC" },
+      { x: "68%", y: "76%", label: "DC" },
+      { x: "86%", y: "70%", label: "TD" },
+      { x: "16%", y: "46%", label: "ES" },
+      { x: "38%", y: "50%", label: "CC" },
+      { x: "62%", y: "50%", label: "CC" },
+      { x: "84%", y: "46%", label: "ED" },
+      { x: "50%", y: "17%", label: "ATT" },
+    ],
+  },
+];
+
+// ============================================================================
+// VALUTAZIONE COMPATIBILITÀ RUOLO (Stile EA FC IQ)
+// ============================================================================
+export type RoleFit = "natural" | "adaptable" | "out";
+
+export function evaluateRoleFit(playerPos: string | undefined, slotRole: string): RoleFit {
+  if (!playerPos) return "out";
+  const p = playerPos.toUpperCase();
+  const s = slotRole.toUpperCase();
+
+  if (p === s) return "natural";
+  if ((p === "AT" && s === "ATT") || (p === "ATT" && s === "AT")) return "natural";
+
+  // Portiere può fare solo il portiere
+  if (p === "POR" || s === "POR") return "out";
+
+  // Compatibilità affine tra ruoli vicini
+  const adaptableMap: Record<string, string[]> = {
+    DC: ["CDC", "TD", "TS"],
+    TD: ["ED", "TS", "DC"],
+    TS: ["ES", "TD", "DC"],
+    CDC: ["CC", "DC"],
+    CC: ["CDC", "COC", "ED", "ES"],
+    COC: ["CC", "AT", "AD", "AS", "ED", "ES", "ATT"],
+    ED: ["AD", "TD", "ES", "CC", "COC"],
+    ES: ["AS", "TS", "ED", "CC", "COC"],
+    AD: ["ED", "AS", "ATT", "COC"],
+    AS: ["ES", "AD", "ATT", "COC"],
+    AT: ["ATT", "COC", "AD", "AS"],
+    ATT: ["AT", "AD", "AS", "COC"],
   };
 
-  const handleDragStart = (player: Player) => {
-    setDraggedPlayer(player);
-  };
+  if (adaptableMap[s]?.includes(p)) return "adaptable";
+  if (getPosGroup(p) === getPosGroup(s)) return "adaptable";
+  return "out";
+}
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
+// ============================================================================
+// ALGORITMO DI AUTO-SCHIERAMENTO MIGLIOR 11 PER IL MODULO SCELTO
+// ============================================================================
+export function computeBest11ForFormation(
+  roster: Player[],
+  formationDef: FormationDef
+): (number | null)[] {
+  const slots: (number | null)[] = Array(11).fill(null);
+  const usedIds = new Set<number>();
 
-  const handleDragOverPlayer = (e: React.DragEvent, player: Player) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverPlayer(player);
-  };
+  const sortedByOvr = roster.slice().sort((a, b) => (b.OVR ?? 0) - (a.OVR ?? 0));
 
-  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
-
-  const handleDropOnPlayer = (e: React.DragEvent, targetPlayer: Player) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!draggedPlayer || draggedPlayer.ID === targetPlayer.ID) {
-      setDraggedPlayer(null);
-      setDragOverPlayer(null);
-      return;
+  // Pass 1: Ruolo naturale esatto
+  formationDef.positions.forEach((pos, idx) => {
+    const match = sortedByOvr.find(
+      (p) => !usedIds.has(Number(p.ID)) && evaluateRoleFit(p.Posiz, pos.label) === "natural"
+    );
+    if (match) {
+      slots[idx] = Number(match.ID);
+      usedIds.add(Number(match.ID));
     }
-
-    const draggedIsTitolare = draggedPlayer.RuoloInCampo !== null;
-    const targetIsTitolare = targetPlayer.RuoloInCampo !== null;
-
-    if (draggedIsTitolare === targetIsTitolare) {
-      // Riordina nella stessa lista
-      const newPlayers = [...players];
-      const draggedIndex = newPlayers.findIndex(p => p.ID === draggedPlayer.ID);
-      const targetIndex = newPlayers.findIndex(p => p.ID === targetPlayer.ID);
-      
-      // Scambia le posizioni nell'array
-      [newPlayers[draggedIndex], newPlayers[targetIndex]] = [newPlayers[targetIndex], newPlayers[draggedIndex]];
-      
-      setPlayers(newPlayers);
-      setDraggedPlayer(null);
-      setDragOverPlayer(null);
-    } else {
-      // Scambia tra le due liste
-      setPlayers(players.map(p => {
-        if (p.ID === draggedPlayer.ID) {
-          // Il giocatore trascinato prende la posizione del target
-          return { ...p, RuoloInCampo: targetPlayer.RuoloInCampo };
-        } else if (p.ID === targetPlayer.ID) {
-          // Il giocatore target prende la posizione del trascinato
-          return { ...p, RuoloInCampo: draggedPlayer.RuoloInCampo };
-        }
-        return p;
-      }));
-      
-      setDraggedPlayer(null);
-      setDragOverPlayer(null);
-      toast.success(`${draggedPlayer.Nome} ${draggedPlayer.Cognome} e ${targetPlayer.Nome} ${targetPlayer.Cognome} hanno scambiato posizione`);
-    }
-  };
-
-  const handleDropOnSlot = (e: React.DragEvent, slotIndex: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!draggedPlayer) {
-      setDragOverSlot(null);
-      return;
-    }
-
-    // Trova il giocatore che occupa questo slot
-    const playerInSlot = titolari[slotIndex];
-    
-    if (playerInSlot) {
-      // Slot occupato - scambia
-      handleDropOnPlayer(e, playerInSlot);
-    } else {
-      // Slot vuoto - sposta il giocatore
-      if (draggedPlayer.RuoloInCampo === null) {
-        // Da panchina a slot vuoto
-        setPlayers(players.map(p => 
-          p.ID === draggedPlayer.ID 
-            ? { ...p, RuoloInCampo: `SLOT${slotIndex}` }
-            : p
-        ));
-        toast.success(`${draggedPlayer.Nome} ${draggedPlayer.Cognome} aggiunto alla formazione titolare`);
-      } else {
-        // Da slot a slot vuoto
-        setPlayers(players.map(p => 
-          p.ID === draggedPlayer.ID 
-            ? { ...p, RuoloInCampo: `SLOT${slotIndex}` }
-            : p
-        ));
-      }
-      setDraggedPlayer(null);
-    }
-    setDragOverSlot(null);
-  };
-
-  const handleDragOverSlot = (e: React.DragEvent, slotIndex: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverSlot(slotIndex);
-  };
-
-  const handleDropToTitolari = (e: React.DragEvent) => {
-    // Gestito dai singoli slot
-    e.preventDefault();
-  };
-
-  const handleDropToPanchina = () => {
-    if (!draggedPlayer) return;
-    
-    // Se il giocatore è già in panchina, non fare nulla
-    if (draggedPlayer.RuoloInCampo === null) {
-      setDraggedPlayer(null);
-      setDragOverPlayer(null);
-      return;
-    }
-    
-    // Sposta il giocatore in panchina
-    setPlayers(players.map(p => 
-      p.ID === draggedPlayer.ID 
-        ? { ...p, RuoloInCampo: null }
-        : p
-    ));
-    
-    setDraggedPlayer(null);
-    setDragOverPlayer(null);
-    toast.success(`${draggedPlayer.Nome} ${draggedPlayer.Cognome} spostato in panchina`);
-  };
-
-  const titolari = players.filter(p => p.RuoloInCampo !== null);
-  const panchina = players.filter(p => p.RuoloInCampo === null);
-  
-  // Crea array di 11 slot con giocatori o null
-  const formationSlots: (Player | null)[] = Array.from({ length: 11 }, (_, i) => {
-    return titolari[i] || null;
   });
 
-  // Configurazioni posizioni per diverse formazioni
-  const formationPositions: Record<FormationType, Array<{ x: string; y: string; label: string }>> = {
-    '4-4-2': [
-      { x: '50%', y: '92%', label: 'POR' },
-      { x: '20%', y: '75%', label: 'TD' },
-      { x: '40%', y: '75%', label: 'DC' },
-      { x: '60%', y: '75%', label: 'DC' },
-      { x: '80%', y: '75%', label: 'TS' },
-      { x: '20%', y: '50%', label: 'ES' },
-      { x: '40%', y: '50%', label: 'CC' },
-      { x: '60%', y: '50%', label: 'CC' },
-      { x: '80%', y: '50%', label: 'ED' },
-      { x: '35%', y: '20%', label: 'ATT' },
-      { x: '65%', y: '20%', label: 'ATT' },
-    ],
-    '4-3-3': [
-      { x: '50%', y: '92%', label: 'POR' },
-      { x: '20%', y: '75%', label: 'TD' },
-      { x: '40%', y: '75%', label: 'DC' },
-      { x: '60%', y: '75%', label: 'DC' },
-      { x: '80%', y: '75%', label: 'TS' },
-      { x: '35%', y: '55%', label: 'CC' },
-      { x: '50%', y: '55%', label: 'CDC' },
-      { x: '65%', y: '55%', label: 'CC' },
-      { x: '20%', y: '20%', label: 'AS' },
-      { x: '50%', y: '20%', label: 'AT' },
-      { x: '80%', y: '20%', label: 'AD' },
-    ],
-    '3-5-2': [
-      { x: '50%', y: '92%', label: 'POR' },
-      { x: '30%', y: '75%', label: 'DC' },
-      { x: '50%', y: '75%', label: 'DC' },
-      { x: '70%', y: '75%', label: 'DC' },
-      { x: '15%', y: '55%', label: 'ES' },
-      { x: '35%', y: '55%', label: 'CC' },
-      { x: '50%', y: '55%', label: 'CDC' },
-      { x: '65%', y: '55%', label: 'CC' },
-      { x: '85%', y: '55%', label: 'ED' },
-      { x: '40%', y: '20%', label: 'ATT' },
-      { x: '60%', y: '20%', label: 'ATT' },
-    ],
-    '4-2-3-1': [
-      { x: '50%', y: '92%', label: 'POR' },
-      { x: '20%', y: '75%', label: 'TD' },
-      { x: '40%', y: '75%', label: 'DC' },
-      { x: '60%', y: '75%', label: 'DC' },
-      { x: '80%', y: '75%', label: 'TS' },
-      { x: '40%', y: '60%', label: 'CDC' },
-      { x: '60%', y: '60%', label: 'CDC' },
-      { x: '25%', y: '38%', label: 'ES' },
-      { x: '50%', y: '38%', label: 'COC' },
-      { x: '75%', y: '38%', label: 'ED' },
-      { x: '50%', y: '15%', label: 'AT' },
-    ],
-    '3-4-3': [
-      { x: '50%', y: '92%', label: 'POR' },
-      { x: '30%', y: '75%', label: 'DC' },
-      { x: '50%', y: '75%', label: 'DC' },
-      { x: '70%', y: '75%', label: 'DC' },
-      { x: '20%', y: '55%', label: 'ES' },
-      { x: '40%', y: '55%', label: 'CC' },
-      { x: '60%', y: '55%', label: 'CC' },
-      { x: '80%', y: '55%', label: 'ED' },
-      { x: '25%', y: '20%', label: 'AS' },
-      { x: '50%', y: '20%', label: 'AT' },
-      { x: '75%', y: '20%', label: 'AD' },
-    ],
+  // Pass 2: Ruolo adattabile
+  formationDef.positions.forEach((pos, idx) => {
+    if (slots[idx] !== null) return;
+    const match = sortedByOvr.find(
+      (p) => !usedIds.has(Number(p.ID)) && evaluateRoleFit(p.Posiz, pos.label) === "adaptable"
+    );
+    if (match) {
+      slots[idx] = Number(match.ID);
+      usedIds.add(Number(match.ID));
+    }
+  });
+
+  // Pass 3: Qualsiasi giocatore rimanente con OVR più alto (evitando POR fuori porta)
+  formationDef.positions.forEach((pos, idx) => {
+    if (slots[idx] !== null) return;
+    const match =
+      sortedByOvr.find(
+        (p) => !usedIds.has(Number(p.ID)) && (pos.label === "POR" ? true : p.Posiz !== "POR")
+      ) || sortedByOvr.find((p) => !usedIds.has(Number(p.ID)));
+    if (match) {
+      slots[idx] = Number(match.ID);
+      usedIds.add(Number(match.ID));
+    }
+  });
+
+  return slots;
+}
+
+// Riallinea intelligentemente gli 11 titolari già scelti quando si cambia modulo
+export function realignStartersToFormation(
+  currentStarterIds: (number | null)[],
+  roster: Player[],
+  newFormation: FormationDef
+): (number | null)[] {
+  const activePlayers = currentStarterIds
+    .map((id) => (id !== null ? roster.find((p) => Number(p.ID) === id) : null))
+    .filter((p): p is Player => Boolean(p));
+
+  if (activePlayers.length === 0) return Array(11).fill(null);
+
+  return computeBest11ForFormation(activePlayers, newFormation);
+}
+
+// ============================================================================
+// COMPONENTE PRINCIPALE TATTICA
+// ============================================================================
+const Tattica = () => {
+  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
+  const currentTeam = effectiveTeam;
+
+  // Stato Roster e Tattica
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Modulo selezionato e 11 slot titolari (ID giocatore o null)
+  const [formationId, setFormationId] = useState<string>("4-4-2");
+  const [starterIds, setStarterIds] = useState<(number | null)[]>(Array(11).fill(null));
+  const [benchOrderIds, setBenchOrderIds] = useState<number[]>([]);
+
+  // Snapshot salvato nel DB per rilevare modifiche non salvate
+  const [savedState, setSavedState] = useState<{
+    formation: string;
+    starters: (number | null)[];
+    benchOrder: number[];
+    updatedAt: string | null;
+  } | null>(null);
+
+  // Filtri Roster
+  const [roleFilter, setRoleFilter] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Modale dettaglio giocatore
+  const [selectedPlayerModal, setSelectedPlayerModal] = useState<Player | null>(null);
+
+  // Drag & Drop state
+  const [draggedPlayerId, setDraggedPlayerId] = useState<number | null>(null);
+  const [dragOverSlotIndex, setDragOverSlotIndex] = useState<number | null>(null);
+  const [dragOverBenchId, setDragOverBenchId] = useState<number | null>(null);
+  const [dragOverBenchZone, setDragOverBenchZone] = useState<boolean>(false);
+
+  // Definizione del modulo attivo
+  const currentFormation = useMemo(
+    () => EA_FC25_FORMATIONS.find((f) => f.id === formationId) || EA_FC25_FORMATIONS[0],
+    [formationId]
+  );
+
+  // Caricamento giocatori e tattica salvata su Supabase
+  useEffect(() => {
+    async function loadTeamTacticData() {
+      if (!currentTeam) {
+        setPlayers([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const [playersRes, tacticRes] = await Promise.all([
+          supabase.from(PLAYER_TABLE).select("*").eq("Squadra", currentTeam),
+          supabase.from(TEAM_TACTIC_TABLE).select("*").eq("team_id", currentTeam).maybeSingle(),
+        ]);
+
+        if (playersRes.error) throw playersRes.error;
+        const teamRoster = sortPlayersByRole((playersRes.data || []) as Player[]);
+        setPlayers(teamRoster);
+
+        const validPlayerIds = new Set(teamRoster.map((p) => Number(p.ID)));
+
+        if (tacticRes.data && Array.isArray(tacticRes.data.starters)) {
+          const dbFormation =
+            EA_FC25_FORMATIONS.some((f) => f.id === tacticRes.data.formation)
+              ? tacticRes.data.formation
+              : "4-4-2";
+
+          const rawStarters: (number | null)[] = Array.from({ length: 11 }, (_, i) => {
+            const val = tacticRes.data.starters[i];
+            const num = val !== null && val !== undefined ? Number(val) : null;
+            return num !== null && validPlayerIds.has(num) ? num : null;
+          });
+
+          const rawBench: number[] = Array.isArray(tacticRes.data.bench_order)
+            ? tacticRes.data.bench_order
+                .map((id: any) => Number(id))
+                .filter((id: number) => validPlayerIds.has(id) && !rawStarters.includes(id))
+            : [];
+
+          setFormationId(dbFormation);
+          setStarterIds(rawStarters);
+          setBenchOrderIds(rawBench);
+          setSavedState({
+            formation: dbFormation,
+            starters: rawStarters,
+            benchOrder: rawBench,
+            updatedAt: tacticRes.data.updated_at || null,
+          });
+        } else {
+          // Nessuna tattica ancora salvata: calcola un 11 iniziale intelligente basato sul 4-4-2
+          const defaultFormation = EA_FC25_FORMATIONS[0];
+          const autoStarters = computeBest11ForFormation(teamRoster, defaultFormation);
+          setFormationId(defaultFormation.id);
+          setStarterIds(autoStarters);
+          setBenchOrderIds([]);
+          setSavedState(null);
+        }
+      } catch (err) {
+        console.error("Errore caricamento tattica:", err);
+        toast.error("Impossibile caricare i dati tattici della squadra.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTeamTacticData();
+  }, [currentTeam]);
+
+  // Roster completo ordinato per ruolo (POR -> ATT)
+  const orderedRoster = useMemo(() => sortPlayersByRole(players), [players]);
+
+  // Mappa veloce ID -> Player
+  const playerById = useMemo(() => {
+    const map = new Map<number, Player>();
+    for (const p of orderedRoster) {
+      map.set(Number(p.ID), p);
+    }
+    return map;
+  }, [orderedRoster]);
+
+  // Array degli 11 slot titolari popolati con l'oggetto Player | null
+  const formationSlots: (Player | null)[] = useMemo(() => {
+    return Array.from({ length: 11 }, (_, idx) => {
+      const id = starterIds[idx];
+      return id !== null ? playerById.get(id) ?? null : null;
+    });
+  }, [starterIds, playerById]);
+
+  // Set degli ID attualmente negli 11 titolari (con mappa ID -> slotIndex)
+  const starterSlotByPlayerId = useMemo(() => {
+    const map = new Map<number, number>();
+    starterIds.forEach((id, idx) => {
+      if (id !== null) map.set(id, idx);
+    });
+    return map;
+  }, [starterIds]);
+
+  // Panchinari automatici: tutti i giocatori del roster che NON sono tra gli 11 titolari
+  // Mantiene l'eventuale ordine personalizzato in benchOrderIds e accoda i restanti ordinati per ruolo
+  const benchPlayers: Player[] = useMemo(() => {
+    const nonStarters = orderedRoster.filter((p) => !starterSlotByPlayerId.has(Number(p.ID)));
+    if (benchOrderIds.length === 0) return nonStarters;
+
+    const orderMap = new Map<number, number>();
+    benchOrderIds.forEach((id, idx) => orderMap.set(id, idx));
+
+    return nonStarters.slice().sort((a, b) => {
+      const posA = orderMap.get(Number(a.ID));
+      const posB = orderMap.get(Number(b.ID));
+      if (posA !== undefined && posB !== undefined) return posA - posB;
+      if (posA !== undefined) return -1;
+      if (posB !== undefined) return 1;
+      const prioA = ROLE_PRIORITY[a.Posiz] ?? 99;
+      const prioB = ROLE_PRIORITY[b.Posiz] ?? 99;
+      if (prioA !== prioB) return prioA - prioB;
+      return (b.OVR ?? 0) - (a.OVR ?? 0);
+    });
+  }, [orderedRoster, starterSlotByPlayerId, benchOrderIds]);
+
+  // Roster filtrato nella colonna sinistra
+  const filteredRoster = useMemo(() => {
+    return orderedRoster.filter((p) => {
+      if (roleFilter !== "ALL") {
+        const group = getPosGroup(p.Posiz);
+        if (group !== roleFilter) return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const fullName = `${p.Nome} ${p.Cognome} ${p.Posiz}`.toLowerCase();
+        if (!fullName.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [orderedRoster, roleFilter, searchQuery]);
+
+  // Statistiche della formazione titolare
+  const tacticStats = useMemo(() => {
+    const activeStarters = formationSlots.filter((p): p is Player => p !== null);
+    const count = activeStarters.length;
+    const avgOvr =
+      count > 0
+        ? Math.round(activeStarters.reduce((acc, p) => acc + (p.OVR ?? 0), 0) / count)
+        : 0;
+
+    let naturalCount = 0;
+    let adaptableCount = 0;
+    let outCount = 0;
+
+    let difSum = 0,
+      difCnt = 0;
+    let cenSum = 0,
+      cenCnt = 0;
+    let attSum = 0,
+      attCnt = 0;
+
+    formationSlots.forEach((p, idx) => {
+      if (!p) return;
+      const slotRole = currentFormation.positions[idx]?.label || "CC";
+      const fit = evaluateRoleFit(p.Posiz, slotRole);
+      if (fit === "natural") naturalCount++;
+      else if (fit === "adaptable") adaptableCount++;
+      else outCount++;
+
+      const slotGroup = getPosGroup(slotRole);
+      if (slotGroup === "DIF" || slotGroup === "POR") {
+        difSum += p.OVR ?? 0;
+        difCnt++;
+      } else if (slotGroup === "CEN") {
+        cenSum += p.OVR ?? 0;
+        cenCnt++;
+      } else if (slotGroup === "ATT") {
+        attSum += p.OVR ?? 0;
+        attCnt++;
+      }
+    });
+
+    return {
+      count,
+      avgOvr,
+      naturalCount,
+      adaptableCount,
+      outCount,
+      avgDif: difCnt > 0 ? Math.round(difSum / difCnt) : 0,
+      avgCen: cenCnt > 0 ? Math.round(cenSum / cenCnt) : 0,
+      avgAtt: attCnt > 0 ? Math.round(attSum / attCnt) : 0,
+    };
+  }, [formationSlots, currentFormation]);
+
+  // Verifica se ci sono modifiche non salvate rispetto al DB
+  const hasUnsavedChanges = useMemo(() => {
+    if (!savedState) return true;
+    if (savedState.formation !== formationId) return true;
+    for (let i = 0; i < 11; i++) {
+      if ((savedState.starters[i] ?? null) !== (starterIds[i] ?? null)) return true;
+    }
+    return false;
+  }, [savedState, formationId, starterIds]);
+
+  // ============================================================================
+  // AZIONI DI GESTIONE FORMAZIONE (DRAG & DROP, MENÙ A TENDINA, BOTTONI RAPIDI)
+  // ============================================================================
+
+  // Assegna un giocatore (tramite ID) a uno specifico slot titolare (0..10).
+  // Se il giocatore era già in un altro slot titolare, scambia i due slot!
+  const assignPlayerToSlot = (slotIndex: number, playerId: number | null) => {
+    setStarterIds((prev) => {
+      const next = [...prev];
+      if (playerId === null) {
+        next[slotIndex] = null;
+        return next;
+      }
+
+      const existingSlot = next.indexOf(playerId);
+      const displacedPlayerId = next[slotIndex];
+
+      if (existingSlot !== -1 && existingSlot !== slotIndex) {
+        // Scambio tra due slot titolari
+        next[existingSlot] = displacedPlayerId;
+      }
+      next[slotIndex] = playerId;
+      return next;
+    });
   };
 
-  /* MAIN RENDER */
+  // Rimuove un giocatore dagli 11 titolari (spostandolo automaticamente in panchina)
+  const removePlayerFromStarters = (playerId: number) => {
+    setStarterIds((prev) => prev.map((id) => (id === playerId ? null : id)));
+    setBenchOrderIds((prev) => [playerId, ...prev.filter((id) => id !== playerId)]);
+  };
 
+  // Inserisce rapidamente un giocatore dal Roster/Panchina nel miglior slot compatibile vuoto
+  const quickInsertToStarters = (player: Player) => {
+    const pId = Number(player.ID);
+    if (starterSlotByPlayerId.has(pId)) {
+      toast.info(`${player.Nome} ${player.Cognome} è già tra gli 11 titolari.`);
+      return;
+    }
+
+    // 1. Cerca uno slot vuoto con ruolo naturale
+    let targetSlot = currentFormation.positions.findIndex(
+      (pos, idx) => starterIds[idx] === null && evaluateRoleFit(player.Posiz, pos.label) === "natural"
+    );
+
+    // 2. Cerca uno slot vuoto con ruolo adattabile
+    if (targetSlot === -1) {
+      targetSlot = currentFormation.positions.findIndex(
+        (pos, idx) => starterIds[idx] === null && evaluateRoleFit(player.Posiz, pos.label) === "adaptable"
+      );
+    }
+
+    // 3. Primo slot vuoto qualsiasi
+    if (targetSlot === -1) {
+      targetSlot = starterIds.findIndex((id) => id === null);
+    }
+
+    if (targetSlot !== -1) {
+      assignPlayerToSlot(targetSlot, pId);
+      toast.success(
+        `${player.Cognome} inserito come ${currentFormation.positions[targetSlot].label} (Slot #${targetSlot + 1})`
+      );
+    } else {
+      toast.error("Tutti gli 11 slot titolari sono occupati. Usa il menù a tendina o trascina sopra un titolare per sostituirlo.");
+    }
+  };
+
+  // Cambio modulo con riallineamento intelligente degli 11 titolari
+  const handleFormationChange = (newId: string) => {
+    const nextFormation = EA_FC25_FORMATIONS.find((f) => f.id === newId);
+    if (!nextFormation) return;
+    setFormationId(newId);
+    setStarterIds((prev) => realignStartersToFormation(prev, orderedRoster, nextFormation));
+    toast.info(`Modulo aggiornato a ${nextFormation.name}`);
+  };
+
+  // Auto-schieramento miglior 11 per il modulo corrente
+  const handleAutoPickBest11 = () => {
+    const best = computeBest11ForFormation(orderedRoster, currentFormation);
+    setStarterIds(best);
+    toast.success(`Miglior 11 schierato per il modulo ${currentFormation.name}!`);
+  };
+
+  // Svuota tutti gli 11 slot titolari
+  const handleClearStarters = () => {
+    setStarterIds(Array(11).fill(null));
+    toast.info("Formazione titolare svuotata.");
+  };
+
+  // Salvataggio su Supabase nella tabella an_team_tactic
+  const handleSaveFormation = async () => {
+    if (!currentTeam) return;
+    setIsSaving(true);
+    try {
+      const nowIso = new Date().toISOString();
+      const currentBenchIds = benchPlayers.map((p) => Number(p.ID));
+
+      const payload = {
+        team_id: currentTeam,
+        formation: formationId,
+        starters: starterIds,
+        bench_order: currentBenchIds,
+        updated_at: nowIso,
+        updated_by: user?.username || "user",
+      };
+
+      const { error } = await supabase
+        .from(TEAM_TACTIC_TABLE)
+        .upsert(payload, { onConflict: "team_id" });
+
+      if (error) throw error;
+
+      setSavedState({
+        formation: formationId,
+        starters: [...starterIds],
+        benchOrder: currentBenchIds,
+        updatedAt: nowIso,
+      });
+
+      toast.success(`Formazione di ${effectiveTeamFullName || currentTeam} salvata con successo!`);
+    } catch (err: any) {
+      console.error("Errore salvataggio formazione:", err);
+      toast.error(err?.message || "Errore durante il salvataggio della formazione.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ============================================================================
+  // HANDLERS DRAG & DROP
+  // ============================================================================
+  const handleDragStartPlayer = (e: React.DragEvent, playerId: number) => {
+    setDraggedPlayerId(playerId);
+    e.dataTransfer.setData("text/plain", String(playerId));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnd = () => {
+    setDraggedPlayerId(null);
+    setDragOverSlotIndex(null);
+    setDragOverBenchId(null);
+    setDragOverBenchZone(false);
+  };
+
+  const handleDropOnStarterSlot = (e: React.DragEvent, slotIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const pId = draggedPlayerId ?? Number(e.dataTransfer.getData("text/plain"));
+    if (!pId || Number.isNaN(pId)) {
+      handleDragEnd();
+      return;
+    }
+
+    assignPlayerToSlot(slotIndex, pId);
+    const p = playerById.get(pId);
+    if (p) {
+      const roleLabel = currentFormation.positions[slotIndex]?.label || "";
+      toast.success(`${p.Cognome} schierato in #${slotIndex + 1} (${roleLabel})`);
+    }
+    handleDragEnd();
+  };
+
+  const handleDropOnBenchPlayer = (e: React.DragEvent, targetBenchPlayerId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceId = draggedPlayerId ?? Number(e.dataTransfer.getData("text/plain"));
+    if (!sourceId || Number.isNaN(sourceId) || sourceId === targetBenchPlayerId) {
+      handleDragEnd();
+      return;
+    }
+
+    const sourceSlot = starterSlotByPlayerId.get(sourceId);
+    if (sourceSlot !== undefined) {
+      // Un titolare è stato trascinato sopra uno specifico panchinaro -> Sostituzione diretta!
+      assignPlayerToSlot(sourceSlot, targetBenchPlayerId);
+      const inPlayer = playerById.get(targetBenchPlayerId);
+      const outPlayer = playerById.get(sourceId);
+      if (inPlayer && outPlayer) {
+        toast.success(`Sostituzione: entra ${inPlayer.Cognome} per ${outPlayer.Cognome}`);
+      }
+    } else {
+      // Riordino tra due giocatori già in panchina
+      const currentIds = benchPlayers.map((p) => Number(p.ID));
+      const fromIdx = currentIds.indexOf(sourceId);
+      const toIdx = currentIds.indexOf(targetBenchPlayerId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const nextIds = [...currentIds];
+        nextIds.splice(fromIdx, 1);
+        nextIds.splice(toIdx, 0, sourceId);
+        setBenchOrderIds(nextIds);
+      }
+    }
+    handleDragEnd();
+  };
+
+  const handleDropOnBenchZone = (e: React.DragEvent) => {
+    e.preventDefault();
+    const sourceId = draggedPlayerId ?? Number(e.dataTransfer.getData("text/plain"));
+    if (!sourceId || Number.isNaN(sourceId)) {
+      handleDragEnd();
+      return;
+    }
+
+    if (starterSlotByPlayerId.has(sourceId)) {
+      removePlayerFromStarters(sourceId);
+      const p = playerById.get(sourceId);
+      if (p) toast.info(`${p.Cognome} spostato in panchina`);
+    }
+    handleDragEnd();
+  };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Hero Header */}
-        <Card className="mb-8 overflow-hidden border-0 shadow-lg bg-gradient-to-br from-primary/15 via-card to-accent/10">
-          <div className="relative p-6 sm:p-8">
-            <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-primary/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent/20 blur-3xl" />
-            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-primary/15 border border-primary/20">
-                  <NotebookTabs className="h-7 w-7 text-primary" />
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {!user ? (
+          <RequireAuthPrompt
+            title="Gestione Tattica & Formazione"
+            description="Accedi con il tuo account di squadra o scegli una squadra libera per schierare la formazione, scegliere il modulo EA FC 25 e salvare la tattica."
+          />
+        ) : (
+          <>
+            {/* Selettore Squadra Admin */}
+            <AdminTeamSelector />
+
+            {/* ================================================================= */}
+            {/* HEADER BROADCAST + TELEMETRY BAR                                  */}
+            {/* ================================================================= */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-border/80">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                    Lavagna Tattica • {effectiveTeamFullName || currentTeam}
+                  </span>
+                  {savedState?.updatedAt && !hasUnsavedChanges && (
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] gap-1"
+                    >
+                      <CheckCircle2 className="h-3 w-3" />
+                      Salvata a Sistema
+                    </Badge>
+                  )}
+                  {hasUnsavedChanges && (
+                    <Badge
+                      variant="outline"
+                      className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] gap-1"
+                    >
+                      <Clock className="h-3 w-3 animate-pulse" />
+                      Modifiche non salvate
+                    </Badge>
+                  )}
                 </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Tattica</h1>
-                  <p className="text-muted-foreground mt-1">Gestisci la tua formazione e schiera la squadra</p>
-                </div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                  Gestione Tattica & Formazione
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Trascina i giocatori dal Roster o usa i menù a tendina per schierare gli 11 titolari e la panchina.
+                </p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-background/70 backdrop-blur-sm border">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="text-sm text-muted-foreground">Modulo:</span>
-                  <span className="font-bold text-primary">{formation}</span>
-                </div>
-                <Button onClick={handleSaveFormation} className="gap-2 shadow-md">
-                  <Save className="h-4 w-4" />
-                  Salva
+
+              {/* Pulsanti Azione Principali */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoPickBest11}
+                  disabled={loading || orderedRoster.length === 0}
+                  className="h-9 text-xs font-bold border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                >
+                  <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+                  Auto-Schiera Miglior 11
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearStarters}
+                  disabled={loading || tacticStats.count === 0}
+                  className="h-9 text-xs font-semibold text-muted-foreground hover:text-rose-500 hover:border-rose-500/40"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  Svuota
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={handleSaveFormation}
+                  disabled={loading || isSaving}
+                  className="h-9 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md"
+                >
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                  {isSaving ? "Salvataggio..." : "Salva Formazione"}
                 </Button>
               </div>
             </div>
-          </div>
-        </Card>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Formazione Titolare */}
-          <Card
-            className="shadow-lg border-primary/10 overflow-hidden"
-            onDragOver={handleDragOver}
-            onDrop={handleDropToTitolari}
-          >
-            <CardHeader className="bg-gradient-to-br from-primary/10 to-accent/10 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-primary/15">
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    Formazione Titolare
-                  </CardTitle>
-                  <CardDescription className="mt-1">Trascina i giocatori negli slot</CardDescription>
-                </div>
-                <Badge variant="outline" className="bg-background/70 backdrop-blur-sm font-semibold">
-                  {titolari.length}/11
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-2">
-                {formationSlots.map((player, slotIndex) => {
-                  const suggestedRole = formationPositions[formation][slotIndex]?.label || '-';
-
-                  return (
-                    <div
-                      key={slotIndex}
-                      onDragOver={(e) => handleDragOverSlot(e, slotIndex)}
-                      onDrop={(e) => handleDropOnSlot(e, slotIndex)}
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                        player
-                          ? 'bg-card hover:bg-muted/40 hover:border-primary/30 hover:shadow-sm cursor-pointer'
-                          : 'bg-muted/20 border-dashed hover:border-primary/40 hover:bg-primary/5'
-                      } ${
-                        dragOverSlot === slotIndex && (!player || draggedPlayer?.ID !== player?.ID) ? 'ring-2 ring-primary scale-[1.01]' : ''
-                      }`}
-                    >
-                      {player ? (
-                        <>
-                          <div
-                            draggable
-                            onDragStart={() => handleDragStart(player)}
-                            onClick={() => setSelected({ player })}
-                            className="flex items-center gap-3 flex-1 cursor-pointer min-w-0"
-                          >
-                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary font-bold text-sm shrink-0">
-                              {slotIndex + 1}
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30 text-[10px]">
-                                {suggestedRole}
-                              </Badge>
-                              <Badge variant="outline" className={`${getRoleColor(player.Posiz)} text-[10px]`}>
-                                {player.Posiz}
-                              </Badge>
-                            </div>
-                            <span className="font-medium truncate">{player.Nome} {player.Cognome}</span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <span className="text-xs text-muted-foreground">Voto</span>
-                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-bold">
-                              7.3
-                            </Badge>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/50 text-muted-foreground font-bold text-sm">
-                              {slotIndex + 1}
-                            </div>
-                            <Badge variant="outline" className="bg-muted/50 border-muted-foreground/30">
-                              {suggestedRole}
-                            </Badge>
-                            <span className="text-muted-foreground text-sm italic">Slot vuoto</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Panchina */}
-          <Card
-            className="shadow-lg border-primary/10 overflow-hidden"
-            onDragOver={handleDragOver}
-            onDrop={handleDropToPanchina}
-          >
-            <CardHeader className="bg-gradient-to-br from-accent/10 to-primary/10 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-primary/15">
-                      <ClipboardList className="h-4 w-4 text-primary" />
-                    </div>
-                    Panchina
-                  </CardTitle>
-                  <CardDescription className="mt-1">Trascina qui per rimuovere dalla titolare</CardDescription>
-                </div>
-                <Badge variant="outline" className="bg-background/70 backdrop-blur-sm font-semibold">
-                  {panchina.length}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-2 min-h-[200px]">
-                {panchina.map((player) => (
-                  <div
-                    key={player.ID}
-                    draggable
-                    onDragStart={() => handleDragStart(player)}
-                    onDragOver={(e) => handleDragOverPlayer(e, player)}
-                    onDrop={(e) => handleDropOnPlayer(e, player)}
-                    onClick={() => setSelected({ player: player })}
-                    className={`flex items-center justify-between p-3 rounded-xl border bg-card hover:bg-muted/40 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer ${
-                      dragOverPlayer?.ID === player.ID && draggedPlayer?.ID !== player.ID ? 'ring-2 ring-primary scale-[1.01]' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Badge variant="outline" className={`${getRoleColor(player.Posiz)} shrink-0`}>
-                        {player.Posiz}
-                      </Badge>
-                      <span className="font-medium truncate">{player.Nome} {player.Cognome}</span>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-xs text-muted-foreground">Voto</span>
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-bold">
-                        7.6
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-                {panchina.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground gap-2 border-2 border-dashed border-muted rounded-xl">
-                    <ClipboardList className="h-8 w-8 opacity-40" />
-                    <span className="text-sm">Nessun giocatore in panchina</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Campo da Calcio Visuale */}
-        <Card className="mt-8 shadow-lg border-primary/10 overflow-hidden">
-          <CardHeader className="bg-gradient-to-br from-primary/10 to-accent/10 border-b">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-primary/15">
-                    <Shield className="h-4 w-4 text-primary" />
-                  </div>
-                  Visualizzazione Campo
-                </CardTitle>
-                <CardDescription className="mt-1">Rappresentazione grafica della formazione</CardDescription>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-background/70 backdrop-blur-sm border">
-                <span className="text-sm text-muted-foreground">Formazione:</span>
-                <Select value={formation} onValueChange={(value) => setFormation(value as FormationType)}>
-                  <SelectTrigger className="w-28 h-8 bg-background border-primary/20 font-bold text-primary">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50">
-                    <SelectItem value="4-4-2">4-4-2</SelectItem>
-                    <SelectItem value="4-3-3">4-3-3</SelectItem>
-                    <SelectItem value="3-5-2">3-5-2</SelectItem>
-                    <SelectItem value="4-2-3-1">4-2-3-1</SelectItem>
-                    <SelectItem value="3-4-3">3-4-3</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6">
-            <div
-              className="relative w-full rounded-2xl p-8 min-h-[640px] shadow-inner overflow-hidden"
-              style={{
-                background: `repeating-linear-gradient(0deg, hsl(140 55% 32%) 0px, hsl(140 55% 32%) 60px, hsl(140 55% 38%) 60px, hsl(140 55% 38%) 120px)`,
-              }}
-            >
-              {/* Vignette */}
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(0,0,0,0.35)_100%)]" />
-
-              {/* Linee del campo */}
-              <div className="absolute inset-8 border-2 border-white/60 rounded-sm">
-                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/60" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 border-2 border-white/60 rounded-full" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white/80 rounded-full" />
-
-                {/* Aree di rigore */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-24 border-2 border-white/60 border-t-0" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-12 border-2 border-white/60 border-t-0" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 h-24 border-2 border-white/60 border-b-0" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 h-12 border-2 border-white/60 border-b-0" />
-              </div>
-
-              {/* Giocatori posizionati sul campo */}
-              <div className="relative h-[600px]">
-                {formationSlots.map((player, index) => {
-                  if (!player) return null;
-
-                  const pos = formationPositions[formation][index];
-
-                  return (
-                    <div
-                      key={player.ID}
-                      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-10"
-                      style={{ left: pos.x, top: pos.y }}
-                      onClick={() => setSelected({ player })}
-                    >
-                      <div className="relative flex flex-col items-center">
-                        {/* Glow */}
-                        <div className="absolute inset-0 bg-primary/40 blur-xl rounded-full scale-75 opacity-60 group-hover:opacity-100 transition-opacity" />
-
-                        {/* Cerchio giocatore */}
-                        <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/70 border-2 border-white shadow-xl flex items-center justify-center transition-all duration-200 group-hover:scale-110 group-hover:shadow-2xl">
-                          <span className="text-primary-foreground font-extrabold text-base drop-shadow">{index + 1}</span>
-                        </div>
-
-                        {/* Nome giocatore */}
-                        <div className="relative mt-1.5 bg-background/95 backdrop-blur-sm text-foreground text-xs font-semibold px-2.5 py-1 rounded-md shadow-md whitespace-nowrap border">
-                          {player.Cognome}
-                        </div>
-
-                        {/* Badge posizione effettiva e suggerita */}
-                        <div className="relative flex gap-1 mt-1">
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] h-5 px-1.5 ${getRoleColor(player.Posiz)} border-white shadow`}
-                          >
-                            {player.Posiz}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] h-5 px-1.5 bg-background/90 border-white shadow"
-                          >
-                            {pos.label}
-                          </Badge>
-                        </div>
+            {/* ================================================================= */}
+            {/* COMMAND HUD: MODULO EA FC 25 + STATISTICHE FORMAZIONE             */}
+            {/* ================================================================= */}
+            <div className="rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-card/90 shadow-lg p-4 backdrop-blur-md">
+              <div className="grid grid-cols-12 gap-4 items-center">
+                {/* Squadra & Modulo Selector */}
+                <div className="col-span-12 lg:col-span-5 flex flex-col sm:flex-row sm:items-center gap-3.5 lg:border-r border-border/70 lg:pr-4">
+                  <div className="flex items-center gap-3">
+                    {currentTeam && (
+                      <img
+                        src={`/images/teams/${currentTeam}_Logo.png`}
+                        alt={currentTeam}
+                        className="h-12 w-12 object-contain drop-shadow shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                        }}
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Modulo EA Sports FC 25
+                      </div>
+                      <div className="font-extrabold text-sm sm:text-base text-foreground truncate">
+                        {currentFormation.name}
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+
+                  <div className="sm:ml-auto w-full sm:w-[220px]">
+                    <Select value={formationId} onValueChange={handleFormationChange}>
+                      <SelectTrigger className="h-10 bg-background/80 border-primary/30 font-bold text-xs sm:text-sm">
+                        <SelectValue placeholder="Seleziona modulo" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[340px]">
+                        {(["Difesa a 4", "Difesa a 3", "Difesa a 5"] as const).map((cat) => (
+                          <SelectGroup key={cat}>
+                            <SelectLabel className="text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-extrabold bg-muted/40 py-1.5">
+                              {cat}
+                            </SelectLabel>
+                            {EA_FC25_FORMATIONS.filter((f) => f.category === cat).map((f) => (
+                              <SelectItem key={f.id} value={f.id} className="text-xs font-semibold">
+                                {f.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Contatori Telemetry: Titolari, OVR Medio, Reparti, Affinità */}
+                <div className="col-span-12 lg:col-span-7 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  <div
+                    className={`p-2.5 rounded-xl border text-center ${
+                      tacticStats.count === 11
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                        : "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
+                    <div className="text-[10px] font-bold uppercase tracking-wider">Titolari</div>
+                    <div className="text-xl font-black font-mono mt-0.5">{tacticStats.count}/11</div>
+                    <span className="text-[9px] font-medium">
+                      {benchPlayers.length} in panchina
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      OVR Titolari
+                    </div>
+                    <div className="text-xl font-black font-mono text-primary mt-0.5">
+                      {tacticStats.avgOvr || "—"}
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-medium">Media 11</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                      Difesa
+                    </div>
+                    <div className="text-xl font-black font-mono text-foreground mt-0.5">
+                      {tacticStats.avgDif || "—"}
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-medium">POR + DIF</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">
+                      Centrocampo
+                    </div>
+                    <div className="text-xl font-black font-mono text-foreground mt-0.5">
+                      {tacticStats.avgCen || "—"}
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-medium">Reparto CEN</span>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
+                      Attacco
+                    </div>
+                    <div className="text-xl font-black font-mono text-foreground mt-0.5">
+                      {tacticStats.avgAtt || "—"}
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-medium">Reparto ATT</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* ================================================================= */}
+            {/* GRIGLIA A 3 COLONNE: ROSTER (3) | TITOLARI+PANCHINA (5) | CAMPO (4) */}
+            {/* ================================================================= */}
+            <div className="grid grid-cols-12 gap-5 items-start">
+              
+              {/* --------------------------------------------------------------- */}
+              {/* COLONNA 1 (SINISTRA): ROSTER COMPLETO ORDINATO PER RUOLO        */}
+              {/* --------------------------------------------------------------- */}
+              <div className="col-span-12 lg:col-span-3 space-y-4">
+                <Card className="shadow-lg border-border/80 overflow-hidden">
+                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-emerald-500" />
+                        <CardTitle className="text-sm font-bold">Roster Completo</CardTitle>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
+                        {orderedRoster.length} Giocatori
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-[11px] mt-0.5">
+                      Ordinato per ruolo (POR &rarr; ATT). Trascina o clicca + per schierare.
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="p-3 space-y-2.5">
+                    {/* Ricerca rapida */}
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Cerca nome o ruolo..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-8 h-8 text-xs bg-muted/20 border-border/70"
+                      />
+                    </div>
+
+                    {/* Filtro Reparto */}
+                    <div className="grid grid-cols-5 gap-1">
+                      {["ALL", "POR", "DIF", "CEN", "ATT"].map((r) => (
+                        <Button
+                          key={r}
+                          size="sm"
+                          variant={roleFilter === r ? "default" : "outline"}
+                          onClick={() => setRoleFilter(r)}
+                          className={`h-7 text-[10px] px-1 font-bold ${
+                            roleFilter === r
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {r === "ALL" ? "Tutti" : r}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Elenco completo ordinato per ruolo */}
+                    <div className="max-h-[680px] overflow-y-auto space-y-1.5 pr-1">
+                      {filteredRoster.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-muted-foreground">
+                          Nessun giocatore trovato.
+                        </div>
+                      ) : (
+                        filteredRoster.map((player) => {
+                          const pId = Number(player.ID);
+                          const slotIdx = starterSlotByPlayerId.get(pId);
+                          const isStarter = slotIdx !== undefined;
+                          const assignedRole =
+                            isStarter ? currentFormation.positions[slotIdx]?.label : null;
+
+                          return (
+                            <div
+                              key={pId}
+                              draggable
+                              onDragStart={(e) => handleDragStartPlayer(e, pId)}
+                              onDragEnd={handleDragEnd}
+                              className={`group p-2 rounded-xl border transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${
+                                isStarter
+                                  ? "bg-emerald-500/10 border-emerald-500/40 shadow-sm"
+                                  : "bg-card hover:bg-muted/40 border-border/60"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                                <div
+                                  onClick={() => setSelectedPlayerModal(player)}
+                                  className="w-8 h-8 rounded-lg overflow-hidden border border-border/80 bg-muted/30 shrink-0 cursor-pointer"
+                                  title="Vedi dettagli giocatore"
+                                >
+                                  <img
+                                    src={getPlayerImage(pId)}
+                                    alt={player.Cognome}
+                                    className="w-full h-full object-cover object-top"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src =
+                                        "/images/players/MConti.png";
+                                    }}
+                                  />
+                                </div>
+
+                                <div
+                                  onClick={() => setSelectedPlayerModal(player)}
+                                  className="min-w-0 flex-1 cursor-pointer"
+                                >
+                                  <div className="font-bold text-xs text-foreground truncate group-hover:text-primary transition-colors">
+                                    {player.Nome?.[0]}. {player.Cognome}
+                                  </div>
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-[9px] px-1 py-0 h-3.5 font-bold ${getRoleColor(
+                                        player.Posiz
+                                      )}`}
+                                    >
+                                      {player.Posiz}
+                                    </Badge>
+                                    {isStarter ? (
+                                      <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold">
+                                        TIT #{slotIdx + 1} ({assignedRole})
+                                      </Badge>
+                                    ) : (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-[8px] px-1 py-0 h-3.5 text-muted-foreground font-semibold"
+                                      >
+                                        PAN
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span
+                                  className={`text-xs font-black font-mono ${getValueColor(
+                                    player.OVR ?? 70
+                                  )}`}
+                                >
+                                  {player.OVR}
+                                </span>
+
+                                {!isStarter ? (
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => quickInsertToStarters(player)}
+                                    className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                                    title="Inserisci nel primo slot compatibile"
+                                  >
+                                    <UserPlus className="h-3.5 w-3.5" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => removePlayerFromStarters(pId)}
+                                    className="h-6 w-6 rounded-lg hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
+                                    title="Sposta in panchina"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* --------------------------------------------------------------- */}
+              {/* COLONNA 2 (CENTRO): SEZIONE TITOLARI (11) & SEZIONE PANCHINARI  */}
+              {/* --------------------------------------------------------------- */}
+              <div className="col-span-12 lg:col-span-5 space-y-5">
+                
+                {/* SEZIONE 1: TITOLARI (11 SLOT) */}
+                <Card className="shadow-lg border-border/80 overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-emerald-500/15 via-primary/10 to-transparent border-b border-border/60 py-3.5 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-emerald-500" />
+                        <div>
+                          <CardTitle className="text-sm font-bold">
+                            Undici Titolare ({currentFormation.name})
+                          </CardTitle>
+                          <CardDescription className="text-[11px]">
+                            Trascina un giocatore nello slot o selezionalo dal menù a tendina
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="bg-background/80 font-mono text-xs font-extrabold border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                      >
+                        {tacticStats.count} / 11
+                      </Badge>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-3 space-y-2">
+                    {currentFormation.positions.map((pos, slotIndex) => {
+                      const occupant = formationSlots[slotIndex];
+                      const roleFit = occupant
+                        ? evaluateRoleFit(occupant.Posiz, pos.label)
+                        : null;
+                      const isDragOver = dragOverSlotIndex === slotIndex;
+
+                      // Opzioni per il menù a tendina di questo slot:
+                      // mette in cima i giocatori con ruolo naturale per lo slot, poi gli adattabili, poi gli altri
+                      const slotDropdownOptions = orderedRoster.slice().sort((a, b) => {
+                        const fitA = evaluateRoleFit(a.Posiz, pos.label);
+                        const fitB = evaluateRoleFit(b.Posiz, pos.label);
+                        const rank = { natural: 0, adaptable: 1, out: 2 };
+                        if (rank[fitA] !== rank[fitB]) return rank[fitA] - rank[fitB];
+                        const prioA = ROLE_PRIORITY[a.Posiz] ?? 99;
+                        const prioB = ROLE_PRIORITY[b.Posiz] ?? 99;
+                        if (prioA !== prioB) return prioA - prioB;
+                        return (b.OVR ?? 0) - (a.OVR ?? 0);
+                      });
+
+                      return (
+                        <div
+                          key={slotIndex}
+                          draggable={Boolean(occupant)}
+                          onDragStart={(e) =>
+                            occupant && handleDragStartPlayer(e, Number(occupant.ID))
+                          }
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragOverSlotIndex(slotIndex);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverSlotIndex === slotIndex) setDragOverSlotIndex(null);
+                          }}
+                          onDrop={(e) => handleDropOnStarterSlot(e, slotIndex)}
+                          className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                            isDragOver
+                              ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10 scale-[1.01]"
+                              : occupant
+                              ? "bg-card hover:border-primary/40 border-border/70 shadow-sm"
+                              : "bg-muted/15 border-dashed border-border hover:border-emerald-500/40"
+                          }`}
+                        >
+                          {/* Numero Slot + Ruolo Richiesto nel Modulo */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="w-7 h-7 rounded-lg bg-muted/70 border border-border/80 flex items-center justify-center font-mono text-xs font-extrabold text-foreground">
+                              {slotIndex + 1}
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={`w-12 justify-center font-extrabold text-[11px] py-0.5 ${getRoleColor(
+                                pos.label
+                              )}`}
+                            >
+                              {pos.label}
+                            </Badge>
+                          </div>
+
+                          {/* Menù a Tendina Selettore Giocatore per lo Slot */}
+                          <div className="flex-1 min-w-0">
+                            <Select
+                              value={occupant ? String(occupant.ID) : "EMPTY"}
+                              onValueChange={(val) => {
+                                if (val === "EMPTY") {
+                                  assignPlayerToSlot(slotIndex, null);
+                                } else {
+                                  assignPlayerToSlot(slotIndex, Number(val));
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-9 w-full bg-background/70 border-border/60 text-xs font-semibold px-2.5">
+                                {occupant ? (
+                                  <div className="flex items-center gap-2 min-w-0 truncate">
+                                    <img
+                                      src={getPlayerImage(Number(occupant.ID))}
+                                      alt={occupant.Cognome}
+                                      className="h-5 w-5 rounded-full object-cover object-top border border-border shrink-0"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src =
+                                          "/images/players/MConti.png";
+                                      }}
+                                    />
+                                    <span className="font-bold text-foreground truncate">
+                                      {occupant.Nome} {occupant.Cognome}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-[9px] px-1 py-0 h-4 shrink-0 ${getRoleColor(
+                                        occupant.Posiz
+                                      )}`}
+                                    >
+                                      {occupant.Posiz}
+                                    </Badge>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground italic">
+                                    + Seleziona o trascina ({pos.label})...
+                                  </span>
+                                )}
+                              </SelectTrigger>
+
+                              <SelectContent className="max-h-[300px]">
+                                <SelectItem value="EMPTY" className="text-xs italic text-muted-foreground">
+                                  — Lascia slot vuoto —
+                                </SelectItem>
+                                {slotDropdownOptions.map((p) => {
+                                  const pId = Number(p.ID);
+                                  const otherSlot = starterSlotByPlayerId.get(pId);
+                                  const isInOtherSlot =
+                                    otherSlot !== undefined && otherSlot !== slotIndex;
+                                  const fit = evaluateRoleFit(p.Posiz, pos.label);
+
+                                  return (
+                                    <SelectItem key={pId} value={String(pId)} className="text-xs">
+                                      <div className="flex items-center gap-2 w-full">
+                                        <span
+                                          className={`inline-block w-2 h-2 rounded-full shrink-0 ${
+                                            fit === "natural"
+                                              ? "bg-emerald-500"
+                                              : fit === "adaptable"
+                                              ? "bg-amber-500"
+                                              : "bg-rose-500/60"
+                                          }`}
+                                        />
+                                        <span className="font-mono text-[10px] font-bold w-8">
+                                          [{p.Posiz}]
+                                        </span>
+                                        <span className="font-semibold">
+                                          {p.Nome} {p.Cognome}
+                                        </span>
+                                        <span className="font-mono font-bold text-primary ml-1">
+                                          OVR {p.OVR}
+                                        </span>
+                                        {isInOtherSlot && (
+                                          <span className="text-[10px] text-amber-500 font-semibold ml-1">
+                                            (Scambia con #{otherSlot + 1})
+                                          </span>
+                                        )}
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Indicatori Destra: Affinità Ruolo, OVR, Info & Rimuovi */}
+                          {occupant && (
+                            <div className="flex items-center justify-end gap-1.5 shrink-0">
+                              {roleFit === "natural" ? (
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"
+                                  title={`Ruolo Naturale (${occupant.Posiz})`}
+                                />
+                              ) : roleFit === "adaptable" ? (
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"
+                                  title={`Adattato (${occupant.Posiz} schierato come ${pos.label})`}
+                                />
+                              ) : (
+                                <AlertTriangle
+                                  className="h-3.5 w-3.5 text-rose-500 shrink-0"
+                                  title={`Fuori ruolo! (${occupant.Posiz} schierato come ${pos.label})`}
+                                />
+                              )}
+
+                              <span
+                                className={`text-xs font-black font-mono ${getValueColor(
+                                  occupant.OVR ?? 70
+                                )}`}
+                              >
+                                {occupant.OVR}
+                              </span>
+
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => setSelectedPlayerModal(occupant)}
+                                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                                title="Scheda attributi giocatore"
+                              >
+                                <Info className="h-3.5 w-3.5" />
+                              </Button>
+
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => assignPlayerToSlot(slotIndex, null)}
+                                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+                                title="Manda in panchina"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+
+                {/* SEZIONE 2: PANCHINARI (RESTANTI GIOCATORI DEL ROSTER) */}
+                <Card
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverBenchZone(true);
+                  }}
+                  onDragLeave={() => setDragOverBenchZone(false)}
+                  onDrop={handleDropOnBenchZone}
+                  className={`shadow-lg overflow-hidden transition-all ${
+                    dragOverBenchZone
+                      ? "ring-2 ring-amber-500 border-amber-500 bg-amber-500/5"
+                      : "border-border/80"
+                  }`}
+                >
+                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ClipboardList className="h-4 w-4 text-amber-500" />
+                        <div>
+                          <CardTitle className="text-sm font-bold">
+                            Panchina & Riserve a Disposizione
+                          </CardTitle>
+                          <CardDescription className="text-[11px]">
+                            Trascina un panchinaro sopra un titolare per sostituirlo o usa il menù rapido
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-xs font-mono font-bold">
+                        {benchPlayers.length} Panchinari
+                      </Badge>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-3">
+                    {benchPlayers.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+                        Nessun giocatore in panchina.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[340px] overflow-y-auto pr-1">
+                        {benchPlayers.map((player, bIdx) => {
+                          const pId = Number(player.ID);
+                          const isDragTarget = dragOverBenchId === pId;
+
+                          return (
+                            <div
+                              key={pId}
+                              draggable
+                              onDragStart={(e) => handleDragStartPlayer(e, pId)}
+                              onDragEnd={handleDragEnd}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDragOverBenchId(pId);
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverBenchId === pId) setDragOverBenchId(null);
+                              }}
+                              onDrop={(e) => handleDropOnBenchPlayer(e, pId)}
+                              className={`p-2 rounded-xl border bg-card hover:bg-muted/30 transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${
+                                isDragTarget
+                                  ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10"
+                                  : "border-border/60"
+                              }`}
+                            >
+                              <div
+                                onClick={() => setSelectedPlayerModal(player)}
+                                className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                              >
+                                <span className="text-[10px] font-mono font-bold text-muted-foreground w-4">
+                                  P{bIdx + 1}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[9px] px-1.5 py-0 h-4 shrink-0 font-bold ${getRoleColor(
+                                    player.Posiz
+                                  )}`}
+                                >
+                                  {player.Posiz}
+                                </Badge>
+                                <span className="font-bold text-xs text-foreground truncate">
+                                  {player.Nome?.[0]}. {player.Cognome}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span
+                                  className={`text-[11px] font-black font-mono ${getValueColor(
+                                    player.OVR ?? 70
+                                  )}`}
+                                >
+                                  {player.OVR}
+                                </span>
+
+                                {/* Pulsante rapido per mandare in campo nel primo slot compatibile */}
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => quickInsertToStarters(player)}
+                                  className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                                  title="Schiera negli 11 titolari"
+                                >
+                                  <ArrowLeftRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* --------------------------------------------------------------- */}
+              {/* COLONNA 3 (DESTRA): CAMPETTO INTERATTIVO LIVE                   */}
+              {/* --------------------------------------------------------------- */}
+              <div className="col-span-12 lg:col-span-4 lg:sticky lg:top-20 space-y-4">
+                <Card className="shadow-xl border-border/80 overflow-hidden">
+                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-emerald-500" />
+                        <div>
+                          <CardTitle className="text-sm font-bold">
+                            Campetto Tattico Live
+                          </CardTitle>
+                          <CardDescription className="text-[11px]">
+                            Trascina i giocatori anche direttamente sulle posizioni in campo
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <Badge className="bg-emerald-600 text-white font-mono text-xs font-extrabold">
+                        {currentFormation.id}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-3 sm:p-4">
+                    {/* Pitch Container */}
+                    <div
+                      className="relative w-full rounded-2xl shadow-inner overflow-hidden border-2 border-emerald-950/60 select-none"
+                      style={{
+                        height: "540px",
+                        background: `repeating-linear-gradient(0deg, hsl(142 52% 26%) 0px, hsl(142 52% 26%) 45px, hsl(142 52% 30%) 45px, hsl(142 52% 30%) 90px)`,
+                      }}
+                    >
+                      {/* Vignette & Broadcast Lighting */}
+                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)]" />
+
+                      {/* Linee regolamentari del campo */}
+                      <div className="pointer-events-none absolute inset-4 border-2 border-white/55 rounded-sm">
+                        {/* Linea di metà campo */}
+                        <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-white/55" />
+                        {/* Cerchio di centrocampo */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/55 rounded-full" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/80 rounded-full" />
+
+                        {/* Area di rigore superiore (Attacco) */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-44 h-20 border-2 border-white/55 border-t-0" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-9 border-2 border-white/55 border-t-0" />
+
+                        {/* Area di rigore inferiore (Porta) */}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-44 h-20 border-2 border-white/55 border-b-0" />
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-9 border-2 border-white/55 border-b-0" />
+                      </div>
+
+                      {/* 11 Posizioni interattive sul campo */}
+                      <div className="relative w-full h-full">
+                        {currentFormation.positions.map((pos, slotIdx) => {
+                          const occupant = formationSlots[slotIdx];
+                          const fit = occupant
+                            ? evaluateRoleFit(occupant.Posiz, pos.label)
+                            : null;
+                          const isHovered = dragOverSlotIndex === slotIdx;
+
+                          const ringColor =
+                            fit === "natural"
+                              ? "border-emerald-400 shadow-emerald-500/30"
+                              : fit === "adaptable"
+                              ? "border-amber-400 shadow-amber-500/30"
+                              : "border-rose-400 shadow-rose-500/30";
+
+                          return (
+                            <div
+                              key={slotIdx}
+                              draggable={Boolean(occupant)}
+                              onDragStart={(e) =>
+                                occupant && handleDragStartPlayer(e, Number(occupant.ID))
+                              }
+                              onDragEnd={handleDragEnd}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                setDragOverSlotIndex(slotIdx);
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverSlotIndex === slotIdx) setDragOverSlotIndex(null);
+                              }}
+                              onDrop={(e) => handleDropOnStarterSlot(e, slotIdx)}
+                              onClick={() => occupant && setSelectedPlayerModal(occupant)}
+                              style={{ left: pos.x, top: pos.y }}
+                              className={`absolute -translate-x-1/2 -translate-y-1/2 z-10 transition-all duration-300 ${
+                                isHovered ? "scale-125 z-30" : "hover:scale-110 hover:z-20"
+                              }`}
+                            >
+                              {occupant ? (
+                                <div className="flex flex-col items-center cursor-grab active:cursor-grabbing group">
+                                  {/* Avatar Pedina con OVR */}
+                                  <div className="relative">
+                                    <div
+                                      className={`w-12 h-12 rounded-full overflow-hidden bg-slate-900 border-2 ${ringColor} shadow-lg`}
+                                    >
+                                      <img
+                                        src={getPlayerImage(Number(occupant.ID))}
+                                        alt={occupant.Cognome}
+                                        className="w-full h-full object-cover object-top"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src =
+                                            "/images/players/MConti.png";
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* Pillola OVR in alto a destra */}
+                                    <span className="absolute -top-1 -right-2 bg-slate-950 text-white border border-white/40 text-[10px] font-black font-mono px-1.5 py-0 rounded-full shadow">
+                                      {occupant.OVR}
+                                    </span>
+
+                                    {/* Numero slot in basso a sinistra */}
+                                    <span className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[9px] font-bold font-mono w-4 h-4 rounded-full flex items-center justify-center border border-white/60 shadow">
+                                      {slotIdx + 1}
+                                    </span>
+                                  </div>
+
+                                  {/* Targhetta Cognome + Ruolo */}
+                                  <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-950/90 backdrop-blur-sm border border-white/25 text-white shadow-md flex items-center gap-1 max-w-[110px]">
+                                    <span className="text-[9px] font-extrabold text-emerald-400 font-mono">
+                                      {pos.label}
+                                    </span>
+                                    <span className="text-[10px] font-bold truncate">
+                                      {occupant.Cognome}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* Slot Vuoto sul Campo */
+                                <div className="flex flex-col items-center">
+                                  <div
+                                    className={`w-11 h-11 rounded-full border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
+                                      isHovered
+                                        ? "border-emerald-300 bg-emerald-500/40 text-white"
+                                        : "border-white/70 bg-black/35 text-white/90 hover:bg-black/50"
+                                    }`}
+                                  >
+                                    <span className="text-[9px] font-mono font-bold opacity-80">
+                                      #{slotIdx + 1}
+                                    </span>
+                                    <span className="text-[10px] font-extrabold">
+                                      {pos.label}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Legenda Affinità Ruolo */}
+                    <div className="mt-3 pt-2.5 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                        <span>Ruolo Naturale ({tacticStats.naturalCount})</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                        <span>Adattato ({tacticStats.adaptableCount})</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                        <span>Fuori Ruolo ({tacticStats.outCount})</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       {/* Modal Dettaglio Giocatore */}
-      {selected && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4" onClick={() => setSelected(null)}>
-                <PlayerDetails currentPlayer={selected.player} onClose={() => setSelected(null)} />
-              </div>
-            )}
+      {selectedPlayerModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4"
+          onClick={() => setSelectedPlayerModal(null)}
+        >
+          <PlayerDetails
+            currentPlayer={selectedPlayerModal}
+            onClose={() => setSelectedPlayerModal(null)}
+          />
+        </div>
+      )}
     </div>
   );
 };
