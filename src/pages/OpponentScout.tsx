@@ -111,11 +111,18 @@ export const OpponentScout: React.FC = () => {
     };
   }, [myTeamId, paramTeamId]);
 
+  // Seleziona di default la formazione più recente (l'ultima a destra) quando i dati vengono caricati
+  useEffect(() => {
+    if (scoutData?.formations && scoutData.formations.length > 0) {
+      setSelectedFormationIdx(scoutData.formations.length - 1);
+    }
+  }, [scoutData]);
+
   const opponentTeam = scoutData?.team;
   const standings = scoutData?.standings;
   const rawRoster = scoutData?.roster || [];
   const formations = scoutData?.formations || [];
-  const currentFormation = formations[selectedFormationIdx] || formations[0];
+  const currentFormation = formations[selectedFormationIdx] || formations[formations.length - 1] || formations[0];
 
   // Roster filtrato
   const filteredRoster = useMemo(() => {
@@ -610,26 +617,41 @@ export const OpponentScout: React.FC = () => {
                     {/* Selector Pills */}
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">
-                        Seleziona Formazione:
+                        Ultime Formazioni:
                       </span>
-                      {formations.map((f, idx) => (
-                        <Button
-                          key={f.id}
-                          type="button"
-                          variant={selectedFormationIdx === idx ? "default" : "outline"}
-                          onClick={() => setSelectedFormationIdx(idx)}
-                          className={`h-9 text-xs font-bold gap-2 rounded-xl transition-all ${
-                            selectedFormationIdx === idx
-                              ? "bg-emerald-600 text-white shadow-sm"
-                              : "bg-card text-foreground border-border hover:bg-muted"
-                          }`}
-                        >
-                          <span>#{idx + 1} {f.formationId}</span>
-                          <span className="text-[10px] opacity-80">
-                            ({f.source === "tactic_history" ? "Storicizzata" : f.source === "active_tactic" ? "Attiva" : "In Campo"})
-                          </span>
-                        </Button>
-                      ))}
+                      {formations.map((f, idx) => {
+                        const isLatest = idx === formations.length - 1;
+                        const isOldest = idx === 0 && formations.length > 1;
+
+                        return (
+                          <Button
+                            key={f.id}
+                            type="button"
+                            variant={selectedFormationIdx === idx ? "default" : "outline"}
+                            onClick={() => setSelectedFormationIdx(idx)}
+                            className={`h-9 text-xs font-bold gap-2 rounded-xl transition-all ${
+                              selectedFormationIdx === idx
+                                ? "bg-emerald-600 text-white shadow-sm"
+                                : "bg-card text-foreground border-border hover:bg-muted"
+                            }`}
+                          >
+                            <span>#{idx + 1} {f.formationId}</span>
+                            {isLatest ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 dark:text-emerald-300 font-extrabold uppercase">
+                                Più Recente
+                              </span>
+                            ) : isOldest ? (
+                              <span className="text-[10px] opacity-70">
+                                (Meno recente)
+                              </span>
+                            ) : (
+                              <span className="text-[10px] opacity-80">
+                                ({f.source === "tactic_history" ? "Storicizzata" : f.source === "active_tactic" ? "Attiva" : "In Campo"})
+                              </span>
+                            )}
+                          </Button>
+                        );
+                      })}
                     </div>
 
                     {/* Dual Column Layout: Pitch & Bench */}
@@ -905,15 +927,13 @@ export const OpponentScout: React.FC = () => {
       {/* ========================================================= */}
       {selectedPlayer && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
           onClick={() => setSelectedPlayer(null)}
         >
-          <div onClick={(e) => e.stopPropagation()} className="max-w-2xl w-full">
-            <PlayerDetails
-              currentPlayer={selectedPlayer}
-              onClose={() => setSelectedPlayer(null)}
-            />
-          </div>
+          <PlayerDetails
+            currentPlayer={selectedPlayer}
+            onClose={() => setSelectedPlayer(null)}
+          />
         </div>
       )}
     </div>

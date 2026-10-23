@@ -380,6 +380,10 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
       }
     }
 
+    // Ordina le formazioni in ordine cronologico:
+    // la più vecchia come prima (a sinistra), la più recente come ultima (a destra)
+    formations.reverse();
+
     return {
       team: {
         team_id: teamData.TEAM_ID,
