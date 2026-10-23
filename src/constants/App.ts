@@ -1,4 +1,5 @@
 export const PLAYER_TABLE = "an_player";
+export const EA_PLAYER_DB_TABLE = "ea_player_db";
 export const PLAYER_TABLE_TRAINING = "an_player_training";
 export const TEAM_TABLE = "an_team";
 export const TEAM_TACTIC_TABLE = "an_team_tactic";

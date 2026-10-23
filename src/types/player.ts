@@ -65,6 +65,12 @@ export type Player = {
     MarketStatus: MarketStatus | null;
     Role1: string | null;
     Role2: string | null;
+    Role3?: string | null;
+    PreferredPosition2?: string | null;
+    PreferredPosition3?: string | null;
+    PreferredPosition4?: string | null;
+    BodyType?: number | null;
+    Emotion?: number | null;
     Trait1: string | null;
     Trait2: string | null;
     IconTrait1: string | null;
