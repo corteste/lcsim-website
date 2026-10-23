@@ -40,6 +40,9 @@ import { getRoleColor, getValueColor, getPlayerImage, getPosGroup } from "@/util
 import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
+import { FormationCountdown } from "@/components/FormationCountdown";
+import { LeagueDeadline } from "@/types/deadlines";
+import { saveLineupSnapshot } from "@/services/deadlineService";
 
 // ============================================================================
 // ORDINAMENTO RUOLI UFFICIALE DEL PROGETTO (da Rose.tsx)
@@ -746,6 +749,16 @@ const Tattica = () => {
   // Stato Roster e Tattica
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [activeDeadline, setActiveDeadline] = useState<LeagueDeadline | null>(null);
+  const [isDeadlineClosed, setIsDeadlineClosed] = useState<boolean>(false);
+
+  const handleDeadlineStatusChange = (
+    isExpired: boolean,
+    deadline: LeagueDeadline | null
+  ) => {
+    setActiveDeadline(deadline);
+    setIsDeadlineClosed(isExpired || Boolean(deadline?.is_force_closed));
+  };
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Modulo selezionato e 11 slot titolari (ID giocatore o null)

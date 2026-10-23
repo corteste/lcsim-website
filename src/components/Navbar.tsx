@@ -32,6 +32,7 @@ import { useAuth } from "@/context/AuthContext";
 import LoginDialog from "@/components/LoginDialog";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { GlobalAnnouncementBanner } from "@/components/GlobalAnnouncementBanner";
+import { FormationCountdown } from "@/components/FormationCountdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -497,6 +498,15 @@ const Navbar = () => {
           {/* ================================================================= */}
           <div className="flex items-center gap-2">
             
+            {/* Widget Scadenza Consegna Formazioni */}
+            <Link
+              to="/mia-squadra/tattica"
+              className="hidden lg:block hover:opacity-90 transition-opacity"
+              title="Scadenza consegna formazioni per la Giornata di campionato"
+            >
+              <FormationCountdown compact={true} />
+            </Link>
+
             {/* Centro Notifiche & Comunicazioni Realtime */}
             <NotificationsMenu />
 
@@ -646,6 +656,13 @@ const Navbar = () => {
                         <span>Navigazione LCSIM</span>
                       </SheetTitle>
                     </SheetHeader>
+
+                    {/* Widget Scadenza Consegna Formazioni Mobile */}
+                    <div className="pt-2 pb-1">
+                      <Link to="/mia-squadra/tattica" onClick={() => setIsOpen(false)}>
+                        <FormationCountdown compact={true} className="w-full justify-center py-1.5" />
+                      </Link>
+                    </div>
 
                     {/* Gruppo: Campionato */}
                     <div className="space-y-1">

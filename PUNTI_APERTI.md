@@ -102,7 +102,7 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 3. Scadenza Consegna Formazioni, Countdown & Blocco Modifiche (Punti 7 e 7b)
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Implementato su branch dev (Pronto per test)
 - **Priorità**: Alta (Fondamentale per la regolarità delle partite e del calendario settimanale)
 - **Moduli coinvolti**: `src/pages/Tattica.tsx`, `Navbar.tsx` (o banner home), Supabase (configurazione scadenze di lega)
 
