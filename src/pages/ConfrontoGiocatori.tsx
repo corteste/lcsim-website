@@ -1,255 +1,1524 @@
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState, useEffect } from "react";
-import { getPlayers } from "@/hooks/use-players";
-import { Player } from "@/types/player";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Swords, Shield, Target, Zap, Award } from "lucide-react";
-import { getPlayerImage } from "@/utils/functions";
-import { useLocation } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Swords,
+  Users,
+  Shield,
+  Target,
+  Zap,
+  Award,
+  Sparkles,
+  Lock,
+  Unlock,
+  Search,
+  ArrowLeftRight,
+  Compass,
+  Flame,
+  Coins,
+  ChevronRight,
+  ExternalLink,
+  Activity,
+  UserCheck,
+} from "lucide-react";
+import {
+  getPlayerImage,
+  getNationalityFlag,
+  getRoleColor,
+  getValueColor,
+  getTeamBackground,
+} from "@/utils/functions";
 import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
+import { Player } from "@/types/player";
+import { supabase } from "@/supabaseClient";
+import {
+  PLAYER_TABLE,
+  ROOKIE_TABLE,
+  ROOKIE_SCOUTING_TABLE,
+} from "@/constants/App";
+import { renderStars } from "@/components/scouting/StarRating";
+import {
+  isDepartmentUnlocked,
+  getRequiredTokensForDepartment,
+  getRequiredTokensForField,
+  getOvrDisplayByTokens,
+  getTierBadgeStyle,
+  ScoutingDeptKey,
+} from "@/utils/scoutingConfig";
+import PlayerDetails from "@/components/player/playerDetails";
+import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 
-const statCategories = {
-  generale: {
-    label: "Generale",
-    icon: Award,
-    color: "from-amber-500 to-orange-500",
-    stats: [
-      { key: "OVR", label: "Overall" },
-      { key: "POR", label: "Porta" },
-      { key: "DIF", label: "Difesa" },
-      { key: "CEN", label: "Centrocampo" },
-      { key: "ATT", label: "Attacco" },
-      { key: "FIS", label: "Fisico" },
-      { key: "MEN", label: "Mentale" },
-      { key: "CPZ", label: "Calci Piazzati" },
-    ],
-  },
-  portiere: {
-    label: "Portiere",
-    icon: Shield,
-    color: "from-yellow-500 to-amber-500",
-    stats: [
-      { key: "RIFP", label: "Riflessi" },
-      { key: "PREP", label: "Presa" },
-      { key: "TUFP", label: "Tuffo" },
-      { key: "POSP", label: "Posizionamento" },
-      { key: "RINP", label: "Rinvio" },
-    ],
-  },
-  difesa: {
-    label: "Difesa",
-    icon: Shield,
-    color: "from-blue-500 to-cyan-500",
-    stats: [
-      { key: "MARC", label: "Marcatura" },
-      { key: "CONT", label: "Contrasto" },
-      { key: "AGGR", label: "Aggressività" },
-      { key: "SCIV", label: "Scivolata" },
-      { key: "INTR", label: "Intercettazioni" },
-    ],
-  },
-  centrocampo: {
-    label: "Centrocampo",
-    icon: Users,
-    color: "from-green-500 to-emerald-500",
-    stats: [
-      { key: "PASC", label: "Passaggi Corti" },
-      { key: "PASL", label: "Passaggi Lunghi" },
-      { key: "CRSS", label: "Cross" },
-      { key: "CTRP", label: "Controllo Palla" },
-      { key: "VISI", label: "Visione" },
-      { key: "EFFT", label: "Effetto" },
-    ],
-  },
-  attacco: {
-    label: "Attacco",
-    icon: Target,
-    color: "from-red-500 to-pink-500",
-    stats: [
-      { key: "PIAZ", label: "Piazzamento" },
-      { key: "PTIR", label: "Potenza Tiro" },
-      { key: "TIRD", label: "Tiro dalla Distanza" },
-      { key: "DRBL", label: "Dribbling" },
-      { key: "TIRV", label: "Tiri al Volo" },
-      { key: "TSTA", label: "Colpi di Testa" },
-      { key: "FINA", label: "Finalizzazione" },
-    ],
-  },
-  fisico: {
-    label: "Fisico",
-    icon: Zap,
-    color: "from-purple-500 to-violet-500",
-    stats: [
-      { key: "ACCL", label: "Accelerazione" },
-      { key: "VELO", label: "Velocità" },
-      { key: "RESI", label: "Resistenza" },
-      { key: "FRZA", label: "Forza" },
-      { key: "AGIL", label: "Agilità" },
-      { key: "ELEV", label: "Elevazione" },
-      { key: "RIFL", label: "Riflessi" },
-      { key: "EQLB", label: "Equilibrio" },
-    ],
-  },
-  calciPiazzati: {
-    label: "Calci Piazzati",
-    icon: Swords,
-    color: "from-indigo-500 to-blue-500",
-    stats: [
-      { key: "PNIZ", label: "Punizioni" },
-      { key: "CRIG", label: "Rigori" },
-      { key: "MABI", label: "Mosse Abilità" },
-    ],
-  },
+export type ComparisonPlayer = Player & {
+  isRookie: boolean;
+  scoutingTokens: number;
+  uniqueKey: string;
 };
 
-
-const getPositionColor = (position: string | undefined) => {
-  if (!position) return "bg-muted text-muted-foreground";
-  if (position === "POR") return "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400";
-  if (["DC", "TD", "TS"].includes(position)) return "bg-blue-500/20 text-blue-600 dark:text-blue-400";
-  if (["CDC", "CC", "AD", "AS", "COC"].includes(position)) return "bg-green-500/20 text-green-600 dark:text-green-400";
-  return "bg-red-500/20 text-red-600 dark:text-red-400";
-};
-
-interface PlayerCardProps {
-  player: Player | null;
-  playerId: number;
-  onPlayerChange: (id: number) => void;
-  players: Player[];
-  side: "left" | "right";
+interface StatDef {
+  key: keyof Player;
+  label: string;
+  dept: ScoutingDeptKey;
 }
 
-const PlayerCard = ({ player, playerId, onPlayerChange, players, side }: PlayerCardProps) => {
-  const gradientClass = side === "left" 
-    ? "from-blue-500/10 to-transparent" 
-    : "from-emerald-500/10 to-transparent";
-  const accentColor = side === "left" ? "border-blue-500/30" : "border-emerald-500/30";
-  
-  return (
-    <div className={`relative rounded-2xl border ${accentColor} bg-gradient-to-br ${gradientClass} backdrop-blur-sm overflow-hidden`}>
-      <div className="p-6">
-        <Select value={String(playerId)} onValueChange={(v) => onPlayerChange(Number(v))}>
-          <SelectTrigger className="w-full mb-6 bg-background/50 border-border/50">
-            <SelectValue placeholder="Seleziona giocatore" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            {players.map((p) => (
-              <SelectItem key={p.ID} value={String(p.ID)}>
-                <span className="flex items-center gap-2">
-                  <span className="font-medium">{p.Cognome}</span>
-                  <span className="text-muted-foreground">{p.Nome}</span>
-                  <span className="text-xs text-muted-foreground">— {p.Squadra}</span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+const STAT_CATEGORIES: {
+  id: string;
+  label: string;
+  icon: typeof Shield;
+  colorClass: string;
+  stats: StatDef[];
+}[] = [
+  {
+    id: "ALL",
+    label: "Tutti gli Attributi",
+    icon: Activity,
+    colorClass: "text-primary",
+    stats: [
+      // Fisico
+      { key: "VELO", label: "Velocità Scatto", dept: "FIS" },
+      { key: "ACCL", label: "Accelerazione", dept: "FIS" },
+      { key: "FRZA", label: "Forza Fisica", dept: "FIS" },
+      { key: "RESI", label: "Resistenza", dept: "FIS" },
+      { key: "AGIL", label: "Agilità", dept: "FIS" },
+      { key: "ELEV", label: "Elevazione", dept: "FIS" },
+      { key: "RIFL", label: "Riflessi Generali", dept: "FIS" },
+      { key: "EQLB", label: "Equilibrio", dept: "FIS" },
+      // Difesa
+      { key: "CONT", label: "Contrasto", dept: "DIF" },
+      { key: "MARC", label: "Marcatura", dept: "DIF" },
+      { key: "INTR", label: "Intercettazione", dept: "DIF" },
+      { key: "SCIV", label: "Scivolata", dept: "DIF" },
+      { key: "AGGR", label: "Aggressività", dept: "DIF" },
+      // Passaggi
+      { key: "PASC", label: "Passaggio Corto", dept: "PAS" },
+      { key: "PASL", label: "Passaggio Lungo", dept: "PAS" },
+      { key: "CTRP", label: "Controllo Palla", dept: "PAS" },
+      { key: "VISI", label: "Visione di Gioco", dept: "PAS" },
+      { key: "CRSS", label: "Cross", dept: "PAS" },
+      { key: "EFFT", label: "Effetto", dept: "PAS" },
+      // Attacco
+      { key: "FINA", label: "Finalizzazione", dept: "ATT" },
+      { key: "PTIR", label: "Potenza Tiro", dept: "ATT" },
+      { key: "TIRD", label: "Tiro dalla Distanza", dept: "ATT" },
+      { key: "DRBL", label: "Dribbling", dept: "ATT" },
+      { key: "TSTA", label: "Colpo di Testa", dept: "ATT" },
+      { key: "PIAZ", label: "Piazzamento Offensivo", dept: "ATT" },
+      { key: "TIRV", label: "Tiro al Volo", dept: "ATT" },
+      // Calci Piazzati
+      { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
+      { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
+      // Portiere
+      { key: "TUFP", label: "Tuffo Portiere", dept: "POR" },
+      { key: "PREP", label: "Presa Portiere", dept: "POR" },
+      { key: "RINP", label: "Rinvio Portiere", dept: "POR" },
+      { key: "RIFP", label: "Riflessi Portiere", dept: "POR" },
+      { key: "POSP", label: "Posizionamento Portiere", dept: "POR" },
+    ],
+  },
+  {
+    id: "FIS",
+    label: "Fisico & Velocità",
+    icon: Zap,
+    colorClass: "text-purple-500",
+    stats: [
+      { key: "VELO", label: "Velocità Scatto", dept: "FIS" },
+      { key: "ACCL", label: "Accelerazione", dept: "FIS" },
+      { key: "FRZA", label: "Forza Fisica", dept: "FIS" },
+      { key: "RESI", label: "Resistenza", dept: "FIS" },
+      { key: "AGIL", label: "Agilità", dept: "FIS" },
+      { key: "ELEV", label: "Elevazione", dept: "FIS" },
+      { key: "RIFL", label: "Riflessi Generali", dept: "FIS" },
+      { key: "EQLB", label: "Equilibrio", dept: "FIS" },
+    ],
+  },
+  {
+    id: "DIF",
+    label: "Difesa & Marcatura",
+    icon: Shield,
+    colorClass: "text-blue-500",
+    stats: [
+      { key: "CONT", label: "Contrasto", dept: "DIF" },
+      { key: "MARC", label: "Marcatura", dept: "DIF" },
+      { key: "INTR", label: "Intercettazione", dept: "DIF" },
+      { key: "SCIV", label: "Scivolata", dept: "DIF" },
+      { key: "AGGR", label: "Aggressività", dept: "DIF" },
+    ],
+  },
+  {
+    id: "PAS",
+    label: "Passaggi & Regia",
+    icon: Compass,
+    colorClass: "text-cyan-500",
+    stats: [
+      { key: "PASC", label: "Passaggio Corto", dept: "PAS" },
+      { key: "PASL", label: "Passaggio Lungo", dept: "PAS" },
+      { key: "CTRP", label: "Controllo Palla", dept: "PAS" },
+      { key: "VISI", label: "Visione di Gioco", dept: "PAS" },
+      { key: "CRSS", label: "Cross", dept: "PAS" },
+      { key: "EFFT", label: "Effetto", dept: "PAS" },
+    ],
+  },
+  {
+    id: "ATT",
+    label: "Attacco & Tiro",
+    icon: Target,
+    colorClass: "text-rose-500",
+    stats: [
+      { key: "FINA", label: "Finalizzazione", dept: "ATT" },
+      { key: "PTIR", label: "Potenza Tiro", dept: "ATT" },
+      { key: "TIRD", label: "Tiro dalla Distanza", dept: "ATT" },
+      { key: "DRBL", label: "Dribbling", dept: "ATT" },
+      { key: "TSTA", label: "Colpo di Testa", dept: "ATT" },
+      { key: "PIAZ", label: "Piazzamento Offensivo", dept: "ATT" },
+      { key: "TIRV", label: "Tiro al Volo", dept: "ATT" },
+    ],
+  },
+  {
+    id: "CPZ",
+    label: "Calci Piazzati",
+    icon: Flame,
+    colorClass: "text-orange-500",
+    stats: [
+      { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
+      { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
+    ],
+  },
+  {
+    id: "POR",
+    label: "Portiere",
+    icon: Shield,
+    colorClass: "text-amber-500",
+    stats: [
+      { key: "TUFP", label: "Tuffo Portiere", dept: "POR" },
+      { key: "PREP", label: "Presa Portiere", dept: "POR" },
+      { key: "RINP", label: "Rinvio Portiere", dept: "POR" },
+      { key: "RIFP", label: "Riflessi Portiere", dept: "POR" },
+      { key: "POSP", label: "Posizionamento Portiere", dept: "POR" },
+    ],
+  },
+];
 
-        {player ? (
-          <div className="flex flex-col items-center animate-fade-in">
-            <div className="relative mb-4">
-              <div className={`w-32 h-32 rounded-full overflow-hidden border-4 ${accentColor} bg-muted/30`}>
-                <img
-                  src={getPlayerImage(player.ID)}
-                  alt={`${player.Nome} ${player.Cognome}`}
-                  className="w-full h-full object-cover object-top"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/images/players/MConti.png";
-                  }}
-                />
+const ROLE_GROUPS: { id: string; label: string; roles: string[] }[] = [
+  { id: "ALL", label: "Tutti i Ruoli", roles: [] },
+  { id: "POR", label: "Portieri", roles: ["POR"] },
+  { id: "DIF", label: "Difesa", roles: ["DC", "TD", "TS"] },
+  { id: "CEN", label: "Centrocampo", roles: ["CDC", "CC", "ED", "ES", "COC"] },
+  { id: "ATT", label: "Attacco", roles: ["AD", "AS", "AT", "ATT"] },
+];
+
+// Helper to evaluate a stat for a player (handles scouting visibility for rookies)
+function getPlayerStatValue(
+  player: ComparisonPlayer,
+  statKey: keyof Player,
+  dept: ScoutingDeptKey
+): {
+  isRevealed: boolean;
+  numericVal: number | null;
+  displayVal: string;
+  requiredTokens?: number;
+} {
+  if (!player.isRookie) {
+    const raw = player[statKey];
+    const n = raw !== null && raw !== undefined ? Number(raw) : null;
+    return {
+      isRevealed: true,
+      numericVal: n,
+      displayVal: n !== null ? String(n) : "—",
+    };
+  }
+
+  // Rookie scouting rule
+  const unlocked = isDepartmentUnlocked(
+    dept,
+    player.Posiz,
+    player.scoutingTokens
+  );
+  if (!unlocked) {
+    const req = getRequiredTokensForDepartment(dept, player.Posiz);
+    return {
+      isRevealed: false,
+      numericVal: null,
+      displayVal: "?",
+      requiredTokens: req,
+    };
+  }
+
+  const raw = player[statKey];
+  const n = raw !== null && raw !== undefined ? Number(raw) : null;
+  return {
+    isRevealed: true,
+    numericVal: n,
+    displayVal: n !== null ? String(n) : "—",
+  };
+}
+
+// Helper to evaluate OVR
+function getPlayerOvr(player: ComparisonPlayer): {
+  isRevealed: boolean;
+  displayVal: string;
+  numericVal: number | null;
+  isRange: boolean;
+} {
+  if (!player.isRookie) {
+    return {
+      isRevealed: true,
+      displayVal: String(player.OVR ?? "—"),
+      numericVal: player.OVR ?? 0,
+      isRange: false,
+    };
+  }
+
+  const ovrInfo = getOvrDisplayByTokens(player.OVR, player.scoutingTokens);
+  if (player.scoutingTokens >= 5) {
+    return {
+      isRevealed: true,
+      displayVal: String(player.OVR ?? "—"),
+      numericVal: player.OVR ?? 0,
+      isRange: false,
+    };
+  }
+  if (player.scoutingTokens >= 3) {
+    return {
+      isRevealed: true,
+      displayVal: ovrInfo.label,
+      numericVal: player.OVR ?? 0,
+      isRange: true,
+    };
+  }
+  return {
+    isRevealed: false,
+    displayVal: "?",
+    numericVal: null,
+    isRange: false,
+  };
+}
+
+// Helper to evaluate Trait / Special Field
+function getPlayerTrait(
+  player: ComparisonPlayer,
+  field:
+    | "Role1"
+    | "Role2"
+    | "Trait1"
+    | "Trait2"
+    | "IconTrait1"
+    | "IconTrait2"
+    | "PiedeDebole"
+    | "MABI"
+): {
+  isRevealed: boolean;
+  displayVal: string;
+  requiredTokens?: number;
+} {
+  if (!player.isRookie) {
+    return {
+      isRevealed: true,
+      displayVal: String(player[field] || "Nessuno"),
+    };
+  }
+
+  const req = getRequiredTokensForField(field);
+  if (player.scoutingTokens >= req) {
+    return {
+      isRevealed: true,
+      displayVal: String(player[field] || "Nessuno"),
+    };
+  }
+
+  return {
+    isRevealed: false,
+    displayVal: "?",
+    requiredTokens: req,
+  };
+}
+
+// Compute 6 Macro stats
+function getMacroPillars(player: ComparisonPlayer) {
+  const isGK = player.Posiz === "POR";
+
+  if (isGK) {
+    const tuf = getPlayerStatValue(player, "TUFP", "POR");
+    const pre = getPlayerStatValue(player, "PREP", "POR");
+    const rin = getPlayerStatValue(player, "RINP", "POR");
+    const rif = getPlayerStatValue(player, "RIFP", "POR");
+    const pos = getPlayerStatValue(player, "POSP", "POR");
+    const fis = getPlayerStatValue(player, "FRZA", "FIS");
+
+    return [
+      { label: "TUF", name: "Tuffo", ...tuf },
+      { label: "PRE", name: "Presa", ...pre },
+      { label: "RIN", name: "Rinvio", ...rin },
+      { label: "RIF", name: "Riflessi", ...rif },
+      { label: "POS", name: "Piazzamento", ...pos },
+      { label: "FIS", name: "Fisico", ...fis },
+    ];
+  }
+
+  // Outfield
+  const velStat = getPlayerStatValue(player, "VELO", "FIS");
+  const tirStat = getPlayerStatValue(player, "FINA", "ATT");
+  const pasStat = getPlayerStatValue(player, "PASC", "PAS");
+  const drbStat = getPlayerStatValue(player, "DRBL", "ATT");
+  const difStat = getPlayerStatValue(player, "CONT", "DIF");
+  const fisStat = getPlayerStatValue(player, "FRZA", "FIS");
+
+  const calcAvg = (
+    stats: { isRevealed: boolean; numericVal: number | null }[]
+  ) => {
+    if (stats.some((s) => !s.isRevealed)) {
+      return { isRevealed: false, displayVal: "?", numericVal: null };
+    }
+    const vals = stats.map((s) => s.numericVal).filter((v) => v !== null) as number[];
+    if (vals.length === 0) return { isRevealed: true, displayVal: "—", numericVal: null };
+    const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    return { isRevealed: true, displayVal: String(avg), numericVal: avg };
+  };
+
+  const vel = velStat.isRevealed
+    ? calcAvg([velStat, getPlayerStatValue(player, "ACCL", "FIS")])
+    : velStat;
+  const tir = tirStat.isRevealed
+    ? calcAvg([
+        tirStat,
+        getPlayerStatValue(player, "PTIR", "ATT"),
+        getPlayerStatValue(player, "TIRD", "ATT"),
+        getPlayerStatValue(player, "PIAZ", "ATT"),
+      ])
+    : tirStat;
+  const pas = pasStat.isRevealed
+    ? calcAvg([
+        pasStat,
+        getPlayerStatValue(player, "PASL", "PAS"),
+        getPlayerStatValue(player, "CTRP", "PAS"),
+        getPlayerStatValue(player, "VISI", "PAS"),
+      ])
+    : pasStat;
+  const drb = drbStat.isRevealed
+    ? calcAvg([
+        drbStat,
+        getPlayerStatValue(player, "CTRP", "PAS"),
+        getPlayerStatValue(player, "AGIL", "FIS"),
+      ])
+    : drbStat;
+  const dif = difStat.isRevealed
+    ? calcAvg([
+        difStat,
+        getPlayerStatValue(player, "MARC", "DIF"),
+        getPlayerStatValue(player, "INTR", "DIF"),
+        getPlayerStatValue(player, "SCIV", "DIF"),
+      ])
+    : difStat;
+  const fis = fisStat.isRevealed
+    ? calcAvg([
+        fisStat,
+        getPlayerStatValue(player, "RESI", "FIS"),
+        getPlayerStatValue(player, "ELEV", "FIS"),
+      ])
+    : fisStat;
+
+  return [
+    { label: "VEL", name: "Velocità", ...vel },
+    { label: "TIR", name: "Tiro", ...tir },
+    { label: "PAS", name: "Passaggio", ...pas },
+    { label: "DRI", name: "Dribbling", ...drb },
+    { label: "DIF", name: "Difesa", ...dif },
+    { label: "FIS", name: "Fisico", ...fis },
+  ];
+}
+
+const ConfrontoGiocatori = () => {
+  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
+  const currentTeam = effectiveTeam;
+  const currentTeamFullName = effectiveTeamFullName || currentTeam;
+
+  const [teamPlayers, setTeamPlayers] = useState<Player[]>([]);
+  const [rookies, setRookies] = useState<Player[]>([]);
+  const [scoutingMap, setScoutingMap] = useState<Record<number, number>>({});
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Selected player keys (uniqueKey)
+  const [leftKey, setLeftKey] = useState<string>("");
+  const [rightKey, setRightKey] = useState<string>("");
+
+  // Player selector dialog state
+  const [selectorTarget, setSelectorTarget] = useState<"left" | "right" | null>(null);
+  const [selectorSource, setSelectorSource] = useState<"ALL" | "TEAM" | "ROOKIE">("ALL");
+  const [selectorRole, setSelectorRole] = useState<string>("ALL");
+  const [selectorSearch, setSelectorSearch] = useState<string>("");
+
+  // Full player details modal
+  const [selectedModalPlayer, setSelectedModalPlayer] = useState<Player | null>(null);
+
+  // Active Category Tab
+  const [activeTab, setActiveTab] = useState<string>("ALL");
+
+  // Load Data: user's team squad + all rookies + scouting records
+  const loadData = useCallback(async () => {
+    if (!currentTeam) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const [teamRes, rookiesRes, scoutingRes] = await Promise.all([
+        supabase
+          .from(PLAYER_TABLE)
+          .select("*")
+          .eq("Squadra", currentTeam)
+          .order("ID", { ascending: true }),
+        supabase.from(ROOKIE_TABLE).select("*").order("ID", { ascending: true }),
+        supabase
+          .from(ROOKIE_SCOUTING_TABLE)
+          .select("rookie_id, tokens_spent")
+          .eq("team_id", currentTeam),
+      ]);
+
+      if (teamRes.error) throw teamRes.error;
+      if (rookiesRes.error) throw rookiesRes.error;
+
+      const sMap: Record<number, number> = {};
+      if (scoutingRes.data) {
+        for (const row of scoutingRes.data) {
+          sMap[Number(row.rookie_id)] = Number(row.tokens_spent) || 0;
+        }
+      }
+
+      setTeamPlayers((teamRes.data as Player[]) ?? []);
+      setRookies((rookiesRes.data as Player[]) ?? []);
+      setScoutingMap(sMap);
+    } catch (err) {
+      console.error("Errore caricamento dati Confronto Giocatori:", err);
+      toast.error("Errore durante il caricamento dei dati di confronto");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentTeam]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Combine into unified ComparisonPlayer array
+  const availablePlayers = useMemo<ComparisonPlayer[]>(() => {
+    const list: ComparisonPlayer[] = [];
+    for (const p of teamPlayers) {
+      list.push({
+        ...p,
+        isRookie: false,
+        scoutingTokens: 5,
+        uniqueKey: `player_${p.ID}`,
+      });
+    }
+    for (const r of rookies) {
+      list.push({
+        ...r,
+        isRookie: true,
+        scoutingTokens: scoutingMap[r.ID] ?? 0,
+        uniqueKey: `rookie_${r.ID}`,
+      });
+    }
+    return list;
+  }, [teamPlayers, rookies, scoutingMap]);
+
+  // Initialize Left & Right players default selection
+  useEffect(() => {
+    if (availablePlayers.length > 0) {
+      if (!leftKey || !availablePlayers.some((p) => p.uniqueKey === leftKey)) {
+        // default Left to first team player if available, else first in list
+        const firstTeam = availablePlayers.find((p) => !p.isRookie);
+        setLeftKey(firstTeam ? firstTeam.uniqueKey : availablePlayers[0].uniqueKey);
+      }
+      if (!rightKey || !availablePlayers.some((p) => p.uniqueKey === rightKey)) {
+        // default Right to first rookie if available, else second player
+        const firstRookie = availablePlayers.find((p) => p.isRookie);
+        if (firstRookie) {
+          setRightKey(firstRookie.uniqueKey);
+        } else if (availablePlayers.length > 1) {
+          setRightKey(availablePlayers[1].uniqueKey);
+        } else {
+          setRightKey(availablePlayers[0].uniqueKey);
+        }
+      }
+    }
+  }, [availablePlayers, leftKey, rightKey]);
+
+  const leftPlayer = useMemo(
+    () => availablePlayers.find((p) => p.uniqueKey === leftKey) ?? null,
+    [availablePlayers, leftKey]
+  );
+
+  const rightPlayer = useMemo(
+    () => availablePlayers.find((p) => p.uniqueKey === rightKey) ?? null,
+    [availablePlayers, rightKey]
+  );
+
+  // Swap Left and Right players
+  const handleSwap = () => {
+    const temp = leftKey;
+    setLeftKey(rightKey);
+    setRightKey(temp);
+  };
+
+  // Filter candidates for Player Selector Dialog
+  const dialogFilteredPlayers = useMemo(() => {
+    return availablePlayers.filter((p) => {
+      // Source filter
+      if (selectorSource === "TEAM" && p.isRookie) return false;
+      if (selectorSource === "ROOKIE" && !p.isRookie) return false;
+
+      // Role filter
+      if (selectorRole !== "ALL") {
+        const group = ROLE_GROUPS.find((g) => g.id === selectorRole);
+        if (group && group.roles.length > 0 && !group.roles.includes(p.Posiz)) {
+          return false;
+        }
+      }
+
+      // Search input
+      if (selectorSearch.trim() !== "") {
+        const q = selectorSearch.toLowerCase().trim();
+        const fullName = `${p.Nome} ${p.Cognome}`.toLowerCase();
+        const role = (p.Posiz || "").toLowerCase();
+        const num = p.NumeroMaglia ? String(p.NumeroMaglia) : "";
+        return fullName.includes(q) || role.includes(q) || num.includes(q);
+      }
+
+      return true;
+    });
+  }, [availablePlayers, selectorSource, selectorRole, selectorSearch]);
+
+  const handleSelectFromDialog = (player: ComparisonPlayer) => {
+    if (selectorTarget === "left") {
+      setLeftKey(player.uniqueKey);
+    } else if (selectorTarget === "right") {
+      setRightKey(player.uniqueKey);
+    }
+    setSelectorTarget(null);
+  };
+
+  // Compute Head-to-Head win summary for the active category
+  const comparisonStats = useMemo(() => {
+    const category = STAT_CATEGORIES.find((c) => c.id === activeTab) || STAT_CATEGORIES[0];
+    return category.stats;
+  }, [activeTab]);
+
+  const headToHeadSummary = useMemo(() => {
+    if (!leftPlayer || !rightPlayer) return { winsLeft: 0, winsRight: 0, ties: 0, hidden: 0 };
+    let winsLeft = 0;
+    let winsRight = 0;
+    let ties = 0;
+    let hidden = 0;
+
+    for (const st of comparisonStats) {
+      const a = getPlayerStatValue(leftPlayer, st.key, st.dept);
+      const b = getPlayerStatValue(rightPlayer, st.key, st.dept);
+
+      if (!a.isRevealed || !b.isRevealed || a.numericVal === null || b.numericVal === null) {
+        hidden++;
+      } else if (a.numericVal > b.numericVal) {
+        winsLeft++;
+      } else if (b.numericVal > a.numericVal) {
+        winsRight++;
+      } else {
+        ties++;
+      }
+    }
+    return { winsLeft, winsRight, ties, hidden };
+  }, [leftPlayer, rightPlayer, comparisonStats]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <RequireAuthPrompt
+          title="Confronto Giocatori & Scouting"
+          description="Accedi al tuo account di squadra o prendi la guida di una squadra libera per confrontare i tuoi giocatori con tutti i 72 Rookie del Draft!"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground transition-colors">
+      <Navbar />
+
+      <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
+        <AdminTeamSelector />
+
+        {/* 1. HERO COMMAND HEADER */}
+        <Card
+          className={`overflow-hidden border border-border/80 shadow-lg ${getTeamBackground(
+            currentTeam ?? ""
+          )}`}
+        >
+          <div className="p-6 bg-gradient-to-r from-card/85 via-card/70 to-card/90 backdrop-blur-md">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+              <div className="flex items-center gap-4">
+                {currentTeam && (
+                  <img
+                    src={`/images/teams/${currentTeam}_Logo.png`}
+                    alt={`${currentTeam} Logo`}
+                    className="h-16 w-16 object-contain drop-shadow-md"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                    }}
+                  />
+                )}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-mono font-bold"
+                    >
+                      La Mia Squadra
+                    </Badge>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      Stagione 2026/2027
+                    </span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 mt-0.5">
+                    <Swords className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-500" />
+                    Confronto Giocatori &amp; Scouting
+                  </h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                    Confronta testa a testa i calciatori della tua rosa ({currentTeamFullName}) con tutti i 72 Rookie del Draft.
+                  </p>
+                </div>
               </div>
-              <div className={`absolute -bottom-2 -right-2 w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
-                side === "left" ? "bg-blue-500" : "bg-emerald-500"
-              } text-white shadow-lg`}>
-                {player.OVR}
+
+              {/* Quick Telemetry Strip */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                    Rosa {currentTeam}
+                  </span>
+                  <span className="text-lg sm:text-xl font-black font-mono text-foreground">
+                    {teamPlayers.length}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">giocatori</span>
+                  </span>
+                </div>
+
+                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                    Rookie Draft
+                  </span>
+                  <span className="text-lg sm:text-xl font-black font-mono text-amber-500">
+                    {rookies.length}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">prospetti</span>
+                  </span>
+                </div>
+
+                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                    Rookie Scoutati
+                  </span>
+                  <span className="text-lg sm:text-xl font-black font-mono text-emerald-500">
+                    {Object.keys(scoutingMap).length}/{rookies.length}
+                  </span>
+                </div>
               </div>
             </div>
+          </div>
+        </Card>
 
-            <h3 className="text-xl font-bold text-foreground mb-1">
-              {player.Nome} {player.Cognome}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-3">{player.Squadra} - {player.Altezza}cm</p>
-            
-            <Badge className={`${getPositionColor(player.Posiz)} border-0 px-4 py-1 text-sm font-medium`}>
-              {player.Posiz || "—"}
-            </Badge>
+        {loading ? (
+          <Card className="p-16 text-center text-muted-foreground">
+            Caricamento atleti e dati di scouting in corso...
+          </Card>
+        ) : (
+          <>
+            {/* 2. HEAD-TO-HEAD PLAYER CARDS (LEFT VS RIGHT) */}
+            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Swap Button (floating in center on desktop) */}
+              <div className="lg:absolute lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 z-20 flex items-center justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSwap}
+                  className="rounded-full h-10 w-10 p-0 shadow-lg border-2 border-emerald-500/50 bg-card hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition-transform active:scale-95"
+                  title="Inverti Giocatore Sinistra / Destra"
+                >
+                  <ArrowLeftRight className="h-4 w-4" />
+                </Button>
+              </div>
 
-            <div className="grid grid-cols-5 gap-3 mt-6 w-full">
-              {[
-                { key: "POR", label: "POR", color: "text-orange-500" },
-                { key: "DIF", label: "DIF", color: "text-blue-500" },
-                { key: "CEN", label: "CEN", color: "text-green-500" },
-                { key: "ATT", label: "ATT", color: "text-red-500" },
-                { key: "FIS", label: "FIS", color: "text-purple-500" },
-              ].map((stat) => (
-                <div key={stat.key} className="text-center p-2 rounded-lg bg-background/50">
-                  <div className={`text-lg font-bold ${stat.color}`}>
-                    {String(player[stat.key as keyof Player] ?? "—")}
+              {/* CARD LEFT: PLAYER A */}
+              {leftPlayer && (
+                <PlayerComparisonCard
+                  player={leftPlayer}
+                  side="left"
+                  onOpenSelector={() => {
+                    setSelectorTarget("left");
+                    setSelectorSearch("");
+                  }}
+                  onOpenDetails={() => setSelectedModalPlayer(leftPlayer)}
+                />
+              )}
+
+              {/* CARD RIGHT: PLAYER B */}
+              {rightPlayer && (
+                <PlayerComparisonCard
+                  player={rightPlayer}
+                  side="right"
+                  onOpenSelector={() => {
+                    setSelectorTarget("right");
+                    setSelectorSearch("");
+                  }}
+                  onOpenDetails={() => setSelectedModalPlayer(rightPlayer)}
+                />
+              )}
+            </div>
+
+            {/* 3. HEAD-TO-HEAD COMPARISON MATRIX */}
+            {leftPlayer && rightPlayer && (
+              <Card className="border border-border/80 bg-card shadow-lg overflow-hidden">
+                {/* Comparison Header Summary */}
+                <div className="p-4 sm:p-5 border-b border-border/80 bg-muted/20 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Swords className="h-5 w-5 text-emerald-500" />
+                    <div>
+                      <h3 className="text-sm sm:text-base font-extrabold uppercase tracking-wider text-foreground">
+                        Scontro Diretto Attributi
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Confronto delle abilità tra {leftPlayer.Nome} {leftPlayer.Cognome} e{" "}
+                        {rightPlayer.Nome} {rightPlayer.Cognome}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+
+                  {/* Scoreboard Pill */}
+                  <div className="flex items-center gap-2 bg-card border border-border px-3.5 py-1.5 rounded-xl shadow-sm text-xs font-mono font-bold">
+                    <span className="text-blue-500">
+                      {leftPlayer.Cognome}: {headToHeadSummary.winsLeft}
+                    </span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-muted-foreground">
+                      Parità: {headToHeadSummary.ties}
+                    </span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-emerald-500">
+                      {rightPlayer.Cognome}: {headToHeadSummary.winsRight}
+                    </span>
+                    {headToHeadSummary.hidden > 0 && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-amber-500 flex items-center gap-1">
+                          <Lock className="h-3 w-3" /> {headToHeadSummary.hidden} da svelare
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
+
+                {/* Categories Tabs List */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <div className="border-b border-border/80 bg-muted/10 px-3 overflow-x-auto">
+                    <TabsList className="bg-transparent h-12 p-0 gap-1 sm:gap-2 justify-start">
+                      {STAT_CATEGORIES.map((cat) => {
+                        const Icon = cat.icon;
+                        return (
+                          <TabsTrigger
+                            key={cat.id}
+                            value={cat.id}
+                            className="h-10 data-[state=active]:bg-card data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 data-[state=active]:text-foreground text-xs font-bold px-3 transition-all rounded-none"
+                          >
+                            <Icon className={`h-3.5 w-3.5 mr-1.5 ${cat.colorClass}`} />
+                            {cat.label}
+                          </TabsTrigger>
+                        );
+                      })}
+                      <TabsTrigger
+                        value="TRAITS"
+                        className="h-10 data-[state=active]:bg-card data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 data-[state=active]:text-foreground text-xs font-bold px-3 transition-all rounded-none"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+                        Ruoli &amp; Tratti
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  {/* Standard Stat Department Tab Content */}
+                  {STAT_CATEGORIES.map((cat) => (
+                    <TabsContent key={cat.id} value={cat.id} className="p-4 sm:p-6 m-0 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+                        {cat.stats.map((stat) => (
+                          <StatComparisonRow
+                            key={stat.key}
+                            stat={stat}
+                            leftPlayer={leftPlayer}
+                            rightPlayer={rightPlayer}
+                          />
+                        ))}
+                      </div>
+                    </TabsContent>
+                  ))}
+
+                  {/* Special Traits Tab Content */}
+                  <TabsContent value="TRAITS" className="p-4 sm:p-6 m-0 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <TraitComparisonRow
+                        label="Ruolo Specializzato 1"
+                        field="Role1"
+                        leftPlayer={leftPlayer}
+                        rightPlayer={rightPlayer}
+                      />
+                      <TraitComparisonRow
+                        label="Ruolo Specializzato 2"
+                        field="Role2"
+                        leftPlayer={leftPlayer}
+                        rightPlayer={rightPlayer}
+                      />
+                      <TraitComparisonRow
+                        label="Tratto Base 1"
+                        field="Trait1"
+                        leftPlayer={leftPlayer}
+                        rightPlayer={rightPlayer}
+                      />
+                      <TraitComparisonRow
+                        label="Tratto Base 2"
+                        field="Trait2"
+                        leftPlayer={leftPlayer}
+                        rightPlayer={rightPlayer}
+                      />
+                      <TraitComparisonRow
+                        label="Tratto Icona 1"
+                        field="IconTrait1"
+                        isIcon
+                        leftPlayer={leftPlayer}
+                        rightPlayer={rightPlayer}
+                      />
+                      <TraitComparisonRow
+                        label="Tratto Icona 2"
+                        field="IconTrait2"
+                        isIcon
+                        leftPlayer={leftPlayer}
+                        rightPlayer={rightPlayer}
+                      />
+                      <TraitComparisonRow
+                        label="Piede Debole"
+                        field="PiedeDebole"
+                        leftPlayer={leftPlayer}
+                        rightPlayer={rightPlayer}
+                      />
+                      <TraitComparisonRow
+                        label="Mosse Abilità (Skill)"
+                        field="MABI"
+                        leftPlayer={leftPlayer}
+                        rightPlayer={rightPlayer}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </Card>
+            )}
+
+            {/* 4. RADAR CHART COMPARISON (POLYGON OVERLAY) */}
+            {leftPlayer && rightPlayer && (
+              <PlayerComparisonRadar
+                leftPlayer={leftPlayer}
+                rightPlayer={rightPlayer}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* 4. PLAYER SELECTOR DIALOG (SEARCHABLE, WITH SOURCE & ROLE FILTERS) */}
+      <Dialog
+        open={selectorTarget !== null}
+        onOpenChange={(open) => !open && setSelectorTarget(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden bg-card border-border/80">
+          <DialogHeader className="p-5 pb-3 border-b border-border/80">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Users className="h-5 w-5 text-emerald-500" />
+              Seleziona Giocatore per il Lato{" "}
+              {selectorTarget === "left" ? "Sinistro (Blu)" : "Destro (Verde)"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Scegli tra i giocatori della rosa di {currentTeamFullName} o uno dei 72 Rookie del Draft.
+            </DialogDescription>
+
+            {/* Search Bar */}
+            <div className="relative mt-3">
+              <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                placeholder="Cerca per nome, cognome, ruolo o #..."
+                value={selectorSearch}
+                onChange={(e) => setSelectorSearch(e.target.value)}
+                className="pl-9 h-9 text-xs"
+                autoFocus
+              />
+            </div>
+
+            {/* Source Filter Tabs */}
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              <button
+                type="button"
+                onClick={() => setSelectorSource("ALL")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  selectorSource === "ALL"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tutti ({availablePlayers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectorSource("TEAM")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  selectorSource === "TEAM"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Rosa {currentTeam} ({teamPlayers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectorSource("ROOKIE")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  selectorSource === "ROOKIE"
+                    ? "bg-amber-500 text-white shadow-sm"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Rookies Draft ({rookies.length})
+              </button>
+            </div>
+
+            {/* Role Filter Pills */}
+            <div className="flex flex-wrap gap-1 mt-2">
+              {ROLE_GROUPS.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setSelectorRole(g.id)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                    selectorRole === g.id
+                      ? "bg-foreground text-background font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {g.label}
+                </button>
               ))}
             </div>
+          </DialogHeader>
+
+          {/* Results List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 max-h-[460px]">
+            {dialogFilteredPlayers.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground text-xs">
+                Nessun giocatore trovato con questi criteri di ricerca.
+              </div>
+            ) : (
+              dialogFilteredPlayers.map((player) => {
+                const isSelected =
+                  (selectorTarget === "left" && player.uniqueKey === leftKey) ||
+                  (selectorTarget === "right" && player.uniqueKey === rightKey);
+                const ovrInfo = getPlayerOvr(player);
+
+                return (
+                  <div
+                    key={player.uniqueKey}
+                    onClick={() => handleSelectFromDialog(player)}
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                      isSelected
+                        ? "border-emerald-500 bg-emerald-500/10 shadow-sm"
+                        : "border-border/70 bg-card hover:bg-muted/40 hover:border-border"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-10 w-10 border border-border shrink-0">
+                        <AvatarImage
+                          src={getPlayerImage(player.ID)}
+                          alt={`${player.Nome} ${player.Cognome}`}
+                        />
+                        <AvatarFallback className="text-[10px] font-bold">
+                          {player.Nome?.[0]}
+                          {player.Cognome?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-foreground text-sm truncate">
+                            {player.Nome} {player.Cognome}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={`text-[9px] font-bold px-1.5 py-0 ${getRoleColor(
+                              player.Posiz
+                            )}`}
+                          >
+                            {player.Posiz}
+                          </Badge>
+                          <img
+                            src={getNationalityFlag(player.Nazionalità)}
+                            alt={player.Nazionalità}
+                            className="h-3 w-4 object-cover rounded-sm shrink-0"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                          {player.isRookie ? (
+                            <span className="flex items-center gap-1 text-amber-500 font-semibold text-[11px]">
+                              {renderStars(player.Stelle, "h-2.5 w-2.5")}
+                              <span>•</span>
+                              <span
+                                className={`text-[10px] px-1 py-0 rounded border ${getTierBadgeStyle(
+                                  player.scoutingTokens
+                                )}`}
+                              >
+                                {player.scoutingTokens}G
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                              Rosa {player.Squadra}
+                              {player.NumeroMaglia ? ` #${player.NumeroMaglia}` : ""}
+                            </span>
+                          )}
+                          <span>•</span>
+                          <span>{player.Età} anni</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* OVR Pill */}
+                    <div className="shrink-0 text-right">
+                      {ovrInfo.isRevealed ? (
+                        <Badge
+                          variant="outline"
+                          className={`${getValueColor(
+                            player.OVR ?? 0
+                          )} text-sm font-black font-mono px-2 py-0.5 border`}
+                        >
+                          {ovrInfo.displayVal}
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="bg-muted text-muted-foreground font-mono text-xs px-2 py-0.5 flex items-center gap-1"
+                        >
+                          <Lock className="h-2.5 w-2.5" /> ?
+                        </Badge>
+                      )}
+                      <span className="text-[9px] uppercase font-bold text-muted-foreground block mt-0.5">
+                        OVR
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Users className="w-16 h-16 mb-4 opacity-30" />
-            <p>Seleziona un giocatore</p>
-          </div>
-        )}
-      </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 5. PLAYER FULL DETAIL MODAL (RADAR & ATTRIBUTES) */}
+      {selectedModalPlayer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4"
+          onClick={() => setSelectedModalPlayer(null)}
+        >
+          <PlayerDetails
+            currentPlayer={selectedModalPlayer}
+            onClose={() => setSelectedModalPlayer(null)}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
-interface ComparisonBarProps {
-  label: string;
-  valueA: number;
-  valueB: number;
-  delay?: number;
+// -------------------------------------------------------------
+// SUB-COMPONENT: PLAYER COMPARISON CARD (LEFT OR RIGHT)
+// -------------------------------------------------------------
+interface PlayerComparisonCardProps {
+  player: ComparisonPlayer;
+  side: "left" | "right";
+  onOpenSelector: () => void;
+  onOpenDetails: () => void;
 }
 
-const ComparisonBar = ({ label, valueA, valueB, delay = 0 }: ComparisonBarProps) => {
-  const isANaN = isNaN(valueA);
-  const isBNaN = isNaN(valueB);
-  const total = valueA + valueB || 1;
+const PlayerComparisonCard = ({
+  player,
+  side,
+  onOpenSelector,
+  onOpenDetails,
+}: PlayerComparisonCardProps) => {
+  const isLeft = side === "left";
+  const themeBorder = isLeft ? "border-blue-500/40" : "border-emerald-500/40";
+  const themeGlow = isLeft
+    ? "from-blue-500/10 via-card to-card"
+    : "from-emerald-500/10 via-card to-card";
 
-  const boost = 6; // aumenta la differenza del 30%
-  const boostedA = Math.pow(valueA, boost);
-  const boostedB = Math.pow(valueB, boost);
-  const totalBoosted = boostedA + boostedB;
-  const percentA = isANaN || isBNaN ? 50 : Math.round((boostedA / totalBoosted) * 100);
-  const percentB = 100 - percentA;
-  
-  const aWins = !isANaN && !isBNaN && valueA > valueB;
-  const bWins = !isANaN && !isBNaN && valueB > valueA;
-  const tie = !isANaN && !isBNaN && valueA === valueB;
+  const ovrInfo = getPlayerOvr(player);
+  const macroPillars = getMacroPillars(player);
+  const weakFoot = getPlayerTrait(player, "PiedeDebole");
+  const skillMoves = getPlayerTrait(player, "MABI");
 
   return (
-    <div 
-      className="animate-fade-in" 
-      style={{ animationDelay: `${delay}ms` }}
+    <Card
+      className={`relative rounded-2xl border-2 ${themeBorder} bg-gradient-to-b ${themeGlow} shadow-lg overflow-hidden flex flex-col justify-between`}
     >
-      <div className="flex items-center justify-between mb-1.5">
-        <span className={`text-sm font-semibold tabular-nums ${aWins ? "text-blue-500" : tie ? "text-foreground" : "text-muted-foreground"}`}>
-          {isANaN ? "—" : valueA}
-        </span>
-        <span className="text-xs text-muted-foreground font-medium">{label}</span>
-        <span className={`text-sm font-semibold tabular-nums ${bWins ? "text-emerald-500" : tie ? "text-foreground" : "text-muted-foreground"}`}>
-          {isBNaN ? "—" : valueB}
-        </span>
+      <div className="p-5 space-y-4">
+        {/* Top Header: Badge Squadra / Rookie & Change Button */}
+        <div className="flex items-center justify-between gap-2">
+          {player.isRookie ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Badge
+                variant="outline"
+                className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[11px] font-bold gap-1"
+              >
+                <Sparkles className="h-3 w-3" />
+                Rookie Draft
+              </Badge>
+              {renderStars(player.Stelle, "h-3 w-3")}
+              <Badge
+                variant="outline"
+                className={`text-[10px] font-mono font-bold ${getTierBadgeStyle(
+                  player.scoutingTokens
+                )}`}
+              >
+                Scouting: {player.scoutingTokens}G
+              </Badge>
+            </div>
+          ) : (
+            <Badge
+              variant="outline"
+              className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[11px] font-bold"
+            >
+              Rosa: {player.Squadra} {player.NumeroMaglia ? `#${player.NumeroMaglia}` : ""}
+            </Badge>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenSelector}
+            className="h-7 text-xs font-bold gap-1 bg-card hover:bg-muted"
+          >
+            <Users className="h-3 w-3 text-muted-foreground" />
+            Cambia Giocatore
+          </Button>
+        </div>
+
+        {/* Player Profile Hero */}
+        <div className="flex items-start gap-4">
+          {/* Avatar with OVR overlay */}
+          <div className="relative shrink-0">
+            <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-border shadow-md">
+              <AvatarImage
+                src={getPlayerImage(player.ID)}
+                alt={`${player.Nome} ${player.Cognome}`}
+              />
+              <AvatarFallback className="text-sm font-bold">
+                {player.Nome?.[0]}
+                {player.Cognome?.[0]}
+              </AvatarFallback>
+            </Avatar>
+
+            {/* OVR Floating Badge */}
+            <div
+              className={`absolute -bottom-2 -right-2 h-8 min-w-[32px] px-1.5 rounded-lg flex items-center justify-center font-mono font-black text-sm border shadow-md ${
+                ovrInfo.isRevealed
+                  ? getValueColor(player.OVR ?? 0)
+                  : "bg-muted text-muted-foreground border-border text-xs"
+              }`}
+              title={ovrInfo.isRevealed ? `Overall: ${ovrInfo.displayVal}` : "OVR da scoprire"}
+            >
+              {ovrInfo.isRevealed ? (
+                ovrInfo.displayVal
+              ) : (
+                <span className="flex items-center gap-0.5">
+                  <Lock className="h-2.5 w-2.5" />?
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Name & Biometrics */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <Badge
+                variant="outline"
+                className={`text-[10px] font-extrabold px-1.5 py-0 ${getRoleColor(
+                  player.Posiz
+                )}`}
+              >
+                {player.Posiz}
+              </Badge>
+              <h2 className="text-base sm:text-lg font-black text-foreground truncate">
+                {player.Nome} {player.Cognome}
+              </h2>
+              <img
+                src={getNationalityFlag(player.Nazionalità)}
+                alt={player.Nazionalità}
+                className="h-3.5 w-5 object-cover rounded-sm shrink-0"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1.5">
+              <span>{player.Età} anni</span>
+              <span>•</span>
+              <span>{player.Altezza ? `${player.Altezza} cm` : "—"}</span>
+              <span>•</span>
+              <span>Piede {player.Piede || "—"}</span>
+            </div>
+
+            {/* Weak foot & Skill moves */}
+            <div className="flex flex-wrap items-center gap-3 text-xs mt-2 text-muted-foreground">
+              <span className="flex items-center gap-1">
+                Piede Debole:{" "}
+                <strong className="text-foreground">
+                  {weakFoot.isRevealed ? (
+                    weakFoot.displayVal
+                  ) : (
+                    <span className="inline-flex items-center gap-0.5 text-amber-500 font-mono">
+                      <Lock className="h-2.5 w-2.5" />?
+                    </span>
+                  )}
+                </strong>
+              </span>
+              <span className="flex items-center gap-1">
+                Skill:{" "}
+                <strong className="text-foreground">
+                  {skillMoves.isRevealed ? (
+                    skillMoves.displayVal
+                  ) : (
+                    <span className="inline-flex items-center gap-0.5 text-amber-500 font-mono">
+                      <Lock className="h-2.5 w-2.5" />?
+                    </span>
+                  )}
+                </strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Macro Pillars Strip */}
+        <div className="grid grid-cols-6 gap-1.5 pt-1">
+          {macroPillars.map((p) => (
+            <div
+              key={p.label}
+              className="p-1.5 rounded-lg bg-card border border-border/70 text-center shadow-xs"
+              title={`${p.name}: ${p.displayVal}`}
+            >
+              <span className="text-[10px] font-bold text-muted-foreground uppercase block">
+                {p.label}
+              </span>
+              <span
+                className={`text-sm font-black font-mono block mt-0.5 ${
+                  p.isRevealed
+                    ? p.numericVal !== null
+                      ? p.numericVal >= 80
+                        ? "text-emerald-500"
+                        : p.numericVal >= 70
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                      : "text-muted-foreground"
+                    : "text-amber-500 flex items-center justify-center gap-0.5"
+                }`}
+              >
+                {p.isRevealed ? (
+                  p.displayVal
+                ) : (
+                  <>
+                    <Lock className="h-2.5 w-2.5" />?
+                  </>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="h-2 w-full bg-muted/30 rounded-full overflow-hidden flex">
+
+      {/* Card Footer Actions */}
+      <div className="px-5 py-2.5 bg-muted/20 border-t border-border/60 flex items-center justify-between gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onOpenDetails}
+          className="h-7 text-xs font-semibold text-muted-foreground hover:text-foreground"
+        >
+          Scheda Completa
+        </Button>
+
+        {player.isRookie && (
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="h-7 text-xs font-bold gap-1 text-amber-500 border-amber-500/30 hover:bg-amber-500/10"
+          >
+            <Link to="/mia-squadra/scouting">
+              <Coins className="h-3 w-3" />
+              Scouting ({player.scoutingTokens}G)
+            </Link>
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+// -------------------------------------------------------------
+// SUB-COMPONENT: ATTRIBUTE COMPARISON ROW WITH INTERACTIVE BAR
+// -------------------------------------------------------------
+interface StatComparisonRowProps {
+  stat: StatDef;
+  leftPlayer: ComparisonPlayer;
+  rightPlayer: ComparisonPlayer;
+}
+
+const StatComparisonRow = ({
+  stat,
+  leftPlayer,
+  rightPlayer,
+}: StatComparisonRowProps) => {
+  const left = getPlayerStatValue(leftPlayer, stat.key, stat.dept);
+  const right = getPlayerStatValue(rightPlayer, stat.key, stat.dept);
+
+  const bothRevealed = left.isRevealed && right.isRevealed;
+  const numA = left.numericVal;
+  const numB = right.numericVal;
+
+  const aWins = bothRevealed && numA !== null && numB !== null && numA > numB;
+  const bWins = bothRevealed && numA !== null && numB !== null && numB > numA;
+  const isTie = bothRevealed && numA !== null && numB !== null && numA === numB;
+
+  const diffA = aWins && numA !== null && numB !== null ? `+${numA - numB}` : null;
+  const diffB = bWins && numA !== null && numB !== null ? `+${numB - numA}` : null;
+
+  // Visual Bar Percentage (proportional to values, defaulting to 50/50 if unrevealed)
+  let percentA = 50;
+  let percentB = 50;
+  if (bothRevealed && numA !== null && numB !== null && numA + numB > 0) {
+    percentA = Math.round((numA / (numA + numB)) * 100);
+    percentB = 100 - percentA;
+  }
+
+  return (
+    <div className="p-3 rounded-xl bg-card border border-border/70 hover:border-border transition-colors">
+      <div className="flex items-center justify-between mb-1 text-xs">
+        {/* Left Player Value */}
+        <div className="flex items-center gap-1.5 w-1/3 justify-start font-mono">
+          <span
+            className={`font-black text-sm ${
+              left.isRevealed
+                ? aWins
+                  ? "text-blue-500 font-black"
+                  : "text-foreground"
+                : "text-amber-500 font-bold flex items-center gap-0.5"
+            }`}
+          >
+            {left.isRevealed ? (
+              left.displayVal
+            ) : (
+              <span
+                className="inline-flex items-center gap-0.5 text-xs bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30"
+                title={`Non svelato: richiede fascia scouting ${left.requiredTokens}G`}
+              >
+                <Lock className="h-3 w-3" /> ?
+              </span>
+            )}
+          </span>
+          {diffA && (
+            <Badge
+              variant="outline"
+              className="text-[9px] font-extrabold px-1 py-0 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30"
+            >
+              {diffA}
+            </Badge>
+          )}
+        </div>
+
+        {/* Stat Label */}
+        <div className="w-1/3 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-wider truncate">
+          {stat.label}
+        </div>
+
+        {/* Right Player Value */}
+        <div className="flex items-center gap-1.5 w-1/3 justify-end font-mono">
+          {diffB && (
+            <Badge
+              variant="outline"
+              className="text-[9px] font-extrabold px-1 py-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+            >
+              {diffB}
+            </Badge>
+          )}
+          <span
+            className={`font-black text-sm ${
+              right.isRevealed
+                ? bWins
+                  ? "text-emerald-500 font-black"
+                  : "text-foreground"
+                : "text-amber-500 font-bold flex items-center gap-0.5"
+            }`}
+          >
+            {right.isRevealed ? (
+              right.displayVal
+            ) : (
+              <span
+                className="inline-flex items-center gap-0.5 text-xs bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30"
+                title={`Non svelato: richiede fascia scouting ${right.requiredTokens}G`}
+              >
+                <Lock className="h-3 w-3" /> ?
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+
+      {/* Two-Sided Visual Comparison Bar */}
+      <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden flex">
         <div
-          className={`h-full transition-all duration-500 ease-out ${aWins ? "bg-blue-500 ring-2 ring-blue-400" : "bg-blue-400/40"}`}
+          className={`h-full transition-all duration-300 ${
+            left.isRevealed
+              ? aWins
+                ? "bg-blue-500"
+                : "bg-blue-400/40"
+              : "bg-amber-500/30"
+          }`}
           style={{ width: `${percentA}%` }}
         />
         <div
-          className={`h-full transition-all duration-500 ease-out ${bWins ? "bg-emerald-500 ring-2 ring-emerald-400" : "bg-emerald-400/40"}`}
+          className={`h-full transition-all duration-300 ${
+            right.isRevealed
+              ? bWins
+                ? "bg-emerald-500"
+                : "bg-emerald-400/40"
+              : "bg-amber-500/30"
+          }`}
           style={{ width: `${percentB}%` }}
         />
       </div>
@@ -257,143 +1526,432 @@ const ComparisonBar = ({ label, valueA, valueB, delay = 0 }: ComparisonBarProps)
   );
 };
 
-const ConfrontoGiocatori = () => {
-  const { players } = getPlayers("RITIRATO");
-  const location = useLocation();
-  const isMiaSquadra = location.pathname.startsWith("/mia-squadra");
-  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
+// -------------------------------------------------------------
+// SUB-COMPONENT: TRAIT COMPARISON ROW
+// -------------------------------------------------------------
+interface TraitComparisonRowProps {
+  label: string;
+  field:
+    | "Role1"
+    | "Role2"
+    | "Trait1"
+    | "Trait2"
+    | "IconTrait1"
+    | "IconTrait2"
+    | "PiedeDebole"
+    | "MABI";
+  isIcon?: boolean;
+  leftPlayer: ComparisonPlayer;
+  rightPlayer: ComparisonPlayer;
+}
 
-  // Se siamo in /mia-squadra, la lista di sinistra e la propria squadra
-  const leftPlayers = useMemo(() => {
-    if (isMiaSquadra && effectiveTeam) {
-      const filtered = players.filter((p) => p.Squadra === effectiveTeam);
-      return filtered.length > 0 ? filtered : players;
-    }
-    return players;
-  }, [players, isMiaSquadra, effectiveTeam]);
-
-  const [leftId, setLeftId] = useState<number>(0);
-  const [rightId, setRightId] = useState<number>(0);
-
-  useEffect(() => {
-    if (leftPlayers.length > 0 && (!leftId || !leftPlayers.some((p) => p.ID === leftId))) {
-      setLeftId(leftPlayers[0].ID);
-    }
-  }, [leftPlayers, leftId]);
-
-  useEffect(() => {
-    if (players.length > 1 && !rightId) {
-      setRightId(players[1]?.ID || players[0]?.ID || 0);
-    }
-  }, [players, rightId]);
-
-  const left = useMemo(() => leftPlayers.find((p) => p.ID === leftId) || players.find((p) => p.ID === leftId) || null, [leftId, leftPlayers, players]);
-  const right = useMemo(() => players.find((p) => p.ID === rightId) || null, [rightId, players]);
+const TraitComparisonRow = ({
+  label,
+  field,
+  isIcon = false,
+  leftPlayer,
+  rightPlayer,
+}: TraitComparisonRowProps) => {
+  const left = getPlayerTrait(leftPlayer, field);
+  const right = getPlayerTrait(rightPlayer, field);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {isMiaSquadra && !user ? (
-          <RequireAuthPrompt
-            title="Confronto Giocatori"
-            description="Accedi al tuo account di squadra o prendi la guida di una squadra libera per confrontare i tuoi giocatori con gli altri atleti del campionato."
-          />
-        ) : (
-          <>
-            {isMiaSquadra && <AdminTeamSelector />}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
-            <Swords className="w-8 h-8 text-primary" />
-            Confronto Giocatori
-          </h1>
-          <p className="text-muted-foreground">Confronta le statistiche dei giocatori fianco a fianco</p>
+    <div className="p-3.5 rounded-xl bg-card border border-border/80 flex flex-col justify-between gap-2">
+      <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
+        <span className="flex items-center gap-1.5">
+          {isIcon && <Sparkles className="h-3.5 w-3.5 text-amber-500" />}
+          {label}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+        {/* Left Player Trait */}
+        <div className="p-2.5 rounded-lg bg-muted/20 border border-border/50">
+          <span className="text-[10px] font-bold text-blue-500 block truncate">
+            {leftPlayer.Nome} {leftPlayer.Cognome}
+          </span>
+          <span className="font-bold text-foreground mt-0.5 block truncate">
+            {left.isRevealed ? (
+              left.displayVal
+            ) : (
+              <span className="text-amber-500 flex items-center gap-1 font-mono text-xs">
+                <Lock className="h-3 w-3" /> Sblocca con {left.requiredTokens}G
+              </span>
+            )}
+          </span>
         </div>
 
-        {/* Player Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <PlayerCard
-            player={left}
-            playerId={leftId}
-            onPlayerChange={setLeftId}
-            players={leftPlayers}
-            side="left"
-          />
-          <PlayerCard
-            player={right}
-            playerId={rightId}
-            onPlayerChange={setRightId}
-            players={players}
-            side="right"
-          />
+        {/* Right Player Trait */}
+        <div className="p-2.5 rounded-lg bg-muted/20 border border-border/50">
+          <span className="text-[10px] font-bold text-emerald-500 block truncate">
+            {rightPlayer.Nome} {rightPlayer.Cognome}
+          </span>
+          <span className="font-bold text-foreground mt-0.5 block truncate">
+            {right.isRevealed ? (
+              right.displayVal
+            ) : (
+              <span className="text-amber-500 flex items-center gap-1 font-mono text-xs">
+                <Lock className="h-3 w-3" /> Sblocca con {right.requiredTokens}G
+              </span>
+            )}
+          </span>
         </div>
+      </div>
+    </div>
+  );
+};
 
-        {/* Stats Comparison */}
-        {left && right && (
-          <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden animate-fade-in">
-            <div className="p-4 border-b border-border/50 bg-muted/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500" />
-                  <span className="font-medium">{left.Cognome}</span>
-                </div>
-                <span className="text-sm text-muted-foreground font-medium">VS</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{right.Cognome}</span>
-                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                </div>
-              </div>
-            </div>
+// -------------------------------------------------------------
+// SUB-COMPONENT: RADAR COMPARISON CHART (EA FC / FM STYLE)
+// -------------------------------------------------------------
+interface PlayerComparisonRadarProps {
+  leftPlayer: ComparisonPlayer;
+  rightPlayer: ComparisonPlayer;
+}
 
-            <Tabs defaultValue="generale" className="w-full">
-              <div className="border-b border-border/50 overflow-x-auto">
-                <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none">
-                  {Object.entries(statCategories).map(([key, category]) => {
-                    const Icon = category.icon;
-                    return (
-                      <TabsTrigger
-                        key={key}
-                        value={key}
-                        className="data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-3 text-sm font-medium transition-all"
-                      >
-                        <Icon className="w-4 h-4 mr-2" />
-                        <span className="hidden sm:inline">{category.label}</span>
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-              </div>
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: {
+    payload: {
+      pillar: string;
+      pillarName: string;
+      valA: number;
+      valB: number;
+      displayA: string;
+      displayB: string;
+      isRevealedA: boolean;
+      isRevealedB: boolean;
+      winner: string | null;
+    };
+  }[];
+}
 
-              {Object.entries(statCategories).map(([key, category]) => (
-                <TabsContent 
-                  key={key} 
-                  value={key}
-                  className="p-8 animate-fade-in data-[state=inactive]:animate-fade-out"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-8">
-                    {category.stats.map((stat, index) => {
-                      const a = left ? Number(left[stat.key as keyof Player] ?? NaN) : NaN;
-                      const b = right ? Number(right[stat.key as keyof Player] ?? NaN) : NaN;
-                      return (
-                        <ComparisonBar
-                          key={stat.key}
-                          label={stat.label}
-                          valueA={a}
-                          valueB={b}
-                          delay={index * 100}
-                        />
-                      );
-                    })}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
+const CustomRadarTooltip = ({
+  active,
+  payload,
+  leftName,
+  rightName,
+}: CustomTooltipProps & { leftName: string; rightName: string }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="rounded-xl border border-border/80 bg-popover/95 p-3 shadow-xl backdrop-blur-md text-xs min-w-[210px] space-y-1.5 z-50">
+        <div className="font-extrabold uppercase tracking-wider text-foreground border-b border-border/60 pb-1 flex items-center justify-between">
+          <span>{data.pillarName}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">({data.pillar})</span>
+        </div>
+        <div className="flex items-center justify-between text-blue-500 font-bold">
+          <span className="truncate max-w-[120px]">{leftName}:</span>
+          <span className="font-mono text-sm font-black">
+            {data.isRevealedA ? data.displayA : "? (Scouting)"}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-emerald-500 font-bold">
+          <span className="truncate max-w-[120px]">{rightName}:</span>
+          <span className="font-mono text-sm font-black">
+            {data.isRevealedB ? data.displayB : "? (Scouting)"}
+          </span>
+        </div>
+        {data.winner && (
+          <div className="text-[11px] font-medium text-muted-foreground pt-1 border-t border-border/40">
+            {data.winner}
           </div>
         )}
-      </>
-        )}
-      </main>
-    </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const PlayerComparisonRadar = ({
+  leftPlayer,
+  rightPlayer,
+}: PlayerComparisonRadarProps) => {
+  const leftPillars = getMacroPillars(leftPlayer);
+  const rightPillars = getMacroPillars(rightPlayer);
+
+  const leftOvr = getPlayerOvr(leftPlayer);
+  const rightOvr = getPlayerOvr(rightPlayer);
+
+  const radarData = leftPillars.map((lp, idx) => {
+    const rp = rightPillars[idx];
+    // Baseline 25 if unrevealed to visually indent the vertex and indicate locked state
+    const valA = lp.isRevealed ? (lp.numericVal ?? 0) : 25;
+    const valB = rp.isRevealed ? (rp.numericVal ?? 0) : 25;
+
+    let winnerText: string | null = null;
+    if (lp.isRevealed && rp.isRevealed && lp.numericVal !== null && rp.numericVal !== null) {
+      if (lp.numericVal > rp.numericVal) {
+        winnerText = `+${lp.numericVal - rp.numericVal} ${leftPlayer.Cognome}`;
+      } else if (rp.numericVal > lp.numericVal) {
+        winnerText = `+${rp.numericVal - lp.numericVal} ${rightPlayer.Cognome}`;
+      } else {
+        winnerText = "Parità perfetta";
+      }
+    } else if (!lp.isRevealed || !rp.isRevealed) {
+      winnerText = "Statistica non svelata (Richiede Scouting)";
+    }
+
+    return {
+      pillar: lp.label,
+      pillarName: lp.name,
+      valA,
+      valB,
+      displayA: lp.displayVal,
+      displayB: rp.displayVal,
+      isRevealedA: lp.isRevealed,
+      isRevealedB: rp.isRevealed,
+      winner: winnerText,
+    };
+  });
+
+  const leftHiddenCount = leftPillars.filter((p) => !p.isRevealed).length;
+  const rightHiddenCount = rightPillars.filter((p) => !p.isRevealed).length;
+
+  return (
+    <Card className="border border-border/80 bg-card shadow-lg overflow-hidden">
+      <CardHeader className="p-4 sm:p-5 border-b border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 space-y-0">
+        <div>
+          <CardTitle className="text-sm sm:text-base font-extrabold uppercase tracking-wider flex items-center gap-2">
+            <Activity className="h-5 w-5 text-emerald-500" />
+            Radar di Confronto Multi-Dimensionale
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Impronta geometrica a 6 macro-aree (scala 0–99). Visualizza a colpo d'occhio l'equilibrio tecnico e atletico.
+          </p>
+        </div>
+
+        {/* Legend Pills */}
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 font-bold">
+            <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+            <span>
+              {leftPlayer.Cognome} ({leftOvr.displayVal})
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
+            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            <span>
+              {rightPlayer.Cognome} ({rightOvr.displayVal})
+            </span>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        {/* Radar Graphic (Left 7 columns on desktop) */}
+        <div className="lg:col-span-7 flex flex-col items-center justify-center relative min-h-[320px] sm:min-h-[360px] w-full">
+          {(leftHiddenCount > 0 || rightHiddenCount > 0) && (
+            <div className="absolute top-0 right-0 z-10 flex flex-col items-end gap-1 pointer-events-none">
+              {leftHiddenCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[10px] font-mono gap-1"
+                >
+                  <Lock className="h-2.5 w-2.5" />
+                  {leftPlayer.Cognome}: {6 - leftHiddenCount}/6 scoperte
+                </Badge>
+              )}
+              {rightHiddenCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-mono gap-1"
+                >
+                  <Lock className="h-2.5 w-2.5" />
+                  {rightPlayer.Cognome}: {6 - rightHiddenCount}/6 scoperte
+                </Badge>
+              )}
+            </div>
+          )}
+
+          <div className="w-full h-[320px] sm:h-[360px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} outerRadius="75%">
+                <PolarGrid
+                  stroke="hsl(var(--border))"
+                  strokeOpacity={0.8}
+                  strokeDasharray="3 3"
+                />
+                <PolarAngleAxis
+                  dataKey="pillar"
+                  tick={{
+                    fill: "hsl(var(--foreground))",
+                    fontSize: 11,
+                    fontWeight: 800,
+                  }}
+                />
+                <PolarRadiusAxis
+                  angle={30}
+                  domain={[0, 99]}
+                  tick={false}
+                  axisLine={false}
+                />
+                <Radar
+                  name={leftPlayer.Cognome}
+                  dataKey="valA"
+                  stroke="#3b82f6"
+                  fill="#3b82f6"
+                  fillOpacity={0.35}
+                  strokeWidth={2.5}
+                  dot={{ r: 3.5, fill: "#3b82f6" }}
+                />
+                <Radar
+                  name={rightPlayer.Cognome}
+                  dataKey="valB"
+                  stroke="#10b981"
+                  fill="#10b981"
+                  fillOpacity={0.35}
+                  strokeWidth={2.5}
+                  dot={{ r: 3.5, fill: "#10b981" }}
+                />
+                <RechartsTooltip
+                  content={
+                    <CustomRadarTooltip
+                      leftName={leftPlayer.Cognome}
+                      rightName={rightPlayer.Cognome}
+                    />
+                  }
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Macro Pillars Breakdown & Advantages (Right 5 columns on desktop) */}
+        <div className="lg:col-span-5 flex flex-col justify-between space-y-2.5">
+          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between pb-1 border-b border-border/60">
+            <span>Macro-Area</span>
+            <div className="flex items-center gap-4 text-[11px] font-mono">
+              <span className="text-blue-500 font-bold">{leftPlayer.Cognome}</span>
+              <span className="text-muted-foreground">vs</span>
+              <span className="text-emerald-500 font-bold">{rightPlayer.Cognome}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {radarData.map((item) => {
+              const numA = item.isRevealedA ? item.valA : null;
+              const numB = item.isRevealedB ? item.valB : null;
+              const bothRevealed = numA !== null && numB !== null;
+              const aWins = bothRevealed && numA > numB;
+              const bWins = bothRevealed && numB > numA;
+              const isTie = bothRevealed && numA === numB;
+
+              return (
+                <div
+                  key={item.pillar}
+                  className="p-2.5 rounded-xl bg-muted/20 border border-border/60 hover:border-border transition-colors flex flex-col gap-1.5"
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-extrabold text-foreground flex items-center gap-1.5">
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        {item.pillar}
+                      </span>
+                      <span>{item.pillarName}</span>
+                    </span>
+
+                    <div className="flex items-center gap-2 font-mono text-xs">
+                      {/* Left Player Value */}
+                      <span
+                        className={`font-black ${
+                          item.isRevealedA
+                            ? aWins
+                              ? "text-blue-500"
+                              : "text-foreground"
+                            : "text-amber-500"
+                        }`}
+                      >
+                        {item.displayA}
+                      </span>
+
+                      {/* Delta Indicator */}
+                      <div className="w-16 text-center">
+                        {bothRevealed ? (
+                          aWins ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] font-mono font-bold px-1 py-0 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30"
+                            >
+                              +{numA - numB}
+                            </Badge>
+                          ) : bWins ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] font-mono font-bold px-1 py-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                            >
+                              +{numB - numA}
+                            </Badge>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground font-bold">=</span>
+                          )
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-0.5 text-[9px] text-amber-500 font-mono"
+                            title="Scouting parziale"
+                          >
+                            <Lock className="h-2.5 w-2.5" /> ?
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Right Player Value */}
+                      <span
+                        className={`font-black ${
+                          item.isRevealedB
+                            ? bWins
+                              ? "text-emerald-500"
+                              : "text-foreground"
+                            : "text-amber-500"
+                        }`}
+                      >
+                        {item.displayB}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Micro duel progress bar */}
+                  <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden flex">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        item.isRevealedA
+                          ? aWins
+                            ? "bg-blue-500"
+                            : "bg-blue-400/40"
+                          : "bg-amber-500/30"
+                      }`}
+                      style={{
+                        width: `${
+                          bothRevealed && numA + numB > 0
+                            ? Math.round((numA / (numA + numB)) * 100)
+                            : 50
+                        }%`,
+                      }}
+                    />
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        item.isRevealedB
+                          ? bWins
+                            ? "bg-emerald-500"
+                            : "bg-emerald-400/40"
+                          : "bg-amber-500/30"
+                      }`}
+                      style={{
+                        width: `${
+                          bothRevealed && numA + numB > 0
+                            ? Math.round((numB / (numA + numB)) * 100)
+                            : 50
+                        }%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
