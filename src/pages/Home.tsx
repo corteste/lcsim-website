@@ -8,6 +8,7 @@ import { getPlayersSumStats } from "@/hooks/use-players-stats";
 import { getPlayers } from "@/hooks/use-players";
 import { getRoleColor } from "@/utils/functions";
 import { useState } from "react";
+import { NextOpponentCard } from "@/components/home/NextOpponentCard";
 
 const CURRENT_SEASON = 9;
 
@@ -154,6 +155,11 @@ const Home = () => {
             </div>
           </div>
         </section>
+
+        {/* ========================================================= */}
+        {/* NEXT MATCH / OPPONENT SCOUT CARD (WHEN LOGGED IN)         */}
+        {/* ========================================================= */}
+        <NextOpponentCard />
 
         {/* ========================================================= */}
         {/* SPLIT SCREEN: STANDINGS SPOTLIGHT + LEADERBOARDS */}

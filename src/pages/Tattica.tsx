@@ -1104,6 +1104,17 @@ const Tattica = () => {
 
       if (error) throw error;
 
+      // Salva snapshot nello storico formazioni (Archivio Formazioni)
+      await supabase.from("team_formation_history").insert({
+        team_id: currentTeam,
+        stag: 10,
+        formation: formationId,
+        starters: starterIds,
+        bench_order: currentBenchIds,
+        created_at: nowIso,
+        created_by: user?.username || "user",
+      });
+
       setSavedState({
         formation: formationId,
         starters: [...starterIds],

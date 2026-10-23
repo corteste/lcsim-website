@@ -138,20 +138,21 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 
 ---
 
-## 📌 5. Archivio Storico delle Formazioni Salvate (Punto 9)
-- **Stato**: 🟡 Da Progettare / In Backlog
-- **Priorità**: Media-Alta (Essenziale per alimentare il Foglio Commento e lo storico stagionale)
-- **Tabelle coinvolte**: Nuova tabella `an_match_lineup` o `team_lineup_history`
+## 📌 5. Archivio Storico delle Formazioni Salvate & Report Avversaria Homepage
+- **Stato**: 🟢 Implementato su branch dev (Tabella creata su Supabase & Collegata)
+- **Priorità**: Media-Alta (Essenziale per alimentare il Foglio Commento, il report scouting avversaria e lo storico stagionale)
+- **Tabelle coinvolte**: Nuova tabella `team_formation_history`, `an_team_tactic`, `VIEW_PLAYER_STATS`
 
-### Valutazione Fattibilità: 🟢 Pienamente Fattibile
+### Valutazione Fattibilità: 🟢 Pienamente Implementato
 - **Descrizione**:
-  - Attualmente la tabella `an_team_tactic` memorizza solo una formazione attiva per squadra (sovrascritta ad ogni salvataggio).
-  - **Nuova tabella archivio formazioni**:
-    - Struttura: `id`, `team_id`, `stag` (es. 11), `week` (1..22), `formation_id`, `starting_11` (array JSON con player_id, x, y, ruolo), `bench` (array player_id), `roles` (capitano, rigorista, ecc.), `submitted_at`.
-  - **Vantaggi e Utilizzo**:
-    1. **Storico Partite**: Al termine della scadenza, la formazione attiva di ogni squadra viene duplicata/congelata per quella specifica giornata (`week`).
-    2. **Alimentazione Foglio Commento**: Il Foglio Commento legge direttamente lo snapshot congelato della rispettiva giornata.
-    3. **Ripristino Formazioni**: In `Tattica.tsx`, il manager può aprire una tendina *"Carica formazione passata"* per riutilizzare una disposizione usata nelle giornate precedenti.
+  - Creata la tabella `team_formation_history` su Supabase (`supabase/migrations/20261023_team_formation_history.sql`) con indici e RLS.
+  - Ogni salvataggio effettuato da un manager in `Tattica.tsx` crea automaticamente un record di snapshot (`formation`, `starters`, `bench_order`, `created_at`, `created_by`).
+  - **Blocco Prossimo Incontro & Popup Scouting Avversaria nella Homepage**:
+    - Per i manager loggati, compare il blocco del prossimo turno con la squadra rivale, stadio, stato casa/trasferta e andamento recente.
+    - Cliccando sul blocco si apre il popup modale con:
+      1. **Ultime 3 Formazioni Inserite**: con selettore e campo tattico 2D interattivo (`EA_FC25_FORMATIONS`), titolari e panchina (con fallback automatico sulle formazioni scese in campo nelle partite precedenti da `VIEW_PLAYER_STATS`).
+      2. **Rosa Completa**: ordinata per OVR con filtri per ruolo e anagrafica.
+      3. **Andamento & Ultimi Incontri**: con statistiche e badge forma (`V`, `N`, `P`).
 
 
 ---
