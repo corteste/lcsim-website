@@ -100,3 +100,58 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 
 ### 2.3 Integrazione Notifiche Realtime
 - Icona posta/notifiche nella Navbar con contatore `Badge` numerico in tempo reale (sfruttando Supabase Realtime Channels su `market_trades` e `league_announcements`).
+
+
+---
+
+## 📌 3. Scadenza Consegna Formazioni, Countdown & Blocco Modifiche (Punti 7 e 7b)
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Alta (Fondamentale per la regolarità delle partite e del calendario settimanale)
+- **Moduli coinvolti**: `src/pages/Tattica.tsx`, `Navbar.tsx` (o banner home), Supabase (configurazione scadenze di lega)
+
+### Valutazione Fattibilità: 🟢 Pienamente Fattibile
+- **Descrizione**:
+  - Ogni settimana c'è un termine perentorio per la consegna della formazione per le partite in programma.
+  - **Countdown UI (Punto 7)**:
+    - Widget con conto alla rovescia (giorni, ore, minuti, secondi) mostrato in evidenza nella pagina Tattica e/o nella Navbar (es. *"Scadenza Consegna Giornata X: Giovedì ore 20:00 - Tempo rimasto: 1g 4h 12m"*).
+    - Data/ora di scadenza configurabile dall'Admin per ciascuna giornata di campionato (memorizzata in tabella `league_settings` o per giornata in `an_schedule`).
+  - **Blocco & Avviso Post-Scadenza (Punto 7b)**:
+    - Una volta superato il momento limite (es. Mercoledì/Giovedì all'orario fissato):
+      - Se un utente accede a `Tattica.tsx`, compare un **banner di allerta giallo/arancione**:
+        > ⚠️ **Formazioni Chiuse per la Giornata in corso**: La scadenza per la Giornata X è terminata. Qualsiasi modifica apportata adesso e salvata entrerà in vigore solo per la **Giornata successiva (X+1)** e non influenzerà la partita di questa settimana.
+      - La formazione per la giornata in corso viene congelata nello snapshot ufficiale (vedi punto 5).
+
+---
+
+## 📌 4. Pagina "Foglio Commento" con Formazioni Ufficiali Pubbliche (Punto 8)
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Alta (Strumento centrale per caster, commentatori, spettatori e manager)
+- **Moduli coinvolti**: Nuova pagina (es. `/foglio-commento` o `/calendario/giornata/:week/formazioni`), componente campo tattico 2D
+
+### Valutazione Fattibilità: 🟢 Pienamente Fattibile
+- **Descrizione**:
+  - Una pagina pubblica accessibile a tutta la community che visualizza le formazioni ufficiali di tutti gli incontri della giornata, **sbloccata e visibile solo dopo la chiusura delle formazioni** (nessuno può spiare lo schieramento avversario prima della deadline).
+  - **Layout & Funzionalità Foglio Partita**:
+    - Selettore giornata (`Giornata 1`, `Giornata 2`, ...).
+    - Elenco dei match della giornata: per ciascun match, card affiancata Casa vs Trasferta:
+      - **Campi Tattici 2D affiancati** (o speculari) con modulo (es. 4-3-3 vs 3-5-2), maglie, nomi e ruoli degli 11 titolari.
+      - **Panchina** con riserve a disposizione ordinate per ruolo e OVR.
+      - **Incarichi / Calci piazzati**: Capitano, Rigorista, Punizioni, Corner.
+      - Pulsante per esportare o condividere il foglio gara (es. screenshot o vista pulita per la diretta streaming / telecronaca).
+
+---
+
+## 📌 5. Archivio Storico delle Formazioni Salvate (Punto 9)
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Media-Alta (Essenziale per alimentare il Foglio Commento e lo storico stagionale)
+- **Tabelle coinvolte**: Nuova tabella `an_match_lineup` o `team_lineup_history`
+
+### Valutazione Fattibilità: 🟢 Pienamente Fattibile
+- **Descrizione**:
+  - Attualmente la tabella `an_team_tactic` memorizza solo una formazione attiva per squadra (sovrascritta ad ogni salvataggio).
+  - **Nuova tabella archivio formazioni**:
+    - Struttura: `id`, `team_id`, `stag` (es. 11), `week` (1..22), `formation_id`, `starting_11` (array JSON con player_id, x, y, ruolo), `bench` (array player_id), `roles` (capitano, rigorista, ecc.), `submitted_at`.
+  - **Vantaggi e Utilizzo**:
+    1. **Storico Partite**: Al termine della scadenza, la formazione attiva di ogni squadra viene duplicata/congelata per quella specifica giornata (`week`).
+    2. **Alimentazione Foglio Commento**: Il Foglio Commento legge direttamente lo snapshot congelato della rispettiva giornata.
+    3. **Ripristino Formazioni**: In `Tattica.tsx`, il manager può aprire una tendina *"Carica formazione passata"* per riutilizzare una disposizione usata nelle giornate precedenti.
