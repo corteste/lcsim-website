@@ -121,7 +121,7 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 4. Pagina "Foglio Commento" con Formazioni Ufficiali Pubbliche (Punto 8)
-- **Stato**: 🟢 Completato su branch dev
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Alta (Strumento centrale per caster, commentatori, spettatori e manager)
 - **Moduli coinvolti**: `src/pages/FoglioCommento.tsx` (`/campionato/foglio-commento`), `src/services/foglioCommentoService.ts`, `Navbar.tsx` (sottosezione Campionato)
 - **Tabelle coinvolte**: `an_schedule`, `league_deadlines`, `an_team_tactic`, `team_formation_history`, `VIEW_PLAYER_STATS`, `an_player`, `an_team`
