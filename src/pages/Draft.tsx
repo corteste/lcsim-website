@@ -203,7 +203,18 @@ const Draft = () => {
       if (boardRes.error) throw boardRes.error;
       if (rookiesRes.error) throw rookiesRes.error;
 
-      const boardRows = (boardRes.data ?? []) as DraftPickRow[];
+      let boardRows = (boardRes.data ?? []) as DraftPickRow[];
+      if (boardRows.length < 60) {
+        // Ripristino automatico e garantito delle 60 caselle della draft board
+        await supabase.rpc("rpc_ensure_draft_board");
+        const recheck = await supabase
+          .from(DRAFT_BOARD_TABLE)
+          .select("*, rookie:an_rookie(ID, Nome, Cognome, Posiz, Squadra)")
+          .order("pick_overall", { ascending: true });
+        if (!recheck.error && recheck.data) {
+          boardRows = recheck.data as DraftPickRow[];
+        }
+      }
       setPicks(boardRows);
       const rkList = ((rookiesRes.data ?? []) as Player[]).sort((a, b) => (a.Cognome || "").localeCompare(b.Cognome || ""));
       setRookies(rkList);
