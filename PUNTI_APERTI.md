@@ -121,20 +121,24 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 4. Pagina "Foglio Commento" con Formazioni Ufficiali Pubbliche (Punto 8)
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Completato su branch dev
 - **Priorità**: Alta (Strumento centrale per caster, commentatori, spettatori e manager)
-- **Moduli coinvolti**: Nuova pagina (es. `/foglio-commento` o `/calendario/giornata/:week/formazioni`), componente campo tattico 2D
+- **Moduli coinvolti**: `src/pages/FoglioCommento.tsx` (`/campionato/foglio-commento`), `src/services/foglioCommentoService.ts`, `Navbar.tsx` (sottosezione Campionato)
+- **Tabelle coinvolte**: `an_schedule`, `league_deadlines`, `an_team_tactic`, `team_formation_history`, `VIEW_PLAYER_STATS`, `an_player`, `an_team`
 
-### Valutazione Fattibilità: 🟢 Pienamente Fattibile
-- **Descrizione**:
-  - Una pagina pubblica accessibile a tutta la community che visualizza le formazioni ufficiali di tutti gli incontri della giornata, **sbloccata e visibile solo dopo la chiusura delle formazioni** (nessuno può spiare lo schieramento avversario prima della deadline).
-  - **Layout & Funzionalità Foglio Partita**:
-    - Selettore giornata (`Giornata 1`, `Giornata 2`, ...).
-    - Elenco dei match della giornata: per ciascun match, card affiancata Casa vs Trasferta:
-      - **Campi Tattici 2D affiancati** (o speculari) con modulo (es. 4-3-3 vs 3-5-2), maglie, nomi e ruoli degli 11 titolari.
-      - **Panchina** con riserve a disposizione ordinate per ruolo e OVR.
-      - **Incarichi / Calci piazzati**: Capitano, Rigorista, Punizioni, Corner.
-      - Pulsante per esportare o condividere il foglio gara (es. screenshot o vista pulita per la diretta streaming / telecronaca).
+### Specifiche Implementate
+1. **Collocazione & Navigazione**:
+   - Inserita come voce ufficiale nella sottosezione **Campionato** della Navbar (`/campionato/foglio-commento` e alias `/foglio-commento`).
+2. **Selettore Match Rapido & Confronto Affiancato**:
+   - Barra di selezione rapida in alto per navigare istantaneamente tra i 6 incontri della giornata.
+   - Vista affiancata Casa vs Trasferta (`grid-cols-2` su desktop):
+     - **Campetto Tattico 2D**: 11 titolari posizionati con precisione secondo il modulo FC IQ (`EA_FC25_FORMATIONS`), visualizzando numero di maglia, OVR, cognome/nome e ruolo specifico. Come da richiesta, esclusi calci piazzati e indicazioni tattiche.
+     - **Panchina / Riserve**: Elenco ordinato delle riserve a disposizione con numero maglia, ruolo, OVR, età e piede.
+     - **Ispezione Calciatore**: Cliccando su qualsiasi titolare o panchinaro si apre la modale di dettaglio con tutti gli attributi.
+3. **Visibilità Protetta & Scadenza Formazioni**:
+   - Collegamento con `league_deadlines`: se la deadline per la giornata in corso non è ancora scaduta, le formazioni sono oscurate per i manager (`🔒 Formazioni Riservate`) con indicazione della data/ora di sblocco.
+   - L'Admin dispone dell'accesso di anteprima con badge dedicato (`🛡️ Anteprima Admin`).
+   - Per le giornate concluse o passate la visualizzazione è sempre sbloccata e pubblica per tutta la community.
 
 ---
 

@@ -24,6 +24,7 @@ import {
   ArrowLeftRight,
   Megaphone,
   Cpu,
+  ClipboardList,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -84,6 +85,13 @@ const Navbar = () => {
       description: "Risultati e prossime giornate di gara",
       icon: Calendar,
       colorClass: "text-blue-500",
+    },
+    {
+      path: "/campionato/foglio-commento",
+      label: "Foglio Commento",
+      description: "Schieramenti ufficiali e formazioni della giornata",
+      icon: ClipboardList,
+      colorClass: "text-purple-500",
     },
     {
       path: "/statistiche",
