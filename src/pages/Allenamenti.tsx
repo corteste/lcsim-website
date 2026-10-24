@@ -10,7 +10,7 @@ import {
   Plus, Minus, TrendingUp, Award, Save, RotateCcw, 
   CheckCircle2, Clock, Sparkles, Shield, Zap, Flame, 
   Dumbbell, Target, Activity, Swords, ArrowRight, Search, 
-  ChevronRight, AlertCircle, RefreshCw, Star
+  ChevronRight, AlertCircle, RefreshCw, Star, Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TraitSystem from "@/components/training/TraitSystem";
@@ -22,6 +22,7 @@ import { supabase } from "@/supabaseClient";
 import { PLAYER_TABLE, PLAYER_TABLE_TRAINING } from "@/constants/App";
 import { useQueryClient } from "@tanstack/react-query";
 import { getRoleColor, getValueColor, getPlayerImage, getNationalityFlag } from "@/utils/functions";
+import { getRosterLockState, subscribeToRosterLock } from "@/services/rosterLockService";
 
 /* NOMI DELLE SINGOLE STATISTICHE */
 export type StatKey =
@@ -417,6 +418,13 @@ const Allenamenti = () => {
   // Stati operativi UI
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isRosterLocked, setIsRosterLocked] = useState<boolean>(false);
+
+  useEffect(() => {
+    getRosterLockState().then((st) => setIsRosterLocked(st.isLocked));
+    const unsub = subscribeToRosterLock((st) => setIsRosterLocked(st.isLocked));
+    return unsub;
+  }, []);
 
   // Caricamento giocatori e allenamenti salvati da Supabase
   useEffect(() => {
@@ -605,6 +613,14 @@ const Allenamenti = () => {
   // Funzione SALVA ALLENAMENTI
   const handleSaveTraining = async () => {
     if (!player) return;
+    if (isRosterLocked) {
+      toast({
+        title: "Rose Congelate dalla Lega",
+        description: "Le rose sono attualmente congelate dall'amministrazione. Non è possibile salvare nuovi allenamenti.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (xpRemaining < 0) {
       toast({
         title: "Attenzione",
@@ -800,6 +816,15 @@ const Allenamenti = () => {
             {/* Selettore Admin Globale */}
             <AdminTeamSelector />
 
+{isRosterLocked && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold flex items-center gap-2.5">
+                <Lock className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                <span>
+                  <strong>Rose Congelate dalla Lega:</strong> Le rose sono attualmente bloccate dall'amministrazione. Il salvataggio di nuovi allenamenti o modifiche agli XP è temporaneamente disabilitato.
+                </span>
+              </div>
+            )}
+
             {/* Header Broadcast */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-border/80">
               <div>
@@ -971,7 +996,8 @@ const Allenamenti = () => {
                     <div className="flex flex-col gap-1.5 shrink-0">
                       <Button
                         size="sm"
-                        disabled={!player || !hasUnsavedChanges || xpRemaining < 0 || isSaving || isResetting}
+                        disabled={!player || !hasUnsavedChanges || xpRemaining < 0 || isSaving || isResetting || isRosterLocked}
+                        title={isRosterLocked ? "Rose congelate dalla Lega: salvataggio disabilitato" : undefined}
                         onClick={handleSaveTraining}
                         className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
                       >
@@ -1450,7 +1476,8 @@ const Allenamenti = () => {
                     <div className="pt-2 space-y-2">
                       <Button
                         className="w-full font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md h-10"
-                        disabled={!player || !hasUnsavedChanges || xpRemaining < 0 || isSaving || isResetting}
+                        disabled={!player || !hasUnsavedChanges || xpRemaining < 0 || isSaving || isResetting || isRosterLocked}
+                        title={isRosterLocked ? "Rose congelate dalla Lega: salvataggio disabilitato" : undefined}
                         onClick={handleSaveTraining}
                       >
                         <Save className="h-4 w-4 mr-2" />

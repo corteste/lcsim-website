@@ -320,21 +320,25 @@ Interruttore globale controllato dal Super Admin nel Centro Automazioni di Lega 
 
 ---
 
-## 📌 12. Automatizzazione Blocca / Sblocca Rose
-- **Stato**: 🟡 Da Discutere & Definire
-- **Priorità**: Media-Alta (Integrità delle rose durante lo svolgimento delle giornate di campionato)
-- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/pages/Roster.tsx`, `src/pages/Tattica.tsx`
-- **Tabelle coinvolte**: `league_settings`, `an_player`, `an_team_tactic`
+## 📌 12. Automatizzazione Blocca / Sblocca Rose & Blocco Formazioni Automatico
+- **Stato**: 🟢 Completato su branch dev
+- **Priorità**: Media-Alta (Integrità delle rose e regolarità delle formazioni di campionato)
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/services/rosterLockService.ts`, `src/pages/Roster.tsx`, `src/pages/Allenamenti.tsx`, `src/pages/Tattica.tsx`, `src/components/FormationCountdown.tsx`
+- **Tabelle coinvolte**: `league_automation_state`, `league_deadlines`, `team_cuts_registry`, `an_player_training`, `an_team_tactic`, `team_lineup_snapshots`
 
-### Descrizione
-Funzione per congelare istantaneamente l'intero organico di tutte le squadre (numeri di maglia, cambi ruoli, accessori, titolari e panchina) prima che le partite vengano simulate su EA FC 25.
-
-### Punti Chiave da Discutere con l'Utente
-1. **Perimetro del Blocco**:
-   - Blocca solo numeri di maglia e kit in Rosa, oppure anche l'inserimento/modifica delle formazioni in Tattica?
-   - Rapporto con le scadenze automatiche di giornata (`league_deadlines`): il blocco rose è un override manuale di emergenza o un'azione programmata autonoma?
-2. **Feedback per i Manager**:
-   - Banner esplicito in `/mia-squadra/roster` e `/mia-squadra/tattica`: *"Rose congelate dalla Lega per lo svolgimento delle partite"*.
+### Specifiche Implementate
+1. **Blocco Rose (Roster Lock)**:
+   - Controllato dall'Amministratore tramite toggle dedicato in `/admin/automazioni` (*"Controllo Congelamento Rose"*).
+   - Memorizzato nella tabella di sistema `league_automation_state` con sottoscrizione Realtime attiva (`rosterLockService.ts`).
+   - **Tagli Calciatori**: impedisce ai manager in `/mia-squadra/roster` (scheda *"Status di Mercato & Tagli"*) di aggiungere o rimuovere calciatori dalla lista tagli, disabilitando i pulsanti e visualizzando un banner informativo di blocco lega.
+   - **Allenamenti & Punti XP**: impedisce ai manager in `/mia-squadra/allenamenti` di salvare nuovi piani di sviluppo o allocazioni XP finché le rose sono congelate, con banner e pulsanti di salvataggio disabilitati.
+2. **Blocco Formazioni Automatico (Lineup Deadline Lock)**:
+   - Funziona in maniera **completamente automatica ed indipendente** dal blocco manuale delle rose.
+   - Si attiva allo scadere della data/ora impostata per la giornata in `league_deadlines` (o in caso di chiusura forzata d'emergenza impostata dall'admin).
+   - Mostra il countdown dinamico in tempo reale (`FormationCountdown`) direttamente in cima alla lavagna tattica (`/mia-squadra/tattica`).
+   - A scadenza avvenuta, per tutti i manager non-admin vengono bloccati i salvataggi della formazione, il pulsante *"Auto-Schiera Miglior 11"* e lo svuotamento, con relativo banner di avviso.
+   - L'utente Amministratore mantiene un **Bypass Amministrativo** protetto per poter inserire formazioni d'ufficio o correggere eventuali problemi tecnici, con badge visivo esplicito `Admin Bypass`.
+   - All'atto del salvataggio in tattica, viene generato o aggiornato automaticamente lo snapshot immutabile di giornata in `team_lineup_snapshots`.
 
 ---
 

@@ -28,6 +28,7 @@ import {
   Info,
   CheckCircle2,
   Clock,
+  Lock,
   ArrowLeftRight,
   UserPlus,
   AlertTriangle,
@@ -757,7 +758,7 @@ export function realignStartersToFormation(
 // COMPONENTE PRINCIPALE TATTICA
 // ============================================================================
 const Tattica = () => {
-  const { user, effectiveTeam, effectiveTeamFullName } = useAuth();
+  const { user, isAdmin, effectiveTeam, effectiveTeamFullName } = useAuth();
   const currentTeam = effectiveTeam;
 
   // Stato Roster e Tattica
@@ -1128,6 +1129,12 @@ const Tattica = () => {
   // Salvataggio su Supabase nella tabella an_team_tactic
   const handleSaveFormation = async () => {
     if (!currentTeam) return;
+
+    if (isDeadlineClosed && !isAdmin) {
+      toast.error("Formazioni Chiuse: il termine per l'inserimento o la modifica della formazione è terminato.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const nowIso = new Date().toISOString();
@@ -1152,7 +1159,7 @@ const Tattica = () => {
       // Salva snapshot nello storico formazioni (Archivio Formazioni)
       await supabase.from("team_formation_history").insert({
         team_id: currentTeam,
-        stag: 10,
+        stag: activeDeadline?.stag || 11,
         formation: formationId,
         starters: starterIds,
         bench_order: currentBenchIds,
@@ -1164,6 +1171,21 @@ const Tattica = () => {
         created_at: nowIso,
         created_by: user?.username || "user",
       });
+
+      if (activeDeadline) {
+        await saveLineupSnapshot({
+          team_id: currentTeam,
+          stag: activeDeadline.stag,
+          week: activeDeadline.week,
+          formation: formationId,
+          starters: starterIds,
+          bench_order: currentBenchIds,
+          submitted_at: nowIso,
+          submitted_by: user?.username || "user",
+          is_locked: isDeadlineClosed,
+          tactical_settings: tacticalSettings,
+        });
+      }
 
       setSavedState({
         formation: formationId,
@@ -1283,6 +1305,26 @@ const Tattica = () => {
             {/* Selettore Squadra Admin */}
             <AdminTeamSelector />
 
+            {/* Countdown Scadenza Inserimento Formazione */}
+            <FormationCountdown onStatusChange={handleDeadlineStatusChange} />
+
+            {/* Banner Informativo se Formazioni Chiuse */}
+            {isDeadlineClosed && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <Lock className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                  <span>
+                    <strong>Formazioni Chiuse per la Giornata in corso:</strong> Il termine per l'inserimento o la modifica della formazione è terminato. {isAdmin ? "Bypass Amministratore attivo: puoi effettuare modifiche correttive." : "Le modifiche e i salvataggi sono bloccati per i manager."}
+                  </span>
+                </div>
+                {isAdmin && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-500 border border-amber-500/40 shrink-0 font-bold uppercase">
+                    Admin Bypass
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* ================================================================= */}
             {/* HEADER BROADCAST + TELEMETRY BAR                                  */}
             {/* ================================================================= */}
@@ -1325,7 +1367,7 @@ const Tattica = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleAutoPickBest11}
-                  disabled={loading || orderedRoster.length === 0}
+                  disabled={loading || orderedRoster.length === 0 || (isDeadlineClosed && !isAdmin)}
                   className="h-9 text-xs font-bold border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
                 >
                   <Wand2 className="h-3.5 w-3.5 mr-1.5" />
@@ -1336,7 +1378,7 @@ const Tattica = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleClearStarters}
-                  disabled={loading || tacticStats.count === 0}
+                  disabled={loading || tacticStats.count === 0 || (isDeadlineClosed && !isAdmin)}
                   className="h-9 text-xs font-semibold text-muted-foreground hover:text-rose-500 hover:border-rose-500/40"
                 >
                   <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
@@ -1367,8 +1409,9 @@ const Tattica = () => {
                 <Button
                   size="sm"
                   onClick={handleSaveFormation}
-                  disabled={loading || isSaving}
-                  className="h-9 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md"
+                  disabled={loading || isSaving || (isDeadlineClosed && !isAdmin)}
+                  title={isDeadlineClosed && !isAdmin ? "Formazioni chiuse per la giornata in corso" : undefined}
+                  className="h-9 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <Save className="h-3.5 w-3.5 mr-1.5" />
                   {isSaving ? "Salvataggio..." : "Salva Formazione"}

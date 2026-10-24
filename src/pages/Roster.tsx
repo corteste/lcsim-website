@@ -75,6 +75,7 @@ import {
 } from "@/types/marketStatus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTeamCutPlayerIds, togglePlayerCut } from "@/services/cutsService";
+import { getRosterLockState, subscribeToRosterLock } from "@/services/rosterLockService";
 import {
   JERSEY_STYLE_OPTIONS,
   JERSEY_FIT_OPTIONS,
@@ -393,6 +394,13 @@ const Roster = () => {
 
   const cutPlayerIds = useMemo(() => new Set(cutPlayerIdsArray), [cutPlayerIdsArray]);
   const [isTogglingCutId, setIsTogglingCutId] = useState<number | null>(null);
+  const [isRosterLocked, setIsRosterLocked] = useState<boolean>(false);
+
+  useEffect(() => {
+    getRosterLockState().then((st) => setIsRosterLocked(st.isLocked));
+    const unsubscribe = subscribeToRosterLock((st) => setIsRosterLocked(st.isLocked));
+    return unsubscribe;
+  }, []);
 
   const currentRosterCount = players.length;
   const minCutsNeeded = Math.max(0, currentRosterCount - 16);
@@ -403,6 +411,11 @@ const Roster = () => {
   const canAddMoreCuts = currentCutCount < maxCutsAllowed;
 
   const handleTogglePlayerCut = async (player: Player) => {
+    if (isRosterLocked) {
+      toast.error("Le rose sono attualmente congelate dalla Lega: impossibile modificare la lista tagli!");
+      return;
+    }
+
     if (player.Squadra !== currentTeam && !isAdmin) {
       toast.error("Puoi modificare i tagli solo per i giocatori della tua squadra!");
       return;
@@ -1241,6 +1254,15 @@ const Roster = () => {
                   </div>
                 </div>
 
+                {isRosterLocked && (
+                  <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2.5">
+                    <Lock className="h-4 w-4 shrink-0" />
+                    <span>
+                      <strong>Rose Congelate dalla Lega:</strong> Le rose sono attualmente bloccate dall'amministrazione. La selezione o la modifica dei giocatori da tagliare è temporaneamente disabilitata.
+                    </span>
+                  </div>
+                )}
+
                 {/* Status Legend & Quick Filter Pills */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-border/60">
                   <button
@@ -1496,7 +1518,7 @@ const Roster = () => {
                             type="button"
                             size="sm"
                             variant={isCut ? "destructive" : "outline"}
-                            disabled={isTogglingCut || (!isCut && !canAddMoreCuts) || !canEdit}
+                            disabled={isTogglingCut || (!isCut && !canAddMoreCuts) || !canEdit || isRosterLocked}
                             onClick={() => handleTogglePlayerCut(player)}
                             className={`h-7 px-2.5 text-xs font-bold gap-1.5 transition-all ${
                               isCut

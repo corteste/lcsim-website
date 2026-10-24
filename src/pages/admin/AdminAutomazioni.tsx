@@ -665,98 +665,107 @@ export default function AdminAutomazioni() {
           })()}
 
           {/* 4. BLOCCA / SBLOCCA ROSE */}
-          <Card className="border-border/80 bg-card shadow-md relative overflow-hidden flex flex-col justify-between">
-            <div>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between mb-1">
-                  <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">
-                    🟡 In Definizione • Punto Aperto #12
-                  </Badge>
-                  <Lock className="h-6 w-6 text-purple-500" />
-                </div>
-                <CardTitle className="text-xl font-black">Blocco / Sblocco Rose</CardTitle>
-                <CardDescription className="text-xs">
-                  Congelamento istantaneo delle rose prima delle simulazioni di giornata per prevenire modifiche durante le partite.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-xs space-y-2">
-                  <div className="flex items-center justify-between font-semibold">
-                    <span className="text-muted-foreground">Stato attuale rose:</span>
-                    <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[10px] font-bold">
-                      {stateMap["roster_lock"]?.details?.status === "locked" ? "BLOCCATE" : "SBLOCCATE (Modificabili)"}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Blocca numeri di maglia, divise, ruoli e formazioni durante lo svolgimento dei match settimanali.
-                  </p>
+          {(() => {
+            const isRosterLocked = stateMap["roster_lock"]?.details?.status === "locked";
+            return (
+              <Card
+                className={`border shadow-md relative overflow-hidden flex flex-col justify-between transition-all ${
+                  isRosterLocked
+                    ? "border-rose-500/40 bg-gradient-to-br from-card via-card to-rose-500/5"
+                    : "border-purple-500/30 bg-gradient-to-br from-card via-card to-purple-500/5"
+                }`}
+              >
+                <div>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <Badge
+                        variant="outline"
+                        className={
+                          isRosterLocked
+                            ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+                            : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+                        }
+                      >
+                        {isRosterLocked ? "🔒 Rose di Lega Bloccate (Congelate)" : "🔓 Rose di Lega Sbloccate"}
+                      </Badge>
+                      <Lock className={`h-6 w-6 ${isRosterLocked ? "text-rose-500" : "text-purple-500"}`} />
+                    </div>
+                    <CardTitle className="text-xl font-black">Controllo Congelamento Rose</CardTitle>
+                    <CardDescription className="text-xs">
+                      Interruttore per congelare le rose di lega: impedisce la selezione/modifica dei tagli dei giocatori e il salvataggio di nuovi allenamenti.
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    <div
+                      className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
+                        isRosterLocked
+                          ? "bg-rose-500/10 border-rose-500/20 text-rose-800 dark:text-rose-300"
+                          : "bg-muted/40 border-border/70 text-muted-foreground"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-bold">
+                        <span>Stato Operazioni Rose:</span>
+                        <span className="font-mono uppercase">
+                          {isRosterLocked ? "Operazioni Sospese" : "Operazioni Abilitate"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed">
+                        {isRosterLocked
+                          ? "I manager non possono aggiungere o rimuovere calciatori dalla lista tagli in Roster, né salvare nuovi piani di allenamento."
+                          : "Tutti i club possono liberamente modificare la lista tagli e salvare i piani di allenamento (attributi, ruoli e tratti)."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                      <Button
+                        variant={isRosterLocked ? "default" : "outline"}
+                        onClick={async () => {
+                          await recordAutomationRun("roster_lock", { status: "locked" });
+                          toast.error("Rose di Lega BLOCCATE. Tagli e salvataggio allenamenti sospesi per tutti i club.", {
+                            icon: "🔒",
+                          });
+                        }}
+                        className={`flex-1 font-bold gap-2 text-xs border-rose-500/30 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 ${
+                          isRosterLocked ? "bg-rose-500/15 border-rose-500/50 shadow-sm" : ""
+                        }`}
+                      >
+                        <Lock className="h-3.5 w-3.5" />
+                        Blocca Tutte le Rose
+                      </Button>
+
+                      <Button
+                        variant={!isRosterLocked ? "default" : "outline"}
+                        onClick={async () => {
+                          await recordAutomationRun("roster_lock", { status: "unlocked" });
+                          toast.success("Rose di Lega SBLOCCATE. Tagli e allenamenti nuovamente attivi.", {
+                            icon: "🔓",
+                          });
+                        }}
+                        className={`flex-1 font-bold gap-2 text-xs border-emerald-500/30 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ${
+                          !isRosterLocked ? "bg-emerald-500/15 border-emerald-500/50 shadow-sm" : ""
+                        }`}
+                      >
+                        <Unlock className="h-3.5 w-3.5" />
+                        Sblocca Tutte le Rose
+                      </Button>
+                    </div>
+                  </CardContent>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      recordAutomationRun("roster_lock", { action: "lock_rosters_clicked" });
-                      setInfoModal({
-                        id: "roster_lock",
-                        title: "Blocco Rose di Lega (Punto Aperto #12)",
-                        description:
-                          "La funzionalità di congelamento rose è registrata nel backlog tecnico e sarà discussa con l'utente per definire i parametri esatti:",
-                        puntoApertoIndex: 12,
-                        points: [
-                          "Congelamento modifiche roster (numeri di maglia, cambi ruolo, accessori).",
-                          "Rapporto con le scadenze formazioni (league_deadlines): blocco manuale o automatico.",
-                          "Banner esplicito per i manager nelle pagine Roster e Tattica.",
-                          "Sblocco automatico al termine della pubblicazione dei risultati settimanali."
-                        ],
-                        actionLabel: "Imposta Stato Bloccato (Test)",
-                        detailsToRecord: { status: "locked" }
-                      });
-                    }}
-                    className="flex-1 font-bold gap-2 text-xs border-purple-500/30 hover:bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                  >
-                    <Lock className="h-3.5 w-3.5" />
-                    Blocca Tutte le Rose
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      recordAutomationRun("roster_lock", { action: "unlock_rosters_clicked" });
-                      setInfoModal({
-                        id: "roster_lock",
-                        title: "Sblocco Rose di Lega (Punto Aperto #12)",
-                        description:
-                          "La funzionalità di congelamento rose è registrata nel backlog tecnico e sarà discussa con l'utente per definire i parametri esatti:",
-                        puntoApertoIndex: 12,
-                        points: [
-                          "Ripristino dei permessi di modifica per tutti i manager dei club.",
-                          "Aggiornamento indicatori di stato nella navbar e nelle rose."
-                        ],
-                        actionLabel: "Imposta Stato Sbloccato (Test)",
-                        detailsToRecord: { status: "unlocked" }
-                      });
-                    }}
-                    className="flex-1 font-bold gap-2 text-xs border-blue-500/30 hover:bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                  >
-                    <Unlock className="h-3.5 w-3.5" />
-                    Sblocca Tutte le Rose
-                  </Button>
+                {/* Timestamp Footer */}
+                <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+                  <span className="flex items-center gap-1.5 font-sans">
+                    <Clock className="h-3.5 w-3.5 text-purple-500" />
+                    Ultima esecuzione:
+                  </span>
+                  <span className="font-semibold text-foreground truncate max-w-[240px]">
+                    {formatLastRun(stateMap["roster_lock"]?.last_run_at, stateMap["roster_lock"]?.last_run_by)}
+                  </span>
                 </div>
-              </CardContent>
-            </div>
-
-            {/* Timestamp Footer */}
-            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
-              <span className="flex items-center gap-1.5 font-sans">
-                <Clock className="h-3.5 w-3.5 text-purple-500" />
-                Ultima esecuzione:
-              </span>
-              <span className="font-semibold text-foreground truncate max-w-[240px]">
-                {formatLastRun(stateMap["roster_lock"]?.last_run_at, stateMap["roster_lock"]?.last_run_by)}
-              </span>
-            </div>
-          </Card>
+              </Card>
+            );
+          })()}
 
           {/* 6. UFFICIALIZZA TAGLI DI LEGA */}
           <Card className="border-rose-500/30 bg-gradient-to-br from-card via-card/95 to-rose-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between">
