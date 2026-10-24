@@ -418,3 +418,71 @@ La tabella `an_player` è il registro ufficiale e centralizzato da cui dipendono
 3. **Archivio & Storico Draft**: Per non perdere lo storico delle scelte e dei dati di scouting tra stagioni diverse, valutazione congiunta della soluzione migliore:
    - *Opzione A*: Aggiungere la colonna `stagione` a `public.an_rookie` (lo scouting mostrerà solo i rookie della stagione attiva, ma l'archivio storico rimarrà intatto e consultabile per gli anni passati).
    - *Opzione B*: Creazione di una tabella archivio `an_rookie_history` / `an_draft_history`.
+
+---
+
+## 📌 18. Match Center & Tabellino Partita Avanzato (SofaScore / Diretta.it Style)
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Bassa (Coinvolgimento visivo e analisi approfondita dei match)
+- **Moduli coinvolti**: `src/pages/Calendario.tsx`, eventuale nuova pagina o modale `/partita/:id`
+- **Tabelle coinvolte**: `view_team_stats`, `VIEW_PLAYER_STATS`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`
+
+### Descrizione
+Evoluzione della schermata di dettaglio partita per trasformarla in un vero e proprio Match Center moderno:
+1. **Barre Statistiche Comparative**:
+   - Confronto visivo a barre percentuali affiancate Casa vs Trasferta: Possesso palla %, Tiri totali / in porta, Contrasti vinti %, Precisione passaggi %, Dribbling riusciti, Calci d'angolo, Falli e Fuorigioco.
+2. **Timeline & Tabellino Eventi**:
+   - Cronologia verticale con marcatori, assistman, cartellini gialli/rossi con minutaggio indicativo.
+3. **Migliore in Campo (MVP)**:
+   - Elezione automatica del migliore in campo della partita basato sul rating/voto più alto di giornata con badge dorato e statistiche chiave dell'incontro.
+
+---
+
+## 📌 19. Squadra della Settimana (Top 11 / TOTW) & Premi Speciali
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Bassa (Coinvolgimento community e riconoscimento performance manageriali)
+- **Moduli coinvolti**: `src/pages/Statistiche.tsx`, widget dedicato in Homepage
+- **Tabelle coinvolte**: `VIEW_PLAYER_STATS`, `an_player`, `an_team`
+
+### Descrizione
+1. **Top 11 di Giornata (Team of the Week)**:
+   - Al termine di ogni giornata disputata, generazione automatica di un campo tattico 2D con la formazione ideale del turno: il portiere con voto/parate più alte, i 3 o 4 migliori difensori, i migliori centrocampisti e i migliori attaccanti.
+   - Badge celebrativo TOTW temporaneo o storico per i calciatori selezionati.
+2. **Classifiche Premi Stagionali Speciali**:
+   - 🧤 **Golden Glove**: Classifica dei portieri con il maggior numero di Clean Sheet (partite a rete inviolata).
+   - 🎯 **Re degli Assist**: Classifica dedicata ai rifinitori della Lega.
+   - ⭐ **Miglior Rating Medio**: Top 10 assoluta per media voto (con soglia minima presenze es. 50% delle partite).
+
+---
+
+## 📌 20. Sala Stampa & Interviste Post-Partita Manager
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Bassa (Roleplay manageriale ed elemento social della Lega)
+- **Moduli coinvolti**: `src/pages/Calendario.tsx` (dettaglio match), modale conferenza stampa
+- **Tabelle coinvolte**: Tabella `match_press_interviews` (match_id, team_id, manager_id, statement, created_at)
+
+### Descrizione
+Uno spazio interattivo leggero legato all'incontro appena disputato:
+- Ciascun manager (dopo la pubblicazione dei risultati) può inserire una breve dichiarazione o commento a caldo post-partita (max 280 caratteri, stile conferenza stampa o tweet).
+- I commenti dei due manager rivali compaiono affiancati in calce al tabellino dell'incontro, visibili a tutta la Lega per alimentare il dibattito e la rivalità sportiva.
+
+---
+
+## 📌 21. Giornalista AI di Lega: Rumor di Calciomercato & Cronache Partita (Modello AI Gratuito)
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Bassa (Innovazione immersiva e dinamismo dell'ecosistema)
+- **Tecnologie & Provider**: Google Gemini 1.5 Flash (Tier Free via Google AI Studio - 1.500 chiamate/giorno gratuite) o Groq Llama 3.3 70B (Free Tier istantaneo)
+- **Moduli coinvolti**: Ticker news in Homepage, sezione dedicata `/mercato/rumors`, feed Comunicati
+- **Tabelle coinvolte**: `market_trades`, `as_player_market`, `an_player`, tabella cache/post `league_ai_news`
+
+### Descrizione
+Integrazione di un agente giornalista virtuale (stile "Fabrizio Romano / Gianluca Di Marzio di LCSIM") con compiti autonomi o richiamabili dall'Admin:
+1. **Rumor di Calciomercato (Market Insider)**:
+   - **Fonti Dati Reali**: Legge le proposte di scambio aperte (`market_trades`), i calciatori con status "In Trattativa" o "Cedibile", i bisogni di squadra dichiarati e i giocatori svincolati.
+   - **Generazione Post**: Crea brevi "Breaking News" narrative con percentuali di attendibilità (es. *"🚨 ESCLUSIVA LCSIM: Mar's Attack ha bussato alla porta di Valle FC per una maxi-trattativa in attacco. Parti al lavoro, probabilità 75%"* oppure smentite e voci inventate basate sui valori delle rose).
+   - Possibilità di generare rumor periodicamente o su richiesta dell'Admin.
+2. **Cronache e Pagelle di Giornata (Matchday Recap)**:
+   - Subito dopo l'importazione del CSV di giornata, l'AI analizza i risultati e i tabellini sintetizzando un articolo di cronaca:
+     - Titolo di giornata accattivante.
+     - Analisi dei big match, rimonte clamorose, flop e protagonisti.
+     - Pagelle tecniche e commenti ironici per club.
