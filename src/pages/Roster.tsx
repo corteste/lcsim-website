@@ -48,6 +48,8 @@ import {
   Store,
   X,
   TrendingUp,
+  Scissors,
+  Loader2,
 } from "lucide-react";
 import {
   getRoleColor,
@@ -71,7 +73,8 @@ import {
   getMarketStatusOption,
   MarketStatusCode,
 } from "@/types/marketStatus";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getTeamCutPlayerIds, togglePlayerCut } from "@/services/cutsService";
 import {
   JERSEY_STYLE_OPTIONS,
   JERSEY_FIT_OPTIONS,
@@ -381,6 +384,59 @@ const Roster = () => {
   const [marketFilterTab, setMarketFilterTab] = useState<string>("ALL");
   const [savingMarketPlayerId, setSavingMarketPlayerId] = useState<number | null>(null);
 
+  // Cuts management state & counts
+  const { data: cutPlayerIdsArray = [], refetch: refetchCuts } = useQuery({
+    queryKey: ["team_cuts", currentTeam],
+    queryFn: () => (currentTeam ? getTeamCutPlayerIds(currentTeam) : Promise.resolve([])),
+    enabled: Boolean(currentTeam),
+  });
+
+  const cutPlayerIds = useMemo(() => new Set(cutPlayerIdsArray), [cutPlayerIdsArray]);
+  const [isTogglingCutId, setIsTogglingCutId] = useState<number | null>(null);
+
+  const currentRosterCount = players.length;
+  const minCutsNeeded = Math.max(0, currentRosterCount - 16);
+  const maxCutsAllowed = Math.max(0, currentRosterCount - 13);
+  const currentCutCount = cutPlayerIds.size;
+  const postCutRoster = currentRosterCount - currentCutCount;
+  const isCutsCompliant = postCutRoster >= 13 && postCutRoster <= 16;
+  const canAddMoreCuts = currentCutCount < maxCutsAllowed;
+
+  const handleTogglePlayerCut = async (player: Player) => {
+    if (player.Squadra !== currentTeam && !isAdmin) {
+      toast.error("Puoi modificare i tagli solo per i giocatori della tua squadra!");
+      return;
+    }
+
+    const playerId = Number(player.ID);
+    const isCurrentlyCut = cutPlayerIds.has(playerId);
+
+    if (!isCurrentlyCut && !canAddMoreCuts) {
+      toast.error(`Hai raggiunto il limite massimo di ${maxCutsAllowed} tagli per mantenere almeno 13 giocatori in rosa.`);
+      return;
+    }
+
+    setIsTogglingCutId(playerId);
+    try {
+      const res = await togglePlayerCut(playerId, player.Squadra || currentTeam, isCurrentlyCut);
+      if (!res.success) throw new Error(res.error);
+
+      if (res.isNowCut) {
+        toast.success(`${player.Nome} ${player.Cognome} inserito nella lista tagli.`);
+      } else {
+        toast.info(`${player.Nome} ${player.Cognome} rimosso dalla lista tagli.`);
+      }
+
+      await refetchCuts();
+      await queryClient.invalidateQueries({ queryKey: ["team_cuts"] });
+      await queryClient.invalidateQueries({ queryKey: ["cuts_compliance_report"] });
+    } catch (err: any) {
+      toast.error(err.message || "Errore aggiornamento lista tagli");
+    } finally {
+      setIsTogglingCutId(null);
+    }
+  };
+
   const marketCounts = useMemo(() => {
     let intCount = 0;
     let fisCount = 0;
@@ -402,12 +458,13 @@ const Roster = () => {
 
   const marketFilteredPlayers = useMemo(() => {
     return filteredPlayers.filter((p) => {
+      if (marketFilterTab === "cut") return cutPlayerIds.has(Number(p.ID));
       if (marketFilterTab === "ALL") return true;
       const code = getMarketStatusCode(p.MarketStatus);
       if (marketFilterTab === "none") return !code;
       return code === marketFilterTab;
     });
-  }, [filteredPlayers, marketFilterTab]);
+  }, [filteredPlayers, marketFilterTab, cutPlayerIds]);
 
   const handleUpdateMarketStatus = async (
     player: Player,
@@ -1165,7 +1222,19 @@ const Roster = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <Badge
+                      variant="outline"
+                      className={`font-mono text-xs font-bold px-2.5 py-1 transition-colors ${
+                        isCutsCompliant
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
+                          : "bg-destructive/10 text-destructive border-destructive/40"
+                      }`}
+                      title={`Rosa attuale: ${currentRosterCount}. Dopo i tagli: ${postCutRoster} (deve essere tra 13 e 16). Minimo tagli: ${minCutsNeeded}, Massimo tagli: ${maxCutsAllowed}.`}
+                    >
+                      <Scissors className="h-3.5 w-3.5 mr-1.5 inline-block" />
+                      Giocatori Tagliati: {currentCutCount}
+                    </Badge>
                     <Badge variant="outline" className="font-mono text-xs">
                       Status Assegnati: {players.length - marketCounts.noneCount} / {players.length}
                     </Badge>
@@ -1173,7 +1242,7 @@ const Roster = () => {
                 </div>
 
                 {/* Status Legend & Quick Filter Pills */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-2 border-t border-border/60">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-border/60">
                   <button
                     type="button"
                     onClick={() => setMarketFilterTab("ALL")}
@@ -1186,6 +1255,23 @@ const Roster = () => {
                     <div className="text-[10px] uppercase font-bold text-muted-foreground">Tutti</div>
                     <div className="text-lg font-black font-mono text-foreground">{players.length}</div>
                     <div className="text-[10px] text-muted-foreground truncate">Tutti i giocatori</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMarketFilterTab("cut")}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      marketFilterTab === "cut"
+                        ? "bg-rose-500/20 border-rose-500 shadow-sm"
+                        : "bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10"
+                    }`}
+                  >
+                    <div className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 flex items-center justify-between">
+                      <span>In Taglio</span>
+                      <Scissors className="h-3 w-3" />
+                    </div>
+                    <div className="text-lg font-black font-mono text-rose-600 dark:text-rose-400">{currentCutCount}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">Lista svincolo</div>
                   </button>
 
                   <button
@@ -1259,11 +1345,17 @@ const Roster = () => {
                   const currentOption = getMarketStatusOption(player.MarketStatus);
                   const isSaving = savingMarketPlayerId === player.ID;
                   const canEdit = player.Squadra === currentTeam || isAdmin;
+                  const isCut = cutPlayerIds.has(Number(player.ID));
+                  const isTogglingCut = isTogglingCutId === Number(player.ID);
 
                   return (
                     <Card
                       key={player.ID}
-                      className="border border-border/80 hover:border-emerald-500/40 bg-card shadow-sm transition-all overflow-hidden p-4 flex flex-col justify-between gap-3.5"
+                      className={`border bg-card shadow-sm transition-all overflow-hidden p-4 flex flex-col justify-between gap-3.5 ${
+                        isCut
+                          ? "border-rose-500/60 bg-rose-500/[0.04] ring-1 ring-rose-500/30 shadow-rose-500/5"
+                          : "border-border/80 hover:border-emerald-500/40"
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
@@ -1296,6 +1388,14 @@ const Roster = () => {
                               >
                                 {player.Posiz}
                               </Badge>
+                              {isCut && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40 text-[10px] font-black uppercase tracking-wider px-1.5 py-0"
+                                >
+                                  In Taglio
+                                </Badge>
+                              )}
                               <span className="font-bold text-foreground text-sm truncate">
                                 {player.Nome} {player.Cognome}
                               </span>
@@ -1382,6 +1482,50 @@ const Roster = () => {
                             </button>
                           </div>
                         )}
+
+                        {/* Cut Toggle Action */}
+                        <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Scissors className={`h-3.5 w-3.5 shrink-0 ${isCut ? "text-rose-500" : "text-muted-foreground"}`} />
+                            <span className="text-[11px] font-medium text-muted-foreground truncate">
+                              {isCut ? "Selezionato per il taglio" : "Lista Tagli Rosa"}
+                            </span>
+                          </div>
+
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={isCut ? "destructive" : "outline"}
+                            disabled={isTogglingCut || (!isCut && !canAddMoreCuts) || !canEdit}
+                            onClick={() => handleTogglePlayerCut(player)}
+                            className={`h-7 px-2.5 text-xs font-bold gap-1.5 transition-all ${
+                              isCut
+                                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
+                                : "hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/40"
+                            }`}
+                            title={
+                              !isCut && !canAddMoreCuts
+                                ? `Limite massimo di ${maxCutsAllowed} tagli raggiunto (per garantire almeno 13 giocatori in rosa)`
+                                : isCut
+                                ? "Rimuovi dalla lista tagli"
+                                : "Inserisci nella lista tagli"
+                            }
+                          >
+                            {isTogglingCut ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : isCut ? (
+                              <>
+                                <X className="h-3 w-3" />
+                                <span>Annulla Taglio</span>
+                              </>
+                            ) : (
+                              <>
+                                <Scissors className="h-3 w-3" />
+                                <span>Taglia</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   );

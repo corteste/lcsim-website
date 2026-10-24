@@ -22,13 +22,17 @@ import {
   FileText,
   Clock,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Scissors,
+  Loader2,
+  Users
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
 import { exportEADatabaseTSV } from "@/services/eaPlayerDbService";
 import { ImportRookieModal } from "@/components/admin/ImportRookieModal";
-import { Users } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getCutsComplianceReport, executeOfficialCutsRpc } from "@/services/cutsService";
 
 interface AutomationStateItem {
   id: string;
@@ -52,6 +56,49 @@ export default function AdminAutomazioni() {
   const [patchFile, setPatchFile] = useState<File | null>(null);
   const [isPatching, setIsPatching] = useState(false);
   const [rookieModalOpen, setRookieModalOpen] = useState(false);
+
+  // Official cuts state & query
+  const queryClient = useQueryClient();
+  const [cutsConfirmOpen, setCutsConfirmOpen] = useState(false);
+  const [isExecutingCuts, setIsExecutingCuts] = useState(false);
+
+  const {
+    data: cutsReport,
+    isLoading: isLoadingCuts,
+    refetch: refetchCutsReport,
+  } = useQuery({
+    queryKey: ["cuts_compliance_report"],
+    queryFn: () => getCutsComplianceReport(),
+    enabled: Boolean(user && isAdmin),
+  });
+
+  const handleExecuteOfficialCuts = async () => {
+    setIsExecutingCuts(true);
+    try {
+      const adminName = user?.name || user?.team || "Super Admin";
+      const res = await executeOfficialCutsRpc(adminName);
+
+      if (!res.success) {
+        throw new Error(res.error || "Operazione non riuscita");
+      }
+
+      toast.success(
+        `Tagli ufficializzati con successo! Svincolati ${res.released_count ?? 0} calciatori.`,
+        { icon: "✂️" }
+      );
+
+      setCutsConfirmOpen(false);
+      await loadAutomationStates();
+      await refetchCutsReport();
+      await queryClient.invalidateQueries({ queryKey: ["cuts_compliance_report"] });
+      await queryClient.invalidateQueries({ queryKey: ["team_cuts"] });
+      await queryClient.invalidateQueries({ queryKey: ["players"] });
+    } catch (err: any) {
+      toast.error(err.message || "Errore durante l'ufficializzazione dei tagli");
+    } finally {
+      setIsExecutingCuts(false);
+    }
+  };
 
   // Placeholder Dialog States
   const [infoModal, setInfoModal] = useState<{
@@ -711,6 +758,146 @@ export default function AdminAutomazioni() {
             </div>
           </Card>
 
+          {/* 6. UFFICIALIZZA TAGLI DI LEGA */}
+          <Card className="border-rose-500/30 bg-gradient-to-br from-card via-card/95 to-rose-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-1">
+                  {isLoadingCuts ? (
+                    <Badge variant="outline" className="text-[10px] font-bold">
+                      Verifica in corso...
+                    </Badge>
+                  ) : cutsReport?.nonCompliantTeams && cutsReport.nonCompliantTeams.length > 0 ? (
+                    <Badge variant="destructive" className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" /> Inadempienze ({cutsReport.nonCompliantTeams.length})
+                    </Badge>
+                  ) : cutsReport?.allCompliant ? (
+                    <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Tutte le Squadre in Regola
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] font-bold">
+                      Nessun Taglio
+                    </Badge>
+                  )}
+                  <Scissors className="h-6 w-6 text-rose-500" />
+                </div>
+                <CardTitle className="text-xl font-black">Ufficializza Tagli di Lega</CardTitle>
+                <CardDescription className="text-xs">
+                  Svincola definitivamente i calciatori inseriti nelle liste tagli dai club, azzera le posizioni tattiche e pubblica l'annuncio ufficiale.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs space-y-2">
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="text-muted-foreground">Parametri rosa post-tagli:</span>
+                    <span className="font-mono font-bold text-foreground">Minimo 13, Massimo 16</span>
+                  </div>
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="text-muted-foreground">Calciatori in lista tagli:</span>
+                    <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                      {cutsReport?.totalCuts || 0} totali
+                    </span>
+                  </div>
+                </div>
+
+                {isLoadingCuts ? (
+                  <div className="flex items-center justify-center p-4 text-xs text-muted-foreground gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Verifica tagli delle squadre...
+                  </div>
+                ) : cutsReport && cutsReport.nonCompliantTeams.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-destructive flex items-center justify-between">
+                      <span>Squadre Inadempienti:</span>
+                      <Badge variant="outline" className="text-[10px] text-destructive border-destructive/40 font-mono">
+                        {cutsReport.nonCompliantTeams.length} su {cutsReport.teams.length}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {cutsReport.nonCompliantTeams.map((team) => (
+                        <div
+                          key={team.teamId}
+                          className="flex items-center justify-between p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs"
+                        >
+                          <span className="font-bold text-foreground truncate">{team.teamName}</span>
+                          <span className="font-mono font-bold text-destructive shrink-0">
+                            Tagliati: {team.cutsCount}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground italic">
+                      L'ufficializzazione è bloccata finché tutte le squadre non avranno tra 13 e 16 giocatori dopo i tagli.
+                    </p>
+                    <Button
+                      disabled={true}
+                      className="w-full bg-muted text-muted-foreground cursor-not-allowed font-bold gap-2 text-xs py-2.5"
+                    >
+                      <Scissors className="h-4 w-4" />
+                      Ufficializza Tagli (In attesa delle squadre)
+                    </Button>
+                  </div>
+                ) : cutsReport && cutsReport.allCompliant ? (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        Tutte le {cutsReport.teams.length} squadre sono in regola!
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Pronte allo svincolo: <strong>{cutsReport.totalCuts} calciatori</strong> da rimuovere definitivamente dalle rose.
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={() => setCutsConfirmOpen(true)}
+                      disabled={isExecutingCuts}
+                      className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-rose-600/20"
+                    >
+                      {isExecutingCuts ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Svincolo in corso...
+                        </>
+                      ) : (
+                        <>
+                          <Scissors className="h-4 w-4" />
+                          Ufficializza Tagli ({cutsReport.totalCuts} Calciatori)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg bg-muted/50 border border-border/70 text-xs text-muted-foreground">
+                      Nessun calciatore inserito nella lista tagli al momento.
+                    </div>
+                    <Button
+                      disabled={true}
+                      className="w-full bg-muted text-muted-foreground cursor-not-allowed font-bold gap-2 text-xs py-2.5"
+                    >
+                      <Scissors className="h-4 w-4" />
+                      Nessun Taglio da Ufficializzare
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-rose-500" />
+                Ultima esecuzione:
+              </span>
+              <span className="font-semibold text-foreground truncate max-w-[240px]">
+                {formatLastRun(stateMap["official_cuts"]?.last_run_at, stateMap["official_cuts"]?.last_run_by)}
+              </span>
+            </div>
+          </Card>
+
         </div>
 
         {/* Informazioni Architettura Master Table */}
@@ -832,6 +1019,64 @@ export default function AdminAutomazioni() {
                 {infoModal.actionLabel}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG: CONFERMA UFFICIALIZZAZIONE TAGLI */}
+      <Dialog open={cutsConfirmOpen} onOpenChange={setCutsConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-black">
+              <Scissors className="h-5 w-5 text-rose-500" />
+              Ufficializza Tagli di Lega
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Confermi lo svincolo definitivo dei calciatori inseriti nelle liste tagli di tutti i club?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-xs">
+            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4" />
+                Operazione Irreversibile
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                Verranno svincolati <strong>{cutsReport?.totalCuts} calciatori</strong>. I giocatori non apparterranno più ad alcun club (Squadra = NULL) e le posizioni titolari o in panchina verranno ripristinate a NULL.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted border border-border/70 space-y-1.5 text-muted-foreground">
+              <div className="font-semibold text-foreground">Operazioni automatiche incluse:</div>
+              <ul className="list-disc list-inside space-y-1 text-[11px]">
+                <li>Aggiornamento anagrafica giocatori (Squadra e Numero Maglia azzerati)</li>
+                <li>Rimozione dei giocatori svincolati dalla tabella di mercato (as_player_market)</li>
+                <li>Pulizia formazioni titolari e panchina in an_team_tactic</li>
+                <li>Pubblicazione annuncio ufficiale di svincolo nella bacheca di Lega</li>
+                <li>Svuotamento registro dei tagli di lega</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setCutsConfirmOpen(false)} disabled={isExecutingCuts}>
+              Annulla
+            </Button>
+            <Button
+              onClick={handleExecuteOfficialCuts}
+              disabled={isExecutingCuts}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+            >
+              {isExecutingCuts ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                  Ufficializzazione in corso...
+                </>
+              ) : (
+                "Conferma Ufficializzazione"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
