@@ -99,6 +99,7 @@ const StatCardGroup = ({
 );
 
 const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
+  if (!currentPlayer) return null;
   const ovr = currentPlayer.OVR ?? 0;
   const isGoalkeeper = currentPlayer.Posiz === "POR";
 

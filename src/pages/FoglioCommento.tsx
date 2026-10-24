@@ -548,11 +548,17 @@ export const FoglioCommento: React.FC = () => {
       </main>
 
       {/* Modal Ispezione Dettaglio Calciatore */}
-      <PlayerDetails
-        player={selectedPlayer}
-        isOpen={Boolean(selectedPlayer)}
-        onClose={() => setSelectedPlayer(null)}
-      />
+      {selectedPlayer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={() => setSelectedPlayer(null)}
+        >
+          <PlayerDetails
+            currentPlayer={selectedPlayer}
+            onClose={() => setSelectedPlayer(null)}
+          />
+        </div>
+      )}
     </div>
   );
 };
