@@ -581,3 +581,32 @@ Visualizzazione grafica intuitiva (grafico temporale o progression bar multi-sta
 Interfaccia web dedicata per l'inserimento manuale dei dati e dei referti delle partite:
 - Possibilità per l'Admin di compilare direttamente da form web il tabellino partita (risultato, statistiche squadra, voti, gol, cartellini e dettagli individuali).
 - Tasto dedicato **"Export CSV"** in grado di esportare i match inseriti o l'intera giornata in un formato CSV standard predefinito (compatibile sia con il parser di importazione sia con gli archivi storici).
+
+---
+
+## 📌 28. Unificazione & Perfezionamento Sezione Allenamenti (Ruoli, Ruoli+ e Tratti Ufficiali)
+- **Stato**: 🟢 Completato & Testato
+- **Priorità**: Alta
+- **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/components/training/UnifiedRoleAndTraitSystem.tsx`, `src/types/training.ts`
+- **Tabelle coinvolte**: `an_player_training`, `an_player`, `ea_player_db`
+- **Migrazioni**: `supabase/migrations/20261024_sync_training_specializations.sql`
+
+### Specifiche Implementate
+1. **Unificazione UI e Architettura Bozza (Zero scritture premature su an_player)**:
+   - Riscrittura completa della logica: eliminata qualsiasi modifica diretta su `an_player` durante la fase di composizione dell'allenamento.
+   - Bozza unificata memorizzata in React state e salvata atomicamente in `public.an_player_training` (`status = 'draft'`), con trigger e funzione `recompute_ea_player_from_an_and_training` che sincronizzano i valori finali in tempo reale su `ea_player_db`.
+   - Il pulsante *"Reset ai Valori Originali"* rimuove la bozza da `an_player_training` e ripristina la visualizzazione pulita senza corrompere la scheda base.
+   - Schede unificate da 3 a 2: Scheda 1 *"Gruppi Attributi"* e Scheda 2 *"Ruoli & Tratti Speciali"* (`UnifiedRoleAndTraitSystem.tsx`).
+2. **Ruolo Principale & Ruoli+ Ufficiali (44 Ruoli da FC 25)**:
+   - Cambio Ruolo Principale: **40 XP** (include la scelta del 1° Ruolo+ della nuova posizione).
+   - 1° Ruolo+: **Gratuito** se assente nella scheda di base.
+   - 2° Ruolo+: **100 XP** (massimo 2 Ruoli+ totali).
+   - Swap Ruolo+: **60 XP** per scambiare un ruolo tattico con un altro compatibile.
+   - Upgrade a Ruolo++: **100 XP** riservato a calciatori con $\ge 84$ OVR stimato (massimo 1 Ruolo++ per giocatore).
+3. **Tratti & Stili di Gioco (36 Tratti Ufficiali con Requisiti Dinamici)**:
+   - Tratto Argento: **60 XP** per l'acquisto; **40 XP** per l'eliminazione di un tratto pre-esistente dalla scheda base.
+   - Tratto Oro (PlayStyle+):
+     - **Gratuito** al raggiungimento di $\ge 84$ OVR per il 1° sblocco (promozione automatica a Oro con 1 solo tratto posseduto; selezione gratuita a scelta con 2 o più tratti; promozione automatica del 1° tratto acquistato se ne ha 0).
+     - **70 XP** per scambiare lo status Oro tra due tratti quando uno è già presente (lo status Oro si sposta al nuovo e il precedente torna Argento).
+     - Massimo 5 tratti totali per giocatore, massimo 1 Tratto Oro.
+   - Verifica dinamica dei requisiti minimi in tempo reale calcolata su `postStats`, consentendo di sbloccare tratti nel momento esatto in cui vengono potenziati gli attributi collegati.

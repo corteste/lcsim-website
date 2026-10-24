@@ -13,8 +13,7 @@ import {
   ChevronRight, AlertCircle, RefreshCw, Star, Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import TraitSystem from "@/components/training/TraitSystem";
-import RoleSystem from "@/components/training/RoleSystem";
+import UnifiedRoleAndTraitSystem from "@/components/training/UnifiedRoleAndTraitSystem";
 import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
@@ -23,12 +22,16 @@ import { PLAYER_TABLE, PLAYER_TABLE_TRAINING } from "@/constants/App";
 import { useQueryClient } from "@tanstack/react-query";
 import { getRoleColor, getValueColor, getPlayerImage, getNationalityFlag } from "@/utils/functions";
 import { getRosterLockState, subscribeToRosterLock } from "@/services/rosterLockService";
+import {
+  StatKey,
+  PlayerSpecializationDraft,
+  parsePlayerSpecializations,
+  serializeSpecializationsForDb,
+  calculateSpecializationsCost,
+  OFFICIAL_TRAITS,
+} from "@/types/training";
 
-/* NOMI DELLE SINGOLE STATISTICHE */
-export type StatKey =
-  | "PREP"  | "POSP"  | "RINP"  | "RIFP"  | "TUFP"  | "CONT"  | "SCIV"  | "MARC"  | "AGGR"  | "INTR"  | "PASC"  | "PASL"  | "CRSS"  | "CTRP"
-  | "VISI"  | "EFFT"  | "PTIR"  | "TIRD"  | "TIRV"  | "DRBL"  | "PIAZ"  | "FINA"  | "ACCL"  | "VELO"  | "AGIL"  | "RESI"  | "EQLB"  | "FRZA"
-  | "TSTA"  | "RIFL"  | "ELEV"  | "PNIZ"  | "CRIG"  | "FRED";
+export { type StatKey };
 
 export const statMeta: Record<StatKey, { label: string; short: string }> = {
   PREP: { label: "Presa", short: "PREP" },
@@ -153,7 +156,6 @@ export function getSingleTickCost(
 
 /**
  * Calcola il costo totale XP per portare un gruppo da 0 a totalLevels livelli.
- * Ogni singolo tick viene valutato dinamicamente con la media/max aggiornata.
  */
 export function calculateGroupCost(
   group: GroupRowDef,
@@ -307,7 +309,7 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
   'AD': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 4, EFFT: 0,
+    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
     ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
     TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
@@ -315,49 +317,50 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
   'AS': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 4, EFFT: 0,
+    PASC: 9, PASL: 0, CRSS: 9, CTRP: 14, VISI: 6, EFFT: 0,
     PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 16, PIAZ: 9, FINA: 10,
     ACCL: 7, VELO: 6, AGIL: 3, RESI: 0, EQLB: 0, FRZA: 0,
     TSTA: 0, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
-  },
-  'AT': {
-    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
-    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
-    PASC: 9, PASL: 0, CRSS: 0, CTRP: 15, VISI: 8, EFFT: 0,
-    PTIR: 0, TIRD: 4, TIRV: 0, DRBL: 14, PIAZ: 13, FINA: 18,
-    ACCL: 5, VELO: 4, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 0,
-    TSTA: 2, RIFL: 5, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
   'ATT': {
     PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
     CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
     PASC: 5, PASL: 0, CRSS: 0, CTRP: 10, VISI: 0, EFFT: 0,
-    PTIR: 0, TIRD: 0, TIRV: 0, DRBL: 7, PIAZ: 13, FINA: 18,
+    PTIR: 10, TIRD: 3, TIRV: 2, DRBL: 7, PIAZ: 13, FINA: 18,
     ACCL: 4, VELO: 5, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 5,
     TSTA: 10, RIFL: 8, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
+  },
+  'AT': {
+    PREP: 0, POSP: 0, RINP: 0, RIFP: 0, TUFP: 0,
+    CONT: 0, SCIV: 0, MARC: 0, AGGR: 0, INTR: 0,
+    PASC: 9, PASL: 0, CRSS: 0, CTRP: 15, VISI: 8, EFFT: 0,
+    PTIR: 5, TIRD: 4, TIRV: 0, DRBL: 14, PIAZ: 13, FINA: 11,
+    ACCL: 5, VELO: 4, AGIL: 0, RESI: 0, EQLB: 0, FRZA: 0,
+    TSTA: 2, RIFL: 7, ELEV: 0, PNIZ: 0, CRIG: 0, FRED: 0,
   },
 };
 
 export const calcOverall = (
   role: string | undefined | null,
   stats: Record<StatKey, number>,
-  fallbackOvr: number = 70
+  fallback: number = 70
 ): number => {
-  if (!role) return fallbackOvr;
-  const weights = roleWeights[role.toUpperCase()];
-  if (!weights) return fallbackOvr;
+  const normRole = (role || "").toUpperCase();
+  const weights = roleWeights[normRole] || roleWeights['CC'];
+  if (!weights) return fallback;
 
   let totalWeight = 0;
   let weightedSum = 0;
 
-  for (const [key, weight] of Object.entries(weights) as [StatKey, number][]) {
-    if (weight > 0) {
-      totalWeight += weight;
-      weightedSum += (stats[key] ?? 0) * weight;
+  for (const k of Object.keys(statMeta) as StatKey[]) {
+    const w = weights[k] || 0;
+    if (w > 0) {
+      totalWeight += w;
+      weightedSum += (stats[k] || 0) * w;
     }
   }
 
-  if (totalWeight === 0) return fallbackOvr;
+  if (totalWeight === 0) return fallback;
   return Math.round(weightedSum / totalWeight);
 };
 
@@ -366,13 +369,13 @@ interface TrainingRecord {
   PlayerID: number;
   Squadra: string;
   status: "draft" | "confirmed";
-  increases: Record<string, number>;
+  increases: Record<string, any>;
   xp_cost: number;
   pre_ovr: number;
   post_ovr: number;
-  base_snapshot?: Record<string, any>;
-  updated_at: string;
-  confirmed_at?: string | null;
+  base_snapshot?: any;
+  updated_at?: string;
+  confirmed_at?: string;
 }
 
 const normalizeIncreases = (inc: any): Record<string, number> => {
@@ -415,6 +418,11 @@ const Allenamenti = () => {
   // Stato aumenti per il giocatore attualmente selezionato
   const [increases, setIncreases] = useState<Record<string, number>>(emptyIncreases);
 
+  // Stato bozza per ruoli e tratti
+  const [specializationsDraft, setSpecializationsDraft] = useState<PlayerSpecializationDraft>(() =>
+    parsePlayerSpecializations(null)
+  );
+
   // Stati operativi UI
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -425,6 +433,36 @@ const Allenamenti = () => {
     const unsub = subscribeToRosterLock((st) => setIsRosterLocked(st.isLocked));
     return unsub;
   }, []);
+
+  // Helper per caricare bozza giocatore da trainingMap o da an_player base
+  const loadPlayerDraft = (targetPlayer: Player | null, record: TrainingRecord | undefined) => {
+    if (!targetPlayer) {
+      setIncreases(emptyIncreases());
+      setSpecializationsDraft(parsePlayerSpecializations(null));
+      return;
+    }
+
+    if (record && record.increases) {
+      setIncreases(normalizeIncreases(record.increases));
+      if (record.increases.specializations) {
+        const spec = record.increases.specializations;
+        setSpecializationsDraft({
+          posiz: spec.posiz || targetPlayer.Posiz || "CC",
+          role1: spec.role1 !== undefined ? spec.role1 : targetPlayer.Role1 || null,
+          role2: spec.role2 !== undefined ? spec.role2 : targetPlayer.Role2 || null,
+          traits: Array.isArray(spec.traits_list)
+            ? spec.traits_list
+            : parsePlayerSpecializations(targetPlayer).traits,
+          removedBaseTraits: Array.isArray(spec.removed_base_traits) ? spec.removed_base_traits : [],
+        });
+      } else {
+        setSpecializationsDraft(parsePlayerSpecializations(targetPlayer));
+      }
+    } else {
+      setIncreases(emptyIncreases());
+      setSpecializationsDraft(parsePlayerSpecializations(targetPlayer));
+    }
+  };
 
   // Caricamento giocatori e allenamenti salvati da Supabase
   useEffect(() => {
@@ -467,11 +505,7 @@ const Allenamenti = () => {
           const firstId = Number(basePlayers[0].ID);
           setSelectedId(firstId);
           const rec = tMap[firstId];
-          if (rec && rec.increases) {
-            setIncreases(normalizeIncreases(rec.increases));
-          } else {
-            setIncreases(emptyIncreases());
-          }
+          loadPlayerDraft(basePlayers[0], rec);
         }
       } catch (err) {
         console.error("Error fetching training data:", err);
@@ -502,12 +536,9 @@ const Allenamenti = () => {
   // Quando si cambia giocatore dalla lista, carica i suoi allenamenti correnti
   const handlePlayerChange = (id: number) => {
     setSelectedId(id);
+    const p = players.find((x) => Number(x.ID) === id) ?? null;
     const rec = trainingMap[id];
-    if (rec && rec.increases) {
-      setIncreases(normalizeIncreases(rec.increases));
-    } else {
-      setIncreases(emptyIncreases());
-    }
+    loadPlayerDraft(p, rec);
   };
 
   // Statistiche di base del giocatore prima degli allenamenti
@@ -527,19 +558,19 @@ const Allenamenti = () => {
     return next;
   }, [preStats, increases]);
 
-  // Calcolo Overall pre e post
+  // Calcolo Overall pre e post (post Overall calcolato sulla posizione bozza se cambiata)
   const preOverall = useMemo(
     () => calcOverall(player?.Posiz, preStats, player?.OVR ?? 70),
     [player?.Posiz, preStats, player?.OVR]
   );
 
   const postOverall = useMemo(
-    () => calcOverall(player?.Posiz, postStats, preOverall),
-    [player?.Posiz, postStats, preOverall]
+    () => calcOverall(specializationsDraft.posiz || player?.Posiz, postStats, preOverall),
+    [specializationsDraft.posiz, player?.Posiz, postStats, preOverall]
   );
 
-  // Calcolo Costo Totale XP (Dinamico basato su media/max e tick-by-tick)
-  const totalCost = useMemo(() => {
+  // Calcolo Costo Attributi XP (Dinamico basato su media/max e tick-by-tick)
+  const attributeCost = useMemo(() => {
     let cost = 0;
     for (const row of groupRows) {
       const inc = increases[row.key] ?? 0;
@@ -550,23 +581,69 @@ const Allenamenti = () => {
     return cost;
   }, [increases, preStats]);
 
+  // Calcolo Costo Specializzazioni (Ruoli & Tratti)
+  const specCostSummary = useMemo(() => {
+    return calculateSpecializationsCost(player, specializationsDraft, postOverall);
+  }, [player, specializationsDraft, postOverall]);
+
+  // Costo Totale Complessivo
+  const totalCost = attributeCost + specCostSummary.totalCost;
   const xpAvailable = player?.XP ?? 0;
   const xpRemaining = xpAvailable - totalCost;
 
-  // Verifica se ci sono modifiche attive e se differiscono dallo stato salvato
+  // Verifica se ci sono modifiche attive sugli attributi
   const hasActiveIncreases = useMemo(() => hasAnyIncrease(increases), [increases]);
 
+  // Verifica se ci sono modifiche attive su ruoli o tratti rispetto al giocatore base di an_player
+  const hasActiveSpecializations = useMemo(() => {
+    if (!player) return false;
+    const base = parsePlayerSpecializations(player);
+    if (specializationsDraft.posiz !== base.posiz) return true;
+    if (specializationsDraft.role1 !== base.role1) return true;
+    if (specializationsDraft.role2 !== base.role2) return true;
+    if ((specializationsDraft.removedBaseTraits || []).length > 0) return true;
+    const baseTraitKeys = base.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
+    const draftTraitKeys = specializationsDraft.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
+    return baseTraitKeys !== draftTraitKeys;
+  }, [player, specializationsDraft]);
+
+  const hasAnyDraftChanges = hasActiveIncreases || hasActiveSpecializations;
+
   const hasSavedTraining = useMemo(() => {
-    if (!currentTrainingRecord) return false;
-    return hasAnyIncrease(normalizeIncreases(currentTrainingRecord.increases));
+    return !!currentTrainingRecord;
   }, [currentTrainingRecord]);
 
   const hasUnsavedChanges = useMemo(() => {
-    const saved = currentTrainingRecord ? normalizeIncreases(currentTrainingRecord.increases) : emptyIncreases();
-    return !areIncreasesEqual(increases, saved);
-  }, [increases, currentTrainingRecord]);
+    if (!player) return false;
+    const savedIncreases = currentTrainingRecord ? normalizeIncreases(currentTrainingRecord.increases) : emptyIncreases();
+    const increasesChanged = !areIncreasesEqual(increases, savedIncreases);
 
-  // Gestione incremento/decremento singolo gruppo
+    const savedSpec = currentTrainingRecord?.increases?.specializations;
+    let savedDraftSpec: PlayerSpecializationDraft;
+    if (savedSpec) {
+      savedDraftSpec = {
+        posiz: savedSpec.posiz || player.Posiz || "CC",
+        role1: savedSpec.role1 !== undefined ? savedSpec.role1 : player.Role1 || null,
+        role2: savedSpec.role2 !== undefined ? savedSpec.role2 : player.Role2 || null,
+        traits: Array.isArray(savedSpec.traits_list) ? savedSpec.traits_list : parsePlayerSpecializations(player).traits,
+        removedBaseTraits: Array.isArray(savedSpec.removed_base_traits) ? savedSpec.removed_base_traits : [],
+      };
+    } else {
+      savedDraftSpec = parsePlayerSpecializations(player);
+    }
+
+    const specChanged =
+      specializationsDraft.posiz !== savedDraftSpec.posiz ||
+      specializationsDraft.role1 !== savedDraftSpec.role1 ||
+      specializationsDraft.role2 !== savedDraftSpec.role2 ||
+      (specializationsDraft.removedBaseTraits || []).join(",") !== (savedDraftSpec.removedBaseTraits || []).join(",") ||
+      specializationsDraft.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",") !==
+        savedDraftSpec.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
+
+    return increasesChanged || specChanged;
+  }, [player, increases, specializationsDraft, currentTrainingRecord]);
+
+  // Gestione incremento/decremento singolo gruppo attributi
   const setIncrease = (key: string, value: number) => {
     const clamped = Math.max(0, Math.min(25, value));
     const currentVal = increases[key] ?? 0;
@@ -575,9 +652,7 @@ const Allenamenti = () => {
     const group = groupRows.find((g) => g.key === key);
     if (!group) return;
 
-    // Se si sta aumentando
     if (clamped > currentVal) {
-      // Verifica se tutti gli attributi hanno già raggiunto il cap di 99
       const allMaxed = group.subs.every((s) => (preStats[s] ?? 0) + currentVal >= 99);
       if (allMaxed) {
         toast({
@@ -587,13 +662,11 @@ const Allenamenti = () => {
         return;
       }
 
-      // Calcolo costo dinamico per i livelli aggiuntivi
       let diffCost = 0;
       for (let lvl = currentVal; lvl < clamped; lvl++) {
         diffCost += getSingleTickCost(group, preStats, lvl);
       }
 
-      // Se non ci sono abbastanza XP, blocca
       if (xpRemaining < diffCost) {
         toast({
           title: "XP Insufficienti",
@@ -610,7 +683,7 @@ const Allenamenti = () => {
     }));
   };
 
-  // Funzione SALVA ALLENAMENTI
+  // Funzione SALVA ALLENAMENTI COMPLETI (Attributi + Ruoli + Tratti)
   const handleSaveTraining = async () => {
     if (!player) return;
     if (isRosterLocked) {
@@ -624,7 +697,7 @@ const Allenamenti = () => {
     if (xpRemaining < 0) {
       toast({
         title: "Attenzione",
-        description: "Il costo degli allenamenti supera gli XP a disposizione.",
+        description: "Il costo complessivo degli allenamenti supera gli XP a disposizione.",
         variant: "destructive",
       });
       return;
@@ -634,7 +707,7 @@ const Allenamenti = () => {
     const playerId = Number(player.ID);
 
     try {
-      if (!hasActiveIncreases) {
+      if (!hasAnyDraftChanges) {
         await supabase
           .from(PLAYER_TABLE_TRAINING)
           .delete()
@@ -653,12 +726,19 @@ const Allenamenti = () => {
         return;
       }
 
+      const serializedSpec = serializeSpecializationsForDb(specializationsDraft);
+      const normalizedInc = normalizeIncreases(increases);
+      const payloadIncreases = {
+        ...normalizedInc,
+        specializations: serializedSpec,
+      };
+
       const nowIso = new Date().toISOString();
       const payload = {
         PlayerID: playerId,
         Squadra: currentTeam || player.Squadra,
         status: "draft" as const,
-        increases: normalizeIncreases(increases),
+        increases: payloadIncreases,
         xp_cost: totalCost,
         pre_ovr: preOverall,
         post_ovr: postOverall,
@@ -669,6 +749,7 @@ const Allenamenti = () => {
           OVR: preOverall,
           XP: player.XP,
           stats: preStats,
+          specializations: specializationsDraft,
         },
         updated_at: nowIso,
       };
@@ -690,7 +771,7 @@ const Allenamenti = () => {
 
       toast({
         title: "Allenamenti Salvati!",
-        description: `Stato salvato per ${player.Nome} ${player.Cognome}. OVR stimato: ${postOverall} (+${postOverall - preOverall}).`,
+        description: `Stato salvato per ${player.Nome} ${player.Cognome}. Spesa: ${totalCost} XP. OVR stimato: ${postOverall} (+${postOverall - preOverall}).`,
       });
     } catch (err: any) {
       console.error("Errore salvataggio allenamenti:", err);
@@ -704,7 +785,7 @@ const Allenamenti = () => {
     }
   };
 
-  // Funzione RESET VALORI ORIGINALI
+  // Funzione RESET VALORI ORIGINALI (Annulla tutte le modifiche e cancella bozza da an_player_training)
   const handleResetToOriginal = async () => {
     if (!player) return;
     setIsResetting(true);
@@ -712,6 +793,7 @@ const Allenamenti = () => {
 
     try {
       setIncreases(emptyIncreases());
+      setSpecializationsDraft(parsePlayerSpecializations(player));
 
       if (trainingMap[playerId]) {
         const { error } = await supabase
@@ -730,7 +812,7 @@ const Allenamenti = () => {
 
       toast({
         title: "Valori Originali Ripristinati",
-        description: `Gli allenamenti di ${player.Nome} ${player.Cognome} sono tornati ai valori originali.`,
+        description: `Tutti gli allenamenti, ruoli e tratti di ${player.Nome} ${player.Cognome} sono tornati ai valori originali.`,
       });
     } catch (err: any) {
       console.error("Errore reset:", err);
@@ -743,22 +825,6 @@ const Allenamenti = () => {
       setIsResetting(false);
     }
   };
-
-  const handlePlayerUpdate = (updatedPlayer: Player) => {
-    setPlayers((prev) =>
-      prev.map((p) => (p.ID === updatedPlayer.ID ? updatedPlayer : p))
-    );
-  };
-
-  const playerWithPreviewStats = useMemo(() => {
-    if (!player) return null;
-    return {
-      ...player,
-      OVR: postOverall,
-      XP: xpRemaining,
-      stats: postStats,
-    };
-  }, [player, postOverall, xpRemaining, postStats]);
 
   // Elenco dei gruppi migliorati per il riepilogo
   const activeGroupsSummary = useMemo(
@@ -779,14 +845,12 @@ const Allenamenti = () => {
   // Giocatori filtrati per ricerca e ruolo
   const filteredPlayers = useMemo(() => {
     return players.filter((p) => {
-      // Filtro ruolo
       if (roleFilter !== "ALL") {
         if (roleFilter === "POR" && p.Posiz !== "POR") return false;
         if (roleFilter === "DIF" && !["DC", "TD", "TS", "DFC", "TER"].includes(p.Posiz)) return false;
         if (roleFilter === "CEN" && !["CDC", "CC", "ED", "ES", "COC", "CEN"].includes(p.Posiz)) return false;
         if (roleFilter === "ATT" && !["AD", "AS", "AT", "ATT"].includes(p.Posiz)) return false;
       }
-      // Filtro ricerca nome
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const fullName = `${p.Nome} ${p.Cognome}`.toLowerCase();
@@ -798,73 +862,70 @@ const Allenamenti = () => {
 
   // Calcolo impatto OVR per singolo attributo per il giocatore attivo
   const playerRoleWeights = useMemo(() => {
-    if (!player?.Posiz) return {};
-    return roleWeights[player.Posiz.toUpperCase()] || {};
-  }, [player?.Posiz]);
+    const r = (specializationsDraft.posiz || player?.Posiz || "CC").toUpperCase();
+    return roleWeights[r] || roleWeights["CC"] || {};
+  }, [player, specializationsDraft.posiz]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        {!user ? (
-          <RequireAuthPrompt
-            title="Centro Allenamenti & Sviluppo XP"
-            description="Accedi con il tuo account o scegli una squadra libera per gestire gli allenamenti e l'assegnazione dei punti XP."
-          />
-        ) : (
-          <>
-            {/* Selettore Admin Globale */}
-            <AdminTeamSelector />
 
-{isRosterLocked && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold flex items-center gap-2.5">
-                <Lock className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-                <span>
-                  <strong>Rose Congelate dalla Lega:</strong> Le rose sono attualmente bloccate dall'amministrazione. Il salvataggio di nuovi allenamenti o modifiche agli XP è temporaneamente disabilitato.
-                </span>
+      <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
+        <RequireAuthPrompt />
+
+        {/* ========================================================================= */}
+        {/* HEADER DELLA PAGINA CON TITOLO, SELETTORE SQUADRA E ROSTER LOCK BANNER    */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                <Dumbbell className="h-6 w-6" />
               </div>
-            )}
-
-            {/* Header Broadcast */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-border/80">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                    Centro Sviluppo • {effectiveTeamFullName || currentTeam || "Squadra"}
-                  </span>
-                </div>
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-                  Centro Allenamenti & Sviluppo XP
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground flex items-center gap-2">
+                  Centro Allenamenti
+                  <Badge variant="outline" className="text-xs font-mono font-bold border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                    Stagione Attiva
+                  </Badge>
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  Potenzia i tuoi calciatori assegnando i punti XP ai gruppi di attributi dedicati.
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Potenzia gli attributi, modifica il ruolo tattico e acquista Tratti &amp; Stili di Gioco per la tua rosa.
                 </p>
               </div>
-
-              {/* Status Pill */}
-              {player && (
-                <div className="flex items-center gap-2">
-                  {hasUnsavedChanges ? (
-                    <Badge variant="outline" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 px-3 py-1.5 text-xs font-semibold gap-1.5 shadow-sm">
-                      <Clock className="h-3.5 w-3.5 animate-pulse" />
-                      Modifiche non salvate
-                    </Badge>
-                  ) : hasSavedTraining ? (
-                    <Badge variant="outline" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 px-3 py-1.5 text-xs font-semibold gap-1.5 shadow-sm">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Allenamento Salvato a Sistema
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-muted-foreground px-3 py-1.5 text-xs">
-                      Valori Originali di Default
-                    </Badge>
-                  )}
-                </div>
-              )}
             </div>
+          </div>
 
+          <div className="flex items-center gap-3">
+            <AdminTeamSelector />
+          </div>
+        </div>
+
+        {/* Banner Avviso Blocco Rose */}
+        {isRosterLocked && (
+          <div className="p-4 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center gap-3 shadow-sm">
+            <Lock className="h-5 w-5 shrink-0" />
+            <div className="text-xs sm:text-sm">
+              <span className="font-bold">Rose Congelate dalla Lega:</span> le modifiche agli allenamenti sono attualmente in sola visualizzazione. Il salvataggio sarà riabilitato dall'amministrazione alla riapertura delle operazioni di mercato.
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-3">
+            <RefreshCw className="h-8 w-8 animate-spin text-emerald-500" />
+            <p className="text-sm font-medium text-muted-foreground">
+              Caricamento giocatori e sessioni di allenamento...
+            </p>
+          </div>
+        ) : players.length === 0 ? (
+          <Card className="p-12 text-center text-muted-foreground">
+            Nessun giocatore trovato per la squadra selezionata ({effectiveTeamFullName || currentTeam}).
+          </Card>
+        ) : (
+          <>
             {/* ========================================================================= */}
-            {/* TELEMETRY COMMAND HUD: RECAP COMPLETO OVERALL & XP (RICHIESTA UTENTE)     */}
+            {/* TELEMETRY COMMAND HUD: RECAP COMPLETO OVERALL & XP                        */}
             {/* ========================================================================= */}
             {player && (
               <div className="rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-card/90 shadow-xl p-4 sm:p-5 backdrop-blur-md">
@@ -883,8 +944,8 @@ const Allenamenti = () => {
                           }}
                         />
                       </div>
-                      <Badge className={`absolute -bottom-1 -right-1 text-[10px] px-1.5 py-0 font-bold border ${getRoleColor(player.Posiz)}`}>
-                        {player.Posiz}
+                      <Badge className={`absolute -bottom-1 -right-1 text-[10px] px-1.5 py-0 font-bold border ${getRoleColor(specializationsDraft.posiz || player.Posiz)}`}>
+                        {specializationsDraft.posiz || player.Posiz}
                       </Badge>
                     </div>
 
@@ -901,12 +962,20 @@ const Allenamenti = () => {
                           />
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
                         <span>{player.Età} anni</span>
                         <span>•</span>
                         <span>Piede: {player.Piede || "Dx"}</span>
                         <span>•</span>
                         <span>{player.Altezza || "180"} cm</span>
+                        {specializationsDraft.posiz !== player.Posiz && (
+                          <>
+                            <span>•</span>
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-500 border-amber-500/30">
+                              Ex {player.Posiz}
+                            </Badge>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1008,7 +1077,7 @@ const Allenamenti = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!player || (!hasActiveIncreases && !hasSavedTraining) || isResetting || isSaving}
+                        disabled={!player || (!hasAnyDraftChanges && !hasSavedTraining) || isResetting || isSaving}
                         onClick={handleResetToOriginal}
                         className="h-7 px-2 text-[11px] font-semibold text-muted-foreground hover:text-rose-500 hover:border-rose-500/40"
                       >
@@ -1023,7 +1092,7 @@ const Allenamenti = () => {
             )}
 
             {/* ========================================================================= */}
-            {/* CORPO DELLA PAGINA: SIDEBAR CALCIATORI + BLOCCHI ATTRIBUTI A TRE A TRE     */}
+            {/* CORPO DELLA PAGINA: SIDEBAR CALCIATORI + TABS SEZIONE CENTRALE + RIEPILOGO */}
             {/* ========================================================================= */}
             <div className="grid grid-cols-12 gap-6 items-start">
               
@@ -1084,7 +1153,7 @@ const Allenamenti = () => {
                           const pId = Number(p.ID);
                           const isSelected = pId === selectedId;
                           const rec = trainingMap[pId];
-                          const hasSaved = rec && hasAnyIncrease(normalizeIncreases(rec.increases));
+                          const hasSaved = !!rec;
 
                           return (
                             <div
@@ -1138,48 +1207,56 @@ const Allenamenti = () => {
                   </CardContent>
                 </Card>
 
-                {/* Guida Rapida / Istruzioni */}
+                {/* Guida Rapida Costi XP */}
                 <Card className="border-border/60 bg-muted/20 text-xs p-3.5 space-y-2.5">
                   <div className="flex items-center gap-1.5 font-bold text-foreground">
                     <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                    <span>Regolamento Costi XP Dinamici</span>
+                    <span>Regolamento Costi XP Ufficiali</span>
                   </div>
                   <div className="text-[11px] text-muted-foreground leading-relaxed space-y-2">
-                    <p>
-                      • Il costo in XP per ciascun livello viene calcolato in base alla <strong>media degli attributi</strong> del gruppo (o al <strong>valore più alto</strong> per i Calci Piazzati):
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[10px] font-mono">
-                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;90 &rarr; 50 XP</span>
-                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;80 &rarr; 30 XP</span>
-                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;70 &rarr; 15 XP</span>
-                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;60 &rarr; 8 XP</span>
-                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;50 &rarr; 5 XP</span>
-                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&gt;30 &rarr; 3 XP</span>
-                      <span className="bg-background/80 px-1.5 py-0.5 rounded border border-border/60">&le;30 &rarr; 1 XP</span>
-                      <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30 font-bold">POR: Costo x2</span>
+                    <div>
+                      <strong className="text-foreground">Attributi (Dinamico):</strong>
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 font-mono text-[10px] mt-1">
+                        <span>&gt;90: 50 XP</span>
+                        <span>&gt;80: 30 XP</span>
+                        <span>&gt;70: 15 XP</span>
+                        <span>&gt;60: 8 XP</span>
+                        <span>&gt;50: 5 XP</span>
+                        <span>&gt;30: 3 XP</span>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      • <strong>Dinamico tick-by-tick</strong>: ad ogni punto assegnato la media aumenta e il costo del tick successivo si adatta in tempo reale.<br />
-                      • <strong>Calci Piazzati</strong>: non si calcola la media, ma il valore max tra Punizioni (PNIZ), Rigori (CRIG) e Freddezza (FRED).
-                    </p>
+                    <div className="pt-1 border-t border-border/40">
+                      <strong className="text-foreground">Ruolo &amp; Ruoli+:</strong>
+                      <ul className="list-disc list-inside space-y-0.5 text-[10px] mt-0.5">
+                        <li>Cambio Ruolo: <strong>40 XP</strong> (1° Ruolo+ gratis)</li>
+                        <li>2° Ruolo+: <strong>100 XP</strong> (max 2)</li>
+                        <li>Swap Ruolo+: <strong>60 XP</strong></li>
+                        <li>Upgrade Ruolo++: <strong>100 XP</strong> (≥84 OVR)</li>
+                      </ul>
+                    </div>
+                    <div className="pt-1 border-t border-border/40">
+                      <strong className="text-foreground">Tratti &amp; Stili (Max 5, 1 Oro):</strong>
+                      <ul className="list-disc list-inside space-y-0.5 text-[10px] mt-0.5">
+                        <li>Tratto Argento: <strong>60 XP</strong> (Elimina: 40 XP)</li>
+                        <li>1° Tratto Oro: <strong>Gratuito</strong> a ≥84 OVR</li>
+                        <li>Swap Tratto Oro: <strong>70 XP</strong></li>
+                      </ul>
+                    </div>
                   </div>
                 </Card>
               </div>
 
               {/* ------------------------------------------------------------- */}
-              {/* COLONNA CENTRALE: I BLOCCHI ATTRIBUTI A TRE A TRE (GRIGLIA)   */}
+              {/* COLONNA CENTRALE: LE DUE SCHEDE (ATTRIBUTI vs RUOLI & TRATTI) */}
               {/* ------------------------------------------------------------- */}
               <div className="col-span-12 lg:col-span-6 space-y-4">
                 <Tabs defaultValue="attributi" className="w-full">
-                  <TabsList className="w-full grid grid-cols-3 h-11 bg-muted/40 p-1 rounded-xl">
+                  <TabsList className="w-full grid grid-cols-2 h-11 bg-muted/40 p-1 rounded-xl">
                     <TabsTrigger value="attributi" className="font-bold text-xs sm:text-sm gap-1.5">
                       <TrendingUp className="h-4 w-4" /> Gruppi Attributi
                     </TabsTrigger>
-                    <TabsTrigger value="ruolo" className="font-bold text-xs sm:text-sm gap-1.5">
-                      <Award className="h-4 w-4" /> Ruolo & Ruolo+
-                    </TabsTrigger>
-                    <TabsTrigger value="tratti" className="font-bold text-xs sm:text-sm gap-1.5">
-                      <Sparkles className="h-4 w-4" /> Tratti & Stili
+                    <TabsTrigger value="specializzazioni" className="font-bold text-xs sm:text-sm gap-1.5">
+                      <Sparkles className="h-4 w-4" /> Ruoli &amp; Tratti Speciali
                     </TabsTrigger>
                   </TabsList>
 
@@ -1360,34 +1437,21 @@ const Allenamenti = () => {
                     )}
                   </TabsContent>
 
-                  {/* TAB 2: RUOLO & RUOLO+ */}
-                  <TabsContent value="ruolo" className="mt-4">
-                    {playerWithPreviewStats ? (
-                      <RoleSystem
-                        player={playerWithPreviewStats}
+                  {/* TAB 2: RUOLI & TRATTI UNIFICATI */}
+                  <TabsContent value="specializzazioni" className="mt-4">
+                    {player ? (
+                      <UnifiedRoleAndTraitSystem
+                        player={player}
+                        postStats={postStats}
+                        postOverall={postOverall}
+                        draft={specializationsDraft}
+                        onDraftChange={setSpecializationsDraft}
                         xpAvailable={xpRemaining}
-                        onXpChange={() => {}}
-                        onPlayerUpdate={handlePlayerUpdate}
+                        isRosterLocked={isRosterLocked}
                       />
                     ) : (
-                      <Card className="py-12 text-center text-muted-foreground">
-                        Seleziona un giocatore
-                      </Card>
-                    )}
-                  </TabsContent>
-
-                  {/* TAB 3: TRATTI */}
-                  <TabsContent value="tratti" className="mt-4">
-                    {playerWithPreviewStats ? (
-                      <TraitSystem
-                        player={playerWithPreviewStats}
-                        xpAvailable={xpRemaining}
-                        onXpChange={() => {}}
-                        onPlayerUpdate={handlePlayerUpdate}
-                      />
-                    ) : (
-                      <Card className="py-12 text-center text-muted-foreground">
-                        Seleziona un giocatore
+                      <Card className="py-12 text-center text-muted-foreground border-dashed">
+                        Seleziona un giocatore dalla rosa a sinistra per gestire ruoli e tratti.
                       </Card>
                     )}
                   </TabsContent>
@@ -1433,24 +1497,70 @@ const Allenamenti = () => {
                       )}
                     </div>
 
+                    {/* Breakdown Costi XP per Categoria */}
+                    <div className="space-y-2 p-3 rounded-xl bg-muted/20 border border-border/60 text-xs">
+                      <span className="font-bold text-foreground block text-[11px] uppercase tracking-wider">
+                        Ripartizione Costo XP:
+                      </span>
+                      <div className="space-y-1 font-mono">
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <span>Attributi:</span>
+                          <span className="font-bold text-foreground">-{attributeCost} XP</span>
+                        </div>
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <span>Ruoli (+/++):</span>
+                          <span className="font-bold text-foreground">-{specCostSummary.roleCost} XP</span>
+                        </div>
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <span>Tratti &amp; Stili:</span>
+                          <span className="font-bold text-foreground">-{specCostSummary.traitCost} XP</span>
+                        </div>
+                        <div className="pt-1 border-t border-border/40 flex items-center justify-between font-extrabold text-foreground">
+                          <span>Totale Speso:</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">-{totalCost} XP</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dettagli Specializzazioni Modificate */}
+                    {(specCostSummary.roleBreakdown.length > 0 || specCostSummary.traitBreakdown.length > 0) && (
+                      <div className="space-y-1.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs">
+                        <span className="font-bold text-amber-500 block text-[10px] uppercase">
+                          Modifiche Ruolo &amp; Tratti:
+                        </span>
+                        <ul className="space-y-1 text-[11px] text-muted-foreground">
+                          {specCostSummary.roleBreakdown.map((r, i) => (
+                            <li key={`rb-${i}`} className="flex items-start gap-1">
+                              <span className="text-amber-500 font-bold">•</span> {r}
+                            </li>
+                          ))}
+                          {specCostSummary.traitBreakdown.map((t, i) => (
+                            <li key={`tb-${i}`} className="flex items-start gap-1">
+                              <span className="text-amber-500 font-bold">•</span> {t}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                     {/* Elenco dei gruppi incrementati */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                        <span>Gruppi Allenati</span>
+                        <span>Gruppi Attributi Allenati</span>
                         <span>{activeGroupsSummary.length} Attivi</span>
                       </div>
 
                       {activeGroupsSummary.length === 0 ? (
-                        <div className="p-4 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground leading-relaxed">
+                        <div className="p-3 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground leading-relaxed">
                           Nessun gruppo ancora potenziato.<br />
-                          Usa i tasti <strong>+</strong> nella griglia centrale per spendere XP.
+                          Usa i tasti <strong>+</strong> nella griglia centrale.
                         </div>
                       ) : (
-                        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                           {activeGroupsSummary.map((item) => (
                             <div
                               key={item.key}
-                              className="p-2.5 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between text-xs"
+                              className="p-2 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between text-xs"
                             >
                               <div>
                                 <span className="font-bold text-foreground">{item.label}</span>
@@ -1487,7 +1597,7 @@ const Allenamenti = () => {
                       <Button
                         variant="outline"
                         className="w-full text-xs font-semibold text-muted-foreground hover:text-rose-500 hover:border-rose-500/40"
-                        disabled={!player || (!hasActiveIncreases && !hasSavedTraining) || isResetting || isSaving}
+                        disabled={!player || (!hasAnyDraftChanges && !hasSavedTraining) || isResetting || isSaving}
                         onClick={handleResetToOriginal}
                       >
                         <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
