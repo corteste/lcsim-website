@@ -479,6 +479,37 @@ export interface PlayerSlotInstruction {
   focusId: string;  // es. "difesa", "equilibrato", "attacco"
 }
 
+export interface SetPiecesSettings {
+  capitano?: number | null;
+  punizione_corta_sx?: number | null;
+  punizione_corta_dx?: number | null;
+  punizione_lunga?: number | null;
+  rigore?: number | null;
+  corner_sx?: number | null;
+  corner_dx?: number | null;
+  torre_angolo?: number | null;
+  primo_palo_angolo?: number | null;
+  secondo_palo_angolo?: number | null;
+}
+
+export const SET_PIECES_DEFINITIONS: {
+  key: keyof SetPiecesSettings;
+  label: string;
+  column: "left" | "right";
+  shortDesc: string;
+}[] = [
+  { key: "capitano", label: "Capitano", column: "left", shortDesc: "Leader della squadra in campo" },
+  { key: "punizione_corta_sx", label: "Punizione Corta Sinistra", column: "left", shortDesc: "Tiratore punizioni a giro da sinistra" },
+  { key: "punizione_corta_dx", label: "Punizione Corta Destra", column: "left", shortDesc: "Tiratore punizioni a giro da destra" },
+  { key: "punizione_lunga", label: "Punizione Lunga", column: "left", shortDesc: "Crossatore su punizioni dalla trequarti" },
+  { key: "rigore", label: "Rigore", column: "left", shortDesc: "Rigorista designato dal dischetto" },
+  { key: "corner_sx", label: "Corner Sinistro", column: "right", shortDesc: "Incaricato dei corner da sinistra" },
+  { key: "corner_dx", label: "Corner Destro", column: "right", shortDesc: "Incaricato dei corner da destra" },
+  { key: "torre_angolo", label: "Torre (Angolo)", column: "right", shortDesc: "Saltatore dominante per colpire di testa in area" },
+  { key: "primo_palo_angolo", label: "Primo Palo (Angolo)", column: "right", shortDesc: "Inserimento o spizzata sul primo palo" },
+  { key: "secondo_palo_angolo", label: "Secondo Palo (Angolo)", column: "right", shortDesc: "Presidio sul secondo palo a rimorchio" },
+];
+
 export interface TacticalSettings {
   teamTactics: {
     buildUpStyle: "short_passing" | "balanced" | "counter";
@@ -486,6 +517,7 @@ export interface TacticalSettings {
     defensiveLine: number; // 1-100 (default 50)
   };
   playerInstructions: Record<number, PlayerSlotInstruction>; // slot index 0..10
+  setPieces?: SetPiecesSettings;
 }
 
 /**
@@ -526,6 +558,18 @@ export function getDefaultTacticalSettings(positions: { label: string }[]): Tact
       defensiveLine: 50,
     },
     playerInstructions: instructions,
+    setPieces: {
+      capitano: null,
+      punizione_corta_sx: null,
+      punizione_corta_dx: null,
+      punizione_lunga: null,
+      rigore: null,
+      corner_sx: null,
+      corner_dx: null,
+      torre_angolo: null,
+      primo_palo_angolo: null,
+      secondo_palo_angolo: null,
+    },
   };
 }
 
@@ -590,6 +634,21 @@ export function sanitizeTacticalSettings(
     playerInstructions[idx] = getDefaultInstructionForSlot(slotPos);
   });
 
+  // Sanitizzazione Incarichi
+  const rawSP = raw.setPieces || {};
+  const setPieces: SetPiecesSettings = {
+    capitano: rawSP.capitano ? Number(rawSP.capitano) : null,
+    punizione_corta_sx: rawSP.punizione_corta_sx ? Number(rawSP.punizione_corta_sx) : null,
+    punizione_corta_dx: rawSP.punizione_corta_dx ? Number(rawSP.punizione_corta_dx) : null,
+    punizione_lunga: rawSP.punizione_lunga ? Number(rawSP.punizione_lunga) : null,
+    rigore: rawSP.rigore ? Number(rawSP.rigore) : null,
+    corner_sx: rawSP.corner_sx ? Number(rawSP.corner_sx) : null,
+    corner_dx: rawSP.corner_dx ? Number(rawSP.corner_dx) : null,
+    torre_angolo: rawSP.torre_angolo ? Number(rawSP.torre_angolo) : null,
+    primo_palo_angolo: rawSP.primo_palo_angolo ? Number(rawSP.primo_palo_angolo) : null,
+    secondo_palo_angolo: rawSP.secondo_palo_angolo ? Number(rawSP.secondo_palo_angolo) : null,
+  };
+
   return {
     teamTactics: {
       buildUpStyle,
@@ -597,6 +656,7 @@ export function sanitizeTacticalSettings(
       defensiveLine,
     },
     playerInstructions,
+    setPieces,
   };
 }
 

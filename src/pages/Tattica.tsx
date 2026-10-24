@@ -1156,6 +1156,10 @@ const Tattica = () => {
         formation: formationId,
         starters: starterIds,
         bench_order: currentBenchIds,
+        captain_id: tacticalSettings.setPieces?.capitano || null,
+        freekick_id: tacticalSettings.setPieces?.punizione_corta_sx || tacticalSettings.setPieces?.punizione_corta_dx || null,
+        penalty_id: tacticalSettings.setPieces?.rigore || null,
+        corner_id: tacticalSettings.setPieces?.corner_sx || tacticalSettings.setPieces?.corner_dx || null,
         tactical_settings: tacticalSettings,
         created_at: nowIso,
         created_by: user?.username || "user",
@@ -1413,6 +1417,7 @@ const Tattica = () => {
                 <TacticsOverviewTab
                   formation={currentFormation}
                   formationSlots={formationSlots}
+                  roster={orderedRoster}
                   tacticalSettings={tacticalSettings}
                   onEditFormation={() => setActiveTab("lineup")}
                   onEditTactics={() => setActiveTab("tactics")}
@@ -1774,7 +1779,7 @@ const Tattica = () => {
                             if (dragOverSlotIndex === slotIndex) setDragOverSlotIndex(null);
                           }}
                           onDrop={(e) => handleDropOnStarterSlot(e, slotIndex)}
-                          className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                          className={`p-2 rounded-xl border transition-all flex items-center gap-2.5 ${
                             isDragOver
                               ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10 scale-[1.01]"
                               : occupant
@@ -1782,14 +1787,14 @@ const Tattica = () => {
                               : "bg-muted/15 border-dashed border-border hover:border-emerald-500/40"
                           }`}
                         >
-                          {/* Numero Slot + Ruolo Richiesto nel Modulo */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            <div className="w-7 h-7 rounded-lg bg-muted/70 border border-border/80 flex items-center justify-center font-mono text-xs font-extrabold text-foreground">
+                          {/* Numero Slot + Ruolo Richiesto nel Modulo (LARGHEZZA FISSA: w-[72px] shrink-0) */}
+                          <div className="flex items-center gap-1.5 w-[72px] shrink-0">
+                            <div className="w-6 h-6 rounded-md bg-muted/70 border border-border/80 flex items-center justify-center font-mono text-[11px] font-black text-foreground shrink-0">
                               {slotIndex + 1}
                             </div>
                             <Badge
                               variant="outline"
-                              className={`w-12 justify-center font-extrabold text-[11px] py-0.5 ${getRoleColor(
+                              className={`w-10 justify-center font-extrabold text-[10px] py-0 px-1 shrink-0 ${getRoleColor(
                                 pos.label
                               )}`}
                             >
@@ -1885,89 +1890,83 @@ const Tattica = () => {
                             </Select>
                           </div>
 
-                          {/* Indicatori Destra: Affinità Ruolo, OVR, Info & Rimuovi */}
-                          {occupant && (
-                            <div className="flex items-center justify-end gap-1.5 shrink-0">
-                              {roleFit === "natural" ? (
-                                <span
-                                  className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"
-                                  title={`Ruolo Naturale (${occupant.Posiz})`}
-                                />
-                              ) : roleFit === "adaptable" ? (
-                                <span
-                                  className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"
-                                  title={`Adattato (${occupant.Posiz} schierato come ${pos.label})`}
-                                />
-                              ) : (
-                                <AlertTriangle
-                                  className="h-3.5 w-3.5 text-rose-500 shrink-0"
-                                  title={`Fuori ruolo! (${occupant.Posiz} schierato come ${pos.label})`}
-                                />
-                              )}
+                          {/* Colonna 3: Indicatori Destra & Azioni (LARGHEZZA FISSA: w-[140px] shrink-0 flex items-center justify-end gap-1.5) */}
+                          <div className="w-[140px] shrink-0 flex items-center justify-end gap-1.5">
+                            {occupant ? (
+                              <>
+                                {roleFit === "natural" ? (
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"
+                                    title={`Ruolo Naturale (${occupant.Posiz})`}
+                                  />
+                                ) : roleFit === "adaptable" ? (
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"
+                                    title={`Adattato (${occupant.Posiz} schierato come ${pos.label})`}
+                                  />
+                                ) : (
+                                  <AlertTriangle
+                                    className="h-3.5 w-3.5 text-rose-500 shrink-0"
+                                    title={`Fuori ruolo! (${occupant.Posiz} schierato come ${pos.label})`}
+                                  />
+                                )}
 
-                              <span
-                                className={`text-xs font-black font-mono ${getValueColor(
-                                  occupant.OVR ?? 70
-                                )}`}
-                              >
-                                {occupant.OVR}
-                              </span>
-
-                              {/* Bottone Istruzioni FC IQ */}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setInstructionSlotIndex(slotIndex)}
-                                className="h-7 px-2 text-[10px] font-bold gap-1 bg-primary/5 hover:bg-primary/15 border-primary/30 text-primary shrink-0"
-                                title="Personalizza Ruolo e Focus FC IQ (EA FC 25)"
-                              >
-                                <SlidersHorizontal className="h-3 w-3" />
-                                <span className="hidden xl:inline">
-                                  {(() => {
-                                    const instr = tacticalSettings.playerInstructions[slotIndex];
-                                    const roleName =
-                                      FC25_ROLES_BY_POSITION[pos.label]?.find(
-                                        (r) => r.id === instr?.roleId
-                                      )?.name || "Istruzioni";
-                                    return roleName;
-                                  })()}
+                                <span
+                                  className={`text-xs font-black font-mono w-7 text-center shrink-0 ${getValueColor(
+                                    occupant.OVR ?? 70
+                                  )}`}
+                                >
+                                  {occupant.OVR}
                                 </span>
-                              </Button>
 
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => setSelectedPlayerModal(occupant)}
-                                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
-                                title="Scheda attributi giocatore"
-                              >
-                                <Info className="h-3.5 w-3.5" />
-                              </Button>
+                                {/* Bottone Istruzioni FC IQ */}
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  onClick={() => setInstructionSlotIndex(slotIndex)}
+                                  className="h-7 w-7 rounded-lg text-primary border-primary/30 bg-primary/5 hover:bg-primary/15 shrink-0"
+                                  title="Personalizza Ruolo e Focus FC IQ (EA FC 25)"
+                                >
+                                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                                </Button>
 
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => assignPlayerToSlot(slotIndex, null)}
-                                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
-                                title="Manda in panchina"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          )}
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => setSelectedPlayerModal(occupant)}
+                                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground shrink-0"
+                                  title="Scheda attributi giocatore"
+                                >
+                                  <Info className="h-3.5 w-3.5" />
+                                </Button>
 
-                          {!occupant && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setInstructionSlotIndex(slotIndex)}
-                              className="h-7 px-2 text-[10px] font-semibold text-muted-foreground hover:text-primary gap-1 shrink-0 self-end sm:self-auto"
-                              title="Pre-imposta Ruolo e Focus FC IQ per questo slot"
-                            >
-                              <SlidersHorizontal className="h-3 w-3" />
-                              <span className="hidden sm:inline">FC IQ</span>
-                            </Button>
-                          )}
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => assignPlayerToSlot(slotIndex, null)}
+                                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 shrink-0"
+                                  title="Manda in panchina"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-7 text-center font-mono text-[11px] text-muted-foreground shrink-0">—</div>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => setInstructionSlotIndex(slotIndex)}
+                                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary shrink-0"
+                                  title="Pre-imposta Ruolo e Focus FC IQ per questo slot"
+                                >
+                                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                                </Button>
+                                <div className="w-7 h-7 shrink-0" />
+                                <div className="w-7 h-7 shrink-0" />
+                              </>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -2296,6 +2295,7 @@ const Tattica = () => {
                 <TacticsEditorTab
                   formation={currentFormation}
                   formationSlots={formationSlots}
+                  roster={orderedRoster}
                   tacticalSettings={tacticalSettings}
                   onChangeTacticalSettings={setTacticalSettings}
                   onOpenInstructionModal={(slotIdx) => setInstructionSlotIndex(slotIdx)}

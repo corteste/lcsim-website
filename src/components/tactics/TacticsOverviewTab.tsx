@@ -9,6 +9,7 @@ import {
   BUILD_UP_STYLES,
   DEFENSIVE_APPROACHES,
   FC25_ROLES_BY_POSITION,
+  SET_PIECES_DEFINITIONS,
   evaluateRoleFit,
 } from "@/types/tactics";
 import {
@@ -20,16 +21,18 @@ import {
   Shield,
   Zap,
   SlidersHorizontal,
-  Layers,
   ArrowRight,
   Info,
-  CheckCircle2,
+  Crown,
+  Target,
+  Flag,
   Sparkles,
 } from "lucide-react";
 
 interface TacticsOverviewTabProps {
   formation: FormationDef;
   formationSlots: (Player | null)[];
+  roster?: Player[];
   tacticalSettings: TacticalSettings;
   onEditFormation: () => void;
   onEditTactics: () => void;
@@ -40,6 +43,7 @@ interface TacticsOverviewTabProps {
 export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
   formation,
   formationSlots,
+  roster = [],
   tacticalSettings,
   onEditFormation,
   onEditTactics,
@@ -56,11 +60,23 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
     DEFENSIVE_APPROACHES[1];
 
   const assignedCount = formationSlots.filter(Boolean).length;
+  const setPieces = tacticalSettings.setPieces || {};
+
+  // Helper per trovare il calciatore assegnato a un incarico
+  const getAssignedPlayer = (key: keyof typeof setPieces) => {
+    const pId = setPieces[key];
+    if (!pId) return null;
+    return (
+      formationSlots.find((p) => p && Number(p.ID) === pId) ||
+      roster.find((p) => Number(p.ID) === pId) ||
+      null
+    );
+  };
 
   return (
     <div className="space-y-6">
       {/* ===================================================================== */}
-      {/* HEADER BANNER RIEPILOGATIVO SQUADRA                                   */}
+      {/* 1. HEADER BANNER RIEPILOGATIVO SQUADRA                                */}
       {/* ===================================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Modulo */}
@@ -69,7 +85,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Modulo Selezionato
             </div>
-            <div className="text-lg font-black tracking-tight text-foreground mt-0.5">
+            <div className="text-xl font-black tracking-tight text-foreground mt-0.5">
               {formation.name}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
@@ -94,7 +110,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
               <Zap className="w-3.5 h-3.5 text-amber-500" />
               <span>Costruzione Manovra</span>
             </div>
-            <div className="text-lg font-black tracking-tight text-foreground mt-0.5">
+            <div className="text-xl font-black tracking-tight text-foreground mt-0.5">
               {currentBuildUp.name}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
@@ -119,7 +135,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
               <Shield className="w-3.5 h-3.5 text-sky-500" />
               <span>Assetto Difensivo</span>
             </div>
-            <div className="text-lg font-black tracking-tight text-foreground mt-0.5">
+            <div className="text-xl font-black tracking-tight text-foreground mt-0.5">
               {currentDef.name}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
@@ -139,17 +155,17 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
       </div>
 
       {/* ===================================================================== */}
-      {/* GRIGLIA PRINCIPALE: CAMPO TITOLARI (5) + RIEPILOGO ISTRUZIONI (7)      */}
+      {/* 2. GRIGLIA PRINCIPALE: CAMPO TITOLARI (6) + RIEPILOGO ISTRUZIONI (6)   */}
       {/* ===================================================================== */}
       <div className="grid grid-cols-12 gap-6 items-start">
-        {/* COLONNA SINISTRA: CAMPO DA CALCIO 2D CON SOLI TITOLARI */}
-        <div className="col-span-12 lg:col-span-5">
+        {/* COLONNA SINISTRA: CAMPO DA CALCIO 2D CON SOLI TITOLARI (ICON & FONT PIÙ GRANDI) */}
+        <div className="col-span-12 lg:col-span-6">
           <Card className="shadow-lg border-border/80 overflow-hidden">
             <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
                   <span>Schieramento Titolari</span>
-                  <Badge variant="outline" className="text-[10px] font-mono">
+                  <Badge variant="outline" className="text-xs font-mono font-extrabold">
                     {formation.id}
                   </Badge>
                 </CardTitle>
@@ -159,11 +175,11 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
               </div>
             </CardHeader>
 
-            <CardContent className="p-3">
-              {/* Contenitore Campo da Calcio con proporzioni realistiche */}
+            <CardContent className="p-3 sm:p-4">
+              {/* Contenitore Campo da Calcio con proporzioni ampie e spaziate */}
               <div
                 className="relative w-full rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-900 select-none bg-gradient-to-b from-emerald-800 via-emerald-700 to-emerald-900"
-                style={{ aspectRatio: "3 / 4.4" }}
+                style={{ aspectRatio: "3 / 4.1", minHeight: "560px" }}
               >
                 {/* Texture erba a strisce verticali realistiche */}
                 <div
@@ -182,19 +198,19 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                   {/* Linea di metà campo */}
                   <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-white/55" />
                   {/* Cerchio di centrocampo */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/55 rounded-full" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/80 rounded-full" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 border-2 border-white/55 rounded-full" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white/80 rounded-full" />
 
                   {/* Area di rigore superiore (Attacco) */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-44 h-20 border-2 border-white/55 border-t-0" />
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-9 border-2 border-white/55 border-t-0" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-2 border-white/55 border-t-0" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-10 border-2 border-white/55 border-t-0" />
 
                   {/* Area di rigore inferiore (Porta) */}
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-44 h-20 border-2 border-white/55 border-b-0" />
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-9 border-2 border-white/55 border-b-0" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-24 border-2 border-white/55 border-b-0" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 h-10 border-2 border-white/55 border-b-0" />
                 </div>
 
-                {/* 11 Pedine Titolari sul Campo */}
+                {/* 11 Pedine Titolari sul Campo (DIMENSIONI E FONT MAGGIORATI) */}
                 <div className="relative w-full h-full">
                   {formation.positions.map((pos, slotIdx) => {
                     const occupant = formationSlots[slotIdx];
@@ -204,10 +220,10 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
 
                     const ringColor =
                       fit === "natural"
-                        ? "border-emerald-400 shadow-emerald-500/30"
+                        ? "border-emerald-400 shadow-emerald-500/40"
                         : fit === "adaptable"
-                        ? "border-amber-400 shadow-amber-500/30"
-                        : "border-rose-400 shadow-rose-500/30";
+                        ? "border-amber-400 shadow-amber-500/40"
+                        : "border-rose-400 shadow-rose-500/40";
 
                     const instr = tacticalSettings.playerInstructions[slotIdx];
                     const roleDef = FC25_ROLES_BY_POSITION[pos.label]?.find(
@@ -222,7 +238,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                           if (occupant) onOpenPlayerModal(occupant);
                         }}
                         style={{ left: pos.x, top: pos.y }}
-                        className="absolute -translate-x-1/2 -translate-y-1/2 z-10 transition-all duration-300 hover:scale-110 hover:z-20 cursor-pointer"
+                        className="absolute -translate-x-1/2 -translate-y-1/2 z-10 transition-all duration-300 hover:scale-115 hover:z-30 cursor-pointer"
                         title={
                           occupant
                             ? `${occupant.Nome} ${occupant.Cognome} (${pos.label}) - FC IQ: ${roleName}`
@@ -231,10 +247,10 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                       >
                         {occupant ? (
                           <div className="flex flex-col items-center group">
-                            {/* Avatar Pedina con OVR */}
+                            {/* Avatar Pedina con Icona Più Grande */}
                             <div className="relative">
                               <div
-                                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-slate-900 border-2 ${ringColor} shadow-lg`}
+                                className={`w-13 h-13 sm:w-15 sm:h-15 rounded-full overflow-hidden bg-slate-900 border-[2.5px] ${ringColor} shadow-xl`}
                               >
                                 <img
                                   src={getPlayerImage(Number(occupant.ID))}
@@ -247,41 +263,41 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                                 />
                               </div>
 
-                              {/* Pillola OVR */}
-                              <span className="absolute -top-1 -right-2 bg-slate-950 text-white border border-white/40 text-[9px] sm:text-[10px] font-black font-mono px-1.5 py-0 rounded-full shadow">
+                              {/* Pillola OVR Più Grande e Ben Visibile */}
+                              <span className="absolute -top-1 -right-2 bg-slate-950 text-white border border-white/50 text-[10px] sm:text-xs font-black font-mono px-1.5 py-0.5 rounded-full shadow-md">
                                 {occupant.OVR}
                               </span>
 
                               {/* Numero Maglia */}
-                              <span className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[8px] sm:text-[9px] font-bold font-mono min-w-4 h-4 px-1 rounded-full flex items-center justify-center border border-white/60 shadow">
+                              <span className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[9px] sm:text-[10px] font-bold font-mono min-w-5 h-5 px-1 rounded-full flex items-center justify-center border border-white/70 shadow-md">
                                 {occupant.NumeroMaglia ?? slotIdx + 1}
                               </span>
                             </div>
 
-                            {/* Targhetta Cognome + Ruolo Posizione */}
-                            <div className="mt-1 px-1.5 py-0.5 rounded-md bg-slate-950/90 backdrop-blur-sm border border-white/25 text-white shadow-md flex items-center gap-1 max-w-[100px]">
-                              <span className="text-[8px] sm:text-[9px] font-extrabold text-emerald-400 font-mono">
+                            {/* Targhetta Cognome + Ruolo Posizione con Font Più Grande */}
+                            <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-950/95 backdrop-blur-sm border border-white/30 text-white shadow-lg flex items-center gap-1.5 max-w-[125px]">
+                              <span className="text-[10px] sm:text-[11px] font-black text-emerald-400 font-mono">
                                 {pos.label}
                               </span>
-                              <span className="text-[9px] sm:text-[10px] font-bold truncate">
+                              <span className="text-xs font-bold truncate">
                                 {occupant.Cognome}
                               </span>
                             </div>
 
-                            {/* Badge Ruolo FC IQ */}
-                            <div className="mt-0.5 px-1.5 py-0.5 rounded bg-primary/95 text-primary-foreground text-[7.5px] sm:text-[8px] font-black tracking-tight shadow flex items-center gap-1 border border-primary/40 truncate max-w-[100px]">
-                              <SlidersHorizontal className="w-2.5 h-2.5 shrink-0" />
+                            {/* Badge Ruolo FC IQ con Font Più Grande */}
+                            <div className="mt-0.5 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-[9px] sm:text-[10px] font-black tracking-tight shadow-md flex items-center gap-1 border border-primary/40 truncate max-w-[125px]">
+                              <SlidersHorizontal className="w-3 h-3 shrink-0" />
                               <span className="truncate">{roleName}</span>
                             </div>
                           </div>
                         ) : (
-                          /* Slot Vuoto sul Campo */
+                          /* Slot Vuoto sul Campo Più Grande */
                           <div className="flex flex-col items-center">
-                            <div className="w-10 h-10 rounded-full border-2 border-dashed border-white/60 bg-black/40 text-white/90 flex flex-col items-center justify-center">
-                              <span className="text-[8px] font-mono opacity-80">
+                            <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full border-2 border-dashed border-white/70 bg-black/45 text-white/95 flex flex-col items-center justify-center shadow-md">
+                              <span className="text-[9px] font-mono font-bold opacity-80">
                                 #{slotIdx + 1}
                               </span>
-                              <span className="text-[9px] font-black">{pos.label}</span>
+                              <span className="text-xs sm:text-sm font-black">{pos.label}</span>
                             </div>
                           </div>
                         )}
@@ -291,23 +307,24 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                 </div>
               </div>
 
-              <div className="mt-2.5 text-[11px] text-muted-foreground flex items-center justify-between px-1">
-                <span className="flex items-center gap-1 text-[10px] font-medium">
-                  <Info className="w-3.5 h-3.5 text-primary" />
+              <div className="mt-3 text-xs text-muted-foreground flex items-center justify-between px-1">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Info className="w-4 h-4 text-primary" />
                   Clicca su una pedina per aprire la scheda calciatore
                 </span>
-                <span className="font-mono text-[10px]">11 Titolari</span>
+                <span className="font-mono text-xs font-bold text-foreground">11 Titolari</span>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* COLONNA DESTRA: ELENCO ISTRUZIONI FC IQ TITOLARE PER TITOLARE */}
-        <div className="col-span-12 lg:col-span-7 space-y-4">
+        {/* COLONNA DESTRA: ISTRUZIONI FC IQ + INCARICHI PARTITA */}
+        <div className="col-span-12 lg:col-span-6 space-y-5">
+          {/* A) ELENCO ISTRUZIONI INDIVIDUALI FC IQ */}
           <Card className="shadow-lg border-border/80 overflow-hidden">
             <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4 text-primary" />
                   <span>Istruzioni Individuali FC IQ</span>
                   <Badge
@@ -318,7 +335,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                   </Badge>
                 </CardTitle>
                 <CardDescription className="text-xs mt-0.5">
-                  Riepilogo delle indicazioni tattiche che l'Admin imposterà per ogni calciatore in EA FC 25
+                  Riepilogo delle indicazioni tattiche impostate per ciascun titolare
                 </CardDescription>
               </div>
 
@@ -329,7 +346,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                 className="text-xs font-semibold gap-1.5 h-8 shrink-0"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                Personalizza
+                Modifica
               </Button>
             </CardHeader>
 
@@ -351,7 +368,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                     className="py-2.5 px-2 hover:bg-muted/15 rounded-lg transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
                   >
                     {/* Posizione + Calciatore */}
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-6 h-6 rounded-md bg-muted/60 border border-border/70 flex items-center justify-center font-mono text-[10px] font-extrabold shrink-0">
                         {slotIdx + 1}
                       </div>
@@ -404,7 +421,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                         <div className="flex items-center gap-1.5 justify-end">
                           <Badge
                             variant="secondary"
-                            className="font-black text-[11px] py-0 px-2 bg-primary/10 text-primary border border-primary/20"
+                            className="font-black text-xs py-0 px-2 bg-primary/10 text-primary border border-primary/20"
                           >
                             {roleName}
                           </Badge>
@@ -416,7 +433,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                             {focusName}
                           </Badge>
                         </div>
-                        <p className="text-[10px] text-muted-foreground max-w-[280px] truncate mt-0.5">
+                        <p className="text-[10.5px] text-muted-foreground max-w-[260px] truncate mt-0.5">
                           {focusDesc}
                         </p>
                       </div>
@@ -434,6 +451,57 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                   </div>
                 );
               })}
+            </CardContent>
+          </Card>
+
+          {/* B) RIEPILOGO INCARICHI PARTITA (CALCI PIAZZATI & CAPITANO) */}
+          <Card className="shadow-lg border-border/80 overflow-hidden">
+            <CardHeader className="bg-muted/30 border-b border-border/60 py-3 px-4 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-500" />
+                <CardTitle className="text-sm font-bold">Incarichi & Piazzati</CardTitle>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onEditTactics}
+                className="text-xs font-semibold gap-1 h-7"
+              >
+                Incarichi
+                <ArrowRight className="w-3 h-3" />
+              </Button>
+            </CardHeader>
+
+            <CardContent className="p-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {SET_PIECES_DEFINITIONS.map((def) => {
+                  const assigned = getAssignedPlayer(def.key);
+                  return (
+                    <div
+                      key={def.key}
+                      className="p-2 rounded-lg bg-muted/20 border border-border/50 flex items-center justify-between gap-2"
+                    >
+                      <span className="text-muted-foreground text-[11px] font-medium truncate">
+                        {def.label}:
+                      </span>
+                      {assigned ? (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="font-bold text-foreground text-xs">
+                            {assigned.Cognome}
+                          </span>
+                          <span className="font-mono text-[10px] text-primary font-bold">
+                            ({assigned.OVR})
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground italic text-[10px]">
+                          Non assegnato
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </div>
