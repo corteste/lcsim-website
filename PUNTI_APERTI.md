@@ -143,7 +143,7 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 5. Archivio Storico delle Formazioni Salvate & Report Avversaria Homepage
-- **Stato**: 🟢 Implementato su branch dev (Tabella creata su Supabase & Collegata)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Tabella creata su Supabase & Collegata)
 - **Priorità**: Media-Alta (Essenziale per alimentare il Foglio Commento, il report scouting avversaria e lo storico stagionale)
 - **Tabelle coinvolte**: Nuova tabella `team_formation_history`, `an_team_tactic`, `VIEW_PLAYER_STATS`
 
@@ -270,7 +270,7 @@ Espansione della pagina Tattica per andare oltre la semplice selezione del modul
 ---
 
 ## 📌 10. Automatizzazione Applica Invecchiamenti Calciatori & Gestione Ritiri
-- **Stato**: 🟢 Completato su branch dev
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Alta (Procedura chiave di transizione tra stagioni sportive)
 - **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), `src/components/admin/AgingModal.tsx`, `src/services/playerAgingService.ts`, bacheca comunicati (`/comunicati`), tabelle `an_player`, `ea_player_db`
 - **Tabelle coinvolte**: `an_player`, `ea_player_db`, `an_team_tactic`, `as_player_market`, `team_cuts_registry`, `league_announcements`, `league_automation_state`
@@ -307,7 +307,7 @@ Procedura batch atomica eseguibile dal Super Admin per effettuare il passaggio d
 ---
 
 ## 📌 11. Automatizzazione Start / Stop Calciomercato
-- **Stato**: 🟢 Implementato su branch dev (Interruttore e blocco scambi/trattative attivi)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Interruttore e blocco scambi/trattative attivi)
 - **Priorità**: Alta (Regolamentazione ufficiale delle sessioni di mercato)
 - **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/pages/Trattative.tsx`, `src/services/tradesService.ts`, `src/services/marketStateService.ts`
 - **Tabelle coinvolte**: `league_automation_state` (record `market_toggle`), `market_trades`
@@ -331,7 +331,7 @@ Interruttore globale controllato dal Super Admin nel Centro Automazioni di Lega 
 ---
 
 ## 📌 12. Automatizzazione Blocca / Sblocca Rose & Blocco Formazioni Automatico
-- **Stato**: 🟢 Completato su branch dev
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Media-Alta (Integrità delle rose e regolarità delle formazioni di campionato)
 - **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/services/rosterLockService.ts`, `src/pages/Roster.tsx`, `src/pages/Allenamenti.tsx`, `src/pages/Tattica.tsx`, `src/components/FormationCountdown.tsx`
 - **Tabelle coinvolte**: `league_automation_state`, `league_deadlines`, `team_cuts_registry`, `an_player_training`, `an_team_tactic`, `team_lineup_snapshots`
@@ -353,7 +353,7 @@ Interruttore globale controllato dal Super Admin nel Centro Automazioni di Lega 
 ---
 
 ## 📌 13. Hub Amministrazione Automazioni, Export Master Table & Import Classe Rookie
-- **Stato**: 🟢 Operativo su dev (Export autonomo & Procedura Import Rookie 2-File integrata)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Export autonomo & Procedura Import Rookie 2-File integrata)
 - **Priorità**: Alta
 - **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), `src/components/admin/ImportRookieModal.tsx`, `src/services/rookieImportService.ts`, `src/services/eaPlayerDbService.ts`
 - **Tabelle coinvolte**: `ea_player_db`, `an_rookie`, `an_player`, `league_automation_state`
@@ -420,7 +420,7 @@ Aggiunta di un'azione accessibile dal menu profilo/squadra nella Navbar (o in im
 ---
 
 ## 📌 17. Spostamento Rookie in `an_player` & Gestione Archivio Storico Draft
-- **Stato**: 🟢 Completato su branch `dev` (Scelta integrata con de-crittografia atomica in `an_player` ed `ea_player_db`)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Scelta integrata con de-crittografia atomica in `an_player` ed `ea_player_db`)
 - **Priorità**: Alta (Ciclo completo di integrazione dei rookie nella Lega)
 - **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Scouting.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
 - **Tabelle coinvolte**: `an_rookie`, `an_player`, `an_draft_board`, eventuale colonna `stagione` in `an_rookie` o tabella archivio
@@ -516,3 +516,98 @@ Integrazione di un agente giornalista virtuale (stile "Fabrizio Romano / Gianluc
 3. **Disclosure Selettiva nello Scouting**: La funzione `rpc_get_scouted_rookies` decifra in memoria i dati sul server PostgreSQL ed espone unicamente i dati autorizzati in base ai gettoni spesi dalla squadra chiamante (0G: solo anagrafica; 1G: range di 10; 2G: range di 3 + conteggio tratti + emotion; 3G: nomi tratti completi + ruoli tattici + piede debole/mabi; 5G: tutto sbloccato esatto).
 4. **Protezione Network DevTools**: Le rappresentazioni dei range inviano al client valori punto medio del range, impedendo a chiunque di estrapolare il valore reale dal tab Network di Chrome.
 5. **Integrazione Draft**: Quando un rookie viene scelto (`rpc_draft_rookie`), le sue statistiche vengono decifrate e scritte in `public.an_player` (entrando nella rosa della squadra) e in `public.ea_player_db`. In `an_rookie` i dati continuano a rimanere perennemente cifrati.
+---
+
+## 📌 23. Calcolo Stelle per Rookie
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Media-Alta
+- **Moduli coinvolti**: Servizi Rookie / Scouting (`src/services/rookieImportService.ts`, `src/pages/Scouting.tsx`, `src/pages/Draft.tsx`)
+- **Tabelle coinvolte**: `an_rookie`, `an_player`
+
+### Descrizione
+Definizione e implementazione dell'algoritmo di calcolo del valore "Stelle" (potenziale/valutazione complessiva del rookie).
+- Definire i parametri che concorrono all'assegnazione delle stelle (es. range di OVR/Potenziale, età, ruoli coperti, tratti speciali).
+- Assegnazione automatica del valore in fase di importazione o scouting.
+
+---
+
+## 📌 24. Calcolo XP Giocatori (Punti Esperienza Settimanali / Stagionali)
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Alta
+- **Moduli coinvolti**: Sezione Allenamenti (`src/pages/Allenamenti.tsx`, `src/services/playerTrainingService.ts`), statistiche partite (`"AS_PLAYER_STAT"`)
+- **Tabelle coinvolte**: `an_player_training`, `"AS_PLAYER_STAT"`, `an_player`
+
+### Descrizione
+Sistema automatico di calcolo e attribuzione dei punti esperienza (XP) ai calciatori:
+- Calcolo basato sulle prestazioni effettive in partita (minuti giocati, voto conseguito, gol/assist, porta inviolata per POR/DIF, premi MVP).
+- Regole di maturazione XP per fascia d'età (curva accelerata per gli under 21, curva standard per i prime, decrescente per i veterani).
+- Distribuzione nei montepremi allenamento della squadra e storico XP accumulati.
+
+---
+
+## 📌 25. Calcolo Peggioramenti Giocatori (In-Season / Prestazionali)
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Media-Alta
+- **Moduli coinvolti**: Gestione Rose, Allenamenti, Automazioni Admin
+- **Tabelle coinvolte**: `an_player`, `ea_player_db`, `an_player_training`
+
+### Descrizione
+Meccanica di decadimento/peggioramento dinamico degli attributi nel corso dell'anno (distinta dall'invecchiamento anagrafico di fine stagione):
+- Criteri di calo prestazionale legati a scarso impiego (mancate convocazioni, scarso minutaggio prolungato), infortuni o rendimento gravemente insufficiente per fasce over 30.
+- Definizione della soglia minima di salvaguardia e modalità di applicazione (manuale via Admin o calcolata a milestone).
+
+---
+
+## 📌 26. Curva di Crescita ed Esperienza del Calciatore (Popup Dettaglio Giocatore)
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Media
+- **Moduli coinvolti**: Modale dettaglio calciatore (`src/components/player/PlayerDetailModal.tsx` o componenti correlati in Rose/Scouting)
+- **Tabelle coinvolte**: `an_player`, `an_player_training`, storico XP
+
+### Descrizione
+Visualizzazione grafica intuitiva (grafico temporale o progression bar multi-stadio) della curva di crescita del calciatore:
+- Mostrare all'interno del popup di dettaglio l'evoluzione dell'esperienza (XP attuali, XP necessari per il prossimo step di OVR/attributo).
+- Visualizzazione della curva di potenziale e trend di sviluppo teorico in base all'età del giocatore.
+
+---
+
+## 📌 27. Inserimento Partite Manuale da Interfaccia Web & Export CSV
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Alta
+- **Moduli coinvolti**: Area Amministrazione Partite / Calendario (`src/pages/admin/`)
+- **Tabelle coinvolte**: `an_schedule`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`, `an_standings`
+
+### Descrizione
+Interfaccia web dedicata per l'inserimento manuale dei dati e dei referti delle partite:
+- Possibilità per l'Admin di compilare direttamente da form web il tabellino partita (risultato, statistiche squadra, voti, gol, cartellini e dettagli individuali).
+- Tasto dedicato **"Export CSV"** in grado di esportare i match inseriti o l'intera giornata in un formato CSV standard predefinito (compatibile sia con il parser di importazione sia con gli archivi storici).
+
+---
+
+## 📌 28. Unificazione & Perfezionamento Sezione Allenamenti (Ruoli, Ruoli+ e Tratti Ufficiali)
+- **Stato**: 🟢 Completato & Testato
+- **Priorità**: Alta
+- **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/components/training/UnifiedRoleAndTraitSystem.tsx`, `src/types/training.ts`
+- **Tabelle coinvolte**: `an_player_training`, `an_player`, `ea_player_db`
+- **Migrazioni**: `supabase/migrations/20261024_sync_training_specializations.sql`
+
+### Specifiche Implementate
+1. **Unificazione UI e Architettura Bozza (Zero scritture premature su an_player e ea_player_db)**:
+   - Riscrittura completa della logica: eliminata qualsiasi modifica diretta su `an_player` durante la fase di composizione dell'allenamento.
+   - Bozza memorizzata in React state e salvata atomicamente in `public.an_player_training` come semplice bozza utente (`status = 'draft'`).
+   - **Isolamento Master Data EA FC 25**: la tabella master `public.ea_player_db` **NON** viene modificata durante i salvataggi di bozza dell'utente. La funzione di sincronizzazione `recompute_ea_player_from_an_and_training` proietta gli aumenti e le specializzazioni su `ea_player_db` **esclusivamente quando l'allenamento viene confermato/approvato dall'Amministratore (`status = 'confirmed'`)**.
+   - Il pulsante *"Reset ai Valori Originali"* rimuove la bozza da `an_player_training` e ripristina la visualizzazione pulita senza corrompere la scheda base.
+   - Schede unificate da 3 a 2: Scheda 1 *"Gruppi Attributi"* e Scheda 2 *"Ruoli & Tratti Speciali"* (`UnifiedRoleAndTraitSystem.tsx`).
+2. **Ruolo Principale & Ruoli+ Ufficiali (44 Ruoli da FC 25)**:
+   - Cambio Ruolo Principale: **40 XP** (include la scelta del 1° Ruolo+ della nuova posizione).
+   - 1° Ruolo+: **Gratuito** se assente nella scheda di base.
+   - 2° Ruolo+: **100 XP** (massimo 2 Ruoli+ totali).
+   - Swap Ruolo+: **60 XP** per scambiare un ruolo tattico con un altro compatibile.
+   - Upgrade a Ruolo++: **100 XP** riservato a calciatori con $\ge 84$ OVR stimato (massimo 1 Ruolo++ per giocatore).
+3. **Tratti & Stili di Gioco (36 Tratti Ufficiali con Requisiti Dinamici)**:
+   - Tratto Argento: **60 XP** per l'acquisto; **40 XP** per l'eliminazione di un tratto pre-esistente dalla scheda base.
+   - Tratto Oro (PlayStyle+):
+     - **Gratuito** al raggiungimento di $\ge 84$ OVR per il 1° sblocco (promozione automatica a Oro con 1 solo tratto posseduto; selezione gratuita a scelta con 2 o più tratti; promozione automatica del 1° tratto acquistato se ne ha 0).
+     - **70 XP** per scambiare lo status Oro tra due tratti quando uno è già presente (lo status Oro si sposta al nuovo e il precedente torna Argento).
+     - Massimo 5 tratti totali per giocatore, massimo 1 Tratto Oro.
+   - Verifica dinamica dei requisiti minimi in tempo reale calcolata su `postStats`, consentendo di sbloccare tratti nel momento esatto in cui vengono potenziati gli attributi collegati.
