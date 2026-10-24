@@ -205,32 +205,34 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 8. Gestione Tagli dei Giocatori nel Periodo di Calciomercato
-- **Stato**: 🟡 In attesa di implementazione / Da Progettare
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Alta (Funzionalità fondamentale per la gestione della rosa e delle finestre di mercato)
-- **Moduli coinvolti**: `src/pages/Roster.tsx` (`/mia-squadra/roster`), `src/pages/UfficialitaScambi.tsx` o nuova tab Tagli, Supabase
-- **Tabelle coinvolte**: `an_player`, tabella registro tagli (es. `market_releases` o `as_player_market`)
+- **Moduli coinvolti**: `src/pages/Roster.tsx` (`/mia-squadra/roster`), `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), `src/services/cutsService.ts`, Supabase
+- **Tabelle coinvolte**: `public.team_cuts_registry`, `public.an_player`, `public.as_player_market`, `public.an_team_tactic`, `public.league_announcements`, `public.league_automation_state`
 
-### Descrizione
-Durante le finestre temporali di calciomercato (stabilite e abilitate dall'Admin), ciascun manager deve avere la possibilità di effettuare il **taglio / svincolo ufficiale** di uno o più calciatori della propria rosa per liberare slot e alleggerire l'organico in vista di nuovi scambi, draft o ingaggi.
-
-### Requisiti & Specifiche da Implementare
-1. **Finestra di Mercato & Abilitazione**:
-   - I tagli devono essere consentiti esclusivamente durante i periodi di mercato aperti (gestiti da un flag o configurazione Admin).
-   - Possibilità per l'Admin di impostare un numero massimo di tagli consentiti per sessione per ciascun club (se previsto dal regolamento).
-2. **Controllo Limiti di Rosa**:
-   - Validazione preventiva: il taglio non deve consentire alla squadra di scendere al di sotto del numero minimo di calciatori necessari per disputare le partite (es. minimo 16 o 18 giocatori).
-3. **Flusso Utente (Manager)**:
-   - Dalla schermata **La Mia Squadra > Roster** (`/mia-squadra/roster`), presenza di un'azione dedicata *"Taglia Giocatore"* (con icona forbici o cartellino svincolo).
-   - Modale di conferma con avviso di irreversibilità dell'operazione e riepilogo dati del calciatore (Nome, Ruolo, OVR, Età).
-4. **Effetto a Database**:
-   - Aggiornamento atomico del calciatore in `an_player`: passaggio di `"Squadra"` a `NULL` (o a uno status convenzionale di svincolato/Free Agent) e reset del `"NumeroMaglia"`.
-   - Rimozione automatica del calciatore da eventuali formazioni titolari o panchina salvate in `an_team_tactic`.
-   - Registrazione dell'evento in una tabella di log o nella bacheca ufficiale delle operazioni di mercato per trasparenza pubblica della Lega.
+### Specifiche Implementate & Architettura
+1. **Regola di Rosa (Opzione A approvata)**:
+   - Ogni squadra al termine dei tagli deve avere **minimo 13 e massimo 16 calciatori** in rosa.
+   - Formule dinamiche: `min_cuts = max(0, N - 16)` e `max_cuts = max(0, N - 13)`. Tiene conto automaticamente dei ritiri a inizio stagione.
+2. **Interfaccia Manager (`/mia-squadra/roster` - Tab "Status di Mercato")**:
+   - **Contatore essenziale**: Badge `Giocatori Tagliati: X`, rosso quando la rosa post-tagli supera 16 giocatori, verde quando è conforme (13-16).
+   - **Filtro rapido**: 6° tab **"In Taglio"** con contatore in tempo reale per consultare solo i giocatori designati al taglio.
+   - **Azione Taglio**: Pulsante `✂️ Taglia` / `Annulla Taglio` su ogni calciatore. Il sistema blocca/disabilita l'opzione di tagliare quando la squadra raggiunge la soglia minima di 13 giocatori. Il manager può modificare la propria selezione in ogni momento fino all'ufficializzazione.
+3. **Pannello Admin (`/admin/automazioni` - Card "Ufficializza Tagli di Lega")**:
+   - **Opzione A**: L'Admin visualizza esclusivamente l'elenco delle **squadre inadempienti** con il relativo totale dei giocatori tagliati da ciascuna.
+   - Pulsante "Ufficializza Tagli" disabilitato finché tutte le squadre non sono in regola.
+   - Quando tutte le 12 squadre sono in regola, compare il badge verde con il totale dei giocatori pronti per lo svincolo e il pulsante abilitato con modale di conferma.
+4. **Procedura Atomica SQL (`execute_official_cuts`)**:
+   - Svincola i calciatori (`an_player.Squadra = NULL`, `NumeroMaglia = NULL`).
+   - Rimuove i record da `as_player_market`.
+   - Azzera i titolari e pulisce la panchina in `an_team_tactic`.
+   - Genera il comunicato ufficiale di svincolo in bacheca (`league_announcements`).
+   - Registra l'operazione in `league_automation_state` e svuota `team_cuts_registry`.
 
 ---
 
 ## 📌 9. Gestione Tattiche Avanzate nella Pagina Tattica (FC IQ EA Sports FC 25)
-- **Stato**: 🟢 Completato / In fase di feedback e verifica utente
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Media-Alta (Arricchimento profondo della componente manageriale e tattica in stile EA FC 25)
 - **Moduli coinvolti**: `src/pages/Tattica.tsx` (`/mia-squadra/tattica`), `src/pages/OpponentScout.tsx`, eventuale Foglio Commento
 - **Tabelle coinvolte**: `an_team_tactic`, `team_formation_history`
