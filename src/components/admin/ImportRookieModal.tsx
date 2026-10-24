@@ -23,6 +23,10 @@ import {
   Sparkles,
   ArrowRight,
   Database,
+  ShieldCheck,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
