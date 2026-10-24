@@ -516,3 +516,68 @@ Integrazione di un agente giornalista virtuale (stile "Fabrizio Romano / Gianluc
 3. **Disclosure Selettiva nello Scouting**: La funzione `rpc_get_scouted_rookies` decifra in memoria i dati sul server PostgreSQL ed espone unicamente i dati autorizzati in base ai gettoni spesi dalla squadra chiamante (0G: solo anagrafica; 1G: range di 10; 2G: range di 3 + conteggio tratti + emotion; 3G: nomi tratti completi + ruoli tattici + piede debole/mabi; 5G: tutto sbloccato esatto).
 4. **Protezione Network DevTools**: Le rappresentazioni dei range inviano al client valori punto medio del range, impedendo a chiunque di estrapolare il valore reale dal tab Network di Chrome.
 5. **Integrazione Draft**: Quando un rookie viene scelto (`rpc_draft_rookie`), le sue statistiche vengono decifrate e scritte in `public.an_player` (entrando nella rosa della squadra) e in `public.ea_player_db`. In `an_rookie` i dati continuano a rimanere perennemente cifrati.
+---
+
+## 📌 23. Calcolo Stelle per Rookie
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Media-Alta
+- **Moduli coinvolti**: Servizi Rookie / Scouting (`src/services/rookieImportService.ts`, `src/pages/Scouting.tsx`, `src/pages/Draft.tsx`)
+- **Tabelle coinvolte**: `an_rookie`, `an_player`
+
+### Descrizione
+Definizione e implementazione dell'algoritmo di calcolo del valore "Stelle" (potenziale/valutazione complessiva del rookie).
+- Definire i parametri che concorrono all'assegnazione delle stelle (es. range di OVR/Potenziale, età, ruoli coperti, tratti speciali).
+- Assegnazione automatica del valore in fase di importazione o scouting.
+
+---
+
+## 📌 24. Calcolo XP Giocatori (Punti Esperienza Settimanali / Stagionali)
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Alta
+- **Moduli coinvolti**: Sezione Allenamenti (`src/pages/Allenamenti.tsx`, `src/services/playerTrainingService.ts`), statistiche partite (`"AS_PLAYER_STAT"`)
+- **Tabelle coinvolte**: `an_player_training`, `"AS_PLAYER_STAT"`, `an_player`
+
+### Descrizione
+Sistema automatico di calcolo e attribuzione dei punti esperienza (XP) ai calciatori:
+- Calcolo basato sulle prestazioni effettive in partita (minuti giocati, voto conseguito, gol/assist, porta inviolata per POR/DIF, premi MVP).
+- Regole di maturazione XP per fascia d'età (curva accelerata per gli under 21, curva standard per i prime, decrescente per i veterani).
+- Distribuzione nei montepremi allenamento della squadra e storico XP accumulati.
+
+---
+
+## 📌 25. Calcolo Peggioramenti Giocatori (In-Season / Prestazionali)
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Media-Alta
+- **Moduli coinvolti**: Gestione Rose, Allenamenti, Automazioni Admin
+- **Tabelle coinvolte**: `an_player`, `ea_player_db`, `an_player_training`
+
+### Descrizione
+Meccanica di decadimento/peggioramento dinamico degli attributi nel corso dell'anno (distinta dall'invecchiamento anagrafico di fine stagione):
+- Criteri di calo prestazionale legati a scarso impiego (mancate convocazioni, scarso minutaggio prolungato), infortuni o rendimento gravemente insufficiente per fasce over 30.
+- Definizione della soglia minima di salvaguardia e modalità di applicazione (manuale via Admin o calcolata a milestone).
+
+---
+
+## 📌 26. Curva di Crescita ed Esperienza del Calciatore (Popup Dettaglio Giocatore)
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Media
+- **Moduli coinvolti**: Modale dettaglio calciatore (`src/components/player/PlayerDetailModal.tsx` o componenti correlati in Rose/Scouting)
+- **Tabelle coinvolte**: `an_player`, `an_player_training`, storico XP
+
+### Descrizione
+Visualizzazione grafica intuitiva (grafico temporale o progression bar multi-stadio) della curva di crescita del calciatore:
+- Mostrare all'interno del popup di dettaglio l'evoluzione dell'esperienza (XP attuali, XP necessari per il prossimo step di OVR/attributo).
+- Visualizzazione della curva di potenziale e trend di sviluppo teorico in base all'età del giocatore.
+
+---
+
+## 📌 27. Inserimento Partite Manuale da Interfaccia Web & Export CSV
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Alta
+- **Moduli coinvolti**: Area Amministrazione Partite / Calendario (`src/pages/admin/`)
+- **Tabelle coinvolte**: `an_schedule`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`, `an_standings`
+
+### Descrizione
+Interfaccia web dedicata per l'inserimento manuale dei dati e dei referti delle partite:
+- Possibilità per l'Admin di compilare direttamente da form web il tabellino partita (risultato, statistiche squadra, voti, gol, cartellini e dettagli individuali).
+- Tasto dedicato **"Export CSV"** in grado di esportare i match inseriti o l'intera giornata in un formato CSV standard predefinito (compatibile sia con il parser di importazione sia con gli archivi storici).
