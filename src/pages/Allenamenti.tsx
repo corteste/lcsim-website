@@ -866,13 +866,25 @@ const Allenamenti = () => {
     return roleWeights[r] || roleWeights["CC"] || {};
   }, [player, specializationsDraft.posiz]);
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
+          <RequireAuthPrompt
+            title="Centro Allenamenti"
+            description="Questa sezione fa parte de 'La Mia Squadra' ed è riservata ai gestori delle squadre e all'amministratore della lega. Accedi con il tuo account oppure scegli una delle squadre libere per iniziare ad allenare la rosa!"
+          />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
-        <RequireAuthPrompt />
-
         {/* ========================================================================= */}
         {/* HEADER DELLA PAGINA CON TITOLO, SELETTORE SQUADRA E ROSTER LOCK BANNER    */}
         {/* ========================================================================= */}
