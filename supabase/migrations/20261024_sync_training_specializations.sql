@@ -1,4 +1,5 @@
 -- Migration: Support specializations (positions, roles, traits) from an_player_training in recompute_ea_player_from_an_and_training
+-- Solo gli allenamenti con status = 'confirmed' (approvati dall'admin) vengono applicati alla master data ea_player_db!
 CREATE OR REPLACE FUNCTION public.recompute_ea_player_from_an_and_training(p_player_id BIGINT)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -38,8 +39,8 @@ BEGIN
     v_silver_str := CONCAT_WS(', ', NULLIF(TRIM(COALESCE(v_an."Trait1", '')), ''), NULLIF(TRIM(COALESCE(v_an."Trait2", '')), ''));
     v_gold_str   := CONCAT_WS(', ', NULLIF(TRIM(COALESCE(v_an."IconTrait1", '')), ''), NULLIF(TRIM(COALESCE(v_an."IconTrait2", '')), ''));
 
-    -- Se presente bozza in an_player_training, applica aumenti e specializzazioni
-    SELECT * INTO v_tr FROM public.an_player_training WHERE "PlayerID" = p_player_id;
+    -- Applica aumenti e specializzazioni SOLO se l'allenamento è stato CONFERMATO dall'Admin (status = 'confirmed')
+    SELECT * INTO v_tr FROM public.an_player_training WHERE "PlayerID" = p_player_id AND status = 'confirmed';
     IF FOUND AND v_tr.increases IS NOT NULL THEN
         v_inc := v_tr.increases::JSONB;
         v_port := COALESCE((v_inc->>'PORT')::BIGINT, 0);

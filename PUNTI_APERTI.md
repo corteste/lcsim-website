@@ -592,9 +592,10 @@ Interfaccia web dedicata per l'inserimento manuale dei dati e dei referti delle 
 - **Migrazioni**: `supabase/migrations/20261024_sync_training_specializations.sql`
 
 ### Specifiche Implementate
-1. **Unificazione UI e Architettura Bozza (Zero scritture premature su an_player)**:
+1. **Unificazione UI e Architettura Bozza (Zero scritture premature su an_player e ea_player_db)**:
    - Riscrittura completa della logica: eliminata qualsiasi modifica diretta su `an_player` durante la fase di composizione dell'allenamento.
-   - Bozza unificata memorizzata in React state e salvata atomicamente in `public.an_player_training` (`status = 'draft'`), con trigger e funzione `recompute_ea_player_from_an_and_training` che sincronizzano i valori finali in tempo reale su `ea_player_db`.
+   - Bozza memorizzata in React state e salvata atomicamente in `public.an_player_training` come semplice bozza utente (`status = 'draft'`).
+   - **Isolamento Master Data EA FC 25**: la tabella master `public.ea_player_db` **NON** viene modificata durante i salvataggi di bozza dell'utente. La funzione di sincronizzazione `recompute_ea_player_from_an_and_training` proietta gli aumenti e le specializzazioni su `ea_player_db` **esclusivamente quando l'allenamento viene confermato/approvato dall'Amministratore (`status = 'confirmed'`)**.
    - Il pulsante *"Reset ai Valori Originali"* rimuove la bozza da `an_player_training` e ripristina la visualizzazione pulita senza corrompere la scheda base.
    - Schede unificate da 3 a 2: Scheda 1 *"Gruppi Attributi"* e Scheda 2 *"Ruoli & Tratti Speciali"* (`UnifiedRoleAndTraitSystem.tsx`).
 2. **Ruolo Principale & Ruoli+ Ufficiali (44 Ruoli da FC 25)**:
