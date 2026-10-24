@@ -470,7 +470,7 @@ export default function UnifiedRoleAndTraitSystem({
       {/* BANNER INFORMATIVO OVR & SBLOCCHI ELITE                                    */}
       {/* ========================================================================= */}
       <div
-        className={`p-4 rounded-xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-3 ${
+        className={`p-4 rounded-xl border transition-all flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3.5 ${
           isEliteEligible
             ? "bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-transparent border-amber-500/40 shadow-sm"
             : "bg-muted/20 border-border/70"
@@ -478,7 +478,7 @@ export default function UnifiedRoleAndTraitSystem({
       >
         <div className="flex items-center gap-3">
           <div
-            className={`p-2.5 rounded-xl border ${
+            className={`p-2.5 rounded-xl border shrink-0 ${
               isEliteEligible
                 ? "bg-amber-500/20 border-amber-500/40 text-amber-500"
                 : "bg-muted border-border text-muted-foreground"
@@ -487,7 +487,7 @@ export default function UnifiedRoleAndTraitSystem({
             {isEliteEligible ? <Crown className="h-5 w-5" /> : <Star className="h-5 w-5" />}
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-extrabold text-sm text-foreground">
                 Overall Allenato Stimato: <span className="font-mono text-emerald-500">{postOverall}</span>
               </span>
@@ -510,7 +510,7 @@ export default function UnifiedRoleAndTraitSystem({
         </div>
 
         {/* Breakdown XP Specializzazioni in tempo reale */}
-        <div className="flex items-center gap-2 bg-background/80 p-2 rounded-xl border border-border/70 text-xs shrink-0">
+        <div className="flex items-center gap-2 bg-background/80 p-2 rounded-xl border border-border/70 text-xs shrink-0 self-stretch xl:self-auto justify-around xl:justify-start">
           <div className="px-2 py-1 text-center">
             <span className="text-[10px] text-muted-foreground block uppercase font-bold">Ruoli</span>
             <span className="font-mono font-bold text-foreground">+{costSummary.roleCost} XP</span>
@@ -625,15 +625,15 @@ export default function UnifiedRoleAndTraitSystem({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-border/40">
+              <div className="flex items-center gap-2 pt-2 border-t border-border/40 flex-wrap">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => handleOpenSubRoleDialog(1)}
                   disabled={isRosterLocked}
-                  className="h-7 text-xs flex-1"
+                  className="h-8 text-xs flex-1 min-w-[125px] whitespace-nowrap"
                 >
-                  <ArrowRightLeft className="h-3 w-3 mr-1" />
+                  <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                   {draft.role1 ? "Cambia (60 XP)" : "Assegna (Gratis)"}
                 </Button>
 
@@ -650,13 +650,13 @@ export default function UnifiedRoleAndTraitSystem({
                         ? "Ripristina a Ruolo+"
                         : "Promuovi a Ruolo++ (+100 XP)"
                     }
-                    className={`h-7 text-xs font-bold px-2.5 ${
+                    className={`h-8 text-xs font-bold px-3 shrink-0 whitespace-nowrap min-w-fit ${
                       draft.role1.endsWith("++")
                         ? "bg-amber-500/20 text-amber-500 border-amber-500/40"
                         : "hover:border-amber-500/50 hover:text-amber-500"
                     }`}
                   >
-                    <Crown className="h-3 w-3 mr-1" />
+                    <Crown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                     {draft.role1.endsWith("++") ? "Downgrade a +" : "Upgrade ++ (100 XP)"}
                   </Button>
                 )}
@@ -691,7 +691,7 @@ export default function UnifiedRoleAndTraitSystem({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-border/40">
+              <div className="flex items-center gap-2 pt-2 border-t border-border/40 flex-wrap">
                 {draft.role2 ? (
                   <>
                     <Button
@@ -699,9 +699,9 @@ export default function UnifiedRoleAndTraitSystem({
                       variant="outline"
                       onClick={() => handleOpenSubRoleDialog(2)}
                       disabled={isRosterLocked}
-                      className="h-7 text-xs flex-1"
+                      className="h-8 text-xs flex-1 min-w-[125px] whitespace-nowrap"
                     >
-                      <ArrowRightLeft className="h-3 w-3 mr-1" />
+                      <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                       Cambia (60 XP)
                     </Button>
 
@@ -717,13 +717,13 @@ export default function UnifiedRoleAndTraitSystem({
                           ? "Ripristina a Ruolo+"
                           : "Promuovi a Ruolo++ (+100 XP)"
                       }
-                      className={`h-7 text-xs font-bold px-2.5 ${
+                      className={`h-8 text-xs font-bold px-3 shrink-0 whitespace-nowrap min-w-fit ${
                         draft.role2.endsWith("++")
                           ? "bg-amber-500/20 text-amber-500 border-amber-500/40"
                           : "hover:border-amber-500/50 hover:text-amber-500"
                       }`}
                     >
-                      <Crown className="h-3 w-3 mr-1" />
+                      <Crown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                       {draft.role2.endsWith("++") ? "Downgrade a +" : "Upgrade ++ (100 XP)"}
                     </Button>
 
@@ -732,10 +732,10 @@ export default function UnifiedRoleAndTraitSystem({
                       variant="ghost"
                       onClick={handleRemoveSecondRole}
                       disabled={isRosterLocked}
-                      className="h-7 w-7 text-muted-foreground hover:text-rose-500"
+                      className="h-8 w-8 text-muted-foreground hover:text-rose-500 shrink-0"
                       title="Rimuovi 2° Ruolo+"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </>
                 ) : (

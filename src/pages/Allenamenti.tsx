@@ -870,7 +870,7 @@ const Allenamenti = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
+        <main className="w-full max-w-[1900px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           <RequireAuthPrompt
             title="Centro Allenamenti"
             description="Questa sezione fa parte de 'La Mia Squadra' ed è riservata ai gestori delle squadre e all'amministratore della lega. Accedi con il tuo account oppure scegli una delle squadre libere per iniziare ad allenare la rosa!"
@@ -884,7 +884,7 @@ const Allenamenti = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
+      <main className="w-full max-w-[1900px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* ========================================================================= */}
         {/* HEADER DELLA PAGINA CON TITOLO, SELETTORE SQUADRA E ROSTER LOCK BANNER    */}
         {/* ========================================================================= */}
@@ -1111,7 +1111,7 @@ const Allenamenti = () => {
               {/* ------------------------------------------------------------- */}
               {/* COLONNA SINISTRA: SELETTORE CALCIATORE DELLA ROSA              */}
               {/* ------------------------------------------------------------- */}
-              <div className="col-span-12 lg:col-span-3 space-y-4">
+              <div className="col-span-12 lg:col-span-3 xl:col-span-3 2xl:col-span-2 space-y-4">
                 <Card className="shadow-lg border-border/80 overflow-hidden">
                   <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
                     <div className="flex items-center justify-between">
@@ -1261,7 +1261,7 @@ const Allenamenti = () => {
               {/* ------------------------------------------------------------- */}
               {/* COLONNA CENTRALE: LE DUE SCHEDE (ATTRIBUTI vs RUOLI & TRATTI) */}
               {/* ------------------------------------------------------------- */}
-              <div className="col-span-12 lg:col-span-6 space-y-4">
+              <div className="col-span-12 lg:col-span-6 xl:col-span-6 2xl:col-span-7 space-y-4">
                 <Tabs defaultValue="attributi" className="w-full">
                   <TabsList className="w-full grid grid-cols-2 h-11 bg-muted/40 p-1 rounded-xl">
                     <TabsTrigger value="attributi" className="font-bold text-xs sm:text-sm gap-1.5">
@@ -1473,7 +1473,7 @@ const Allenamenti = () => {
               {/* ------------------------------------------------------------- */}
               {/* COLONNA DESTRA: RIEPILOGO DETTAGLIATO MODIFICHE & IMPATTO      */}
               {/* ------------------------------------------------------------- */}
-              <div className="col-span-12 lg:col-span-3 space-y-4">
+              <div className="col-span-12 lg:col-span-3 xl:col-span-3 2xl:col-span-3 space-y-4">
                 
                 {/* Scheda Riepilogo Generale */}
                 <Card className="shadow-lg border-border/80 overflow-hidden">
