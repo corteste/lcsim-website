@@ -490,7 +490,7 @@ Integrazione di un agente giornalista virtuale (stile "Fabrizio Romano / Gianluc
 ---
 
 ## 📌 22. Crittografia Zero-Knowledge Classe Rookie (AES-256) & Blind Database
-- **Stato**: 🟢 Completato su branch `dev`
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Massima (Fair-play, trasparenza sportiva e protezione dati contro leakage da DB)
 - **Moduli coinvolti**: `src/components/admin/ImportRookieModal.tsx`, `src/services/rookieImportService.ts`, `src/pages/Scouting.tsx`, `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, `src/pages/ConfrontoGiocatori.tsx`
 - **Tabelle & Funzioni coinvolte**: `an_rookie`, `internal_vault.rookie_key`, `rpc_import_encrypted_rookies`, `rpc_get_scouted_rookies`, `rpc_draft_rookie`, `rpc_undo_draft_rookie`
