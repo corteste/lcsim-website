@@ -16,6 +16,8 @@ import {
 import {
   Save,
   Users,
+  Eye,
+  LayoutDashboard,
   Shield,
   ClipboardList,
   Sparkles,
@@ -41,6 +43,9 @@ import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { FormationCountdown } from "@/components/FormationCountdown";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { TacticsOverviewTab } from "@/components/tactics/TacticsOverviewTab";
+import { TacticsEditorTab } from "@/components/tactics/TacticsEditorTab";
 import { TeamTacticsCard } from "@/components/tactics/TeamTacticsCard";
 import { PlayerInstructionsModal } from "@/components/tactics/PlayerInstructionsModal";
 import {
@@ -780,6 +785,9 @@ const Tattica = () => {
     getDefaultTacticalSettings(EA_FC25_FORMATIONS[0].positions)
   );
 
+  // Tab attiva (overview: Panoramica Titolari | lineup: Schiera Formazione | tactics: Tattiche & Istruzioni)
+  const [activeTab, setActiveTab] = useState<string>("overview");
+
   // Modale istruzioni per uno specifico slot (0..10)
   const [instructionSlotIndex, setInstructionSlotIndex] = useState<number | null>(null);
 
@@ -1365,6 +1373,57 @@ const Tattica = () => {
             </div>
 
             {/* ================================================================= */}
+            {/* TABS PRINCIPALI: PANORAMICA (1) | SCHIERA (2) | TATTICHE FC IQ (3)*/}
+            {/* ================================================================= */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-3">
+                <TabsList className="bg-muted/60 p-1 rounded-xl h-11 border border-border/60">
+                  <TabsTrigger
+                    value="overview"
+                    className="gap-2 text-xs sm:text-sm font-bold data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow px-3 sm:px-4 h-9 rounded-lg"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>Panoramica Titolari</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="lineup"
+                    className="gap-2 text-xs sm:text-sm font-bold data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow px-3 sm:px-4 h-9 rounded-lg"
+                  >
+                    <ClipboardList className="w-4 h-4" />
+                    <span>Schiera Formazione</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="tactics"
+                    className="gap-2 text-xs sm:text-sm font-bold data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow px-3 sm:px-4 h-9 rounded-lg"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    <span>Tattiche FC IQ</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-2 font-medium">
+                  <span>Modulo: <b className="text-foreground">{currentFormation.name}</b></span>
+                  <span>•</span>
+                  <span>Titolari: <b className="text-foreground">{tacticStats.count}/11</b></span>
+                </div>
+              </div>
+
+              {/* TAB 1: PANORAMICA & RIEPILOGO (SOLO TITOLARI + TATTICHE) */}
+              <TabsContent value="overview" className="mt-0 space-y-6">
+                <TacticsOverviewTab
+                  formation={currentFormation}
+                  formationSlots={formationSlots}
+                  tacticalSettings={tacticalSettings}
+                  onEditFormation={() => setActiveTab("lineup")}
+                  onEditTactics={() => setActiveTab("tactics")}
+                  onOpenPlayerModal={(p) => setSelectedPlayerModal(p)}
+                  onOpenInstructionModal={(slotIdx) => setInstructionSlotIndex(slotIdx)}
+                />
+              </TabsContent>
+
+              {/* TAB 2: SCHIERA FORMAZIONE (MODULO + TELEMETRIA + ROSTER + TITOLARI + PANCHINA) */}
+              <TabsContent value="lineup" className="mt-0 space-y-6">
+            {/* ================================================================= */}
             {/* COMMAND HUD: MODULO EA FC 25 + STATISTICHE FORMAZIONE             */}
             {/* ================================================================= */}
             <div className="rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-card/90 shadow-lg p-4 backdrop-blur-md">
@@ -1474,14 +1533,7 @@ const Tattica = () => {
               </div>
             </div>
 
-            {/* ================================================================= */}
-            {/* TATTICHE DI SQUADRA FC IQ (EA FC 25)                              */}
-            {/* ================================================================= */}
-            <TeamTacticsCard
-              tacticalSettings={tacticalSettings}
-              onChange={setTacticalSettings}
-              disabled={loading || isSaving}
-            />
+
 
             {/* ================================================================= */}
             {/* GRIGLIA A 3 COLONNE: ROSTER (3) | TITOLARI+PANCHINA (5) | CAMPO (4) */}
@@ -2182,7 +2234,7 @@ const Tattica = () => {
                                         title={`FC IQ: ${roleName}`}
                                       >
                                         <SlidersHorizontal className="w-2.5 h-2.5 shrink-0" />
-                                        <span className="truncate">${roleName}</span>
+                                        <span className="truncate">{roleName}</span>
                                       </div>
                                     );
                                   })()}
@@ -2237,6 +2289,20 @@ const Tattica = () => {
                 </Card>
               </div>
             </div>
+              </TabsContent>
+
+              {/* TAB 3: TATTICHE & ISTRUZIONI FC IQ */}
+              <TabsContent value="tactics" className="mt-0 space-y-6">
+                <TacticsEditorTab
+                  formation={currentFormation}
+                  formationSlots={formationSlots}
+                  tacticalSettings={tacticalSettings}
+                  onChangeTacticalSettings={setTacticalSettings}
+                  onOpenInstructionModal={(slotIdx) => setInstructionSlotIndex(slotIdx)}
+                  disabled={loading || isSaving}
+                />
+              </TabsContent>
+            </Tabs>
           </>
         )}
       </main>

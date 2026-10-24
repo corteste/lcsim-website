@@ -599,3 +599,39 @@ export function sanitizeTacticalSettings(
     playerInstructions,
   };
 }
+
+// ============================================================================
+// VALUTAZIONE COMPATIBILITÀ RUOLO (Stile EA FC IQ)
+// ============================================================================
+export type RoleFit = "natural" | "adaptable" | "out";
+
+export function evaluateRoleFit(playerPos: string | undefined, slotRole: string): RoleFit {
+  if (!playerPos) return "out";
+  const p = playerPos.toUpperCase().trim();
+  const s = slotRole.toUpperCase().trim();
+
+  if (p === s) return "natural";
+  if ((p === "AT" && s === "ATT") || (p === "ATT" && s === "AT")) return "natural";
+
+  // Portiere può fare solo il portiere
+  if (p === "POR" || s === "POR") return "out";
+
+  // Compatibilità affine tra ruoli vicini
+  const adaptableMap: Record<string, string[]> = {
+    DC: ["CDC", "TD", "TS"],
+    TD: ["ED", "TS", "DC"],
+    TS: ["ES", "TD", "DC"],
+    CDC: ["CC", "DC"],
+    CC: ["CDC", "COC", "ED", "ES"],
+    COC: ["CC", "AT", "AD", "AS", "ED", "ES", "ATT"],
+    ED: ["AD", "TD", "ES", "CC", "COC"],
+    ES: ["AS", "TS", "ED", "CC", "COC"],
+    AD: ["ED", "AS", "ATT", "COC"],
+    AS: ["ES", "AD", "ATT", "COC"],
+    AT: ["ATT", "COC", "AD", "AS"],
+    ATT: ["AT", "AD", "AS", "COC"],
+  };
+
+  if (adaptableMap[s]?.includes(p)) return "adaptable";
+  return "out";
+}
