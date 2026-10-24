@@ -143,7 +143,7 @@ L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati d
 ---
 
 ## 📌 5. Archivio Storico delle Formazioni Salvate & Report Avversaria Homepage
-- **Stato**: 🟢 Implementato su branch dev (Tabella creata su Supabase & Collegata)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Tabella creata su Supabase & Collegata)
 - **Priorità**: Media-Alta (Essenziale per alimentare il Foglio Commento, il report scouting avversaria e lo storico stagionale)
 - **Tabelle coinvolte**: Nuova tabella `team_formation_history`, `an_team_tactic`, `VIEW_PLAYER_STATS`
 
@@ -270,7 +270,7 @@ Espansione della pagina Tattica per andare oltre la semplice selezione del modul
 ---
 
 ## 📌 10. Automatizzazione Applica Invecchiamenti Calciatori & Gestione Ritiri
-- **Stato**: 🟢 Completato su branch dev
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Alta (Procedura chiave di transizione tra stagioni sportive)
 - **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), `src/components/admin/AgingModal.tsx`, `src/services/playerAgingService.ts`, bacheca comunicati (`/comunicati`), tabelle `an_player`, `ea_player_db`
 - **Tabelle coinvolte**: `an_player`, `ea_player_db`, `an_team_tactic`, `as_player_market`, `team_cuts_registry`, `league_announcements`, `league_automation_state`
@@ -307,7 +307,7 @@ Procedura batch atomica eseguibile dal Super Admin per effettuare il passaggio d
 ---
 
 ## 📌 11. Automatizzazione Start / Stop Calciomercato
-- **Stato**: 🟢 Implementato su branch dev (Interruttore e blocco scambi/trattative attivi)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Interruttore e blocco scambi/trattative attivi)
 - **Priorità**: Alta (Regolamentazione ufficiale delle sessioni di mercato)
 - **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/pages/Trattative.tsx`, `src/services/tradesService.ts`, `src/services/marketStateService.ts`
 - **Tabelle coinvolte**: `league_automation_state` (record `market_toggle`), `market_trades`
@@ -331,7 +331,7 @@ Interruttore globale controllato dal Super Admin nel Centro Automazioni di Lega 
 ---
 
 ## 📌 12. Automatizzazione Blocca / Sblocca Rose & Blocco Formazioni Automatico
-- **Stato**: 🟢 Completato su branch dev
+- **Stato**: 🟢 Completato & Rilasciato in Produzione
 - **Priorità**: Media-Alta (Integrità delle rose e regolarità delle formazioni di campionato)
 - **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/services/rosterLockService.ts`, `src/pages/Roster.tsx`, `src/pages/Allenamenti.tsx`, `src/pages/Tattica.tsx`, `src/components/FormationCountdown.tsx`
 - **Tabelle coinvolte**: `league_automation_state`, `league_deadlines`, `team_cuts_registry`, `an_player_training`, `an_team_tactic`, `team_lineup_snapshots`
@@ -353,7 +353,7 @@ Interruttore globale controllato dal Super Admin nel Centro Automazioni di Lega 
 ---
 
 ## 📌 13. Hub Amministrazione Automazioni, Export Master Table & Import Classe Rookie
-- **Stato**: 🟢 Operativo su dev (Export autonomo & Procedura Import Rookie 2-File integrata)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Export autonomo & Procedura Import Rookie 2-File integrata)
 - **Priorità**: Alta
 - **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), `src/components/admin/ImportRookieModal.tsx`, `src/services/rookieImportService.ts`, `src/services/eaPlayerDbService.ts`
 - **Tabelle coinvolte**: `ea_player_db`, `an_rookie`, `an_player`, `league_automation_state`
@@ -420,7 +420,7 @@ Aggiunta di un'azione accessibile dal menu profilo/squadra nella Navbar (o in im
 ---
 
 ## 📌 17. Spostamento Rookie in `an_player` & Gestione Archivio Storico Draft
-- **Stato**: 🟢 Completato su branch `dev` (Scelta integrata con de-crittografia atomica in `an_player` ed `ea_player_db`)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Scelta integrata con de-crittografia atomica in `an_player` ed `ea_player_db`)
 - **Priorità**: Alta (Ciclo completo di integrazione dei rookie nella Lega)
 - **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Scouting.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
 - **Tabelle coinvolte**: `an_rookie`, `an_player`, `an_draft_board`, eventuale colonna `stagione` in `an_rookie` o tabella archivio
