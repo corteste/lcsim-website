@@ -263,16 +263,16 @@ Espansione della pagina Tattica per andare oltre la semplice selezione del modul
 
 ---
 
-## 📌 10. Automatizzazione Applica Invecchiamenti Calciatori
+## 📌 10. Automatizzazione Applica Invecchiamenti Calciatori & Gestione Ritiri
 - **Stato**: 🟡 Da Discutere & Definire
 - **Priorità**: Alta (Procedura chiave di transizione tra stagioni sportive)
-- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), tabelle `an_player`, `ea_player_db`
-- **Tabelle coinvolte**: `an_player`, `ea_player_db`, eventuale tabella di log o snapshot archivio
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), bacheca comunicati (`/comunicati`), tabelle `an_player`, `ea_player_db`
+- **Tabelle coinvolte**: `an_player`, `ea_player_db`, `league_announcements`, eventuale colonna o tabella `retirements`
 
 ### Descrizione
 Procedura batch eseguibile dall'Admin per effettuare il passaggio d'anno/stagione sportiva su tutti i calciatori registrati nella Lega.
 
-### Punti Chiave da Discutere con l'Utente
+### Funzionalità & Integrazione Ritiri
 1. **Incremento Anagrafico**:
    - Aumento di 1 anno (`Età = Età + 1`) per tutti i giocatori attivi.
    - Sfasamento `DOB` / `birthdate` per mantenere l'esatta corrispondenza con il motore anagrafico di EA FC 25.
@@ -282,8 +282,9 @@ Procedura batch eseguibile dall'Admin per effettuare il passaggio d'anno/stagion
      - *Fascia Prime (24-29)*: mantenimento del picco di rendimento.
      - *Fascia Declino (30-33)*: calo graduale degli attributi di velocità, accelerazione e resistenza?
      - *Fascia Veterani (34+)*: decrementi più marcati e valutazione del ritiro.
-3. **Gestione Ritiri**:
-   - Criteri per contrassegnare un giocatore come `Squadra = 'RITIRATO'`: soglia d'età fissa (es. 38 o 40 anni) o valutazione individuale/OVR minimo?
+3. **Automazione Annuncio Ritiri Futuri & Esecuzione**:
+   - **Annuncio Automatico Preventivo**: Alla pressione del pulsante invecchiamento, il sistema identifica in automatico i calciatori che si ritireranno a fine stagione (in base a età/soglie stabilite) e genera contestualmente un avviso/comunicato ufficiale di Lega in bacheca (`league_announcements`) con badge visivo nella rosa della squadra.
+   - **Esecuzione Ritiri**: Passaggio di stato a `Squadra = 'RITIRATO'`, rimozione da formazioni/rose attive e inserimento nell'albo storico.
 4. **Reversibilità e Sicurezza**:
    - Backup automatico / snapshot dello stato delle rose prima del lancio, per poter annullare l'operazione in caso di errore.
 
@@ -346,3 +347,68 @@ Sezione riservata al Super Admin con blocchi separati per:
    - **File 1 (Master Data)**: file con le 137 colonne EA FC 25 dei nuovi rookie, aggiunto alla master table (`ea_player_db`) senza sovrascrivere l'archivio esistente.
    - **File 2 (Anagrafica)**: file a 4 colonne (`ID`, `Nome`, `Cognome`, `Squadra`), associato tramite l'`ID` al Master Data.
    - **Destinazione Rookie**: i dati decodificati vengono inseriti direttamente in `public.an_rookie` per popolare la lista dei rookie del Draft.
+
+---
+
+## 📌 14. Recap Calciomercato & Bisogni di Squadra a Macro-Categorie (Sezione Scambi)
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Media-Alta (Miglioramento dell'interazione sul mercato tra società)
+- **Moduli coinvolti**: `src/pages/Trattative.tsx`, `src/pages/UfficialitaScambi.tsx` o nuova tab dedicata a `/mercato/scambi`
+- **Tabelle coinvolte**: Tabella `team_market_needs` (o campo JSONB in `an_team`)
+
+### Descrizione
+Nella sezione scambi/calciomercato, introduzione del **Recap Calciomercato**: ciascuna società può impostare e aggiornare i propri **Bisogni di Mercato**, specificando a quali macro-categorie di ruoli è prioritariamente interessata:
+- **8 Macro-Categorie Selezionabili**:
+  1. *Portieri* (`POR`)
+  2. *Terzini* (`TD`, `TS`)
+  3. *Difesa Interni* (`DC`)
+  4. *Mediani* (`CDC`)
+  5. *Centrocampisti* (`CC`)
+  6. *Esterni* (`ED`, `ES`, `AD`, `AS`)
+  7. *Trequartisti* (`COC`)
+  8. *Attaccanti* (`ATT`, `AT`)
+- **Flusso & Visualizzazione**:
+  - **Pannello Manager**: Selezione immediata tramite badge/toggle delle macro-categorie ricercate (senza note libere per la massima semplicità).
+  - **Griglia Recap di Lega**: Vista aggregata accessibile a tutte le squadre che mostra a colpo d'occhio cosa cerca ogni club, facilitando le proposte di scambio mirate.
+
+---
+
+## 📌 15. Finestra "Lista Tratti" nello Scouting & Revisione Decodifica Maschere Bit
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Media-Alta (Usabilità e fedeltà dei PlayStyles/Traits dei rookie)
+- **Moduli coinvolti**: `src/pages/Scouting.tsx`, `src/utils/scoutingConfig.ts`, `src/services/rookieImportService.ts`
+- **Tabelle coinvolte**: `an_rookie`, `ea_player_db`
+
+### Descrizione
+1. **Finestra "Lista Tratti" (UI)**: Nella scheda di scouting del rookie, raggruppamento di tutti i tratti posseduti all'interno di una finestra/pannello dedicato denominato **"Lista Tratti"**, visualizzati chiaramente incolonnati uno sotto l'altro con icona e descrizione (rispettando lo sblocco per gettoni: conteggio a 2G, elenco completo a 3G e 5G).
+2. **Revisione Decodifica Tratti**: Riesame dell'estrazione e decodifica dalle maschere bit EA FC 25 del file Master (`trait1`, `trait2`, `icontrait1`, `icontrait2`) per garantire che tutti i PlayStyles e PlayStyles+ vengano interpretati correttamente e salvati in `an_rookie` senza perdite o disallineamenti.
+
+---
+
+## 📌 16. Pulsante e Modale per il Cambio Password
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Media (Sicurezza e autonomia degli account manager)
+- **Moduli coinvolti**: `Navbar.tsx` (menu utente/squadra), `src/context/AuthContext.tsx`, modale dedicato `ChangePasswordModal.tsx`
+- **Tabelle coinvolte**: Tabella utenti Supabase (`auth.users` o `public.an_users` / `app_users`)
+
+### Descrizione
+Aggiunta di un'azione accessibile dal menu profilo/squadra nella Navbar (o in impostazioni squadra) per consentire a ciascun manager autenticato (e all'admin) di modificare in autonomia la propria password:
+- Campo per password attuale (verifica di sicurezza).
+- Campo per nuova password con conferma.
+- Hashing/aggiornamento sicuro su Supabase e feedback visivo immediato con toast di conferma.
+
+---
+
+## 📌 17. Spostamento Rookie in `an_player` & Gestione Archivio Storico Draft
+- **Stato**: 🟡 Da Implementare
+- **Priorità**: Alta (Ciclo completo di integrazione dei rookie nella Lega)
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Scouting.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle coinvolte**: `an_rookie`, `an_player`, `an_draft_board`, eventuale colonna `stagione` in `an_rookie` o tabella archivio
+
+### Descrizione
+La tabella `an_player` è il registro ufficiale e centralizzato da cui dipendono tutte le rose, i moduli tattici e l'export del master file.
+1. **Durante il Draft (Scelta Effettuata)**: Quando una squadra seleziona un rookie, il record deve essere spostato/inserito in `public.an_player` con `Squadra = pickingTeamId`, comparendo istantaneamente nella Rosa della squadra.
+2. **Chiusura Automatica a Fine Draft**: Non appena viene effettuata l'ultima scelta del Draft (scelta #60 al termine del Round 5), tutti i rookie rimanenti non draftati vengono automaticamente trasferiti nella tabella `public.an_player` come svincolati (`Squadra = NULL`).
+3. **Archivio & Storico Draft**: Per non perdere lo storico delle scelte e dei dati di scouting tra stagioni diverse, valutazione congiunta della soluzione migliore:
+   - *Opzione A*: Aggiungere la colonna `stagione` a `public.an_rookie` (lo scouting mostrerà solo i rookie della stagione attiva, ma l'archivio storico rimarrà intatto e consultabile per gli anni passati).
+   - *Opzione B*: Creazione di una tabella archivio `an_rookie_history` / `an_draft_history`.

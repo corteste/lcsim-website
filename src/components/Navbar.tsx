@@ -62,7 +62,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout, openLogin, isAdmin } = useAuth();
+  const { user, logout, openLogin, isAdmin, effectiveTeam } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -421,7 +421,7 @@ const Navbar = () => {
             {/* 5. DROPDOWN: LA MIA SQUADRA (IN EVIDENZA) */}
             <DropdownMenu>
               <DropdownMenuTrigger
-                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-2 outline-hidden ${
                   isMiaSquadraActive
                     ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/25"
                     : user
@@ -429,16 +429,35 @@ const Navbar = () => {
                     : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
                 }`}
               >
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                {effectiveTeam ? (
+                  <img
+                    src={`/images/teams/${effectiveTeam}_Logo.png`}
+                    alt={effectiveTeam}
+                    className="h-4 w-4 object-contain shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                    }}
+                  />
+                ) : (
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                )}
                 <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                   <span>{isAdmin ? "Amministrazione Lega" : "Gestione Club"}</span>
-                  {user?.team ? (
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold">
-                      {user.team}
+                  {effectiveTeam ? (
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold flex items-center gap-1">
+                      <img
+                        src={`/images/teams/${effectiveTeam}_Logo.png`}
+                        alt={effectiveTeam}
+                        className="h-3 w-3 object-contain shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                        }}
+                      />
+                      {effectiveTeam}
                     </Badge>
                   ) : isAdmin ? (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold text-amber-500 border-amber-500/30">
@@ -759,7 +778,19 @@ const Navbar = () => {
                     {/* Gruppo: La Mia Squadra */}
                     <div className="space-y-1 pt-2 border-t border-border/60">
                       <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 px-2 py-1 flex items-center gap-1.5 font-mono">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> {isAdmin ? "Amministrazione" : "La Mia Squadra"}
+                        {effectiveTeam ? (
+                          <img
+                            src={`/images/teams/${effectiveTeam}_Logo.png`}
+                            alt={effectiveTeam}
+                            className="h-3.5 w-3.5 object-contain shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                            }}
+                          />
+                        ) : (
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        )}
+                        <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
                       </div>
                       {miaSquadraItems.map((item) => (
                         <Link
