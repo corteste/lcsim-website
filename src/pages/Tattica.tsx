@@ -41,6 +41,15 @@ import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { FormationCountdown } from "@/components/FormationCountdown";
+import { TeamTacticsCard } from "@/components/tactics/TeamTacticsCard";
+import { PlayerInstructionsModal } from "@/components/tactics/PlayerInstructionsModal";
+import {
+  TacticalSettings,
+  getDefaultTacticalSettings,
+  sanitizeTacticalSettings,
+  FC25_ROLES_BY_POSITION,
+} from "@/types/tactics";
+import { SlidersHorizontal } from "lucide-react";
 import { LeagueDeadline } from "@/types/deadlines";
 import { saveLineupSnapshot } from "@/services/deadlineService";
 
@@ -766,11 +775,20 @@ const Tattica = () => {
   const [starterIds, setStarterIds] = useState<(number | null)[]>(Array(11).fill(null));
   const [benchOrderIds, setBenchOrderIds] = useState<number[]>([]);
 
+  // Impostazioni Tattiche FC IQ EA Sports FC 25 (Squadra + Istruzioni Giocatori)
+  const [tacticalSettings, setTacticalSettings] = useState<TacticalSettings>(() =>
+    getDefaultTacticalSettings(EA_FC25_FORMATIONS[0].positions)
+  );
+
+  // Modale istruzioni per uno specifico slot (0..10)
+  const [instructionSlotIndex, setInstructionSlotIndex] = useState<number | null>(null);
+
   // Snapshot salvato nel DB per rilevare modifiche non salvate
   const [savedState, setSavedState] = useState<{
     formation: string;
     starters: (number | null)[];
     benchOrder: number[];
+    tacticalSettings: TacticalSettings;
     updatedAt: string | null;
   } | null>(null);
 
@@ -833,22 +851,33 @@ const Tattica = () => {
                 .filter((id: number) => validPlayerIds.has(id) && !rawStarters.includes(id))
             : [];
 
+          const matchedFormation =
+            EA_FC25_FORMATIONS.find((f) => f.id === dbFormation) || EA_FC25_FORMATIONS[0];
+          const parsedTactics = sanitizeTacticalSettings(
+            tacticRes.data.tactical_settings,
+            matchedFormation.positions
+          );
+
           setFormationId(dbFormation);
           setStarterIds(rawStarters);
           setBenchOrderIds(rawBench);
+          setTacticalSettings(parsedTactics);
           setSavedState({
             formation: dbFormation,
             starters: rawStarters,
             benchOrder: rawBench,
+            tacticalSettings: parsedTactics,
             updatedAt: tacticRes.data.updated_at || null,
           });
         } else {
           // Nessuna tattica ancora salvata: calcola un 11 iniziale intelligente basato sul 4-4-2
           const defaultFormation = EA_FC25_FORMATIONS[0];
           const autoStarters = computeBest11ForFormation(teamRoster, defaultFormation);
+          const initialTactics = getDefaultTacticalSettings(defaultFormation.positions);
           setFormationId(defaultFormation.id);
           setStarterIds(autoStarters);
           setBenchOrderIds([]);
+          setTacticalSettings(initialTactics);
           setSavedState(null);
         }
       } catch (err) {
@@ -989,8 +1018,14 @@ const Tattica = () => {
     for (let i = 0; i < 11; i++) {
       if ((savedState.starters[i] ?? null) !== (starterIds[i] ?? null)) return true;
     }
+    if (
+      JSON.stringify(savedState.tacticalSettings) !==
+      JSON.stringify(tacticalSettings)
+    ) {
+      return true;
+    }
     return false;
-  }, [savedState, formationId, starterIds]);
+  }, [savedState, formationId, starterIds, tacticalSettings]);
 
   // ============================================================================
   // AZIONI DI GESTIONE FORMAZIONE (DRAG & DROP, MENÙ A TENDINA, BOTTONI RAPIDI)
@@ -1065,6 +1100,7 @@ const Tattica = () => {
     if (!nextFormation) return;
     setFormationId(newId);
     setStarterIds((prev) => realignStartersToFormation(prev, orderedRoster, nextFormation));
+    setTacticalSettings((prev) => sanitizeTacticalSettings(prev, nextFormation.positions));
     toast.info(`Modulo aggiornato a ${nextFormation.name}`);
   };
 
@@ -1094,6 +1130,7 @@ const Tattica = () => {
         formation: formationId,
         starters: starterIds,
         bench_order: currentBenchIds,
+        tactical_settings: tacticalSettings,
         updated_at: nowIso,
         updated_by: user?.username || "user",
       };
@@ -1111,6 +1148,7 @@ const Tattica = () => {
         formation: formationId,
         starters: starterIds,
         bench_order: currentBenchIds,
+        tactical_settings: tacticalSettings,
         created_at: nowIso,
         created_by: user?.username || "user",
       });
@@ -1119,6 +1157,7 @@ const Tattica = () => {
         formation: formationId,
         starters: [...starterIds],
         benchOrder: currentBenchIds,
+        tacticalSettings: JSON.parse(JSON.stringify(tacticalSettings)),
         updatedAt: nowIso,
       });
 
@@ -1292,6 +1331,27 @@ const Tattica = () => {
                   Svuota
                 </Button>
 
+                {savedState && hasUnsavedChanges && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFormationId(savedState.formation);
+                      setStarterIds([...savedState.starters]);
+                      setBenchOrderIds([...savedState.benchOrder]);
+                      setTacticalSettings(
+                        JSON.parse(JSON.stringify(savedState.tacticalSettings))
+                      );
+                      toast.info("Formazione e tattiche ripristinate.");
+                    }}
+                    disabled={loading || isSaving}
+                    className="h-9 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                    Ripristina
+                  </Button>
+                )}
+
                 <Button
                   size="sm"
                   onClick={handleSaveFormation}
@@ -1413,6 +1473,15 @@ const Tattica = () => {
                 </div>
               </div>
             </div>
+
+            {/* ================================================================= */}
+            {/* TATTICHE DI SQUADRA FC IQ (EA FC 25)                              */}
+            {/* ================================================================= */}
+            <TeamTacticsCard
+              tacticalSettings={tacticalSettings}
+              onChange={setTacticalSettings}
+              disabled={loading || isSaving}
+            />
 
             {/* ================================================================= */}
             {/* GRIGLIA A 3 COLONNE: ROSTER (3) | TITOLARI+PANCHINA (5) | CAMPO (4) */}
@@ -1792,6 +1861,27 @@ const Tattica = () => {
                                 {occupant.OVR}
                               </span>
 
+                              {/* Bottone Istruzioni FC IQ */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setInstructionSlotIndex(slotIndex)}
+                                className="h-7 px-2 text-[10px] font-bold gap-1 bg-primary/5 hover:bg-primary/15 border-primary/30 text-primary shrink-0"
+                                title="Personalizza Ruolo e Focus FC IQ (EA FC 25)"
+                              >
+                                <SlidersHorizontal className="h-3 w-3" />
+                                <span className="hidden xl:inline">
+                                  {(() => {
+                                    const instr = tacticalSettings.playerInstructions[slotIndex];
+                                    const roleName =
+                                      FC25_ROLES_BY_POSITION[pos.label]?.find(
+                                        (r) => r.id === instr?.roleId
+                                      )?.name || "Istruzioni";
+                                    return roleName;
+                                  })()}
+                                </span>
+                              </Button>
+
                               <Button
                                 size="icon"
                                 variant="ghost"
@@ -1812,6 +1902,19 @@ const Tattica = () => {
                                 <X className="h-3.5 w-3.5" />
                               </Button>
                             </div>
+                          )}
+
+                          {!occupant && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setInstructionSlotIndex(slotIndex)}
+                              className="h-7 px-2 text-[10px] font-semibold text-muted-foreground hover:text-primary gap-1 shrink-0 self-end sm:self-auto"
+                              title="Pre-imposta Ruolo e Focus FC IQ per questo slot"
+                            >
+                              <SlidersHorizontal className="h-3 w-3" />
+                              <span className="hidden sm:inline">FC IQ</span>
+                            </Button>
                           )}
                         </div>
                       );
@@ -2018,7 +2121,7 @@ const Tattica = () => {
                                 if (dragOverSlotIndex === slotIdx) setDragOverSlotIndex(null);
                               }}
                               onDrop={(e) => handleDropOnStarterSlot(e, slotIdx)}
-                              onClick={() => occupant && setSelectedPlayerModal(occupant)}
+                              onClick={() => setInstructionSlotIndex(slotIdx)}
                               style={{ left: pos.x, top: pos.y }}
                               className={`absolute -translate-x-1/2 -translate-y-1/2 z-10 transition-all duration-300 ${
                                 isHovered ? "scale-125 z-30" : "hover:scale-110 hover:z-20"
@@ -2065,6 +2168,24 @@ const Tattica = () => {
                                       {occupant.Cognome}
                                     </span>
                                   </div>
+
+                                  {/* Badge Ruolo FC IQ */}
+                                  {(() => {
+                                    const instr = tacticalSettings.playerInstructions[slotIdx];
+                                    const roleDef = FC25_ROLES_BY_POSITION[pos.label]?.find(
+                                      (r) => r.id === instr?.roleId
+                                    );
+                                    const roleName = roleDef?.name || "FC IQ";
+                                    return (
+                                      <div
+                                        className="mt-0.5 px-1.5 py-0.5 rounded bg-primary/95 text-primary-foreground text-[8px] font-black tracking-tight shadow flex items-center gap-1 border border-primary/40 truncate max-w-[110px]"
+                                        title={`FC IQ: ${roleName}`}
+                                      >
+                                        <SlidersHorizontal className="w-2.5 h-2.5 shrink-0" />
+                                        <span className="truncate">${roleName}</span>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               ) : (
                                 /* Slot Vuoto sul Campo */
@@ -2091,19 +2212,25 @@ const Tattica = () => {
                       </div>
                     </div>
 
-                    {/* Legenda Affinità Ruolo */}
-                    <div className="mt-3 pt-2.5 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-                        <span>Ruolo Naturale ({tacticStats.naturalCount})</span>
+                    {/* Legenda Affinità Ruolo & Hint FC IQ */}
+                    <div className="mt-3 pt-2.5 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                          <span>Naturale ({tacticStats.naturalCount})</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                          <span>Adattato ({tacticStats.adaptableCount})</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                          <span>Fuori Ruolo ({tacticStats.outCount})</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                        <span>Adattato ({tacticStats.adaptableCount})</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
-                        <span>Fuori Ruolo ({tacticStats.outCount})</span>
+                      <div className="flex items-center gap-1 text-[10px] text-primary font-bold">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Clicca su una pedina per le Istruzioni FC IQ</span>
                       </div>
                     </div>
                   </CardContent>
@@ -2113,6 +2240,35 @@ const Tattica = () => {
           </>
         )}
       </main>
+
+      {/* Modale Istruzioni FC IQ Giocatore (EA FC 25) */}
+      {instructionSlotIndex !== null && (
+        <PlayerInstructionsModal
+          isOpen={instructionSlotIndex !== null}
+          onClose={() => setInstructionSlotIndex(null)}
+          slotIndex={instructionSlotIndex}
+          slotRole={currentFormation.positions[instructionSlotIndex]?.label || "CC"}
+          occupant={formationSlots[instructionSlotIndex] || null}
+          totalSlots={11}
+          tacticalSettings={tacticalSettings}
+          onUpdateInstruction={(idx, roleId, focusId) => {
+            setTacticalSettings((prev) => ({
+              ...prev,
+              playerInstructions: {
+                ...prev.playerInstructions,
+                [idx]: {
+                  slotRole: currentFormation.positions[idx]?.label || "CC",
+                  roleId,
+                  focusId,
+                },
+              },
+            }));
+          }}
+          onNavigateSlot={(nextIdx) => setInstructionSlotIndex(nextIdx)}
+          onOpenPlayerDetails={(p) => setSelectedPlayerModal(p)}
+          disabled={loading || isSaving}
+        />
+      )}
 
       {/* Modal Dettaglio Giocatore */}
       {selectedPlayerModal && (

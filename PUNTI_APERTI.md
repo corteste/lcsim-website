@@ -229,8 +229,8 @@ Durante le finestre temporali di calciomercato (stabilite e abilitate dall'Admin
 
 ---
 
-## 📌 9. Gestione Tattiche Avanzate nella Pagina Tattica
-- **Stato**: 🟡 In attesa di implementazione / Da Progettare
+## 📌 9. Gestione Tattiche Avanzate nella Pagina Tattica (FC IQ EA Sports FC 25)
+- **Stato**: 🟢 Completato / In fase di feedback e verifica utente
 - **Priorità**: Media-Alta (Arricchimento profondo della componente manageriale e tattica in stile EA FC 25)
 - **Moduli coinvolti**: `src/pages/Tattica.tsx` (`/mia-squadra/tattica`), `src/pages/OpponentScout.tsx`, eventuale Foglio Commento
 - **Tabelle coinvolte**: `an_team_tactic`, `team_formation_history`

@@ -239,6 +239,7 @@ export async function saveLineupSnapshot(
         submitted_at: snapshot.submitted_at || new Date().toISOString(),
         submitted_by: snapshot.submitted_by || "user",
         is_locked: snapshot.is_locked ?? true,
+        tactical_settings: snapshot.tactical_settings || {},
       },
       { onConflict: "team_id,stag,week" }
     );

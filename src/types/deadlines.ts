@@ -30,6 +30,7 @@ export interface TeamLineupSnapshot {
   submitted_at?: string;
   submitted_by?: string;
   is_locked?: boolean;
+  tactical_settings?: any;
 }
 
 export interface DeadlineCountdownState {
