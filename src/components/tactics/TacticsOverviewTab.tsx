@@ -201,10 +201,10 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
             </CardHeader>
 
             <CardContent className="p-3 sm:p-5 flex flex-col items-center">
-              {/* Contenitore Campo da Calcio a sinistra allargato per evitare sovrapposizioni */}
+              {/* Contenitore Campo da Calcio a sinistra allungato per evitare qualsiasi sovrapposizione */}
               <div
                 className="relative w-full max-w-[760px] mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-900 select-none bg-gradient-to-b from-emerald-800 via-emerald-700 to-emerald-900"
-                style={{ aspectRatio: "3.3 / 3.8", minHeight: "720px" }}
+                style={{ aspectRatio: "3.1 / 4.1", minHeight: "820px" }}
               >
                 {/* Texture erba a strisce verticali realistiche */}
                 <div
@@ -258,8 +258,8 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                     const focusDef = roleDef?.focuses?.find((f) => f.id === instr?.focusId);
                     const focusName = focusDef?.name || instr?.focusId || "Equilibrato";
 
-                    // Calibra la posizione Y del portiere per evitare qualsiasi taglio dal bordo inferiore
-                    const posY = pos.label === "POR" ? "86%" : pos.y;
+                    // Calibra la posizione Y del portiere su 89% per aria ideale dai difensori e dal fondo
+                    const posY = pos.label === "POR" ? "89%" : pos.y;
 
                     return (
                       <div

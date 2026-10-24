@@ -471,17 +471,17 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "3-5-2",
     category: "Difesa a 3",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "26%", y: "75%", label: "DC" },
-      { x: "50%", y: "77%", label: "DC" },
-      { x: "74%", y: "75%", label: "DC" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "26%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "74%", y: "73%", label: "DC" },
       { x: "38%", y: "56%", label: "CDC" },
       { x: "62%", y: "56%", label: "CDC" },
-      { x: "15%", y: "45%", label: "ES" },
-      { x: "50%", y: "38%", label: "COC" },
-      { x: "85%", y: "45%", label: "ED" },
-      { x: "37%", y: "17%", label: "ATT" },
-      { x: "63%", y: "17%", label: "ATT" },
+      { x: "15%", y: "44%", label: "ES" },
+      { x: "50%", y: "36%", label: "COC" },
+      { x: "85%", y: "44%", label: "ED" },
+      { x: "37%", y: "16%", label: "ATT" },
+      { x: "63%", y: "16%", label: "ATT" },
     ],
   },
   {
@@ -489,17 +489,17 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "3-4-1-2",
     category: "Difesa a 3",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "26%", y: "75%", label: "DC" },
-      { x: "50%", y: "77%", label: "DC" },
-      { x: "74%", y: "75%", label: "DC" },
-      { x: "15%", y: "48%", label: "ES" },
-      { x: "38%", y: "52%", label: "CC" },
-      { x: "62%", y: "52%", label: "CC" },
-      { x: "85%", y: "48%", label: "ED" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "26%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "74%", y: "73%", label: "DC" },
+      { x: "15%", y: "46%", label: "ES" },
+      { x: "38%", y: "51%", label: "CC" },
+      { x: "62%", y: "51%", label: "CC" },
+      { x: "85%", y: "46%", label: "ED" },
       { x: "50%", y: "34%", label: "COC" },
-      { x: "37%", y: "17%", label: "ATT" },
-      { x: "63%", y: "17%", label: "ATT" },
+      { x: "37%", y: "16%", label: "ATT" },
+      { x: "63%", y: "16%", label: "ATT" },
     ],
   },
   {
@@ -507,14 +507,14 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "3-4-2-1",
     category: "Difesa a 3",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "26%", y: "75%", label: "DC" },
-      { x: "50%", y: "77%", label: "DC" },
-      { x: "74%", y: "75%", label: "DC" },
-      { x: "15%", y: "48%", label: "ES" },
-      { x: "38%", y: "52%", label: "CC" },
-      { x: "62%", y: "52%", label: "CC" },
-      { x: "85%", y: "48%", label: "ED" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "26%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "74%", y: "73%", label: "DC" },
+      { x: "15%", y: "46%", label: "ES" },
+      { x: "38%", y: "51%", label: "CC" },
+      { x: "62%", y: "51%", label: "CC" },
+      { x: "85%", y: "46%", label: "ED" },
       { x: "34%", y: "33%", label: "COC" },
       { x: "66%", y: "33%", label: "COC" },
       { x: "50%", y: "16%", label: "ATT" },
@@ -525,14 +525,14 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "3-4-3 (Piatto)",
     category: "Difesa a 3",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "26%", y: "75%", label: "DC" },
-      { x: "50%", y: "77%", label: "DC" },
-      { x: "74%", y: "75%", label: "DC" },
-      { x: "15%", y: "48%", label: "ES" },
-      { x: "38%", y: "51%", label: "CC" },
-      { x: "62%", y: "51%", label: "CC" },
-      { x: "85%", y: "48%", label: "ED" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "26%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "74%", y: "73%", label: "DC" },
+      { x: "15%", y: "46%", label: "ES" },
+      { x: "38%", y: "50%", label: "CC" },
+      { x: "62%", y: "50%", label: "CC" },
+      { x: "85%", y: "46%", label: "ED" },
       { x: "20%", y: "22%", label: "AS" },
       { x: "50%", y: "16%", label: "ATT" },
       { x: "80%", y: "22%", label: "AD" },
@@ -543,14 +543,14 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "3-4-3 (Rombo)",
     category: "Difesa a 3",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "26%", y: "75%", label: "DC" },
-      { x: "50%", y: "77%", label: "DC" },
-      { x: "74%", y: "75%", label: "DC" },
-      { x: "50%", y: "58%", label: "CDC" },
-      { x: "18%", y: "47%", label: "ES" },
-      { x: "82%", y: "47%", label: "ED" },
-      { x: "50%", y: "36%", label: "COC" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "26%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "74%", y: "73%", label: "DC" },
+      { x: "50%", y: "55%", label: "CDC" },
+      { x: "18%", y: "46%", label: "ES" },
+      { x: "82%", y: "46%", label: "ED" },
+      { x: "50%", y: "35%", label: "COC" },
       { x: "20%", y: "21%", label: "AS" },
       { x: "50%", y: "15%", label: "ATT" },
       { x: "80%", y: "21%", label: "AD" },
@@ -561,17 +561,17 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "3-1-4-2",
     category: "Difesa a 3",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "26%", y: "75%", label: "DC" },
-      { x: "50%", y: "77%", label: "DC" },
-      { x: "74%", y: "75%", label: "DC" },
-      { x: "50%", y: "60%", label: "CDC" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "26%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "74%", y: "73%", label: "DC" },
+      { x: "50%", y: "57%", label: "CDC" },
       { x: "15%", y: "44%", label: "ES" },
-      { x: "38%", y: "46%", label: "CC" },
-      { x: "62%", y: "46%", label: "CC" },
+      { x: "38%", y: "45%", label: "CC" },
+      { x: "62%", y: "45%", label: "CC" },
       { x: "85%", y: "44%", label: "ED" },
-      { x: "37%", y: "17%", label: "ATT" },
-      { x: "63%", y: "17%", label: "ATT" },
+      { x: "37%", y: "16%", label: "ATT" },
+      { x: "63%", y: "16%", label: "ATT" },
     ],
   },
 
@@ -581,17 +581,17 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "5-3-2 (Contenimento)",
     category: "Difesa a 5",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "14%", y: "70%", label: "TS" },
-      { x: "32%", y: "76%", label: "DC" },
-      { x: "50%", y: "78%", label: "DC" },
-      { x: "68%", y: "76%", label: "DC" },
-      { x: "86%", y: "70%", label: "TD" },
-      { x: "50%", y: "56%", label: "CDC" },
-      { x: "32%", y: "45%", label: "CC" },
-      { x: "68%", y: "45%", label: "CC" },
-      { x: "37%", y: "17%", label: "ATT" },
-      { x: "63%", y: "17%", label: "ATT" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "14%", y: "69%", label: "TS" },
+      { x: "32%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "68%", y: "73%", label: "DC" },
+      { x: "86%", y: "69%", label: "TD" },
+      { x: "50%", y: "55%", label: "CDC" },
+      { x: "32%", y: "43%", label: "CC" },
+      { x: "68%", y: "43%", label: "CC" },
+      { x: "37%", y: "16%", label: "ATT" },
+      { x: "63%", y: "16%", label: "ATT" },
     ],
   },
   {
@@ -599,17 +599,17 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "5-2-1-2",
     category: "Difesa a 5",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "14%", y: "70%", label: "TS" },
-      { x: "32%", y: "76%", label: "DC" },
-      { x: "50%", y: "78%", label: "DC" },
-      { x: "68%", y: "76%", label: "DC" },
-      { x: "86%", y: "70%", label: "TD" },
-      { x: "36%", y: "52%", label: "CC" },
-      { x: "64%", y: "52%", label: "CC" },
-      { x: "50%", y: "35%", label: "COC" },
-      { x: "37%", y: "17%", label: "ATT" },
-      { x: "63%", y: "17%", label: "ATT" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "14%", y: "69%", label: "TS" },
+      { x: "32%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "68%", y: "73%", label: "DC" },
+      { x: "86%", y: "69%", label: "TD" },
+      { x: "36%", y: "51%", label: "CC" },
+      { x: "64%", y: "51%", label: "CC" },
+      { x: "50%", y: "34%", label: "COC" },
+      { x: "37%", y: "16%", label: "ATT" },
+      { x: "63%", y: "16%", label: "ATT" },
     ],
   },
   {
@@ -617,12 +617,12 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "5-2-3",
     category: "Difesa a 5",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "14%", y: "70%", label: "TS" },
-      { x: "32%", y: "76%", label: "DC" },
-      { x: "50%", y: "78%", label: "DC" },
-      { x: "68%", y: "76%", label: "DC" },
-      { x: "86%", y: "70%", label: "TD" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "14%", y: "69%", label: "TS" },
+      { x: "32%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "68%", y: "73%", label: "DC" },
+      { x: "86%", y: "69%", label: "TD" },
       { x: "36%", y: "50%", label: "CC" },
       { x: "64%", y: "50%", label: "CC" },
       { x: "20%", y: "22%", label: "AS" },
@@ -635,17 +635,17 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
     name: "5-4-1 (Piatto)",
     category: "Difesa a 5",
     positions: [
-      { x: "50%", y: "90%", label: "POR" },
-      { x: "14%", y: "70%", label: "TS" },
-      { x: "32%", y: "76%", label: "DC" },
-      { x: "50%", y: "78%", label: "DC" },
-      { x: "68%", y: "76%", label: "DC" },
-      { x: "86%", y: "70%", label: "TD" },
-      { x: "16%", y: "46%", label: "ES" },
-      { x: "38%", y: "50%", label: "CC" },
-      { x: "62%", y: "50%", label: "CC" },
+      { x: "50%", y: "89%", label: "POR" },
+      { x: "14%", y: "69%", label: "TS" },
+      { x: "32%", y: "73%", label: "DC" },
+      { x: "50%", y: "72%", label: "DC" },
+      { x: "68%", y: "73%", label: "DC" },
+      { x: "86%", y: "69%", label: "TD" },
+      { x: "16%", "y": "46%", label: "ES" },
+      { x: "38%", y: "49%", label: "CC" },
+      { x: "62%", y: "49%", label: "CC" },
       { x: "84%", y: "46%", label: "ED" },
-      { x: "50%", y: "17%", label: "ATT" },
+      { x: "50%", y: "16%", label: "ATT" },
     ],
   },
 ];
@@ -2112,11 +2112,12 @@ const Tattica = () => {
                   </CardHeader>
 
                   <CardContent className="p-3 sm:p-4">
-                    {/* Pitch Container */}
+                    {/* Pitch Container - Allungato in verticale per evitare sovrapposizioni */}
                     <div
                       className="relative w-full rounded-2xl shadow-inner overflow-hidden border-2 border-emerald-950/60 select-none"
                       style={{
-                        height: "540px",
+                        minHeight: "780px",
+                        height: "780px",
                         background: `repeating-linear-gradient(0deg, hsl(142 52% 26%) 0px, hsl(142 52% 26%) 45px, hsl(142 52% 30%) 45px, hsl(142 52% 30%) 90px)`,
                       }}
                     >
@@ -2128,16 +2129,16 @@ const Tattica = () => {
                         {/* Linea di metà campo */}
                         <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-white/55" />
                         {/* Cerchio di centrocampo */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/55 rounded-full" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 border-2 border-white/55 rounded-full" />
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/80 rounded-full" />
 
                         {/* Area di rigore superiore (Attacco) */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-44 h-20 border-2 border-white/55 border-t-0" />
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-9 border-2 border-white/55 border-t-0" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-30 border-2 border-white/55 border-t-0" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-12 border-2 border-white/55 border-t-0" />
 
                         {/* Area di rigore inferiore (Porta) */}
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-44 h-20 border-2 border-white/55 border-b-0" />
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-9 border-2 border-white/55 border-b-0" />
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 h-30 border-2 border-white/55 border-b-0" />
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-12 border-2 border-white/55 border-b-0" />
                       </div>
 
                       {/* 11 Posizioni interattive sul campo */}
