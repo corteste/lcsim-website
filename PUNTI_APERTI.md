@@ -270,29 +270,39 @@ Espansione della pagina Tattica per andare oltre la semplice selezione del modul
 ---
 
 ## 📌 10. Automatizzazione Applica Invecchiamenti Calciatori & Gestione Ritiri
-- **Stato**: 🟡 Da Discutere & Definire
+- **Stato**: 🟢 Completato su branch dev
 - **Priorità**: Alta (Procedura chiave di transizione tra stagioni sportive)
-- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), bacheca comunicati (`/comunicati`), tabelle `an_player`, `ea_player_db`
-- **Tabelle coinvolte**: `an_player`, `ea_player_db`, `league_announcements`, eventuale colonna o tabella `retirements`
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx` (`/admin/automazioni`), `src/components/admin/AgingModal.tsx`, `src/services/playerAgingService.ts`, bacheca comunicati (`/comunicati`), tabelle `an_player`, `ea_player_db`
+- **Tabelle coinvolte**: `an_player`, `ea_player_db`, `an_team_tactic`, `as_player_market`, `team_cuts_registry`, `league_announcements`, `league_automation_state`
 
 ### Descrizione
-Procedura batch eseguibile dall'Admin per effettuare il passaggio d'anno/stagione sportiva su tutti i calciatori registrati nella Lega.
+Procedura batch atomica eseguibile dal Super Admin per effettuare il passaggio d'anno/stagione sportiva su tutti i calciatori registrati nella Lega.
 
-### Funzionalità & Integrazione Ritiri
-1. **Incremento Anagrafico**:
-   - Aumento di 1 anno (`Età = Età + 1`) per tutti i giocatori attivi.
-   - Sfasamento `DOB` / `birthdate` per mantenere l'esatta corrispondenza con il motore anagrafico di EA FC 25.
-2. **Curve di Decadimento & Sviluppo Attributi**:
-   - Definire se e come cambiano le statistiche fisiche e tecniche in base alla fascia d'età:
-     - *Fascia Giovani (Under 23)*: bonus naturale o stabilità?
-     - *Fascia Prime (24-29)*: mantenimento del picco di rendimento.
-     - *Fascia Declino (30-33)*: calo graduale degli attributi di velocità, accelerazione e resistenza?
-     - *Fascia Veterani (34+)*: decrementi più marcati e valutazione del ritiro.
-3. **Automazione Annuncio Ritiri Futuri & Esecuzione**:
-   - **Annuncio Automatico Preventivo**: Alla pressione del pulsante invecchiamento, il sistema identifica in automatico i calciatori che si ritireranno a fine stagione (in base a età/soglie stabilite) e genera contestualmente un avviso/comunicato ufficiale di Lega in bacheca (`league_announcements`) con badge visivo nella rosa della squadra.
-   - **Esecuzione Ritiri**: Passaggio di stato a `Squadra = 'RITIRATO'`, rimozione da formazioni/rose attive e inserimento nell'albo storico.
-4. **Reversibilità e Sicurezza**:
-   - Backup automatico / snapshot dello stato delle rose prima del lancio, per poter annullare l'operazione in caso di errore.
+### Funzionalità Implementate
+1. **Incremento Anagrafico & Allineamento EA FC 25**:
+   - Aumento anagrafico di 1 anno (`Età = Età + 1`) per tutti i 449 calciatori attivi (`Squadra != 'RITIRATO' OR Squadra IS NULL`).
+   - Sfasamento date di nascita (`DOB = DOB - 365` su `an_player` e `birthdate = birthdate - 365` su `ea_player_db`) per mantenere la sincronizzazione anagrafica con il motore EA FC 25.
+   - I calciatori già nello status `RITIRATO` rimangono invariati e non vengono invecchiati.
+2. **Matrice Ufficiale Decadimenti Fisico/Tecnici (11 Attributi)**:
+   - Curve di decadimento fedeli alla matrice approvata:
+     - *Fascia Giovani & Prime (<= 30 anni)*: nessun decadimento (250 calciatori).
+     - *Transizioni 30 ➔ 31 e 31 ➔ 32*: RIFP: -2, TUFP: -2, TSTA: 0, ACCL: -5, VELO: -5, RESI: -5, FRZA: -1, AGIL: -1, ELEV: -3, RIFL: -2, EQLB: -1.
+     - *Transizioni 32 ➔ 33 e 33 ➔ 34*: RIFP: -3, TUFP: -3, TSTA: -1, ACCL: -8, VELO: -8, RESI: -10, FRZA: -3, AGIL: -2, ELEV: -5, RIFL: -4, EQLB: -2.
+   - **Regola di Salvaguardia (Floor Minimo)**: Nessun attributo scende al di sotto del valore minimo di **30** (`applyDecay(val, delta)`).
+   - **Ricalcolo Automatico OVR**: Ricalcolo istantaneo del valore complessivo (`OVR` su `an_player` e `overallrating` su `ea_player_db`) basato sulle formule ponderate di ruolo ufficiali LCSIM (`calcOverall`).
+3. **Gestione Ritiri Ufficiali (34 ➔ 35 anni)**:
+   - I calciatori che raggiungono o superano i 35 anni (29 calciatori) passano immediatamente allo status `Squadra = 'RITIRATO'` e `NumeroMaglia = NULL` in `an_player`.
+   - In `ea_player_db` viene impostato `isretiring = 1`.
+   - Rimozione automatica dei calciatori ritirati dalle formazioni attive in `an_team_tactic` (starters, panchina e calci piazzati) e svincolo da mercati pendenti.
+4. **Comunicato Ufficiale Automatico in Bacheca (`league_announcements`)**:
+   - Pubblicazione automatica del comunicato ufficiale che include:
+     - Elenco dei 29 calciatori ritirati con ruolo, OVR e squadra di appartenenza.
+     - Elenco preventivo dei 40 veterani al loro ultimo anno di carriera (che hanno compiuto 34 anni ed entreranno nella loro ultima stagione prima del ritiro).
+     - Riepilogo statistico delle curve applicate e dei calciatori coinvolti.
+5. **Interfaccia Interattiva (`AgingModal`) nel Centro Automazioni**:
+   - Card 2 in `/admin/automazioni` operativa con badge verde `🟢 Stagione & Ritiri • Operativo`.
+   - Modale a schede con: Matrice Regole parametrizzata, Anteprima Decadimenti filtrabile e ricercabile, Elenco Ritiri Ufficiali, Elenco Veterani Ultima Stagione, Anteprima live del comunicato e Step di conferma prima dell'esecuzione atomica.
+   - Funzione RPC Postgres `public.rpc_apply_player_aging` atomica con rollback automatico in caso di errore e aggiornamento di `league_automation_state`.
 
 ---
 

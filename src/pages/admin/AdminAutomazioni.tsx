@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
 import { exportEADatabaseTSV } from "@/services/eaPlayerDbService";
 import { ImportRookieModal } from "@/components/admin/ImportRookieModal";
+import { AgingModal } from "@/components/admin/AgingModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCutsComplianceReport, executeOfficialCutsRpc } from "@/services/cutsService";
 
@@ -56,6 +57,7 @@ export default function AdminAutomazioni() {
   const [patchFile, setPatchFile] = useState<File | null>(null);
   const [isPatching, setIsPatching] = useState(false);
   const [rookieModalOpen, setRookieModalOpen] = useState(false);
+  const [agingModalOpen, setAgingModalOpen] = useState(false);
 
   // Official cuts state & query
   const queryClient = useQueryClient();
@@ -503,52 +505,34 @@ export default function AdminAutomazioni() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-1">
                   <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">
-                    🟡 In Definizione • Punto Aperto #10
+                    🟢 Stagione &amp; Ritiri • Operativo
                   </Badge>
                   <CalendarClock className="h-6 w-6 text-amber-500" />
                 </div>
                 <CardTitle className="text-xl font-black">Applica Invecchiamento Calciatori</CardTitle>
                 <CardDescription className="text-xs">
-                  Passaggio di stagione: incremento anagrafico (+1 anno), traslazione date e applicazione curve di sviluppo/declino.
+                  Passaggio di stagione: incremento anagrafico (+1 anno), traslazione date EA FC 25, applicazione curve decadimento e annuncio ritiri.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-xs text-muted-foreground space-y-1.5 leading-relaxed">
                   <p>
-                    Aumenta l'età di tutti i calciatori registrati e applica le variazioni sugli attributi fisici e tecnici in base alla fascia d'età (Giovani, Prime, Declino e Veterani).
+                    Aumenta l'età (+1) di tutti i calciatori attivi, adegua la data di nascita (DOB -365), applica le penalità fisiche/tecniche su 11 attributi agli over 30 (con soglia minima di salvaguardia a 30) e ufficializza i ritiri per chi compie 35 anni.
                   </p>
                   <p className="font-semibold text-foreground flex items-center gap-1.5 pt-1">
-                    <Info className="h-3.5 w-3.5 text-amber-500" />
-                    Procedura batch da discutere e definire nei dettagli di regolamento.
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    Include anteprima interattiva dei decadimenti, elenco ritiri e pubblicazione automatica in bacheca.
                   </p>
                 </div>
 
                 <div className="pt-1">
                   <Button
                     variant="secondary"
-                    onClick={() => {
-                      recordAutomationRun("aging_players", { note: "Richiesta consultazione parametri invecchiamento" });
-                      setInfoModal({
-                        id: "aging_players",
-                        title: "Applica Invecchiamento Calciatori (Punto Aperto #10)",
-                        description:
-                          "La procedura automatizzata di invecchiamento è registrata nel backlog tecnico e sarà discussa con l'utente per definire i parametri esatti:",
-                        puntoApertoIndex: 10,
-                        points: [
-                          "Incremento anagrafico di 1 anno per tutti i giocatori attivi (Età + 1).",
-                          "Sfasamento giorni birthdate per mantenere l'allineamento con EA FC 25.",
-                          "Curve di decadimento attributi (perdita velocità, accelerazione e resistenza per over 30).",
-                          "Soglia di ritiro automatico e assegnazione dello status 'RITIRATO'.",
-                          "Snapshot preventivo di sicurezza per reversibilità dell'operazione."
-                        ],
-                        actionLabel: "Registra Test Invecchiamento",
-                        detailsToRecord: { test_triggered: true }
-                      });
-                    }}
-                    className="w-full font-bold gap-2 text-xs"
+                    onClick={() => setAgingModalOpen(true)}
+                    className="w-full font-bold gap-2 text-xs hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 border border-amber-500/20"
                   >
                     <CalendarClock className="h-3.5 w-3.5 text-amber-500" />
-                    Avvia Invecchiamento Calciatori (Dettagli)
+                    Configura &amp; Applica Invecchiamento Calciatori
                   </Button>
                 </div>
               </CardContent>
@@ -985,6 +969,18 @@ export default function AdminAutomazioni() {
         open={rookieModalOpen}
         onOpenChange={setRookieModalOpen}
         onSuccess={loadAutomationStates}
+        authorName={user?.name || user?.team || "Super Admin"}
+      />
+
+      {/* MODALE: INVECCHIAMENTO CALCIATORI & GESTIONE RITIRI */}
+      <AgingModal
+        open={agingModalOpen}
+        onOpenChange={setAgingModalOpen}
+        onSuccess={async () => {
+          await loadAutomationStates();
+          await queryClient.invalidateQueries({ queryKey: ["cuts_compliance_report"] });
+          await queryClient.invalidateQueries({ queryKey: ["players"] });
+        }}
         authorName={user?.name || user?.team || "Super Admin"}
       />
 
