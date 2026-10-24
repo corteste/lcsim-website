@@ -113,11 +113,21 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
   const handleConfirmImport = async () => {
     if (!preview || !preview.valid || preview.rookies.length === 0) return;
 
+    if (!passphrase.trim() || passphrase.trim().length < 4) {
+      toast.error("La passphrase di cifratura deve contenere almeno 4 caratteri.");
+      return;
+    }
+
+    if (passphrase !== confirmPassphrase) {
+      toast.error("Le due passphrase inserite non coincidono.");
+      return;
+    }
+
     try {
       setIsImporting(true);
-      toast.info("Importazione in corso: scrittura in ea_player_db e an_rookie...");
+      toast.info("Importazione in corso: cifratura AES-256 e scrittura rookie...");
 
-      const res = await executeRookieImport(preview, authorName);
+      const res = await executeRookieImport(preview, authorName, passphrase.trim());
       if (res.success) {
         toast.success(
           `Importazione completata con successo! ${res.count} rookie cifrati con AES-256 in an_rookie e pronti per lo Scouting.`
@@ -311,6 +321,11 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
                     {showPassphrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {passphrase.length > 0 && passphrase.length < 4 && (
+                  <span className="text-[10px] text-amber-500 font-medium block mt-1">
+                    Minimo 4 caratteri (attuale: {passphrase.length})
+                  </span>
+                )}
               </div>
 
               <div>
@@ -324,6 +339,16 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
                   onChange={(e) => setConfirmPassphrase(e.target.value)}
                   className="h-9 text-xs font-mono bg-background"
                 />
+                {confirmPassphrase.length > 0 && passphrase !== confirmPassphrase && (
+                  <span className="text-[10px] text-rose-500 font-medium block mt-1">
+                    Le due passphrase non coincidono
+                  </span>
+                )}
+                {passphrase.length >= 4 && passphrase === confirmPassphrase && (
+                  <span className="text-[10px] text-emerald-500 font-medium block mt-1">
+                    Passphrase confermata ✓
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -480,7 +505,7 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
           <Button
             type="button"
             size="sm"
-            disabled={!preview || !preview.valid || isImporting}
+            disabled={!preview || !preview.valid || isImporting || passphrase.trim().length < 4 || passphrase !== confirmPassphrase}
             onClick={handleConfirmImport}
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-xs shadow-md shadow-emerald-600/20 px-5"
           >
