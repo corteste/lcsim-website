@@ -114,3 +114,4 @@ lcsim-website/
 - **Branching**: Si sviluppa sempre su `dev`. Nessun push su `main` senza richiesta esplicita dell'utente.
 - **Rollback SQL**: Ogni migrazione su Supabase deve avere il relativo script di rollback documentato in `supabase/migrations/`.
 - **Database Connection**: Per query o DDL dirette sul pooler Supabase, usare l'host IPv4 Supavisor documentato nei file di migrazione.
+- **Test & Validazione Continua**: Effettuare sempre test accurati per validare ogni soluzione prima di considerarla completata (build di produzione, verifica runtime e robustezza contro casi limite/undefined).

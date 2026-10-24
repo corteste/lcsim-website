@@ -15,3 +15,5 @@ Per la panoramica completa del gioco, delle entità e delle regole, fai sempre r
 3. **Ruoli & Permessi**:
    - L'utente `admin` è un Super Admin neutrale (`is_admin = true`, `team_id = null`). Non possiede una squadra e la sua sezione di navigazione è nominata "Amministrazione".
    - I manager possiedono una squadra (`is_admin = false`, `team_id = 'XXX'`) e gestiscono "La Mia Squadra".
+4. **Validazione & Test Obbligatori**:
+   - Effettuare **sempre** test approfonditi per validare la soluzione prima di considerarla completata, verificando l'integrità del codice, il funzionamento a runtime, la corretta gestione dei valori nulli/undefined e l'assenza di errori in console o nel build (`npm run build`).
