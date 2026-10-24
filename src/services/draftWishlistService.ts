@@ -497,8 +497,11 @@ export async function executeAutopick(params: {
     // 4. Se nessun rookie della lista è disponibile, applica Fallback A (Miglior OVR rimasto)
     if (!chosenRookie) {
       chosenSource = "fallback";
-      // Ordina per OVR decrescente, poi per ID crescente
+      // Ordina per Stelle decrescente, poi per OVR decrescente, poi per ID crescente
       const sortedByOvr = [...availableRookies].sort((a, b) => {
+        const starA = Number(a.Stelle) || 0;
+        const starB = Number(b.Stelle) || 0;
+        if (starB !== starA) return starB - starA;
         const ovrA = Number(a.OVR) || 0;
         const ovrB = Number(b.OVR) || 0;
         if (ovrB !== ovrA) return ovrB - ovrA;
@@ -519,25 +522,15 @@ export async function executeAutopick(params: {
         ? `AUTOPICK (#${chosenRank} Wishlist da ${executedBy})`
         : `AUTOPICK (Fallback Max OVR da ${executedBy})`;
 
-    // 5. Aggiorna an_rookie (assegna la squadra)
-    const { error: assignErr } = await supabase
-      .from(ROOKIE_TABLE)
-      .update({ Squadra: pickingTeamId })
-      .eq("ID", rookieId);
+    // 5. Esegui scelta draft atomica (con de-crittografia ed inserimento in an_player)
+    const { error: draftRpcErr } = await supabase.rpc("rpc_draft_rookie", {
+      p_pick_overall: pickOverall,
+      p_rookie_id: rookieId,
+      p_team_id: pickingTeamId,
+      p_picked_by: pickedByString,
+    });
 
-    if (assignErr) throw assignErr;
-
-    // 6. Aggiorna an_draft_board
-    const { error: boardErr } = await supabase
-      .from(DRAFT_BOARD_TABLE)
-      .update({
-        rookie_id: rookieId,
-        picked_at: nowIso,
-        picked_by: pickedByString,
-      })
-      .eq("pick_overall", pickOverall);
-
-    if (boardErr) throw boardErr;
+    if (draftRpcErr) throw draftRpcErr;
 
     return {
       success: true,

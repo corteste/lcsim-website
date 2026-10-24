@@ -50,6 +50,9 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [passphrase, setPassphrase] = useState("");
+  const [confirmPassphrase, setConfirmPassphrase] = useState("");
+  const [showPassphrase, setShowPassphrase] = useState(false);
 
   const resetState = () => {
     setFile1(null);
@@ -58,6 +61,9 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
     setIsAnalyzing(false);
     setIsImporting(false);
     setSearchQuery("");
+    setPassphrase("");
+    setConfirmPassphrase("");
+    setShowPassphrase(false);
   };
 
   const handleFileChange = async (fileNumber: 1 | 2, selectedFile: File | null) => {
@@ -110,7 +116,7 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
       const res = await executeRookieImport(preview, authorName);
       if (res.success) {
         toast.success(
-          `Importazione completata con successo! ${res.count} rookie aggiunti alla Master Table e disponibili nel Draft.`
+          `Importazione completata con successo! ${res.count} rookie cifrati con AES-256 in an_rookie e pronti per lo Scouting.`
         );
         onSuccess();
         onOpenChange(false);
@@ -261,6 +267,60 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
                   onChange={(e) => handleFileChange(2, e.target.files?.[0] || null)}
                 />
               </label>
+            </div>
+          </div>
+
+          {/* Zero-Knowledge Encryption Passphrase Card */}
+          <div className="p-4 rounded-xl border border-amber-500/35 bg-amber-500/5 space-y-3 shadow-xs">
+            <div className="flex items-start gap-2.5">
+              <div className="p-2 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <Lock className="h-3.5 w-3.5" /> Crittografia Zero-Knowledge Classe Rookie (AES-256)
+                </h4>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                  Tutti gli attributi tecnici, OVR, potenziale e tratti dei rookie verranno salvati <strong>cifrati in modo irreversibile</strong>. Nemmeno il proprietario del database potrà visualizzarli sul Table Editor di Supabase. I manager (compreso il gestore della lega) potranno scoprirli solo spendendo gettoni nello Scouting.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="text-[11px] font-bold text-foreground block mb-1">
+                  Passphrase Segreta Admin *
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showPassphrase ? "text" : "password"}
+                    placeholder="Es. ChiaveSegretaLcsim2026!"
+                    value={passphrase}
+                    onChange={(e) => setPassphrase(e.target.value)}
+                    className="h-9 pr-10 text-xs font-mono bg-background"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassphrase(!showPassphrase)}
+                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassphrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-foreground block mb-1">
+                  Ripeti Passphrase *
+                </label>
+                <Input
+                  type={showPassphrase ? "text" : "password"}
+                  placeholder="Ripeti la passphrase..."
+                  value={confirmPassphrase}
+                  onChange={(e) => setConfirmPassphrase(e.target.value)}
+                  className="h-9 text-xs font-mono bg-background"
+                />
+              </div>
             </div>
           </div>
 
@@ -423,7 +483,7 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
             <CheckCircle2 className="h-4 w-4" />
             {isImporting
               ? "Importazione in corso..."
-              : `Importa ${preview?.matchedCount || 0} Rookie in Master Table e an_rookie`}
+              : `Cifra e Importa ${preview?.matchedCount || 0} Rookie in an_rookie`}
           </Button>
         </DialogFooter>
       </DialogContent>

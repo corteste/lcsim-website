@@ -497,7 +497,7 @@ const ConfrontoGiocatori = () => {
             .select("*")
             .eq("Squadra", currentTeam)
             .order("OVR", { ascending: false }),
-          supabase.from(ROOKIE_TABLE).select("*").order("ID", { ascending: true }),
+          supabase.rpc("rpc_get_scouted_rookies", { p_team_id: currentTeam }),
           supabase
             .from(ROOKIE_SCOUTING_TABLE)
             .select("rookie_id, tokens_spent")

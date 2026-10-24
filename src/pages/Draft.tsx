@@ -205,7 +205,8 @@ const Draft = () => {
 
       const boardRows = (boardRes.data ?? []) as DraftPickRow[];
       setPicks(boardRows);
-      setRookies((rookiesRes.data ?? []) as Player[]);
+      const rkList = ((rookiesRes.data ?? []) as Player[]).sort((a, b) => (a.Cognome || "").localeCompare(b.Cognome || ""));
+      setRookies(rkList);
 
       const r1 = boardRows
         .filter((p) => p.round === 1)

@@ -581,65 +581,64 @@ export function previewRookieImport(
 // -------------------------------------------------------------
 export async function executeRookieImport(
   preview: RookieImportPreview,
-  authorName: string
+  authorName: string,
+  passphrase: string
 ): Promise<{ success: boolean; count: number; error?: string }> {
   if (!preview.valid || preview.rookies.length === 0) {
     return { success: false, count: 0, error: preview.error || 'Nessun rookie pronto per l\'importazione.' };
   }
 
-  const chunkSize = 100;
-  const nowIso = new Date().toISOString();
+  if (!passphrase || passphrase.trim().length < 4) {
+    return { success: false, count: 0, error: 'La passphrase di cifratura deve contenere almeno 4 caratteri.' };
+  }
 
   try {
-    // 1. Inserisci righe in public.ea_player_db a blocchi
-    const eaRows = preview.rookies.map((r) => r.fullEaRow);
-    for (let i = 0; i < eaRows.length; i += chunkSize) {
-      const chunk = eaRows.slice(i, i + chunkSize);
-      const { error: eaErr } = await supabase
-        .from(EA_PLAYER_DB_TABLE)
-        .upsert(chunk, { onConflict: 'playerid' });
+    // Trasforma ogni rookie separando dati pubblici e dati segreti da crittografare (AES-256)
+    const payload = preview.rookies.map((r) => ({
+      publicInfo: {
+        id: r.id,
+        nome: r.nome,
+        cognome: r.cognome,
+        dob: r.fullRookieRow.DOB ?? 0,
+        eta: r.eta,
+        nazionalita: r.nazionalita,
+        altezza: r.fullRookieRow.Altezza ?? null,
+        peso: r.fullRookieRow.Peso ?? null,
+        posiz: r.posiz,
+        piede: r.piede,
+        squadra: r.squadra,
+        stelle: r.stelle,
+        preferredPosition2: r.fullRookieRow.PreferredPosition2 ?? null,
+        preferredPosition3: r.fullRookieRow.PreferredPosition3 ?? null,
+        preferredPosition4: r.fullRookieRow.PreferredPosition4 ?? null,
+      },
+      secretData: {
+        ...r.fullRookieRow,
+        fullEaRow: r.fullEaRow,
+      },
+    }));
 
-      if (eaErr) {
-        console.error('Errore inserimento in ea_player_db:', eaErr);
-        throw new Error(`Errore Master DB (ea_player_db): ${eaErr.message}`);
-      }
+    // Invia alla funzione protetta PostgreSQL (pgcrypto AES-256)
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('rpc_import_encrypted_rookies', {
+      p_rookies: payload,
+      p_passphrase: passphrase.trim(),
+      p_author: authorName,
+    });
+
+    if (rpcErr) {
+      console.error('Errore RPC rpc_import_encrypted_rookies:', rpcErr);
+      throw new Error(`Errore durante la crittografia dei rookie: ${rpcErr.message}`);
     }
 
-    // 2. Inserisci righe in public.an_rookie a blocchi
-    const rookieRows = preview.rookies.map((r) => r.fullRookieRow);
-    for (let i = 0; i < rookieRows.length; i += chunkSize) {
-      const chunk = rookieRows.slice(i, i + chunkSize);
-      const { error: rErr } = await supabase
-        .from(ROOKIE_TABLE)
-        .upsert(chunk, { onConflict: 'ID' });
+    const resObj = rpcRes as { success: boolean; count: number; error?: string };
 
-      if (rErr) {
-        console.error('Errore inserimento in an_rookie:', rErr);
-        throw new Error(`Errore Rookie DB (an_rookie): ${rErr.message}`);
-      }
-    }
-
-    // 3. Registra esecuzione automazione
-    try {
-      await supabase.from('league_automation_state').upsert({
-        id: 'import_rookie_class',
-        action_name: 'Importa Classe Rookie',
-        last_run_at: nowIso,
-        last_run_by: authorName,
-        details: {
-          rookies_imported: preview.rookies.length,
-          file1: preview.file1Name || null,
-          file2: preview.file2Name || null,
-        },
-        updated_at: nowIso,
-      });
-    } catch (logErr) {
-      console.warn('Errore salvataggio log automazione rookie import:', logErr);
+    if (!resObj || !resObj.success) {
+      throw new Error(resObj?.error || 'Errore imprevisto durante l\'importazione.');
     }
 
     return {
       success: true,
-      count: preview.rookies.length,
+      count: resObj.count,
     };
   } catch (err: any) {
     console.error('Errore executeRookieImport:', err);

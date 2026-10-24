@@ -406,7 +406,7 @@ Aggiunta di un'azione accessibile dal menu profilo/squadra nella Navbar (o in im
 ---
 
 ## 📌 17. Spostamento Rookie in `an_player` & Gestione Archivio Storico Draft
-- **Stato**: 🟡 Da Implementare
+- **Stato**: 🟢 Completato su branch `dev` (Scelta integrata con de-crittografia atomica in `an_player` ed `ea_player_db`)
 - **Priorità**: Alta (Ciclo completo di integrazione dei rookie nella Lega)
 - **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Scouting.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
 - **Tabelle coinvolte**: `an_rookie`, `an_player`, `an_draft_board`, eventuale colonna `stagione` in `an_rookie` o tabella archivio
@@ -486,3 +486,19 @@ Integrazione di un agente giornalista virtuale (stile "Fabrizio Romano / Gianluc
      - Titolo di giornata accattivante.
      - Analisi dei big match, rimonte clamorose, flop e protagonisti.
      - Pagelle tecniche e commenti ironici per club.
+
+---
+
+## 📌 22. Crittografia Zero-Knowledge Classe Rookie (AES-256) & Blind Database
+- **Stato**: 🟢 Completato su branch `dev`
+- **Priorità**: Massima (Fair-play, trasparenza sportiva e protezione dati contro leakage da DB)
+- **Moduli coinvolti**: `src/components/admin/ImportRookieModal.tsx`, `src/services/rookieImportService.ts`, `src/pages/Scouting.tsx`, `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, `src/pages/ConfrontoGiocatori.tsx`
+- **Tabelle & Funzioni coinvolte**: `an_rookie`, `internal_vault.rookie_key`, `rpc_import_encrypted_rookies`, `rpc_get_scouted_rookies`, `rpc_draft_rookie`, `rpc_undo_draft_rookie`
+- **Migrazione SQL**: `supabase/migrations/20261024_rookie_encryption.sql` e rispettivo rollback
+
+### Descrizione & Risoluzione Tecnica
+1. **Blind Database**: Tutti i campi sensibili (OVR, POTN, Role1, Role2, Role3, Tratti, Emotion e tutti i 35 attributi fisici/tecnici) nella tabella `public.an_rookie` sono rigorosamente `NULL`. Qualsiasi utente o sviluppatore con accesso diretto al Table Editor di Supabase vede solo `NULL` e il blob binario crittografato `encrypted_data`.
+2. **Passphrase Admin**: La passphrase segreta viene impostata dall'Admin neutrale della Lega nel modale di importazione in `/admin/automazioni`.
+3. **Disclosure Selettiva nello Scouting**: La funzione `rpc_get_scouted_rookies` decifra in memoria i dati sul server PostgreSQL ed espone unicamente i dati autorizzati in base ai gettoni spesi dalla squadra chiamante (0G: solo anagrafica; 1G: range di 10; 2G: range di 3 + conteggio tratti + emotion; 3G: nomi tratti completi + ruoli tattici + piede debole/mabi; 5G: tutto sbloccato esatto).
+4. **Protezione Network DevTools**: Le rappresentazioni dei range inviano al client valori punto medio del range, impedendo a chiunque di estrapolare il valore reale dal tab Network di Chrome.
+5. **Integrazione Draft**: Quando un rookie viene scelto (`rpc_draft_rookie`), le sue statistiche vengono decifrate e scritte in `public.an_player` (entrando nella rosa della squadra) e in `public.ea_player_db`. In `an_rookie` i dati continuano a rimanere perennemente cifrati.

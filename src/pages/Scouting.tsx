@@ -239,7 +239,7 @@ const Scouting = () => {
       if (!silent) setLoading(true);
       try {
         const [rookiesRes, scoutingRes] = await Promise.all([
-          supabase.from(ROOKIE_TABLE).select("*").order("ID", { ascending: true }),
+          supabase.rpc("rpc_get_scouted_rookies", { p_team_id: activeTeamId }),
           supabase
             .from(ROOKIE_SCOUTING_TABLE)
             .select("*")
