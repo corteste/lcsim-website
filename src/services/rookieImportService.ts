@@ -593,7 +593,22 @@ export async function executeRookieImport(
   }
 
   try {
-    // Trasforma ogni rookie separando dati pubblici e dati segreti da crittografare (AES-256)
+    // 1. Inserisci immediatamente tutte le righe complete di File 1 in public.ea_player_db
+    const chunkSize = 100;
+    const eaRows = preview.rookies.map((r) => r.fullEaRow);
+    for (let i = 0; i < eaRows.length; i += chunkSize) {
+      const chunk = eaRows.slice(i, i + chunkSize);
+      const { error: eaErr } = await supabase
+        .from(EA_PLAYER_DB_TABLE)
+        .upsert(chunk, { onConflict: 'playerid' });
+
+      if (eaErr) {
+        console.error('Errore inserimento in ea_player_db:', eaErr);
+        throw new Error(`Errore Master DB (ea_player_db): ${eaErr.message}`);
+      }
+    }
+
+    // 2. Trasforma ogni rookie separando dati pubblici e dati segreti da crittografare (AES-256)
     const payload = preview.rookies.map((r) => ({
       publicInfo: {
         id: r.id,
