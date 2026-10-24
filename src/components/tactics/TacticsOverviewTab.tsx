@@ -247,15 +247,15 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                       >
                         {occupant ? (
                           <div className="flex flex-col items-center group">
-                            {/* Avatar Pedina con Icona Più Grande */}
-                            <div className="relative">
+                            {/* Avatar Pedina con Icona Dimensione Esatta Uniforme */}
+                            <div className="relative shrink-0" style={{ width: "52px", height: "52px" }}>
                               <div
-                                className={`w-13 h-13 sm:w-15 sm:h-15 rounded-full overflow-hidden bg-slate-900 border-[2.5px] ${ringColor} shadow-xl`}
+                                className={`w-[52px] h-[52px] rounded-full overflow-hidden bg-slate-900 border-2 ${ringColor} shadow-xl shrink-0`}
                               >
                                 <img
                                   src={getPlayerImage(Number(occupant.ID))}
                                   alt={occupant.Cognome}
-                                  className="w-full h-full object-cover object-top"
+                                  className="w-full h-full object-cover object-top block pointer-events-none"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src =
                                       "/images/players/MConti.png";
@@ -263,41 +263,41 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                                 />
                               </div>
 
-                              {/* Pillola OVR Più Grande e Ben Visibile */}
-                              <span className="absolute -top-1 -right-2 bg-slate-950 text-white border border-white/50 text-[10px] sm:text-xs font-black font-mono px-1.5 py-0.5 rounded-full shadow-md">
+                              {/* Pillola OVR */}
+                              <span className="absolute -top-1 -right-1.5 bg-slate-950 text-white border border-white/50 text-[10px] font-black font-mono px-1 py-0 rounded-full shadow-md z-10">
                                 {occupant.OVR}
                               </span>
 
                               {/* Numero Maglia */}
-                              <span className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[9px] sm:text-[10px] font-bold font-mono min-w-5 h-5 px-1 rounded-full flex items-center justify-center border border-white/70 shadow-md">
+                              <span className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[9px] font-bold font-mono min-w-4 h-4 px-1 rounded-full flex items-center justify-center border border-white/70 shadow-md z-10">
                                 {occupant.NumeroMaglia ?? slotIdx + 1}
                               </span>
                             </div>
 
-                            {/* Targhetta Cognome + Ruolo Posizione con Font Più Grande */}
-                            <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-950/95 backdrop-blur-sm border border-white/30 text-white shadow-lg flex items-center gap-1.5 max-w-[125px]">
-                              <span className="text-[10px] sm:text-[11px] font-black text-emerald-400 font-mono">
+                            {/* Targhetta Cognome + Ruolo Posizione */}
+                            <div className="mt-1 px-1.5 py-0.5 rounded-md bg-slate-950/95 backdrop-blur-sm border border-white/30 text-white shadow-lg flex items-center gap-1 max-w-[110px]">
+                              <span className="text-[9px] font-black text-emerald-400 font-mono shrink-0">
                                 {pos.label}
                               </span>
-                              <span className="text-xs font-bold truncate">
+                              <span className="text-[10.5px] font-bold truncate">
                                 {occupant.Cognome}
                               </span>
                             </div>
 
-                            {/* Badge Ruolo FC IQ con Font Più Grande */}
-                            <div className="mt-0.5 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-[9px] sm:text-[10px] font-black tracking-tight shadow-md flex items-center gap-1 border border-primary/40 truncate max-w-[125px]">
-                              <SlidersHorizontal className="w-3 h-3 shrink-0" />
+                            {/* Badge Ruolo FC IQ */}
+                            <div className="mt-0.5 px-1.5 py-0.5 rounded bg-primary text-primary-foreground text-[8.5px] font-black tracking-tight shadow flex items-center gap-1 border border-primary/40 truncate max-w-[110px]">
+                              <SlidersHorizontal className="w-2.5 h-2.5 shrink-0" />
                               <span className="truncate">{roleName}</span>
                             </div>
                           </div>
                         ) : (
-                          /* Slot Vuoto sul Campo Più Grande */
+                          /* Slot Vuoto sul Campo */
                           <div className="flex flex-col items-center">
-                            <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full border-2 border-dashed border-white/70 bg-black/45 text-white/95 flex flex-col items-center justify-center shadow-md">
+                            <div className="w-[48px] h-[48px] rounded-full border-2 border-dashed border-white/70 bg-black/45 text-white/95 flex flex-col items-center justify-center shadow-md shrink-0">
                               <span className="text-[9px] font-mono font-bold opacity-80">
                                 #{slotIdx + 1}
                               </span>
-                              <span className="text-xs sm:text-sm font-black">{pos.label}</span>
+                              <span className="text-xs font-black">{pos.label}</span>
                             </div>
                           </div>
                         )}

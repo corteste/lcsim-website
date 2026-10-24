@@ -118,7 +118,14 @@
 
 @layer base {
   html {
-    scrollbar-gutter: stable;
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable !important;
+  }
+
+  body[data-scroll-locked] {
+    overflow: visible !important;
+    padding-right: 0px !important;
+    margin-right: 0px !important;
   }
 
   * {
