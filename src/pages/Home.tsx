@@ -39,19 +39,19 @@ const Home = () => {
 
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* ========================================================= */}
-        {/* HERO CARD: CENTRO DATI & SALA STAMPA                     */}
+        {/* TOP ROW: CENTRO DATI & SALA STAMPA (DUE BLOCCHI SEPARATI) */}
         {/* ========================================================= */}
-        <section
-          aria-label="Centro Dati e Sala Stampa"
-          className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-background p-5 md:p-7 shadow-xl"
-        >
-          {/* Sfondo ambient mesh pro */}
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          {/* Blocco 1: Centro Dati (2 Cols) */}
+          <section
+            aria-label="Centro Dati"
+            className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-background p-6 md:p-8 shadow-sm flex flex-col justify-center min-h-[300px]"
+          >
+            {/* Sfondo ambient mesh pro */}
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-            {/* Blocco Sinistro: Titolo Centro Dati */}
-            <div className="lg:col-span-4 xl:col-span-4 space-y-3">
+            <div className="relative z-10 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-mono">
                   Serie A • LCSIM
@@ -63,17 +63,17 @@ const Home = () => {
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground">
                 Centro Dati
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-md">
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
                 Monitora classifiche in tempo reale, statistiche avanzate dei giocatori e andamento delle rose con precisione broadcast.
               </p>
             </div>
+          </section>
 
-            {/* Blocco Destro: Sala Stampa & Gossip AI Squadrata */}
-            <div className="lg:col-span-8 xl:col-span-8">
-              <PressAndRumorsHomeCard />
-            </div>
+          {/* Blocco 2: LCSIM Media & Sala Stampa (1 Col - Squadrata) */}
+          <div className="lg:col-span-1 h-full">
+            <PressAndRumorsHomeCard layout="stacked" className="h-full" />
           </div>
-        </section>
+        </div>
 
         {/* ========================================================= */}
         {/* NEXT MATCH / OPPONENT SCOUT CARD (WHEN LOGGED IN)         */}

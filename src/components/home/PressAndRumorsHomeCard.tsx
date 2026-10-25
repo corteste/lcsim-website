@@ -13,9 +13,13 @@ import {
 
 interface PressAndRumorsHomeCardProps {
   className?: string;
+  layout?: "stacked" | "side-by-side";
 }
 
-export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({ className = "" }) => {
+export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
+  className = "",
+  layout = "side-by-side",
+}) => {
   const [latestConference, setLatestConference] = useState<PressConference | null>(null);
   const [latestRumor, setLatestRumor] = useState<MarketRumor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,9 +49,11 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({ 
     };
   }, []);
 
+  const isStacked = layout === "stacked";
+
   return (
-    <Card className={`border border-border/80 bg-gradient-to-br from-card/95 via-card/90 to-muted/20 shadow-lg overflow-hidden backdrop-blur-sm ${className}`}>
-      <CardHeader className="py-3 px-4 sm:px-5 border-b border-border/60 bg-muted/20 flex flex-row items-center justify-between gap-2">
+    <Card className={`border border-border/80 bg-card shadow-sm overflow-hidden flex flex-col justify-between ${className}`}>
+      <CardHeader className="py-3 px-4 sm:px-5 border-b border-border/60 bg-muted/20 flex flex-row items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
             <Newspaper className="h-4 w-4" />
@@ -70,9 +76,13 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({ 
         </Link>
       </CardHeader>
 
-      <CardContent className="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <CardContent className={`p-3.5 sm:p-4 flex-1 flex flex-col justify-between ${
+        isStacked ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 gap-3"
+      }`}>
         {/* Blocco 1: Sala Stampa */}
-        <div className="p-3 sm:p-3.5 rounded-xl bg-background/80 border border-border/70 flex flex-col justify-between space-y-2.5 min-h-[145px]">
+        <div className={`p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 ${
+          isStacked ? "flex-1 min-h-[120px]" : "min-h-[145px]"
+        }`}>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
@@ -96,7 +106,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({ 
                     ({latestConference.manager_name || latestConference.team?.MANAGER || "Presidente"})
                   </span>
                 </p>
-                <p className="text-xs italic text-muted-foreground mt-1 line-clamp-3 leading-relaxed">
+                <p className="text-xs italic text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                   "{latestConference.answer || latestConference.question}"
                 </p>
               </div>
@@ -107,13 +117,15 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({ 
             )}
           </div>
 
-          <Link to="/sala-stampa" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 pt-1">
+          <Link to="/sala-stampa" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 pt-0.5">
             Tutte le interviste &rarr;
           </Link>
         </div>
 
         {/* Blocco 2: Gossip di Mercato */}
-        <div className="p-3 sm:p-3.5 rounded-xl bg-background/80 border border-border/70 flex flex-col justify-between space-y-2.5 min-h-[145px]">
+        <div className={`p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 ${
+          isStacked ? "flex-1 min-h-[120px]" : "min-h-[145px]"
+        }`}>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
@@ -134,7 +146,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({ 
                 <p className="text-xs font-bold text-foreground line-clamp-1">
                   {latestRumor.headline}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-3 leading-relaxed">
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                   {latestRumor.content}
                 </p>
               </div>
@@ -145,7 +157,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({ 
             )}
           </div>
 
-          <Link to="/sala-stampa" className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 pt-1">
+          <Link to="/sala-stampa" className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 pt-0.5">
             Leggi le indiscrezioni &rarr;
           </Link>
         </div>
