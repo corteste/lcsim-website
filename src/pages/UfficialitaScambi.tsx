@@ -450,7 +450,7 @@ export default function UfficialitaScambi() {
 
               <div className="pt-6 text-center text-xs text-muted-foreground space-y-2">
                 <p>
-                  I rumor vengono scatenati automaticamente dal nostro agente giornalista o dai manager durante il periodo di calciomercato aperto.
+                  I rumor vengono diffusi spontaneamente dal nostro agente giornalista durante il periodo di calciomercato aperto.
                 </p>
                 <div className="pt-2">
                   <Button variant="outline" size="sm" asChild className="text-xs font-bold gap-2">

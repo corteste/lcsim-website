@@ -923,33 +923,19 @@ export default function AdminAutomazioni() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                <div className="pt-1">
                   <Button
                     variant="outline"
                     onClick={async () => {
-                      toast.info("Generazione domande di giornata in corso...");
+                      toast.info("Generazione domande personalizzate per i 12 club in corso...");
                       const res = await generatePressQuestionsForMatchday(1);
                       if (res.error) toast.error(res.error);
-                      else toast.success(`Generate ${res.generated} domande (${res.skipped} già presenti).`);
+                      else toast.success(`Generate ${res.generated} domande differenziate (${res.skipped} già presenti).`);
                     }}
-                    className="font-bold gap-2 text-xs border-primary/30 hover:bg-primary/10 text-primary"
+                    className="w-full font-bold gap-2 text-xs border-primary/30 hover:bg-primary/10 text-primary py-2.5"
                   >
-                    <Mic2 className="h-3.5 w-3.5" />
-                    Genera Domande Giornata
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      toast.info("Generazione rumor in corso...");
-                      const res = await generateRandomMarketRumors(2, true);
-                      if (res.success) toast.success(`Generati ${res.generated} nuovi rumor!`);
-                      else toast.error(res.error || "Errore generazione rumor.");
-                    }}
-                    className="font-bold gap-2 text-xs border-amber-500/30 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                  >
-                    <Flame className="h-3.5 w-3.5" />
-                    Genera Rumor Mercato
+                    <Mic2 className="h-4 w-4" />
+                    Genera Domande Differenziate per i 12 Club (Giornata 1)
                   </Button>
                 </div>
 

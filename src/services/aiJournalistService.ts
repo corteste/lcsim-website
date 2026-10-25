@@ -85,7 +85,7 @@ async function callGeminiApi(prompt: string, apiKey?: string): Promise<string | 
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.85,
+          temperature: 0.9,
           maxOutputTokens: 600,
         },
       }),
@@ -109,7 +109,14 @@ async function callGeminiApi(prompt: string, apiKey?: string): Promise<string | 
 // 1. SALA STAMPA (PRESS CONFERENCES)
 // -----------------------------------------------------------------------------
 
-export async function fetchPressConferences(matchday?: number, season = 11): Promise<PressConference[]> {
+/**
+ * Recupera le interviste. Di default mostra SOLO quelle a cui un manager ha risposto.
+ */
+export async function fetchPressConferences(
+  matchday?: number,
+  season = 11,
+  onlyAnswered = true
+): Promise<PressConference[]> {
   try {
     let query = supabase
       .from('press_conferences')
@@ -118,6 +125,10 @@ export async function fetchPressConferences(matchday?: number, season = 11): Pro
       .order('matchday', { ascending: false })
       .order('answered_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
+
+    if (onlyAnswered) {
+      query = query.eq('status', 'ANSWERED');
+    }
 
     if (matchday !== undefined && matchday > 0) {
       query = query.eq('matchday', matchday);
@@ -135,7 +146,36 @@ export async function fetchPressConferences(matchday?: number, season = 11): Pro
   }
 }
 
-export async function submitPressAnswer(conferenceId: number, answer: string, managerName?: string): Promise<{ success: boolean; error?: string }> {
+/**
+ * Recupera l'eventuale conferenza stampa ancora in attesa per la squadra specificata
+ */
+export async function fetchPendingConferenceForTeam(
+  teamId: string,
+  season = 11
+): Promise<PressConference | null> {
+  try {
+    const { data, error } = await supabase
+      .from('press_conferences')
+      .select('*, team:an_team!press_conferences_team_id_fkey(NAME, MANAGER), opponent:an_team!press_conferences_opponent_team_id_fkey(NAME, MANAGER)')
+      .eq('season', season)
+      .eq('team_id', teamId)
+      .eq('status', 'PENDING')
+      .order('matchday', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return null;
+    return (data as PressConference) || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function submitPressAnswer(
+  conferenceId: number,
+  answer: string,
+  managerName?: string
+): Promise<{ success: boolean; error?: string }> {
   try {
     if (!answer || answer.trim().length === 0) {
       return { success: false, error: 'Il commento non può essere vuoto.' };
@@ -166,7 +206,10 @@ export async function submitPressAnswer(conferenceId: number, answer: string, ma
   }
 }
 
-export async function generatePressQuestionsForMatchday(matchday: number, season = 11): Promise<{ generated: number; skipped: number; error?: string }> {
+export async function generatePressQuestionsForMatchday(
+  matchday: number,
+  season = 11
+): Promise<{ generated: number; skipped: number; error?: string }> {
   try {
     // 1. Recupera tutti i team attivi
     const { data: teams, error: teamsErr } = await supabase
@@ -178,13 +221,13 @@ export async function generatePressQuestionsForMatchday(matchday: number, season
       return { generated: 0, skipped: 0, error: 'Nessuna squadra attiva trovata.' };
     }
 
-    // 2. Recupera partite in programma o concluse per determinare l'avversaria
+    // 2. Recupera schedule per determinare l'avversaria di giornata
     const { data: schedule } = await supabase
       .from('an_schedule')
       .select('*')
       .eq('week', matchday);
 
-    // 3. Recupera classifica per contesto posizioni
+    // 3. Recupera classifica per contesto
     const { data: standings } = await supabase
       .from('an_standings')
       .select('team_id, points, won, lost, draw, goals_for, goals_against')
@@ -201,7 +244,21 @@ export async function generatePressQuestionsForMatchday(matchday: number, season
       });
     });
 
-    // 4. Recupera interviste già presenti per matchday
+    // 4. Recupera alcuni giocatori di punta per ciascun club per arricchire la specificità della domanda
+    const { data: topPlayers } = await supabase
+      .from('an_player')
+      .select('Nome, Cognome, Squadra, Posiz, OVR')
+      .in('Squadra', teams.map((t: any) => t.TEAM_ID))
+      .order('OVR', { ascending: false })
+      .limit(60);
+
+    const playersByTeam = new Map<string, any[]>();
+    (topPlayers || []).forEach((p: any) => {
+      if (!playersByTeam.has(p.Squadra)) playersByTeam.set(p.Squadra, []);
+      playersByTeam.get(p.Squadra)!.push(p);
+    });
+
+    // 5. Recupera interviste già presenti per matchday
     const { data: existing } = await supabase
       .from('press_conferences')
       .select('team_id')
@@ -213,13 +270,13 @@ export async function generatePressQuestionsForMatchday(matchday: number, season
     let generatedCount = 0;
     let skippedCount = 0;
 
-    for (const team of teams) {
+    for (let i = 0; i < teams.length; i++) {
+      const team = teams[i];
       if (existingTeamIds.has(team.TEAM_ID)) {
         skippedCount++;
         continue;
       }
 
-      // Trova avversaria dal calendario
       let opponentId: string | null = null;
       let isHome = true;
       if (schedule) {
@@ -232,23 +289,30 @@ export async function generatePressQuestionsForMatchday(matchday: number, season
 
       const oppTeam = opponentId ? teams.find((t: any) => t.TEAM_ID === opponentId) : null;
       const st = standingsMap.get(team.TEAM_ID);
-      const rankText = st ? `${st.rank}° posto con ${st.points} pt (${st.won}V-${st.draw}P-${st.lost}S)` : 'Inizio stagione';
+      const rankText = st ? `${st.rank}° in classifica con ${st.points} pt` : 'inizio campionato';
       const oppText = oppTeam ? `${oppTeam.NAME} (${isHome ? 'in casa' : 'in trasferta'})` : 'prossima avversaria';
       const managerName = team.MANAGER || 'Presidente';
 
-      const contextSummary = `Giornata ${matchday}. Squadra: ${team.NAME}. Rendimento: ${rankText}. Prossima sfida vs: ${oppText}.`;
+      const teamStarPlayer = (playersByTeam.get(team.TEAM_ID) || [])[0];
+      const starPlayerText = teamStarPlayer ? `${teamStarPlayer.Nome} ${teamStarPlayer.Cognome} (${teamStarPlayer.Posiz})` : 'i suoi uomini chiave';
 
-      // Generazione Domanda via Gemini o Fallback procedurale
+      const contextSummary = `Giornata ${matchday}. ${team.NAME} (${rankText}). Prossima sfida vs ${oppText}. Stella: ${starPlayerText}.`;
+
+      // Prompt unico e fortemente differenziato
       let question: string | null = null;
-      const geminiPrompt = `Sei un giornalista sportivo esperto, pungente ed educato della Lega LCSIM (stile Sky Sport / Gazzetta).
-Fai UNA SOLA domanda diretta e incalzante al Presidente/Allenatore ${managerName} della squadra "${team.NAME}".
-Contesto della squadra:
-- Campionato: Serie A LCSIM (Giornata ${matchday})
-- Situazione in classifica e rendimento: ${rankText}
-- Prossimo match: contro ${oppText}
+      const geminiPrompt = `Sei un giornalista sportivo di spicco della Lega LCSIM.
+Fai UNA SOLA domanda giornalistica ORIGINALE, pungente e su misura per il Presidente/Mister ${managerName} del "${team.NAME}".
+Contesto:
+- Turno di Serie A: Giornata ${matchday}
+- Situazione attuale della squadra: ${rankText}
+- Prossima partita in programma: contro ${oppText}
+- Calciatore faro della rosa: ${starPlayerText}
+- Indice squadra nel turno: ${i + 1} di 12
 
-La domanda deve stimolare una dichiarazione sincera sulle ambizioni, sulla gestione della rosa o sulla pressione della sfida imminente.
-Rispondi SOLO con il testo della domanda tra virgolette, senza preamboli né spiegazioni.`;
+Istruzioni speciali per differenziare le domande tra i manager:
+- NON fare domande standard o generiche tipo "quali sono i vostri obiettivi?".
+- Alterna temi diversi per ciascun presidente: tattica e modulo, pressione psicologica della piazza, rivalità con ${oppText}, dipendenza dai gol di ${starPlayerText}, turnover, mercato e futuro della panchina.
+- Rispondi ESCLUSIVAMENTE con il testo della domanda tra virgolette, senza frasi di contorno.`;
 
       const aiText = await callGeminiApi(geminiPrompt);
       if (aiText) {
@@ -256,8 +320,15 @@ Rispondi SOLO con il testo della domanda tra virgolette, senza preamboli né spi
       }
 
       if (!question) {
-        // Fallback procedurale di qualità
-        question = generateProceduralPressQuestion(team.NAME, managerName, rankText, oppText, st?.rank || 6);
+        question = generateDifferentiatedProceduralPressQuestion(
+          i,
+          team.NAME,
+          managerName,
+          rankText,
+          oppText,
+          starPlayerText,
+          st?.rank || 6
+        );
       }
 
       const { error: insErr } = await supabase.from('press_conferences').insert({
@@ -285,40 +356,54 @@ Rispondi SOLO con il testo della domanda tra virgolette, senza preamboli né spi
   }
 }
 
-function generateProceduralPressQuestion(
+/**
+ * Generatore procedurale con 12 angolazioni giornalistiche completamente diverse
+ */
+function generateDifferentiatedProceduralPressQuestion(
+  teamIndex: number,
   teamName: string,
   managerName: string,
   rankText: string,
   oppText: string,
+  starPlayerText: string,
   rank: number
 ): string {
-  const templatesTop = [
-    `Presidente ${managerName}, la vetta della classifica premia la continuità del ${teamName}. La prossima sfida contro ${oppText} rappresenta la vera prova di maturità per blindare le vostre ambizioni scudetto?`,
-    `${managerName}, il ruolino di marcia recente è impressionante (${rankText}). Teme che l'entusiasmo della piazza possa trasformarsi in un calo di concentrazione in vista del duello con ${oppText}?`,
-    `I tifosi del ${teamName} sognano in grande. Contro ${oppText} si aspetta una prestazione di autorità o punterete sul pragmatismo per portare a casa i tre punti?`,
+  const angles = [
+    // 0: Pressione e ambizioni
+    `Presidente ${managerName}, il ${teamName} viaggia ${rankText}. La sfida con ${oppText} è considerata da tutti la prova del nove per capire se potete puntare al titolo: avverte la pressione dello spogliatoio?`,
+    // 1: Tattica e modulo
+    `Mister ${managerName}, contro ${oppText} vedremo un atteggiamento coraggioso a viso aperto o punterete su compattezza e ripartenze veloci per imbrigliare il loro gioco?`,
+    // 2: Dipendenza dal leader
+    `${managerName}, tutti gli occhi sono puntati su ${starPlayerText}. Non teme che la squadra rischi di diventare troppo prevedibile appoggiandosi sempre alle sue giocate?`,
+    // 3: Calciomercato & rosa
+    `Presidente ${managerName}, in vista del big match contro ${oppText}, si ritiene pienamente soddisfatto della profondità della rosa o sfrutterà queste ore di mercato per qualche innesto last-minute?`,
+    // 4: Clima e psicologia
+    `Alla vigilia della gara contro ${oppText}, quale messaggio ha voluto dare al gruppo nei giorni scorsi per tenere alta la concentrazione ed evitare cali di tensione?`,
+    // 5: Scontro diretto
+    `${managerName}, i tre punti contro ${oppText} varrebbero doppio per la classifica. Firmerebbe per un pareggio o giocherete soltanto per vincere?`,
+    // 6: Gestione delle energie
+    `Mister ${managerName}, con il calendario serrato della Lega, contro ${oppText} ci sarà spazio per qualche rotazione a sorpresa o confermerà in blocco i fedelissimi?`,
+    // 7: Reazione d'orgoglio
+    `Presidente ${managerName}, i tifosi del ${teamName} chiedono una prestazione di carattere. Contro ${oppText} che tipo di risposta si aspetta dai leader storici della squadra?`,
+    // 8: Fase difensiva
+    `${managerName}, l'attacco di ${oppText} fa paura a mezza lega. Avete studiato contromisure specifiche per neutralizzare le loro bocche di fuoco?`,
+    // 9: Filosofia di gioco
+    `Mister ${managerName}, preferisce vedere un ${teamName} bello e spettacolare o una squadra cinica capace di portare a casa il risultato sporco contro ${oppText}?`,
+    // 10: Rivalità accesa
+    `Presidente ${managerName}, la sfida contro ${oppText} è tradizionalmente ricca di tensione e scintille. Che clima si aspetta in campo e sugli spalti?`,
+    // 11: Fiducia nel progetto
+    `${managerName}, ${rankText} è il vostro attuale biglietto da visita. Dove può arrivare realmente questo ${teamName} al termine della stagione?`,
   ];
 
-  const templatesMid = [
-    `Presidente ${managerName}, il rendimento attuale (${rankText}) tiene il ${teamName} a metà classifica. Cosa manca ancora alla squadra per compiere il definitivo salto di qualità verso la zona podio?`,
-    `La sfida alle porte contro ${oppText} ha il sapore del crocevia stagionale. Che messaggio ha dato al gruppo durante gli allenamenti settimanali?`,
-    `Mister ${managerName}, tra rotazioni necessarie e ricerca di continuità, quale sarà la chiave tattica per scardinare la resistenza di ${oppText}?`,
-  ];
-
-  const templatesBottom = [
-    `Presidente ${managerName}, la classifica attuale (${rankText}) richiede una pronta scossa emotiva. Lo scontro con ${oppText} può essere la partita della svolta per allontanare le polemiche?`,
-    `Il momento non è dei più facili per il ${teamName}. Sente ancora la piena fiducia della dirigenza e quale risposta si aspetta dai leader dello spogliatoio nel match contro ${oppText}?`,
-    `Tifosi e addetti ai lavori attendono una reazione d'orgoglio. Con quale atteggiamento mentale scenderà in campo il ${teamName} contro ${oppText}?`,
-  ];
-
-  const list = rank <= 4 ? templatesTop : rank <= 8 ? templatesMid : templatesBottom;
-  return list[Math.floor(Math.random() * list.length)];
+  const chosenAngle = angles[teamIndex % angles.length];
+  return chosenAngle;
 }
 
 // -----------------------------------------------------------------------------
-// 2. GIORNALISTA AI DI LEGA: RUMOR DI CALCIOMERCATO & GOSSIP
+// 2. GIORNALISTA AI DI LEGA: RUMOR & GOSSIP DI CALCIOMERCATO
 // -----------------------------------------------------------------------------
 
-export async function fetchMarketRumors(limit = 30): Promise<MarketRumor[]> {
+export async function fetchMarketRumors(limit = 40): Promise<MarketRumor[]> {
   try {
     const { data, error } = await supabase
       .from('league_market_rumors')
@@ -343,7 +428,6 @@ export async function reactToRumor(
   reactionType: 'fire' | 'laugh' | 'shock' | 'doubt'
 ): Promise<{ success: boolean; reactions?: Record<string, number> }> {
   try {
-    // Leggi reazioni attuali
     const { data: current, error: readErr } = await supabase
       .from('league_market_rumors')
       .select('reactions')
@@ -376,25 +460,68 @@ export async function checkIsMarketOpen(): Promise<boolean> {
       .eq('automation_key', 'market_toggle')
       .maybeSingle();
 
-    if (!data || !data.details) return true; // Default aperto
+    if (!data || !data.details) return true;
     return data.details.status !== 'closed';
   } catch {
     return true;
   }
 }
 
+/**
+ * Controllo automatico per generare rumor randomici durante la giornata:
+ * Viene eseguito in background quando un utente naviga sul sito.
+ * Se il mercato è aperto e sono passate più di 3-4 ore dall'ultimo rumor (oppure con probabilità casuale),
+ * genera silenziosamente 1 nuovo scoop con giocatori reali.
+ */
+export async function maybeTriggerRandomRumor(): Promise<void> {
+  try {
+    const isOpen = await checkIsMarketOpen();
+    if (!isOpen) return;
+
+    // Controlla data dell'ultimo rumor
+    const { data: latest } = await supabase
+      .from('league_market_rumors')
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const now = Date.now();
+    let shouldGenerate = false;
+
+    if (!latest) {
+      shouldGenerate = true;
+    } else {
+      const lastCreated = new Date(latest.created_at).getTime();
+      const hoursDiff = (now - lastCreated) / (1000 * 60 * 60);
+
+      // Se sono passate più di 3.5 ore genera sempre; oppure se sono passati almeno 45 min con 30% di probabilità
+      if (hoursDiff >= 3.5) {
+        shouldGenerate = true;
+      } else if (hoursDiff >= 0.75 && Math.random() < 0.3) {
+        shouldGenerate = true;
+      }
+    }
+
+    if (shouldGenerate) {
+      await generateRandomMarketRumors(1, false);
+    }
+  } catch (err) {
+    // Silenzioso in background
+  }
+}
+
 export async function generateRandomMarketRumors(
-  count = 2,
+  count = 1,
   force = false
 ): Promise<{ success: boolean; generated: number; error?: string }> {
   try {
-    // 1. Verifica stato mercato
     const isOpen = await checkIsMarketOpen();
     if (!isOpen && !force) {
-      return { success: false, generated: 0, error: 'Il calciomercato è attualmente chiuso. I rumor sono sospesi.' };
+      return { success: false, generated: 0, error: 'Il calciomercato è chiuso. I rumor sono sospesi.' };
     }
 
-    // 2. Recupera club attivi
+    // 1. Recupera club attivi
     const { data: teams } = await supabase
       .from('an_team')
       .select('TEAM_ID, NAME, MANAGER')
@@ -404,89 +531,90 @@ export async function generateRandomMarketRumors(
       return { success: false, generated: 0, error: 'Dati squadre insufficienti.' };
     }
 
-    // 3. Recupera giocatori cedibili o sotto contratto per arricchire i rumor
+    // 2. Recupera giocatori reali sotto contratto dalle rose dei club attivi
     const { data: players } = await supabase
       .from('an_player')
       .select('ID, Nome, Cognome, Squadra, Posiz, OVR')
-      .not('Squadra', 'is', null)
+      .in('Squadra', teams.map((t: any) => t.TEAM_ID))
+      .not('OVR', 'is', null)
       .order('OVR', { ascending: false })
-      .limit(60);
+      .limit(80);
 
-    // 4. Recupera eventuali trattative in corso
+    if (!players || players.length === 0) {
+      return { success: false, generated: 0, error: 'Nessun giocatore reale trovato.' };
+    }
+
+    // 3. Recupera eventuali proposte reali aperte o recenti
     const { data: activeTrades } = await supabase
       .from('market_trades')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(10);
-
-    // 5. Recupera bisogni dichiarati
-    const { data: teamNeeds } = await supabase
-      .from('team_market_needs')
-      .select('*')
-      .limit(20);
+      .limit(8);
 
     let generatedCount = 0;
 
     for (let i = 0; i < count; i++) {
-      // Determina categoria
-      // 40% TRATTATIVA_DISTORTA, 30% FAKE_NEWS, 20% TRATTATIVA_REALE, 10% COLPO_A_SORPRESA
-      const roll = Math.random();
-      let category: RumorCategory = 'FAKE_NEWS';
-      if (roll < 0.40 && activeTrades && activeTrades.length > 0) {
-        category = 'TRATTATIVA_DISTORTA';
-      } else if (roll < 0.70) {
-        category = 'FAKE_NEWS';
-      } else if (roll < 0.90) {
-        category = 'TRATTATIVA_REALE';
-      } else {
-        category = 'COLPO_A_SORPRESA';
-      }
-
-      // Scegli due team casuali
+      // Scegli due club reali differenti
       const teamA = teams[Math.floor(Math.random() * teams.length)];
       let teamB = teams[Math.floor(Math.random() * teams.length)];
       while (teamB.TEAM_ID === teamA.TEAM_ID) {
         teamB = teams[Math.floor(Math.random() * teams.length)];
       }
 
-      // Scegli giocatori casuali appartenenti a uno dei due team se disponibili
-      const teamAPlayers = (players || []).filter((p: any) => p.Squadra === teamA.TEAM_ID);
-      const teamBPlayers = (players || []).filter((p: any) => p.Squadra === teamB.TEAM_ID);
+      // Prendi giocatori reali dei rispettivi due club
+      const teamAPlayers = players.filter((p: any) => p.Squadra === teamA.TEAM_ID);
+      const teamBPlayers = players.filter((p: any) => p.Squadra === teamB.TEAM_ID);
 
-      const playerA = teamAPlayers.length > 0 ? teamAPlayers[Math.floor(Math.random() * teamAPlayers.length)] : (players ? players[0] : null);
-      const playerB = teamBPlayers.length > 0 ? teamBPlayers[Math.floor(Math.random() * teamBPlayers.length)] : (players ? players[1] : null);
+      const playerA = teamAPlayers.length > 0
+        ? teamAPlayers[Math.floor(Math.random() * teamAPlayers.length)]
+        : players[Math.floor(Math.random() * players.length)];
 
-      const playerAName = playerA ? `${playerA.Nome} ${playerA.Cognome}`.trim() : 'il top player';
-      const playerBName = playerB ? `${playerB.Nome} ${playerB.Cognome}`.trim() : 'la stella emergente';
+      const playerB = teamBPlayers.length > 0
+        ? teamBPlayers[Math.floor(Math.random() * teamBPlayers.length)]
+        : players[Math.floor(Math.random() * players.length)];
+
+      const playerAName = `${playerA.Nome} ${playerA.Cognome}`.trim();
+      const playerBName = `${playerB.Nome} ${playerB.Cognome}`.trim();
+
+      // Categoria interna (utilizzata dall'AI per dosare il realismo, ma NON esposta in UI con etichette rivelatrici)
+      const roll = Math.random();
+      let internalCategory: RumorCategory = 'FAKE_NEWS';
+      if (roll < 0.40 && activeTrades && activeTrades.length > 0) {
+        internalCategory = 'TRATTATIVA_DISTORTA';
+      } else if (roll < 0.70) {
+        internalCategory = 'FAKE_NEWS';
+      } else if (roll < 0.90) {
+        internalCategory = 'TRATTATIVA_REALE';
+      } else {
+        internalCategory = 'COLPO_A_SORPRESA';
+      }
+
+      // Badge giornalistici autentici (senza rivelare se è fake o vero!)
+      const journalisticBadges = ['ESCLUSIVA', 'INDISCREZIONE', 'RETROSCENA', 'RADAR MERCATO', 'ULTIM\'ORA'];
+      const credibilityBadge = journalisticBadges[Math.floor(Math.random() * journalisticBadges.length)];
+      const sourceLabel = ['Gianluca Di LCSIM', 'Fabrizio Romano LCSIM Edition', 'Gazzetta del Manager', 'Insider LCSIM TV'][Math.floor(Math.random() * 4)];
 
       let headline = '';
       let content = '';
-      let credibilityScore = 50;
-      let credibilityBadge = 'Indiscrezione';
-      const sourceLabel = ['Gianluca Di LCSIM', 'Fabrizio Romano LCSIM Edition', 'Gazzetta del Manager', 'Insider LCSIM TV'][Math.floor(Math.random() * 4)];
+      const credibilityScore = Math.floor(Math.random() * 45) + 45; // punteggio neutro verosimile (45-90)
 
-      // Prova generazione con Gemini
-      const prompt = `Sei il più famoso giornalista esperto di calciomercato della Lega di Calcio Virtuale LCSIM.
-Scrivi una "Breaking News" di mercato breve, pungente e realistica in lingua italiana.
-Dati a disposizione:
-- Categoria richiesta: ${category}
-- Squadra 1: ${teamA.NAME} (Presidente: ${teamA.MANAGER || 'N/A'})
-- Squadra 2: ${teamB.NAME} (Presidente: ${teamB.MANAGER || 'N/A'})
-- Calciatore 1 coinvolto: ${playerAName} (${playerA?.Posiz || 'ATT'}, OVR ${playerA?.OVR || 78})
-- Calciatore 2 coinvolto: ${playerBName} (${playerB?.Posiz || 'CC'}, OVR ${playerB?.OVR || 76})
+      // Prompt per Gemini con nomi reali di calciatori
+      const prompt = `Sei il più celebre insider di calciomercato della Lega LCSIM (stile Di Marzio / Fabrizio Romano).
+Scrivi una notizia di mercato breve e accattivante in lingua italiana.
+Dettagli reali dei club e dei calciatori:
+- Club 1: ${teamA.NAME} (${teamA.TEAM_ID}) - Presidente: ${teamA.MANAGER || 'N/A'}
+- Club 2: ${teamB.NAME} (${teamB.TEAM_ID}) - Presidente: ${teamB.MANAGER || 'N/A'}
+- Calciatore 1 del ${teamA.NAME}: ${playerAName} (${playerA.Posiz}, OVR ${playerA.OVR})
+- Calciatore 2 del ${teamB.NAME}: ${playerBName} (${playerB.Posiz}, OVR ${playerB.OVR})
 
-Regole per categoria:
-- TRATTATIVA_REALE: Notizia credibile e fondata su contatti reali tra i due club. Credibilità tra 75% e 90%.
-- TRATTATIVA_DISTORTA: La trattativa esiste ma tu "sbagli apposta" o ingigantisci un dettaglio (es. scambi le contropartite, inserisci cifre folli o sostieni che sia saltato tutto per un malinteso). Credibilità tra 45% e 65%.
-- FAKE_NEWS: Notizia inventata di sana pianta, clamorosa, scandalistica o divertente per infiammare la chat della lega (es. tradimento shock, veto presidenziale, clausole assurde). Credibilità tra 10% e 35%.
-- COLPO_A_SORPRESA: Blitz improvviso nella notte per sfilare il giocatore a sorpresa. Credibilità tra 50% e 70%.
-
-Rispondi ESCLUSIVAMENTE in formato JSON valido con questa struttura:
+Linee guida:
+- Usa SEMPRE i nomi e cognomi reali dei calciatori forniti (${playerAName} e/o ${playerBName}) e delle squadre.
+- Stile verosimile e narrativo: parla di contatti telefonici notturni, nodi sull'ingaggio, contropartite tecniche, clausole o vertici improvvisi.
+- IMPORTANTE: NON scrivere mai nel testo che si tratta di una "fake news" o di una notizia finta! Il lettore non deve sapere a priori se è una trattativa reale, una voce distorta o una speculazione infondata.
+- Rispondi ESCLUSIVAMENTE in formato JSON:
 {
-  "headline": "Titolo accattivante stile breaking news con emoji",
-  "content": "Articolo di 2 o 3 paragrafi brevi con dettagli, retroscena e indiscrezioni",
-  "credibility_score": numero intero da 1 a 100,
-  "credibility_badge": "una tra: Pista Calda, Voce di Corridoio, Fake News, Bomba di Mercato, Indiscrezione"
+  "headline": "Titolo d'impatto stile breaking news con emoji (massimo 15 parole)",
+  "content": "Articolo di 2 o 3 paragrafi brevi con dettagli succosi sulla trattativa o sull'interesse"
 }`;
 
       const aiJson = await callGeminiApi(prompt);
@@ -499,30 +627,33 @@ Rispondi ESCLUSIVAMENTE in formato JSON valido con questa struttura:
           if (obj.headline && obj.content) {
             headline = obj.headline;
             content = obj.content;
-            credibilityScore = Math.max(1, Math.min(100, Number(obj.credibility_score) || 50));
-            credibilityBadge = obj.credibility_badge || 'Indiscrezione';
             parsed = true;
           }
-        } catch (e) {
-          console.warn('Fallback al parser procedurale rumor dopo fallimento JSON Gemini');
+        } catch {
+          // Fallback procedurale
         }
       }
 
       if (!parsed) {
-        // Generatore procedurale realistico
-        const proc = generateProceduralRumor(category, teamA.NAME, teamB.NAME, playerAName, playerBName);
+        const proc = generateImmersiveProceduralRumor(
+          internalCategory,
+          teamA.NAME,
+          teamB.NAME,
+          playerAName,
+          playerBName,
+          playerA.Posiz,
+          playerB.Posiz
+        );
         headline = proc.headline;
         content = proc.content;
-        credibilityScore = proc.credibility_score;
-        credibilityBadge = proc.credibility_badge;
       }
 
       const { error: insErr } = await supabase.from('league_market_rumors').insert({
-        category,
+        category: internalCategory,
         headline,
         content,
         involved_team_ids: [teamA.TEAM_ID, teamB.TEAM_ID],
-        involved_player_names: [playerAName, playerBName].filter(Boolean),
+        involved_player_names: [playerAName, playerBName],
         credibility_score: credibilityScore,
         credibility_badge: credibilityBadge,
         source_label: sourceLabel,
@@ -544,44 +675,40 @@ Rispondi ESCLUSIVAMENTE in formato JSON valido con questa struttura:
   }
 }
 
-function generateProceduralRumor(
+/**
+ * Generatore procedurale realistico con nomi veri di calciatori (senza indizi rivelatori)
+ */
+function generateImmersiveProceduralRumor(
   category: RumorCategory,
   teamAName: string,
   teamBName: string,
   playerAName: string,
-  playerBName: string
-): { headline: string; content: string; credibility_score: number; credibility_badge: string } {
-  switch (category) {
-    case 'TRATTATIVA_REALE':
-      return {
-        headline: `🔥 CONTATTI AVANZATI: ${teamAName} spinge per ${playerBName}`,
-        content: `Secondo le ultime indiscrezioni raccolte a tarda notte, ${teamAName} ha allacciato contatti diretti con la dirigenza del ${teamBName}. L'obiettivo numero uno per rinforzare l'organico è ${playerBName}. Le due società stanno discutendo la formula: prestito con diritto di riscatto o trasferimento a titolo definitivo. Filtra ottimismo da entrambe le parti.`,
-        credibility_score: Math.floor(Math.random() * 15) + 75, // 75 - 90
-        credibility_badge: 'Pista Calda',
-      };
+  playerBName: string,
+  posA: string,
+  posB: string
+): { headline: string; content: string } {
+  const templates = [
+    {
+      headline: `🔥 ASSE CALDO: ${teamAName} punta dritto su ${playerBName}!`,
+      content: `Contatti frenetici sull'asse tra ${teamAName} e ${teamBName}. La dirigenza del ${teamAName} è alla ricerca di rinforzi nel ruolo di ${posB} e avrebbe individuato in ${playerBName} il profilo ideale. Sul tavolo si ragiona su una possibile contropartita tecnica o su un accordo con opzione di riscatto a fine stagione. Le parti si aggiorneranno in serata.`
+    },
+    {
+      headline: `⚡ RETROSCENA: Maxi-scambio tra ${playerAName} e ${playerBName}?`,
+      content: `Indiscrezione clamorosa trapelata dai corridoi di mercato: ${teamAName} e ${teamBName} avrebbero discusso a sorpresa un clamoroso scambio che coinvolgerebbe ${playerAName} e ${playerBName}. Secondo gli addetti ai lavori, l'intesa tra i due club sarebbe vicina, ma resta ancora da limare l'accordo con gli entourage dei due calciatori.`
+    },
+    {
+      headline: `🚨 ULTIM'ORA: Sondaggio improvviso del ${teamBName} per ${playerAName}!`,
+      content: `Blitz a sorpresa nelle ultime ore: il ${teamBName} avrebbe effettuato una mossa ufficiale per capire la fattibilità dell'operazione ${playerAName}. Il calciatore del ${teamAName} piace moltissimo per duttilità e valore in campo. Dalla società filtra prudenza, ma i rumors su un'offerta imminente continuano a rimbalzare con insistenza.`
+    },
+    {
+      headline: `💬 TENSIONE MERCATO: ${playerBName} nel mirino del ${teamAName}, muro del ${teamBName}`,
+      content: `Non si placano le voci sul futuro di ${playerBName}. Il ${teamAName} avrebbe recapitato una proposta allettante, trovando però per ora la ferma opposizione del ${teamBName}, che considera il giocatore incedibile. La sensazione tra gli addetti ai lavori è che la partita sia appena cominciata.`
+    },
+    {
+      headline: `🔎 RADAR MERCATO: ${teamAName} valuta la mossa per ${playerBName} in extremis`,
+      content: `Attenzione alle sorprese dell'ultima ora: ${teamAName} sta monitorando con attenzione la situazione di ${playerBName} del ${teamBName}. Se dovesse sbloccarsi un'uscita in quella zona di campo, il presidente potrebbe dare il via libera all'affondo decisivo prima del gong.`
+    }
+  ];
 
-    case 'TRATTATIVA_DISTORTA':
-      return {
-        headline: `⚠️ GIALLO DI MERCATO: Maxiscambio tra ${teamAName} e ${teamBName}?`,
-        content: `Clamoroso retroscena sull'asse tra ${teamAName} e ${teamBName}. Una voce di corridoio insistente riferisce che il passaggio di ${playerAName} al ${teamBName} sarebbe bloccato a causa della richiesta di inserire ${playerBName} come contropartita tecnica obbligatoria. Fonti vicine alla trattativa parlano di un accordo quasi raggiunto, ma i manager smentiscono categoricamente l'esistenza della clausola!`,
-        credibility_score: Math.floor(Math.random() * 20) + 45, // 45 - 65
-        credibility_badge: 'Indiscrezione',
-      };
-
-    case 'FAKE_NEWS':
-      return {
-        headline: `🚨 BOMBA SHOCK: Rottura improvvisa! ${playerAName} pronto a firmare per ${teamBName}?`,
-        content: `Scoppia la bomba del calciomercato LCSIM! Voci clamorose provenienti dall'ambiente del ${teamAName} raccontano di un violento diverbio nello spogliatoio e di ${playerAName} che avrebbe svuotato l'armadietto per accasarsi immediatamente dai rivali storici del ${teamBName}. Gli addetti ai lavori invitano alla calma: sembra a tutti gli effetti la classica fake news di mezza estate orchestrata da agenti provocatori!`,
-        credibility_score: Math.floor(Math.random() * 25) + 10, // 10 - 35
-        credibility_badge: 'Fake News',
-      };
-
-    case 'COLPO_A_SORPRESA':
-      return {
-        headline: `⚡ BLITZ NOTTURNO: ${teamAName} piomba a fari spenti su ${playerBName}!`,
-        content: `Mossa a sorpresa nella notte per il ${teamAName}: approfittando dell'impasse nelle altre trattative, la dirigenza ha recapitato un'offerta formale a sorpresa per ${playerBName} del ${teamBName}. Resta da capire se il ${teamBName} deciderà di sacrificare il proprio giocatore o se rispedirà la proposta al mittente.`,
-        credibility_score: Math.floor(Math.random() * 20) + 50, // 50 - 70
-        credibility_badge: 'Bomba di Mercato',
-      };
-  }
+  return templates[Math.floor(Math.random() * templates.length)];
 }

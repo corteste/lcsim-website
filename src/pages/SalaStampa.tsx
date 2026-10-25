@@ -32,22 +32,21 @@ import {
   Send,
   RefreshCw,
   Key,
-  ShieldAlert,
   Clock,
   CheckCircle2,
   Filter,
   MessageSquare,
-  AlertTriangle,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import {
   fetchPressConferences,
+  fetchPendingConferenceForTeam,
   fetchMarketRumors,
   submitPressAnswer,
   generatePressQuestionsForMatchday,
-  generateRandomMarketRumors,
+  maybeTriggerRandomRumor,
   reactToRumor,
   getGeminiApiKey,
   setGeminiApiKey,
@@ -66,15 +65,12 @@ export default function SalaStampa() {
   const [loadingRumors, setLoadingRumors] = useState(true);
   const [isMarketOpen, setIsMarketOpen] = useState(true);
 
-  // Filtri Sala Stampa
+  // Filtri Sala Stampa (mostrate solo interviste a cui un manager ha risposto)
   const [selectedMatchday, setSelectedMatchday] = useState<string>("ALL");
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
 
-  // Filtri Rumor
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-
-  // Risposta Manager
+  // Intervista in attesa per la squadra del manager loggato
+  const [pendingForMyTeam, setPendingForMyTeam] = useState<PressConference | null>(null);
   const [myAnswerText, setMyAnswerText] = useState("");
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
 
@@ -82,9 +78,8 @@ export default function SalaStampa() {
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
 
-  // Azioni Generative
+  // Azioni Amministrazione (solo per generare le domande di inizio giornata per i club)
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
-  const [isGeneratingRumors, setIsGeneratingRumors] = useState(false);
 
   // Caricamento Dati
   const loadData = async () => {
@@ -92,15 +87,20 @@ export default function SalaStampa() {
     setLoadingRumors(true);
 
     try {
-      const [pressData, rumorsData, marketStatus] = await Promise.all([
-        fetchPressConferences(),
-        fetchMarketRumors(50),
+      // Trigger automatico silenzioso per rumor randomici durante la giornata se il mercato è aperto
+      maybeTriggerRandomRumor();
+
+      const [pressData, rumorsData, marketStatus, myPending] = await Promise.all([
+        fetchPressConferences(undefined, 11, true), // onlyAnswered = true
+        fetchMarketRumors(40),
         checkIsMarketOpen(),
+        effectiveTeam ? fetchPendingConferenceForTeam(effectiveTeam, 11) : Promise.resolve(null),
       ]);
 
       setConferences(pressData);
       setRumors(rumorsData);
       setIsMarketOpen(marketStatus);
+      setPendingForMyTeam(myPending);
     } catch (err) {
       console.error("Errore caricamento Sala Stampa:", err);
       toast.error("Errore durante il caricamento dei contenuti.");
@@ -114,15 +114,7 @@ export default function SalaStampa() {
     loadData();
     const currentKey = getGeminiApiKey();
     if (currentKey) setApiKeyInput(currentKey);
-  }, []);
-
-  // Identifica se c'è un'intervista in attesa per la squadra dell'utente connesso
-  const pendingForMyTeam = useMemo(() => {
-    if (!effectiveTeam) return null;
-    return conferences.find(
-      (c) => c.team_id === effectiveTeam && c.status === "PENDING"
-    );
-  }, [conferences, effectiveTeam]);
+  }, [effectiveTeam]);
 
   // Invio Risposta Manager
   const handleAnswerSubmit = async (conferenceId: number) => {
@@ -140,8 +132,9 @@ export default function SalaStampa() {
       );
 
       if (res.success) {
-        toast.success("Dichiarazione ufficiale registrata e pubblicata in Sala Stampa!");
+        toast.success("Dichiarazione ufficiale registrata! Ora è visibile nella Sala Stampa pubblica.");
         setMyAnswerText("");
+        setPendingForMyTeam(null);
         loadData();
       } else {
         toast.error(res.error || "Errore durante il salvataggio.");
@@ -166,18 +159,18 @@ export default function SalaStampa() {
     }
   };
 
-  // Generazione Manuale Domande (Admin o quando lista vuota)
+  // Generazione Domande (Solo Admin da interfaccia o automazione turno)
   const handleGenerateQuestions = async () => {
     try {
       setIsGeneratingQuestions(true);
-      toast.info("Generazione domande della Sala Stampa in corso con l'AI...");
+      toast.info("Generazione domande differenziate per ciascun club in corso...");
       const matchday = selectedMatchday !== "ALL" ? Number(selectedMatchday) : 1;
       const res = await generatePressQuestionsForMatchday(matchday);
       if (res.error) {
         toast.error(res.error);
       } else {
         toast.success(
-          `Completato! ${res.generated} nuove domande generate (${res.skipped} già presenti).`
+          `Generate ${res.generated} domande personalizzate (${res.skipped} già inviate ai manager).`
         );
         loadData();
       }
@@ -188,25 +181,6 @@ export default function SalaStampa() {
     }
   };
 
-  // Generazione Rumor AI
-  const handleGenerateRumors = async () => {
-    try {
-      setIsGeneratingRumors(true);
-      toast.info("Il Giornalista AI sta scandagliando il mercato alla ricerca di rumor...");
-      const res = await generateRandomMarketRumors(2, isAdmin);
-      if (res.success) {
-        toast.success(`Generati ${res.generated} nuovi rumor di calciomercato!`);
-        loadData();
-      } else {
-        toast.error(res.error || "Impossibile generare rumor.");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Errore imprevisto.");
-    } finally {
-      setIsGeneratingRumors(false);
-    }
-  };
-
   // Salvataggio Chiave API
   const handleSaveApiKey = () => {
     setGeminiApiKey(apiKeyInput.trim());
@@ -214,23 +188,14 @@ export default function SalaStampa() {
     setApiKeyModalOpen(false);
   };
 
-  // Filtro Conferenze
+  // Filtro Conferenze (mostrate solo le interviste con risposta effettiva)
   const filteredConferences = useMemo(() => {
     return conferences.filter((c) => {
       if (selectedMatchday !== "ALL" && String(c.matchday) !== selectedMatchday) return false;
       if (selectedTeam !== "ALL" && c.team_id !== selectedTeam) return false;
-      if (selectedStatus !== "ALL" && c.status !== selectedStatus) return false;
       return true;
     });
-  }, [conferences, selectedMatchday, selectedTeam, selectedStatus]);
-
-  // Filtro Rumor
-  const filteredRumors = useMemo(() => {
-    return rumors.filter((r) => {
-      if (selectedCategory !== "ALL" && r.category !== selectedCategory) return false;
-      return true;
-    });
-  }, [rumors, selectedCategory]);
+  }, [conferences, selectedMatchday, selectedTeam]);
 
   // Giornate disponibili per dropdown
   const matchdaysList = useMemo(() => {
@@ -239,25 +204,19 @@ export default function SalaStampa() {
     return Array.from(set).sort((a, b) => b - a);
   }, [conferences]);
 
-  const getBadgeVariant = (category: string) => {
-    switch (category) {
-      case "TRATTATIVA_REALE":
-        return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
-      case "TRATTATIVA_DISTORTA":
-        return "bg-amber-500/10 text-amber-600 border-amber-500/20";
-      case "FAKE_NEWS":
-        return "bg-rose-500/10 text-rose-600 border-rose-500/20";
-      case "COLPO_A_SORPRESA":
-        return "bg-purple-500/10 text-purple-600 border-purple-500/20";
+  const getJournalisticBadgeStyle = (badge: string) => {
+    switch (badge) {
+      case "ESCLUSIVA":
+        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30";
+      case "ULTIM'ORA":
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
+      case "RETROSCENA":
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30";
+      case "RADAR MERCATO":
+        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30";
     }
-  };
-
-  const getCredibilityBadgeColor = (score: number) => {
-    if (score >= 70) return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
-    if (score >= 40) return "text-amber-500 bg-amber-500/10 border-amber-500/20";
-    return "text-rose-500 bg-rose-500/10 border-rose-500/20";
   };
 
   return (
@@ -276,7 +235,7 @@ export default function SalaStampa() {
                 LCSIM Media Hub • Live
               </span>
               <span className="text-xs text-muted-foreground">
-                Conferenze Stampa, Interviste AI & Gossip di Mercato
+                Conferenze Stampa Ufficiali & Notiziario Calciomercato
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
@@ -284,7 +243,7 @@ export default function SalaStampa() {
               Sala Stampa & Rumor di Mercato
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Spazio ufficiale dedicato alle dichiarazioni dei presidenti e alle indiscrezioni esclusive del Giornalista AI.
+              Spazio ufficiale dedicato alle interviste dei presidenti e alle indiscrezioni esclusive del Giornalista AI.
             </p>
           </div>
 
@@ -317,7 +276,7 @@ export default function SalaStampa() {
         </div>
 
         {/* ========================================================= */}
-        {/* CARD DICHIARAZIONE IN ATTESA PER IL MANAGER COLLEGATO */}
+        {/* BOX INTERATTIVO PER IL MANAGER SE HA UNA DOMANDA DA RISPONDERE */}
         {/* ========================================================= */}
         {pendingForMyTeam && (
           <Card className="border-2 border-primary/40 bg-gradient-to-r from-primary/5 via-card to-primary/10 shadow-lg animate-in fade-in">
@@ -329,15 +288,15 @@ export default function SalaStampa() {
                   </div>
                   <div>
                     <CardTitle className="text-lg font-bold">
-                      Microfono Aperto: Sala Stampa Giornata {pendingForMyTeam.matchday}
+                      Microfono Aperto: Intervista Giornata {pendingForMyTeam.matchday}
                     </CardTitle>
                     <CardDescription className="text-xs">
-                      Il Giornalista AI della Lega ti attende per la conferenza ufficiale pre/post gara.
+                      Il Giornalista AI della Lega ti ha rivolto una domanda ufficiale. Rilascia la tua dichiarazione per pubblicarla in Sala Stampa.
                     </CardDescription>
                   </div>
                 </div>
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold">
-                  In Attesa di Risposta
+                  In Attesa della tua risposta
                 </Badge>
               </div>
             </CardHeader>
@@ -352,20 +311,20 @@ export default function SalaStampa() {
                 </p>
                 {pendingForMyTeam.context_summary && (
                   <div className="mt-2 text-[11px] text-muted-foreground border-t border-border/40 pt-1.5">
-                    <strong>Contesto gara:</strong> {pendingForMyTeam.context_summary}
+                    <strong>Focus:</strong> {pendingForMyTeam.context_summary}
                   </div>
                 )}
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-foreground flex items-center justify-between">
-                  <span>La tua dichiarazione ufficiale da Presidente / Allenatore:</span>
+                  <span>La tua risposta ufficiale da Presidente / Allenatore:</span>
                   <span className="text-[11px] text-muted-foreground">
                     {myAnswerText.length}/400 caratteri
                   </span>
                 </label>
                 <Textarea
-                  placeholder="Rispondi alla domanda dei media (es. 'Siamo concentrati sull'obiettivo, il gruppo ha lavorato duramente in settimana e in campo daremo tutto...')"
+                  placeholder="Inserisci la tua dichiarazione (es. 'Siamo pienamente focalizzati sulla prestazione. In campo vogliamo imporre la nostra identità e daremo tutto fino all'ultimo minuto...')"
                   value={myAnswerText}
                   onChange={(e) => setMyAnswerText(e.target.value.slice(0, 400))}
                   rows={3}
@@ -377,14 +336,14 @@ export default function SalaStampa() {
               <Button
                 onClick={() => handleAnswerSubmit(pendingForMyTeam.id)}
                 disabled={isSubmittingAnswer || !myAnswerText.trim()}
-                className="gap-2"
+                className="gap-2 font-bold"
               >
                 {isSubmittingAnswer ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
-                Rilascia Dichiarazione Ufficiale
+                Pubblica Dichiarazione Ufficiale
               </Button>
             </CardFooter>
           </Card>
@@ -406,20 +365,20 @@ export default function SalaStampa() {
           </TabsList>
 
           {/* ------------------------------------------------------------- */}
-          {/* TAB 1: INTERVISTE & CONFERENZE STAMPA */}
+          {/* TAB 1: INTERVISTE & CONFERENZE STAMPA (SOLO RISPOSTE) */}
           {/* ------------------------------------------------------------- */}
           <TabsContent value="press" className="space-y-6">
-            {/* Barra filtri & Azioni Admin */}
+            {/* Barra filtri */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-card border border-border/80 shadow-sm">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-muted-foreground">Filtra per:</span>
+                  <span className="text-xs font-semibold text-muted-foreground">Filtra dichiarazioni:</span>
                 </div>
 
                 {/* Filtro Giornata */}
                 <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
-                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                  <SelectTrigger className="w-[150px] h-8 text-xs">
                     <SelectValue placeholder="Giornata" />
                   </SelectTrigger>
                   <SelectContent>
@@ -434,7 +393,7 @@ export default function SalaStampa() {
 
                 {/* Filtro Squadra */}
                 <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                  <SelectTrigger className="w-[170px] h-8 text-xs">
                     <SelectValue placeholder="Squadra" />
                   </SelectTrigger>
                   <SelectContent>
@@ -446,28 +405,16 @@ export default function SalaStampa() {
                     ))}
                   </SelectContent>
                 </Select>
-
-                {/* Filtro Stato */}
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-[140px] h-8 text-xs">
-                    <SelectValue placeholder="Stato" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">Tutti gli Stati</SelectItem>
-                    <SelectItem value="ANSWERED">Dichiarati</SelectItem>
-                    <SelectItem value="PENDING">In Attesa</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
-              {/* Azioni Amministrazione */}
+              {/* Azione Admin per generare il blocco domande di un turno */}
               {isAdmin && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateQuestions}
                   disabled={isGeneratingQuestions}
-                  className="gap-2 text-xs border-primary/30 text-primary hover:bg-primary/5 self-start md:self-auto"
+                  className="gap-2 text-xs border-primary/30 text-primary hover:bg-primary/5 self-start md:self-auto font-bold"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   {isGeneratingQuestions ? "Generazione in corso..." : "Genera Domande Giornata"}
@@ -475,121 +422,87 @@ export default function SalaStampa() {
               )}
             </div>
 
-            {/* Griglia Conferenze */}
+            {/* Griglia Conferenze (Vengono mostrate ESCLUSIVAMENTE quelle risposte) */}
             {loadingPress ? (
               <div className="flex flex-col items-center justify-center py-16 space-y-3">
                 <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Caricamento conferenze stampa in corso...</p>
+                <p className="text-sm text-muted-foreground">Caricamento dichiarazioni ufficiali...</p>
               </div>
             ) : filteredConferences.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-border/80 bg-muted/20">
                 <Mic2 className="h-12 w-12 text-muted-foreground/40 mb-3" />
-                <h3 className="text-base font-semibold">Nessuna conferenza stampa trovata</h3>
+                <h3 className="text-base font-semibold">Nessuna conferenza stampa rilasciata al momento</h3>
                 <p className="text-xs text-muted-foreground max-w-sm mt-1">
-                  Non ci sono ancora interviste registrate con i filtri selezionati.
-                  {isAdmin && " Come Admin, puoi cliccare sul pulsante 'Genera Domande Giornata' in alto a destra."}
+                  Vengono pubblicate qui solo le interviste a cui i presidenti hanno effettivamente risposto.
+                  {pendingForMyTeam ? " Puoi rilasciare subito la tua dichiarazione nel box in alto!" : " Le risposte dei manager compariranno qui non appena registrate."}
                 </p>
-                {isAdmin && (
-                  <Button
-                    size="sm"
-                    onClick={handleGenerateQuestions}
-                    disabled={isGeneratingQuestions}
-                    className="mt-4 gap-2 text-xs"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Genera Domande per la Giornata
-                  </Button>
-                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredConferences.map((conf) => {
-                  const isAnswered = conf.status === "ANSWERED";
-                  return (
-                    <Card
-                      key={conf.id}
-                      className={`border transition-all duration-200 hover:shadow-md ${
-                        isAnswered ? "border-border/80 bg-card" : "border-amber-500/30 bg-amber-500/[0.02]"
-                      }`}
-                    >
-                      <CardHeader className="pb-3 border-b border-border/60 bg-muted/10">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary font-black text-xs flex items-center justify-center border border-primary/20">
-                              {conf.team_id}
-                            </div>
-                            <div>
-                              <CardTitle className="text-sm font-bold leading-tight">
-                                {conf.team?.NAME || conf.team_id}
-                              </CardTitle>
-                              <CardDescription className="text-[11px]">
-                                {conf.manager_name || conf.team?.MANAGER || "Presidente"}
-                              </CardDescription>
-                            </div>
+                {filteredConferences.map((conf) => (
+                  <Card
+                    key={conf.id}
+                    className="border border-border/80 bg-card transition-all duration-200 hover:shadow-md"
+                  >
+                    <CardHeader className="pb-3 border-b border-border/60 bg-muted/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary font-black text-xs flex items-center justify-center border border-primary/20">
+                            {conf.team_id}
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px] font-bold">
-                              G{conf.matchday}
-                            </Badge>
-                            {isAnswered ? (
-                              <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold flex items-center gap-1">
-                                <CheckCircle2 className="h-2.5 w-2.5" />
-                                Rilasciata
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold flex items-center gap-1">
-                                <Clock className="h-2.5 w-2.5" />
-                                In Attesa
-                              </Badge>
-                            )}
+                          <div>
+                            <CardTitle className="text-sm font-bold leading-tight">
+                              {conf.team?.NAME || conf.team_id}
+                            </CardTitle>
+                            <CardDescription className="text-[11px]">
+                              {conf.manager_name || conf.team?.MANAGER || "Presidente"}
+                            </CardDescription>
                           </div>
                         </div>
-                      </CardHeader>
 
-                      <CardContent className="pt-4 space-y-4">
-                        {/* Domanda Giornalista */}
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                            <Mic2 className="h-3 w-3 text-primary" />
-                            Domanda Giornalista AI:
-                          </div>
-                          <p className="text-xs font-semibold italic text-foreground bg-muted/30 p-2.5 rounded-lg border border-border/60">
-                            "{conf.question}"
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] font-bold">
+                            Giornata {conf.matchday}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="h-2.5 w-2.5" />
+                            Ufficiale
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-4 space-y-4">
+                      {/* Domanda Giornalista */}
+                      <div className="space-y-1.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                          <Mic2 className="h-3 w-3 text-primary" />
+                          Domanda Giornalista AI:
+                        </div>
+                        <p className="text-xs font-semibold italic text-foreground bg-muted/30 p-2.5 rounded-lg border border-border/60">
+                          "{conf.question}"
+                        </p>
+                      </div>
+
+                      {/* Risposta Presidente */}
+                      <div className="space-y-1.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <MessageSquare className="h-3 w-3" />
+                          Dichiarazione Presidente:
+                        </div>
+
+                        <div className="text-xs text-foreground bg-primary/5 border border-primary/20 p-3 rounded-lg relative">
+                          <p className="font-normal leading-relaxed">
+                            "{conf.answer}"
                           </p>
-                        </div>
-
-                        {/* Risposta Presidente */}
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                            <MessageSquare className="h-3 w-3 text-emerald-500" />
-                            Dichiarazione Presidente:
+                          <div className="text-[10px] text-muted-foreground text-right mt-1.5 font-mono">
+                            {conf.answered_at ? new Date(conf.answered_at).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" }) : ""}
                           </div>
-
-                          {isAnswered && conf.answer ? (
-                            <div className="text-xs text-foreground bg-primary/5 border border-primary/20 p-3 rounded-lg relative">
-                              <p className="font-normal leading-relaxed">
-                                "{conf.answer}"
-                              </p>
-                              <div className="text-[10px] text-muted-foreground text-right mt-1.5 font-mono">
-                                {conf.answered_at ? new Date(conf.answered_at).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" }) : ""}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-xs text-muted-foreground italic bg-muted/20 border border-dashed border-border/80 p-3 rounded-lg flex items-center justify-between">
-                              <span>In attesa che il Presidente rilasci la dichiarazione...</span>
-                              {effectiveTeam === conf.team_id && (
-                                <Badge className="text-[10px] bg-primary text-primary-foreground">
-                                  Tocca a te
-                                </Badge>
-                              )}
-                            </div>
-                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </TabsContent>
@@ -598,45 +511,25 @@ export default function SalaStampa() {
           {/* TAB 2: GOSSIP & RUMOR DI CALCIOMERCATO */}
           {/* ------------------------------------------------------------- */}
           <TabsContent value="rumors" className="space-y-6">
-            {/* Market Banner & Controls */}
-            <div className="p-4 rounded-xl bg-card border border-border/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      isMarketOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                    }`}
-                  />
-                  <span className="text-xs font-bold uppercase tracking-wider">
-                    {isMarketOpen ? "Calciomercato LCSIM Aperto" : "Calciomercato Chiuso"}
-                  </span>
-                </div>
-
-                {/* Filtro Categoria */}
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[180px] h-8 text-xs">
-                    <SelectValue placeholder="Categoria Rumor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">Tutti i Rumor</SelectItem>
-                    <SelectItem value="TRATTATIVA_REALE">Trattative Reali</SelectItem>
-                    <SelectItem value="TRATTATIVA_DISTORTA">Trattative Distorte</SelectItem>
-                    <SelectItem value="FAKE_NEWS">Fake News</SelectItem>
-                    <SelectItem value="COLPO_A_SORPRESA">Colpi a Sorpresa</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Banner Stato Mercato & Info Feed */}
+            <div className="p-4 rounded-xl bg-card border border-border/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    isMarketOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                  }`}
+                />
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  {isMarketOpen ? "Calciomercato LCSIM Aperto" : "Calciomercato Chiuso"}
+                </span>
+                <span className="text-muted-foreground text-xs">•</span>
+                <span className="text-xs text-muted-foreground">
+                  I rumor emergono spontaneamente durante la giornata dal monitoraggio di trattative e spogliatoi.
+                </span>
               </div>
 
-              <div className="flex items-center gap-2 self-start md:self-auto">
-                <Button
-                  size="sm"
-                  onClick={handleGenerateRumors}
-                  disabled={isGeneratingRumors || (!isMarketOpen && !isAdmin)}
-                  className="gap-2 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold"
-                >
-                  <Flame className="h-3.5 w-3.5" />
-                  {isGeneratingRumors ? "Il giornalista indaga..." : "Scatena Rumor (AI)"}
-                </Button>
+              <div className="text-[11px] font-mono text-muted-foreground">
+                Feed aggiornato automaticamente
               </div>
             </div>
 
@@ -646,26 +539,17 @@ export default function SalaStampa() {
                 <RefreshCw className="h-8 w-8 animate-spin text-amber-500" />
                 <p className="text-sm text-muted-foreground">Scansione bacheca e indiscrezioni in corso...</p>
               </div>
-            ) : filteredRumors.length === 0 ? (
+            ) : rumors.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-border/80 bg-muted/20">
                 <Flame className="h-12 w-12 text-muted-foreground/40 mb-3" />
-                <h3 className="text-base font-semibold">Nessun rumor di mercato presente</h3>
+                <h3 className="text-base font-semibold">Nessun rumor registrato al momento</h3>
                 <p className="text-xs text-muted-foreground max-w-sm mt-1">
-                  Non ci sono ancora voci o scoop registrati. Clicca su 'Scatena Rumor (AI)' per generare notizie fresche.
+                  Il giornalista sta setacciando le trattative. Nuove indiscrezioni appariranno spontaneamente durante la giornata.
                 </p>
-                <Button
-                  size="sm"
-                  onClick={handleGenerateRumors}
-                  disabled={isGeneratingRumors}
-                  className="mt-4 gap-2 text-xs bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  <Flame className="h-3.5 w-3.5" />
-                  Genera i Primi Rumor
-                </Button>
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredRumors.map((rumor) => (
+                {rumors.map((rumor) => (
                   <Card
                     key={rumor.id}
                     className="border border-border/80 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow"
@@ -678,11 +562,8 @@ export default function SalaStampa() {
                             {rumor.source_label}
                           </span>
                           <span className="text-muted-foreground text-xs">•</span>
-                          <Badge variant="outline" className={`text-[10px] font-bold ${getBadgeVariant(rumor.category)}`}>
-                            {rumor.category.replace(/_/g, " ")}
-                          </Badge>
-                          <Badge variant="outline" className={`text-[10px] font-mono font-bold ${getCredibilityBadgeColor(rumor.credibility_score)}`}>
-                            {rumor.credibility_badge} ({rumor.credibility_score}%)
+                          <Badge variant="outline" className={`text-[10px] font-bold ${getJournalisticBadgeStyle(rumor.credibility_badge)}`}>
+                            {rumor.credibility_badge}
                           </Badge>
                         </div>
 
@@ -705,25 +586,25 @@ export default function SalaStampa() {
                         {rumor.content}
                       </p>
 
-                      {/* Tag Club e Calciatori */}
-                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40">
-                        {rumor.involved_team_ids && rumor.involved_team_ids.length > 0 && (
+                      {/* Tag Calciatori & Club Coinvolti */}
+                      <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/40">
+                        {rumor.involved_player_names && rumor.involved_player_names.length > 0 && (
                           <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <strong>Club coinvolti:</strong>
+                            <strong>Nomi caldi:</strong>
+                            <span className="font-semibold text-foreground">
+                              {rumor.involved_player_names.join(", ")}
+                            </span>
+                          </div>
+                        )}
+
+                        {rumor.involved_team_ids && rumor.involved_team_ids.length > 0 && (
+                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground ml-auto">
+                            <strong>Società interessate:</strong>
                             {rumor.involved_team_ids.map((tid) => (
                               <Badge key={tid} variant="secondary" className="text-[10px] px-1.5 py-0 font-bold">
                                 {tid}
                               </Badge>
                             ))}
-                          </div>
-                        )}
-
-                        {rumor.involved_player_names && rumor.involved_player_names.length > 0 && (
-                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground ml-auto">
-                            <strong>Protagonisti:</strong>
-                            <span className="font-semibold text-foreground">
-                              {rumor.involved_player_names.join(", ")}
-                            </span>
                           </div>
                         )}
                       </div>
@@ -751,7 +632,7 @@ export default function SalaStampa() {
                           size="sm"
                           onClick={() => handleReaction(rumor.id, "laugh")}
                           className="h-7 px-2 text-xs gap-1 hover:bg-yellow-500/10 hover:text-yellow-600"
-                          title="Fake news totale / Risate!"
+                          title="Buffonata / Risate!"
                         >
                           <Laugh className="h-3.5 w-3.5 text-yellow-500" />
                           <span className="font-mono text-[11px] font-bold">{rumor.reactions?.laugh || 0}</span>
@@ -762,7 +643,7 @@ export default function SalaStampa() {
                           size="sm"
                           onClick={() => handleReaction(rumor.id, "shock")}
                           className="h-7 px-2 text-xs gap-1 hover:bg-purple-500/10 hover:text-purple-600"
-                          title="Shock / Colpo incredibile!"
+                          title="Colpo incredibile / Shock!"
                         >
                           <Zap className="h-3.5 w-3.5 text-purple-500" />
                           <span className="font-mono text-[11px] font-bold">{rumor.reactions?.shock || 0}</span>
@@ -773,7 +654,7 @@ export default function SalaStampa() {
                           size="sm"
                           onClick={() => handleReaction(rumor.id, "doubt")}
                           className="h-7 px-2 text-xs gap-1 hover:bg-blue-500/10 hover:text-blue-600"
-                          title="Ho seri dubbi..."
+                          title="Ho forti dubbi..."
                         >
                           <HelpCircle className="h-3.5 w-3.5 text-blue-500" />
                           <span className="font-mono text-[11px] font-bold">{rumor.reactions?.doubt || 0}</span>
@@ -798,7 +679,7 @@ export default function SalaStampa() {
                 Chiave API Google Gemini (Gratuita)
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Inserisci la tua API Key di <strong>Google AI Studio</strong> per abilitare la generazione iper-realistica e contestuale delle interviste e dei rumor di mercato.
+                Inserisci la tua API Key di <strong>Google AI Studio</strong> per potenziare le interviste e le voci di mercato con il modello di intelligenza artificiale.
               </DialogDescription>
             </DialogHeader>
 
@@ -819,7 +700,7 @@ export default function SalaStampa() {
                   100% Gratuito & Istantaneo
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Puoi ottenere gratuitamente una chiave API in 1 minuto su{" "}
+                  Puoi ottenere gratuitamente una chiave API su{" "}
                   <a
                     href="https://aistudio.google.com/app/apikey"
                     target="_blank"
@@ -828,10 +709,10 @@ export default function SalaStampa() {
                   >
                     Google AI Studio
                   </a>
-                  . Il tier gratuito offre fino a 1.500 richieste al giorno (più che sufficienti per tutta la stagione).
+                  . Il tier free include fino a 1.500 chiamate giornaliere.
                 </p>
                 <p className="text-[11px] text-muted-foreground italic">
-                  Se non inserisci alcuna chiave, il sistema utilizzerà automaticamente il <strong>generatore procedurale interno</strong> senza alcuna interruzione.
+                  Se non configuri alcuna chiave, il sistema utilizzerà automaticamente il <strong>generatore procedurale interno</strong> con calciatori reali e squadre della lega.
                 </p>
               </div>
             </div>

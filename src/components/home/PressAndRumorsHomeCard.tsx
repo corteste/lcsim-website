@@ -25,7 +25,7 @@ export const PressAndRumorsHomeCard: React.FC = () => {
           fetchMarketRumors(3),
         ]);
         if (isMounted) {
-          const answered = press.find((p) => p.status === "ANSWERED") || press[0] || null;
+          const answered = press.find((p) => p.status === "ANSWERED") || null;
           setLatestConference(answered);
           setLatestRumor(rumors[0] || null);
         }
@@ -136,7 +136,7 @@ export const PressAndRumorsHomeCard: React.FC = () => {
               </div>
             ) : (
               <p className="text-xs text-muted-foreground italic py-2">
-                Nessun rumor recente. Entra in Sala Stampa per scatenare le voci di mercato!
+                Nessun rumor recente. Entra in Sala Stampa per consultare le indiscrezioni di mercato!
               </p>
             )}
           </div>
