@@ -11,7 +11,11 @@ import {
   MarketRumor,
 } from "@/services/aiJournalistService";
 
-export const PressAndRumorsHomeCard: React.FC = () => {
+interface PressAndRumorsHomeCardProps {
+  className?: string;
+}
+
+export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({ className = "" }) => {
   const [latestConference, setLatestConference] = useState<PressConference | null>(null);
   const [latestRumor, setLatestRumor] = useState<MarketRumor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,107 +46,107 @@ export const PressAndRumorsHomeCard: React.FC = () => {
   }, []);
 
   return (
-    <Card className="border border-border/80 bg-gradient-to-br from-card via-card/95 to-muted/30 shadow-md overflow-hidden">
-      <CardHeader className="py-4 px-6 border-b border-border/60 bg-muted/10 flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+    <Card className={`border border-border/80 bg-gradient-to-br from-card/95 via-card/90 to-muted/20 shadow-lg overflow-hidden backdrop-blur-sm ${className}`}>
+      <CardHeader className="py-3 px-4 sm:px-5 border-b border-border/60 bg-muted/20 flex flex-row items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
             <Newspaper className="h-4 w-4" />
           </div>
-          <div>
-            <CardTitle className="text-sm md:text-base font-bold flex items-center gap-2">
-              LCSIM Media & Sala Stampa
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="min-w-0">
+            <CardTitle className="text-xs sm:text-sm font-bold flex items-center gap-2 truncate">
+              <span>LCSIM Media & Sala Stampa</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground">
-              Dichiarazioni ufficiali dei presidenti e indiscrezioni del Giornalista AI
+            <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
+              Dichiarazioni ufficiali e indiscrezioni del Giornalista AI
             </p>
           </div>
         </div>
 
-        <Link to="/sala-stampa">
-          <Button variant="ghost" size="sm" className="h-8 text-xs gap-1 text-primary hover:text-primary font-bold">
-            Apri Sala Stampa <ArrowRight className="h-3 w-3" />
+        <Link to="/sala-stampa" className="shrink-0">
+          <Button variant="ghost" size="sm" className="h-7 text-[11px] gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 font-bold px-2">
+            Apri <ArrowRight className="h-3 w-3" />
           </Button>
         </Link>
       </CardHeader>
 
-      <CardContent className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CardContent className="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Blocco 1: Sala Stampa */}
-        <div className="p-4 rounded-xl bg-background/60 border border-border/70 flex flex-col justify-between space-y-3">
-          <div className="space-y-2">
+        <div className="p-3 sm:p-3.5 rounded-xl bg-background/80 border border-border/70 flex flex-col justify-between space-y-2.5 min-h-[145px]">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-bold flex items-center gap-1">
-                <Mic2 className="h-3 w-3" />
+              <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
+                <Mic2 className="h-2.5 w-2.5" />
                 Sala Stampa
               </Badge>
               {latestConference && (
                 <span className="text-[10px] font-mono text-muted-foreground font-bold">
-                  Giornata {latestConference.matchday}
+                  G{latestConference.matchday}
                 </span>
               )}
             </div>
 
             {loading ? (
-              <p className="text-xs text-muted-foreground italic py-2">Caricamento...</p>
+              <p className="text-xs text-muted-foreground italic py-1">Caricamento...</p>
             ) : latestConference ? (
               <div>
-                <p className="text-xs font-bold text-foreground">
+                <p className="text-xs font-bold text-foreground line-clamp-1">
                   {latestConference.team?.NAME || latestConference.team_id}
                   <span className="text-muted-foreground font-normal ml-1">
                     ({latestConference.manager_name || latestConference.team?.MANAGER || "Presidente"})
                   </span>
                 </p>
-                <p className="text-xs italic text-muted-foreground mt-1 line-clamp-3">
+                <p className="text-xs italic text-muted-foreground mt-1 line-clamp-3 leading-relaxed">
                   "{latestConference.answer || latestConference.question}"
                 </p>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground italic py-2">
+              <p className="text-xs text-muted-foreground italic py-1">
                 Nessuna dichiarazione recente registrata.
               </p>
             )}
           </div>
 
-          <Link to="/sala-stampa" className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1">
-            Tutte le interviste dei 12 club &rarr;
+          <Link to="/sala-stampa" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 pt-1">
+            Tutte le interviste &rarr;
           </Link>
         </div>
 
         {/* Blocco 2: Gossip di Mercato */}
-        <div className="p-4 rounded-xl bg-background/60 border border-border/70 flex flex-col justify-between space-y-3">
-          <div className="space-y-2">
+        <div className="p-3 sm:p-3.5 rounded-xl bg-background/80 border border-border/70 flex flex-col justify-between space-y-2.5 min-h-[145px]">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold flex items-center gap-1">
-                <Flame className="h-3 w-3 text-amber-500" />
-                Gossip del Giornalista AI
+              <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
+                <Flame className="h-2.5 w-2.5 text-amber-500" />
+                Gossip AI
               </Badge>
               {latestRumor && (
-                <Badge variant="outline" className="text-[10px] font-mono">
+                <Badge variant="outline" className="text-[9px] font-mono py-0 px-1.5">
                   {latestRumor.credibility_badge}
                 </Badge>
               )}
             </div>
 
             {loading ? (
-              <p className="text-xs text-muted-foreground italic py-2">Caricamento...</p>
+              <p className="text-xs text-muted-foreground italic py-1">Caricamento...</p>
             ) : latestRumor ? (
               <div>
                 <p className="text-xs font-bold text-foreground line-clamp-1">
                   {latestRumor.headline}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-3 leading-relaxed">
                   {latestRumor.content}
                 </p>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground italic py-2">
-                Nessun rumor recente. Entra in Sala Stampa per consultare le indiscrezioni di mercato!
+              <p className="text-xs text-muted-foreground italic py-1">
+                Nessun rumor recente. Entra in Sala Stampa!
               </p>
             )}
           </div>
 
-          <Link to="/sala-stampa" className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1">
-            Leggi le indiscrezioni complete &rarr;
+          <Link to="/sala-stampa" className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 pt-1">
+            Leggi le indiscrezioni &rarr;
           </Link>
         </div>
       </CardContent>

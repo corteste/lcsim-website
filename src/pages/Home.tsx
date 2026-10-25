@@ -1,11 +1,10 @@
 import Navbar from "@/components/Navbar";
-import { Trophy, TrendingUp, Users, Award, BarChart3, CalendarDays, Flame, Activity, ArrowUpRight } from "lucide-react";
+import { Trophy, TrendingUp, Users, Award, BarChart3, CalendarDays, Flame, ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getStandings } from "@/hooks/use-standings";
 import { getPlayersSumStats } from "@/hooks/use-players-stats";
-import { getPlayers } from "@/hooks/use-players";
 import { getRoleColor } from "@/utils/functions";
 import { useState } from "react";
 import { NextOpponentCard } from "@/components/home/NextOpponentCard";
@@ -16,26 +15,8 @@ const CURRENT_SEASON = 9;
 const Home = () => {
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<"scorers" | "mvp">("scorers");
 
-  const { standings, loading: loadingStandings } = getStandings();
-  const { playersStats, loading: loadingStats } = getPlayersSumStats(CURRENT_SEASON, null, null);
-  const { players, loading: loadingPlayers } = getPlayers();
-
-  // Calcoli metriche telemetria
-  const maxMatchday = standings.length > 0
-    ? Math.max(1, ...standings.map(s => s.games_played || 0))
-    : 10;
-  
-  const totalGoals = standings.length > 0
-    ? standings.reduce((acc, s) => acc + (s.goal_made || 0), 0)
-    : playersStats.reduce((acc, p) => acc + (p.sum_gol || 0), 0);
-
-  const totalMatches = standings.length > 0
-    ? standings.reduce((acc, s) => acc + (s.games_played || 0), 0) / 2
-    : 1;
-
-  const avgGoalsPerMatch = totalMatches > 0 && totalGoals > 0
-    ? (totalGoals / totalMatches).toFixed(2)
-    : "2.65";
+  const { standings } = getStandings();
+  const { playersStats } = getPlayersSumStats(CURRENT_SEASON, null, null);
 
   // Top Marcatori
   const topScorers = [...playersStats]
@@ -58,101 +39,38 @@ const Home = () => {
 
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* ========================================================= */}
-        {/* HERO TELEMETRY STRIP */}
+        {/* HERO CARD: CENTRO DATI & SALA STAMPA                     */}
         {/* ========================================================= */}
         <section
-          aria-label="Panoramica Campionato"
-          className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-background p-6 md:p-8 shadow-xl"
+          aria-label="Centro Dati e Sala Stampa"
+          className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-background p-5 md:p-7 shadow-xl"
         >
           {/* Sfondo ambient mesh pro */}
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="space-y-3">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            {/* Blocco Sinistro: Titolo Centro Dati */}
+            <div className="lg:col-span-4 xl:col-span-4 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                  Serie A Ufficiale • LCSIM
+                <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-mono">
+                  Serie A • LCSIM
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground font-mono">
                   Stagione 2024/25 • Edizione 9
                 </span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-                Centro Dati & Telemetria di Lega
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground">
+                Centro Dati
               </h1>
-              <p className="text-sm md:text-base max-w-2xl text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-md">
                 Monitora classifiche in tempo reale, statistiche avanzate dei giocatori e andamento delle rose con precisione broadcast.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <Link to="/classifica">
-                <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-md gap-2">
-                  <Trophy className="h-4 w-4" />
-                  <span>Esplora Classifica</span>
-                </Button>
-              </Link>
-              <Link to="/statistiche">
-                <Button variant="outline" className="font-semibold text-sm gap-2">
-                  <Activity className="h-4 w-4 text-emerald-500" />
-                  <span>Statistiche Giocatori</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* KPI METRIC CARDS */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-border/60">
-            <div className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Giornata Attuale
-              </span>
-              <div className="text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
-                {maxMatchday}ª
-              </div>
-              <div className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
-                <span>su 18 giornate</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">• {Math.round((maxMatchday / 18) * 100)}%</span>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Squadre Iscritte
-              </span>
-              <div className="text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
-                {standings.length || 10}
-              </div>
-              <div className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
-                <span>Serie A Unica</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">• 100% attive</span>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Gol Totali Stagione
-              </span>
-              <div className="text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
-                {totalGoals}
-              </div>
-              <div className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
-                <span>Media {avgGoalsPerMatch} / partita</span>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Giocatori Censiti
-              </span>
-              <div className="text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
-                {players.length || 660}
-              </div>
-              <div className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
-                <span>Database Ufficiale</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">• Verificati</span>
-              </div>
+            {/* Blocco Destro: Sala Stampa & Gossip AI Squadrata */}
+            <div className="lg:col-span-8 xl:col-span-8">
+              <PressAndRumorsHomeCard />
             </div>
           </div>
         </section>
@@ -414,11 +332,6 @@ const Home = () => {
             </Link>
           </div>
         </div>
-
-        {/* ========================================================= */}
-        {/* WIDGET SALA STAMPA & RUMOR DI CALCIOMERCATO */}
-        {/* ========================================================= */}
-        <PressAndRumorsHomeCard />
       </main>
     </div>
   );
