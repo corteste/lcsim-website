@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +70,10 @@ import {
 import { getEmotionLabel } from "@/constants/accessories";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
+import {
+  DraftPickAnnouncementModal,
+  DraftPickAnnouncementData,
+} from "@/components/draft/DraftPickAnnouncementModal";
 import {
   fetchTeamFavorites,
   toggleTeamFavorite,
@@ -143,6 +147,8 @@ const Draft = () => {
   const [isUserAutopickEnabled, setIsUserAutopickEnabled] = useState<boolean>(false);
   const [allAutopickSettings, setAllAutopickSettings] = useState<Record<string, boolean>>({});
   const [isAutopicking, setIsAutopicking] = useState<boolean>(false);
+  const [announcementPick, setAnnouncementPick] = useState<DraftPickAnnouncementData | null>(null);
+  const lastAnnouncedPickKeyRef = useRef<string>("");
 
   // Admin dialog state
   const [adminModalOpen, setAdminModalOpen] = useState<boolean>(false);
@@ -311,6 +317,132 @@ const Draft = () => {
     loadAutopickSettings();
   }, [loadAutopickSettings]);
 
+  // Helper per mostrare il popup in mezzo allo schermo della pick effettuata
+  const triggerPickAnnouncement = useCallback(
+    async (pickOverall: number, round: number, teamId: string, rookieId: number) => {
+      const key = `${pickOverall}-${rookieId}`;
+      if (lastAnnouncedPickKeyRef.current === key) return;
+      lastAnnouncedPickKeyRef.current = key;
+
+      let rookieData: DraftPickAnnouncementData["rookie"] | null = null;
+
+      // 1. Cerca in an_player per avere i dati decifrati ufficiali (OVR, Altezza, Peso)
+      try {
+        const { data: pData } = await supabase
+          .from("an_player")
+          .select("ID, Nome, Cognome, Posiz, OVR, Altezza, Peso")
+          .eq("ID", rookieId)
+          .maybeSingle();
+
+        if (pData) {
+          rookieData = {
+            ID: Number(pData.ID),
+            Nome: pData.Nome || "",
+            Cognome: pData.Cognome || "",
+            Posiz: pData.Posiz || "",
+            OVR: Number(pData.OVR) || 0,
+            Altezza: pData.Altezza ? Number(pData.Altezza) : null,
+            Peso: pData.Peso ? Number(pData.Peso) : null,
+          };
+        }
+      } catch (err) {
+        console.error("Errore fetch giocatore decifrato per annuncio pick:", err);
+      }
+
+      // 2. Fallback su an_rookie o stato rookies se la query su an_player non ha ancora sincronizzato
+      if (!rookieData) {
+        const local = rookies.find((r) => Number(r.ID) === Number(rookieId));
+        if (local) {
+          rookieData = {
+            ID: Number(local.ID),
+            Nome: local.Nome || "",
+            Cognome: local.Cognome || "",
+            Posiz: local.Posiz || "",
+            OVR: Number(local.OVR) || 0,
+            Altezza: local.Altezza ? Number(local.Altezza) : null,
+            Peso: local.Peso ? Number(local.Peso) : null,
+          };
+        } else {
+          try {
+            const { data: rkRow } = await supabase
+              .from(ROOKIE_TABLE)
+              .select("ID, Nome, Cognome, Posiz, OVR, Altezza, Peso")
+              .eq("ID", rookieId)
+              .maybeSingle();
+            if (rkRow) {
+              rookieData = {
+                ID: Number(rkRow.ID),
+                Nome: rkRow.Nome || "",
+                Cognome: rkRow.Cognome || "",
+                Posiz: rkRow.Posiz || "",
+                OVR: Number(rkRow.OVR) || 0,
+                Altezza: rkRow.Altezza ? Number(rkRow.Altezza) : null,
+                Peso: rkRow.Peso ? Number(rkRow.Peso) : null,
+              };
+            }
+          } catch (err) {
+            console.error("Errore fallback an_rookie per annuncio pick:", err);
+          }
+        }
+      }
+
+      if (rookieData) {
+        const teamObj = teamMap.get(teamId);
+        setAnnouncementPick({
+          pickOverall,
+          round,
+          teamId,
+          teamAbbr: teamObj?.NAME_ABBR || teamObj?.TEAM_ID || teamId,
+          teamName: teamObj?.NAME || teamId,
+          rookie: rookieData,
+        });
+      }
+    },
+    [rookies, teamMap]
+  );
+
+  // Supabase Realtime: aggiornamento automatico della Draft Board per tutti gli utenti connessi
+  useEffect(() => {
+    const channel = supabase
+      .channel("lcsim-draft-board-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: DRAFT_BOARD_TABLE },
+        (payload) => {
+          if (payload.eventType === "UPDATE") {
+            const newRow = payload.new as DraftPickRow;
+            const oldRow = payload.old as Partial<DraftPickRow> | undefined;
+
+            if (newRow?.rookie_id && (!oldRow?.rookie_id || oldRow.rookie_id !== newRow.rookie_id)) {
+              triggerPickAnnouncement(
+                newRow.pick_overall,
+                newRow.round,
+                newRow.team_id,
+                Number(newRow.rookie_id)
+              );
+            }
+          }
+
+          // Aggiorna istantaneamente la draft board e liste collegate per tutti i client
+          fetchDraftData(true);
+          loadFavorites();
+          loadAutopickSettings();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: ROOKIE_TABLE },
+        () => {
+          fetchDraftData(true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchDraftData, loadFavorites, loadAutopickSettings, triggerPickAnnouncement]);
+
   // Toggle preferiti (⭐)
   const handleToggleFavorite = async (rookieId: number) => {
     if (!activeUserTeamId) {
@@ -360,19 +492,17 @@ const Draft = () => {
         return;
       }
 
-      if (res.source === "wishlist") {
-        toast.success(
-          `🤖 Autopick #${pick.pick_overall} (${pick.team_id}): ${res.rookie.Nome} ${res.rookie.Cognome} (dalla lista priorità #${res.rank})!`
-        );
-      } else {
-        toast.info(
-          `🤖 Autopick #${pick.pick_overall} (${pick.team_id}): ${res.rookie.Nome} ${res.rookie.Cognome} (Fallback miglior OVR: ${res.rookie.OVR})!`
-        );
-      }
+      // Notifica visuale gestita dalla card popup centrale al posto dei toast
 
       await fetchDraftData(true);
       await loadFavorites();
       await loadAutopickSettings();
+      await triggerPickAnnouncement(
+        pick.pick_overall,
+        pick.round,
+        pick.team_id,
+        Number(res.rookie.ID)
+      );
     } catch (err: any) {
       console.error("Errore autopick:", err);
       toast.error("Errore imprevisto durante l'autopick");
@@ -480,11 +610,14 @@ const Draft = () => {
 
       if (rpcErr) throw rpcErr;
 
-      toast.success(
-        `Scelta #${pickNo} confermata: ${selectedRookie.Nome} ${selectedRookie.Cognome} (${selectedRookie.Posiz}) → ${pickingTeamId}!`
-      );
       setSelectedRookieId(null);
       await fetchDraftData(true);
+      await triggerPickAnnouncement(
+        pickNo,
+        targetPickForConfirmation.round,
+        pickingTeamId,
+        rookieId
+      );
     } catch (err: any) {
       console.error("Errore conferma scelta:", err);
       toast.error(err.message || "Errore durante il salvataggio della scelta");
@@ -1754,6 +1887,12 @@ const Draft = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* REALTIME DRAFT PICK ANNOUNCEMENT POPUP */}
+      <DraftPickAnnouncementModal
+        pickData={announcementPick}
+        onClose={() => setAnnouncementPick(null)}
+      />
+
       {/* QUICK SCOUTING REPORT MODAL */}
       <Dialog
         open={!!inspectedRookie}
