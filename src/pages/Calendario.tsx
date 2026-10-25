@@ -1131,105 +1131,7 @@ const Calendario = () => {
                     };
 
                     return (
-                      <div className="space-y-4">
-                        {/* OPZIONE A: Comparative Teams Header & Color Legend */}
-                        <div className="p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/80 shadow-xs">
-                          <div className="flex items-center justify-between gap-3">
-                            {/* Home Team */}
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div
-                                className="w-9 h-9 rounded-lg p-1.5 flex items-center justify-center shrink-0 border"
-                                style={{
-                                  backgroundColor: `${homeColor}15`,
-                                  borderColor: `${homeColor}40`,
-                                }}
-                              >
-                                <img
-                                  src={`/images/teams/${selected.match.home}_Logo.png`}
-                                  alt={selected.match.home_team}
-                                  className="w-full h-full object-contain"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
-                                    style={{ backgroundColor: homeColor }}
-                                  />
-                                  <h4 className="font-extrabold text-xs sm:text-sm text-foreground truncate">
-                                    {selected.match.home_team}
-                                  </h4>
-                                </div>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                                    Casa
-                                  </span>
-                                  <span
-                                    className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
-                                    style={{
-                                      backgroundColor: `${homeColor}20`,
-                                      color: homeTextColor,
-                                    }}
-                                  >
-                                    1° Colore
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Center VS pill */}
-                            <div className="flex flex-col items-center justify-center px-2.5 py-1 rounded-full bg-muted border border-border/60 shrink-0">
-                              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                                VS
-                              </span>
-                            </div>
-
-                            {/* Away Team */}
-                            <div className="flex items-center justify-end gap-2.5 min-w-0 text-right">
-                              <div className="min-w-0">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <h4 className="font-extrabold text-xs sm:text-sm text-foreground truncate">
-                                    {selected.match.away_team}
-                                  </h4>
-                                  <span
-                                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
-                                    style={{ backgroundColor: awayColor }}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                                  <span
-                                    className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
-                                    style={{
-                                      backgroundColor: `${awayColor}20`,
-                                      color: awayTextColor,
-                                    }}
-                                  >
-                                    {isAwayUsingSecondary ? "2° Colore (Contrasto)" : "1° Colore"}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                                    Trasferta
-                                  </span>
-                                </div>
-                              </div>
-                              <div
-                                className="w-9 h-9 rounded-lg p-1.5 flex items-center justify-center shrink-0 border"
-                                style={{
-                                  backgroundColor: `${awayColor}15`,
-                                  borderColor: `${awayColor}40`,
-                                }}
-                              >
-                                <img
-                                  src={`/images/teams/${selected.match.away}_Logo.png`}
-                                  alt={selected.match.away_team}
-                                  className="w-full h-full object-contain"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Stat Bars Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {renderStatBar(
                             "Possesso Palla",
                             selected.match.home_poss,
@@ -1272,7 +1174,6 @@ const Calendario = () => {
                             selected.match.away_ctrs_si
                           )}
                         </div>
-                      </div>
                     );
                   })()}
                 </div>
