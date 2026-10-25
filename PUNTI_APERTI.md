@@ -475,38 +475,32 @@ Evoluzione della schermata di dettaglio partita per trasformarla in un vero e pr
 ---
 
 ## 📌 20. Sala Stampa & Interviste Presidenti (Domande AI & Risposte Ufficiali)
-- **Stato**: 🟢 Completato & Testato (Pagina dedicata unificata `/sala-stampa` & DB Supabase)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Pagina dedicata unificata `/sala-stampa` & DB Supabase)
 - **Priorità**: Media-Alta (Roleplay manageriale ed elemento social immersivo della Lega)
 - **Moduli coinvolti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`, `src/components/home/PressAndRumorsHomeCard.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
 - **Tabelle coinvolte**: `press_conferences`, `an_team`, `an_standings`, `an_schedule`
 - **Migrazione SQL**: `supabase/migrations/20261025_press_and_ai_rumors.sql`
 
 ### Descrizione & Risoluzione Tecnica
-1. **Generazione Domande AI per Giornata**: Ad ogni nuovo turno di campionato, il Giornalista AI (alimentato da Google Gemini 1.5/2.0 Flash o dal generatore procedurale interno di fallback) genera una domanda incalzante e personalizzata per ciascuno dei 12 presidenti/allenatori in base al rendimento recente, alla posizione in classifica e alla prossima partita.
-2. **Microfono Aperto & Risposta del Presidente**: Quando un manager effettua l'accesso, visualizza un box dedicato in cima alla Sala Stampa per rilasciare la dichiarazione ufficiale della propria società. La risposta viene registrata in tempo reale e resa pubblica a tutta la Lega.
-3. **Filtri & Archivio Storico**: Consultazione delle conferenze stampa per giornata (Matchday), club specifico o stato di risposta.
+1. **Domande Differenziate per Club**: Ad ogni nuovo turno di campionato, il Giornalista AI genera domande uniche e su misura per ciascuno dei 12 presidenti/allenatori (variando temi: tattica, psicologia, scontro diretto, gestione dei leader, mercato, turnover).
+2. **Visibilità Esclusiva Interviste Risposte**: Nella bacheca pubblica vengono mostrate **soltanto le interviste a cui il presidente ha effettivamente risposto**, garantendo pulizia e valore editoriale.
+3. **Microfono Aperto**: Il manager autenticato la cui squadra ha una domanda pendente visualizza un box interattivo prioritario in cima alla pagina per rilasciare la dichiarazione ufficiale della società.
 
 ---
 
-## 📌 21. Giornalista AI di Lega: Gossip & Rumor di Calciomercato (Modello AI Gratuito)
-- **Stato**: 🟢 Completato & Testato (Feed interattivo, Reazioni Realtime & Integrazione Mercato)
+## 📌 21. Giornalista AI di Lega: Gossip & Rumor di Calciomercato (Always-On con Calciatori Reali)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Feed spontaneo, Reazioni Realtime & Zero Spoiler)
 - **Priorità**: Media-Alta (Dinamismo dell'ecosistema, gossip e intrattenimento sportivo)
-- **Tecnologie & Provider**: Google Gemini 1.5/2.0 Flash (chiave gratuita configurabile o in .env) con generatore procedurale dinamico di fallback
+- **Tecnologie & Provider**: Motore ibrido: Google Gemini Flash (memorizzato in `league_automation_state` e `.env.local`) con generatore procedurale avanzato always-on (zero crash/downtime)
 - **Moduli coinvolti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`, `src/pages/UfficialitaScambi.tsx`, `src/components/home/PressAndRumorsHomeCard.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
-- **Tabelle coinvolte**: `league_market_rumors`, `market_trades`, `team_market_needs`, `as_player_market`, `league_automation_state`
+- **Tabelle coinvolte**: `league_market_rumors`, `an_player`, `market_trades`, `team_market_needs`, `league_automation_state`
 - **Migrazione SQL**: `supabase/migrations/20261025_press_and_ai_rumors.sql`
 
 ### Descrizione & Risoluzione Tecnica
-1. **Algoritmo di Generazione Rumor a 4 Categorie**:
-   - **Trattative Reali (20%)**: Fondate su contatti o bisogni reali tra i club (credibilità 75-90%, badge "Pista Calda").
-   - **Trattative Distorte (40%)**: Prendono spunto da trattative o bisogni reali ma modificano un dettaglio chiave (es. contropartita tecnica scambiata o accordo bloccato sui bonus, credibilità 45-65%, badge "Indiscrezione").
-   - **Fake News Totali (30%)**: Notizie inventate di sana pianta per scatenare il dibattito (rotture shock, veti presidenziali, credibilità 10-35%, badge "Fake News").
-   - **Colpi a Sorpresa (10%)**: Blitz notturni improvvisi (credibilità 50-70%, badge "Bomba di Mercato").
-2. **Reazioni Live dei Manager**: Pulsanti di reazione rapida (🔥 Fuoco, 😂 Fake, 😱 Shock, 🤔 Dubbio) salvati in formato JSONB e aggiornati in tempo reale per tutti gli utenti.
-3. **Integrazione UI a 3 Livelli**:
-   - Pagina principale dedicata `/sala-stampa` (Tab "Gossip & Rumor di Mercato").
-   - Scheda anteprima nella **Bacheca Mercato** (`src/pages/UfficialitaScambi.tsx`).
-   - Widget di primo piano nella **Homepage** (`src/pages/Home.tsx`).
+1. **Generazione Spontanea durante la Giornata**: Rimossi i pulsanti manuali "a comando". Quando il mercato è aperto, i rumor emergono spontaneamente in background a intervalli temporali regolari durante la giornata.
+2. **Inclusione di Calciatori Reali di Serie A**: Le notizie pescano ed integrano nomi e cognomi reali dei calciatori sotto contratto (`an_player`), ruoli e squadre di appartenenza (es. *Dave Lancaster, Francesco Ambrosio, Manuel Perdomo, Lars Svensson*, ecc.).
+3. **Zero Spoiler & Badge Giornalistici Autentici**: Rimossi filtri di categoria ed etichette rivelatrici (*Fake News / Trattativa Distorta*). Ogni indiscrezione si presenta con veste verosimile (*"ESCLUSIVA"*, *"INDISCREZIONE"*, *"RETROSCENA"*, *"RADAR MERCATO"*, *"ULTIM'ORA"*), lasciando ai manager il gusto del dibattito.
+4. **Reazioni Live**: I manager possono reagire istantaneamente ad ogni scoop con emoji (**🔥 Fuoco, 😂 Fake, 😱 Shock, 🤔 Dubbio**).
 
 ---
 
