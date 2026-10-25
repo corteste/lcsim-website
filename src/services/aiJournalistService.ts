@@ -69,7 +69,7 @@ export async function getGeminiApiKey(): Promise<string | null> {
     const { data } = await supabase
       .from('league_automation_state')
       .select('details')
-      .eq('automation_key', 'ai_settings')
+      .eq('id', 'ai_settings')
       .maybeSingle();
 
     if (data?.details?.gemini_api_key && String(data.details.gemini_api_key).trim().length > 5) {
@@ -95,11 +95,11 @@ export async function saveGeminiApiKeyToSupabase(apiKey: string): Promise<boolea
     const { error } = await supabase
       .from('league_automation_state')
       .upsert({
-        automation_key: 'ai_settings',
+        id: 'ai_settings',
         action_name: 'Configurazione Chiave Google Gemini',
         details: { gemini_api_key: apiKey.trim() },
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'automation_key' });
+      }, { onConflict: 'id' });
     return !error;
   } catch {
     return false;
