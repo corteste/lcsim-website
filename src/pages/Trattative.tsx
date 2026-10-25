@@ -35,7 +35,8 @@ import { EnrichedTrade, TRADE_STATUS_CONFIG } from "@/types/trades";
 import { getMarketState } from "@/services/marketStateService";
 import { NewTradeModal } from "@/components/trades/NewTradeModal";
 import { TradeDetailsModal } from "@/components/trades/TradeDetailsModal";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { TeamMarketNeedsCard } from "@/components/trades/TeamMarketNeedsCard";
 import { toast } from "sonner";
 
 export default function Trattative() {
@@ -54,6 +55,16 @@ export default function Trattative() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<EnrichedTrade | null>(null);
   const [counterOfferSource, setCounterOfferSource] = useState<EnrichedTrade | null>(null);
+  const [searchParams] = useSearchParams();
+  const recipientParam = searchParams.get("recipient") || "";
+  const [initialRecipient, setInitialRecipient] = useState<string>(recipientParam);
+
+  useEffect(() => {
+    if (recipientParam) {
+      setInitialRecipient(recipientParam);
+      setNewModalOpen(true);
+    }
+  }, [recipientParam]);
 
   const loadData = async () => {
     if (!user) {
@@ -397,6 +408,17 @@ export default function Trattative() {
               </strong>
               La sessione di calciomercato è attualmente chiusa: l'invio di nuove proposte e l'accettazione o il rifiuto delle trattative sono sospesi per tutti i club. Le società possono comunque consultare lo storico e le schede delle trattative.
             </div>
+          </div>
+        )}
+
+        {/* BISOGNI DI MERCATO DEL CLUB */}
+        {user && currentTeam && (
+          <div className="mb-8">
+            <TeamMarketNeedsCard
+              teamId={currentTeam}
+              teamName={effectiveTeamFullName}
+              userName={user?.name || user?.username}
+            />
           </div>
         )}
 

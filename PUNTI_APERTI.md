@@ -371,25 +371,30 @@ Sezione riservata al Super Admin con blocchi separati per:
 ---
 
 ## 📌 14. Recap Calciomercato & Bisogni di Squadra a Macro-Categorie (Sezione Scambi)
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Completato & Testato
 - **Priorità**: Media-Alta (Miglioramento dell'interazione sul mercato tra società)
-- **Moduli coinvolti**: `src/pages/Trattative.tsx`, `src/pages/UfficialitaScambi.tsx` o nuova tab dedicata a `/mercato/scambi`
-- **Tabelle coinvolte**: Tabella `team_market_needs` (o campo JSONB in `an_team`)
+- **Moduli coinvolti**: `src/pages/Trattative.tsx`, `src/pages/UfficialitaScambi.tsx`, `src/components/trades/TeamMarketNeedsCard.tsx`, `src/components/trades/LeagueMarketNeedsBoard.tsx`, `src/services/marketNeedsService.ts`, `src/types/marketNeeds.ts`
+- **Tabelle coinvolte**: `public.team_market_needs` (`supabase/migrations/20261025_team_market_needs.sql`)
 
-### Descrizione
-Nella sezione scambi/calciomercato, introduzione del **Recap Calciomercato**: ciascuna società può impostare e aggiornare i propri **Bisogni di Mercato**, specificando a quali macro-categorie di ruoli è prioritariamente interessata:
-- **8 Macro-Categorie Selezionabili**:
-  1. *Portieri* (`POR`)
-  2. *Terzini* (`TD`, `TS`)
-  3. *Difesa Interni* (`DC`)
-  4. *Mediani* (`CDC`)
-  5. *Centrocampisti* (`CC`)
-  6. *Esterni* (`ED`, `ES`, `AD`, `AS`)
-  7. *Trequartisti* (`COC`)
-  8. *Attaccanti* (`ATT`, `AT`)
-- **Flusso & Visualizzazione**:
-  - **Pannello Manager**: Selezione immediata tramite badge/toggle delle macro-categorie ricercate (senza note libere per la massima semplicità).
-  - **Griglia Recap di Lega**: Vista aggregata accessibile a tutte le squadre che mostra a colpo d'occhio cosa cerca ogni club, facilitando le proposte di scambio mirate.
+### Descrizione & Implementazione
+1. **Pannello Manager (`TeamMarketNeedsCard` in `/mia-squadra/trattative`)**:
+   - Card interattiva posizionata in testata alla pagina trattative del manager per configurare e salvare in tempo reale i propri bisogni di mercato.
+   - Toggle istantanei per le **8 Macro-Categorie Ufficiali**:
+     1. *Portieri* (`POR`)
+     2. *Terzini* (`TD`, `TS`)
+     3. *Difesa Interni* (`DC`)
+     4. *Mediani* (`CDC`)
+     5. *Centrocampisti* (`CC`)
+     6. *Esterni* (`ED`, `ES`, `AD`, `AS`)
+     7. *Trequartisti* (`COC`)
+     8. *Attaccanti* (`ATT`, `AT`)
+   - Gestione stato modifiche non salvate, pulsante ripristino, salvataggio atomico su Supabase e link rapido alla Bacheca di Lega.
+2. **Bacheca Pubblica Unificata (`LeagueMarketNeedsBoard` in `/mercato/scambi`)**:
+   - Sezione `/mercato/scambi` ristrutturata a schede:
+     - **Tab 1 (Default / In Primo Piano)**: *Bisogni di Squadra (12 Club)* con panoramica interattiva delle 12 società, filtri rapidi per macro-categoria con contatori live di club interessati, ricerca testuale per squadra/ruolo e pulsante diretto *"Proponi Scambio"* (che pre-seleziona il destinatario in `/mia-squadra/trattative`).
+     - **Tab 2**: *Ufficialità & Storico Scambi* con il feed degli scambi approvati e convalidati dalla Lega.
+3. **Database Supabase**:
+   - Creata tabella `public.team_market_needs` con vincolo di foreign key su `an_team("TEAM_ID")`, indici, RLS e inizializzazione automatica dei 12 club. Migrazione e rispettivo rollback archiviati in `supabase/migrations/20261025_team_market_needs.sql` e applicati con successo.
 
 ---
 

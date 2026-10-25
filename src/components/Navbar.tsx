@@ -145,8 +145,8 @@ const Navbar = () => {
     },
     {
       path: "/mercato/scambi",
-      label: "Bacheca Scambi",
-      description: "Ufficialità e operazioni approvate dalla Lega",
+      label: "Bacheca Mercato & Scambi",
+      description: "Bisogni delle 12 squadre e ufficialità di mercato",
       icon: ArrowLeftRight,
       colorClass: "text-emerald-500",
     },
