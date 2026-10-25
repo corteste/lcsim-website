@@ -53,13 +53,30 @@ export interface MarketRumor {
 // -----------------------------------------------------------------------------
 const GEMINI_STORAGE_KEY = 'lcsim_gemini_api_key';
 
-export function getGeminiApiKey(): string | null {
+export async function getGeminiApiKey(): Promise<string | null> {
+  // 1. Variabile d'ambiente Vite (.env o .env.local)
+  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  if (envKey && String(envKey).trim().length > 5) return String(envKey).trim();
+
+  // 2. LocalStorage browser
   if (typeof window !== 'undefined') {
     const local = localStorage.getItem(GEMINI_STORAGE_KEY);
     if (local && local.trim().length > 5) return local.trim();
   }
-  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
-  if (envKey && String(envKey).trim().length > 5) return String(envKey).trim();
+
+  // 3. Configurazione globale su Supabase DB (attiva per tutti i manager)
+  try {
+    const { data } = await supabase
+      .from('league_automation_state')
+      .select('details')
+      .eq('automation_key', 'ai_settings')
+      .maybeSingle();
+
+    if (data?.details?.gemini_api_key && String(data.details.gemini_api_key).trim().length > 5) {
+      return String(data.details.gemini_api_key).trim();
+    }
+  } catch {}
+
   return null;
 }
 
@@ -73,8 +90,24 @@ export function setGeminiApiKey(key: string): void {
   }
 }
 
+export async function saveGeminiApiKeyToSupabase(apiKey: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('league_automation_state')
+      .upsert({
+        automation_key: 'ai_settings',
+        action_name: 'Configurazione Chiave Google Gemini',
+        details: { gemini_api_key: apiKey.trim() },
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'automation_key' });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 async function callGeminiApi(prompt: string, apiKey?: string): Promise<string | null> {
-  const activeKey = apiKey || getGeminiApiKey();
+  const activeKey = apiKey || (await getGeminiApiKey());
   if (!activeKey) return null;
 
   try {

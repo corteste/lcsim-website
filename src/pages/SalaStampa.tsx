@@ -74,10 +74,6 @@ export default function SalaStampa() {
   const [myAnswerText, setMyAnswerText] = useState("");
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
 
-  // Modale Chiave API Gemini
-  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState("");
-
   // Azioni Amministrazione (solo per generare le domande di inizio giornata per i club)
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
@@ -112,8 +108,7 @@ export default function SalaStampa() {
 
   useEffect(() => {
     loadData();
-    const currentKey = getGeminiApiKey();
-    if (currentKey) setApiKeyInput(currentKey);
+    
   }, [effectiveTeam]);
 
   // Invio Risposta Manager
@@ -181,13 +176,6 @@ export default function SalaStampa() {
     }
   };
 
-  // Salvataggio Chiave API
-  const handleSaveApiKey = () => {
-    setGeminiApiKey(apiKeyInput.trim());
-    toast.success("Chiave API Google Gemini aggiornata con successo.");
-    setApiKeyModalOpen(false);
-  };
-
   // Filtro Conferenze (mostrate solo le interviste con risposta effettiva)
   const filteredConferences = useMemo(() => {
     return conferences.filter((c) => {
@@ -248,20 +236,6 @@ export default function SalaStampa() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setApiKeyModalOpen(true)}
-              className="gap-2 text-xs"
-              title="Configura Google Gemini API Key"
-            >
-              <Key className="h-3.5 w-3.5 text-amber-500" />
-              <span>Chiave AI</span>
-              {getGeminiApiKey() && (
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              )}
-            </Button>
-
             <Button
               variant="outline"
               size="sm"
@@ -668,63 +642,7 @@ export default function SalaStampa() {
           </TabsContent>
         </Tabs>
 
-        {/* ========================================================= */}
-        {/* MODALE CONFIGURAZIONE CHIAVE GEMINI */}
-        {/* ========================================================= */}
-        <Dialog open={apiKeyModalOpen} onOpenChange={setApiKeyModalOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5 text-amber-500" />
-                Chiave API Google Gemini (Gratuita)
-              </DialogTitle>
-              <DialogDescription className="text-xs">
-                Inserisci la tua API Key di <strong>Google AI Studio</strong> per potenziare le interviste e le voci di mercato con il modello di intelligenza artificiale.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold">Gemini API Key:</label>
-                <Input
-                  type="password"
-                  placeholder="AIzaSy..."
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                />
-              </div>
-
-              <div className="p-3 rounded-lg bg-muted/40 border border-border/80 text-xs space-y-2">
-                <p className="font-semibold text-foreground flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                  100% Gratuito & Istantaneo
-                </p>
-                <p className="text-muted-foreground leading-relaxed">
-                  Puoi ottenere gratuitamente una chiave API su{" "}
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary underline font-medium"
-                  >
-                    Google AI Studio
-                  </a>
-                  . Il tier free include fino a 1.500 chiamate giornaliere.
-                </p>
-                <p className="text-[11px] text-muted-foreground italic">
-                  Se non configuri alcuna chiave, il sistema utilizzerà automaticamente il <strong>generatore procedurale interno</strong> con calciatori reali e squadre della lega.
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setApiKeyModalOpen(false)}>
-                Annulla
-              </Button>
-              <Button onClick={handleSaveApiKey}>Salva Chiave</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        
       </main>
     </div>
   );
