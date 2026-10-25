@@ -611,3 +611,20 @@ Interfaccia web dedicata per l'inserimento manuale dei dati e dei referti delle 
      - **70 XP** per scambiare lo status Oro tra due tratti quando uno è già presente (lo status Oro si sposta al nuovo e il precedente torna Argento).
      - Massimo 5 tratti totali per giocatore, massimo 1 Tratto Oro.
    - Verifica dinamica dei requisiti minimi in tempo reale calcolata su `postStats`, consentendo di sbloccare tratti nel momento esatto in cui vengono potenziati gli attributi collegati.
+
+
+---
+
+## 📌 29. Ottimizzazione Barra Superiore (Navbar Sticky, Rimozione Layout Shift & Dropdown Non-Modal)
+- **Stato**: 🟢 Completato & Testato
+- **Priorità**: Alta
+- **Moduli coinvolti**: `src/components/Navbar.tsx`, `src/components/NotificationsMenu.tsx`, `src/components/ui/dropdown-menu.tsx`, `src/index.css`
+
+### Descrizione & Risoluzione Bug
+1. **Rimozione Scostamento Orizzontale (UI Shift / Jitter)**:
+   - I menu a discesa Radix UI (`DropdownMenu`) usavano il default `modal={true}`, scatenando la rimozione della scrollbar e l'iniezione di margini sul `body` calcolati da `react-remove-scroll` (causando il salto a sinistra di 17px).
+   - Impostato `modal={false}` come default per tutti i dropdown in [`dropdown-menu.tsx`](file:///d:/Users/Stefano/Documents/LCSIM_Website/lcsim-website/src/components/ui/dropdown-menu.tsx) e applicato esplicitamente su tutti i menu della [`Navbar`](file:///d:/Users/Stefano/Documents/LCSIM_Website/lcsim-website/src/components/Navbar.tsx) e [`NotificationsMenu`](file:///d:/Users/Stefano/Documents/LCSIM_Website/lcsim-website/src/components/NotificationsMenu.tsx).
+   - In [`index.css`](file:///d:/Users/Stefano/Documents/LCSIM_Website/lcsim-website/src/index.css) aggiunto `scrollbar-gutter: stable` e azzerato `--removed-body-scroll-bar-size` e padding/margin sul body bloccato.
+2. **Permanenza Barra Superiore allo Scrolling (Top Bar Permanentemente Visibile)**:
+   - Quando l'utente era sceso con lo scroll e cliccava sulla barra superiore, il precedente scroll lock modale applicava `overflow: hidden` a livello di `body`, rompendo la proprietà CSS `position: sticky` del container `<nav>` e provocando la scomparsa della barra (rimasta ancorata a Y=0 fuori dal viewport) e il congelamento dello scroll.
+   - Con la navigazione non-modale e `<nav className="sticky top-0 z-50 w-full ...">`, la barra superiore rimane permanentemente visibile, ancorata in cima durante qualsiasi livello di scorrimento, e l'interazione con i menu non blocca mai lo scorrimento della pagina.
