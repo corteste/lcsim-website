@@ -34,6 +34,8 @@ import { ImportRookieModal } from "@/components/admin/ImportRookieModal";
 import { AgingModal } from "@/components/admin/AgingModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCutsComplianceReport, executeOfficialCutsRpc } from "@/services/cutsService";
+import { generatePressQuestionsForMatchday, generateRandomMarketRumors } from "@/services/aiJournalistService";
+import { Newspaper, Mic2, Flame } from "lucide-react";
 
 interface AutomationStateItem {
   id: string;
@@ -887,6 +889,76 @@ export default function AdminAutomazioni() {
               </span>
               <span className="font-semibold text-foreground truncate max-w-[240px]">
                 {formatLastRun(stateMap["official_cuts"]?.last_run_at, stateMap["official_cuts"]?.last_run_by)}
+              </span>
+            </div>
+          </Card>
+
+          {/* 7. SALA STAMPA & GIORNALISTA AI */}
+          <Card className="border border-amber-500/30 bg-gradient-to-br from-card via-card to-amber-500/5 shadow-md relative overflow-hidden flex flex-col justify-between">
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <Badge variant="outline" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    Agente AI Gratuito & Media
+                  </Badge>
+                  <Newspaper className="h-6 w-6 text-amber-500" />
+                </div>
+                <CardTitle className="text-xl font-black">Sala Stampa & Giornalista AI</CardTitle>
+                <CardDescription className="text-xs">
+                  Generazione delle interviste di giornata per i presidenti dei 12 club e pubblicazione rumor di calciomercato.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div className="p-3.5 rounded-xl border border-border/70 bg-muted/40 text-xs space-y-1.5 text-muted-foreground">
+                  <div className="flex items-center justify-between font-bold text-foreground">
+                    <span>Modello Attivo:</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                      Google Gemini Flash / Procedurale
+                    </span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed">
+                    Le domande vengono generate ad ogni nuovo turno in base al rendimento e alla prossima avversaria. I rumor vengono generati randomicamente quando il mercato è aperto.
+                  </p>
+                </div>
+
+                <div className="pt-1">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      toast.info("Generazione domande personalizzate per i 12 club in corso...");
+                      const res = await generatePressQuestionsForMatchday(1);
+                      if (res.error) toast.error(res.error);
+                      else toast.success(`Generate ${res.generated} domande differenziate (${res.skipped} già presenti).`);
+                    }}
+                    className="w-full font-bold gap-2 text-xs border-primary/30 hover:bg-primary/10 text-primary py-2.5"
+                  >
+                    <Mic2 className="h-4 w-4" />
+                    Genera Domande Differenziate per i 12 Club (Giornata 1)
+                  </Button>
+                </div>
+
+                <Button
+                  asChild
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-amber-600/20"
+                >
+                  <Link to="/sala-stampa">
+                    <Newspaper className="h-4 w-4" />
+                    Vai alla Sala Stampa & Media Hub
+                  </Link>
+                </Button>
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-amber-500" />
+                Stato Feed:
+              </span>
+              <span className="font-semibold text-foreground">
+                Attivo & Realtime
               </span>
             </div>
           </Card>

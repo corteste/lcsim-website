@@ -474,37 +474,33 @@ Evoluzione della schermata di dettaglio partita per trasformarla in un vero e pr
 
 ---
 
-## 📌 20. Sala Stampa & Interviste Post-Partita Manager
-- **Stato**: 🟡 Da Progettare / In Backlog
-- **Priorità**: Bassa (Roleplay manageriale ed elemento social della Lega)
-- **Moduli coinvolti**: `src/pages/Calendario.tsx` (dettaglio match), modale conferenza stampa
-- **Tabelle coinvolte**: Tabella `match_press_interviews` (match_id, team_id, manager_id, statement, created_at)
+## 📌 20. Sala Stampa & Interviste Presidenti (Domande AI & Risposte Ufficiali)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Pagina dedicata unificata `/sala-stampa` & DB Supabase)
+- **Priorità**: Media-Alta (Roleplay manageriale ed elemento social immersivo della Lega)
+- **Moduli coinvolti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`, `src/components/home/PressAndRumorsHomeCard.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle coinvolte**: `press_conferences`, `an_team`, `an_standings`, `an_schedule`
+- **Migrazione SQL**: `supabase/migrations/20261025_press_and_ai_rumors.sql`
 
-### Descrizione
-Uno spazio interattivo leggero legato all'incontro appena disputato:
-- Ciascun manager (dopo la pubblicazione dei risultati) può inserire una breve dichiarazione o commento a caldo post-partita (max 280 caratteri, stile conferenza stampa o tweet).
-- I commenti dei due manager rivali compaiono affiancati in calce al tabellino dell'incontro, visibili a tutta la Lega per alimentare il dibattito e la rivalità sportiva.
+### Descrizione & Risoluzione Tecnica
+1. **Domande Differenziate per Club**: Ad ogni nuovo turno di campionato, il Giornalista AI genera domande uniche e su misura per ciascuno dei 12 presidenti/allenatori (variando temi: tattica, psicologia, scontro diretto, gestione dei leader, mercato, turnover).
+2. **Visibilità Esclusiva Interviste Risposte**: Nella bacheca pubblica vengono mostrate **soltanto le interviste a cui il presidente ha effettivamente risposto**, garantendo pulizia e valore editoriale.
+3. **Microfono Aperto**: Il manager autenticato la cui squadra ha una domanda pendente visualizza un box interattivo prioritario in cima alla pagina per rilasciare la dichiarazione ufficiale della società.
 
 ---
 
-## 📌 21. Giornalista AI di Lega: Rumor di Calciomercato & Cronache Partita (Modello AI Gratuito)
-- **Stato**: 🟡 Da Progettare / In Backlog
-- **Priorità**: Bassa (Innovazione immersiva e dinamismo dell'ecosistema)
-- **Tecnologie & Provider**: Google Gemini 1.5 Flash (Tier Free via Google AI Studio - 1.500 chiamate/giorno gratuite) o Groq Llama 3.3 70B (Free Tier istantaneo)
-- **Moduli coinvolti**: Ticker news in Homepage, sezione dedicata `/mercato/rumors`, feed Comunicati
-- **Tabelle coinvolte**: `market_trades`, `as_player_market`, `an_player`, tabella cache/post `league_ai_news`
+## 📌 21. Giornalista AI di Lega: Gossip & Rumor di Calciomercato (Always-On con Calciatori Reali)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Feed spontaneo, Reazioni Realtime & Zero Spoiler)
+- **Priorità**: Media-Alta (Dinamismo dell'ecosistema, gossip e intrattenimento sportivo)
+- **Tecnologie & Provider**: Motore ibrido: Google Gemini Flash (memorizzato in `league_automation_state` e `.env.local`) con generatore procedurale avanzato always-on (zero crash/downtime)
+- **Moduli coinvolti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`, `src/pages/UfficialitaScambi.tsx`, `src/components/home/PressAndRumorsHomeCard.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle coinvolte**: `league_market_rumors`, `an_player`, `market_trades`, `team_market_needs`, `league_automation_state`
+- **Migrazione SQL**: `supabase/migrations/20261025_press_and_ai_rumors.sql`
 
-### Descrizione
-Integrazione di un agente giornalista virtuale (stile "Fabrizio Romano / Gianluca Di Marzio di LCSIM") con compiti autonomi o richiamabili dall'Admin:
-1. **Rumor di Calciomercato (Market Insider)**:
-   - **Fonti Dati Reali**: Legge le proposte di scambio aperte (`market_trades`), i calciatori con status "In Trattativa" o "Cedibile", i bisogni di squadra dichiarati e i giocatori svincolati.
-   - **Generazione Post**: Crea brevi "Breaking News" narrative con percentuali di attendibilità (es. *"🚨 ESCLUSIVA LCSIM: Mar's Attack ha bussato alla porta di Valle FC per una maxi-trattativa in attacco. Parti al lavoro, probabilità 75%"* oppure smentite e voci inventate basate sui valori delle rose).
-   - Possibilità di generare rumor periodicamente o su richiesta dell'Admin.
-2. **Cronache e Pagelle di Giornata (Matchday Recap)**:
-   - Subito dopo l'importazione del CSV di giornata, l'AI analizza i risultati e i tabellini sintetizzando un articolo di cronaca:
-     - Titolo di giornata accattivante.
-     - Analisi dei big match, rimonte clamorose, flop e protagonisti.
-     - Pagelle tecniche e commenti ironici per club.
+### Descrizione & Risoluzione Tecnica
+1. **Generazione Spontanea durante la Giornata**: Rimossi i pulsanti manuali "a comando". Quando il mercato è aperto, i rumor emergono spontaneamente in background a intervalli temporali regolari durante la giornata.
+2. **Inclusione di Calciatori Reali di Serie A**: Le notizie pescano ed integrano nomi e cognomi reali dei calciatori sotto contratto (`an_player`), ruoli e squadre di appartenenza (es. *Dave Lancaster, Francesco Ambrosio, Manuel Perdomo, Lars Svensson*, ecc.).
+3. **Zero Spoiler & Badge Giornalistici Autentici**: Rimossi filtri di categoria ed etichette rivelatrici (*Fake News / Trattativa Distorta*). Ogni indiscrezione si presenta con veste verosimile (*"ESCLUSIVA"*, *"INDISCREZIONE"*, *"RETROSCENA"*, *"RADAR MERCATO"*, *"ULTIM'ORA"*), lasciando ai manager il gusto del dibattito.
+4. **Reazioni Live**: I manager possono reagire istantaneamente ad ogni scoop con emoji (**🔥 Fuoco, 😂 Fake, 😱 Shock, 🤔 Dubbio**).
 
 ---
 
