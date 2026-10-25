@@ -64,7 +64,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             </CardTitle>
             <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
-              Dichiarazioni ufficiali e indiscrezioni del Giornalista AI
+              Dichiarazioni ufficiali e indiscrezioni di mercato
             </p>
           </div>
         </div>
@@ -76,13 +76,11 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
         </Link>
       </CardHeader>
 
-      <CardContent className={`p-3.5 sm:p-4 flex-1 flex flex-col justify-between ${
-        isStacked ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 gap-3"
-      }`}>
-        {/* Blocco 1: Sala Stampa */}
-        <div className={`p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 ${
-          isStacked ? "flex-1 min-h-[120px]" : "min-h-[145px]"
+      <CardContent className={`p-3.5 sm:p-4 flex-1 flex flex-col justify-between ${isStacked ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 gap-3"
         }`}>
+        {/* Blocco 1: Sala Stampa */}
+        <div className={`p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 ${isStacked ? "flex-1 min-h-[120px]" : "min-h-[145px]"
+          }`}>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
@@ -123,9 +121,8 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
         </div>
 
         {/* Blocco 2: Gossip di Mercato */}
-        <div className={`p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 ${
-          isStacked ? "flex-1 min-h-[120px]" : "min-h-[145px]"
-        }`}>
+        <div className={`p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 ${isStacked ? "flex-1 min-h-[120px]" : "min-h-[145px]"
+          }`}>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
