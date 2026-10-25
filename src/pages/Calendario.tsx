@@ -1131,7 +1131,7 @@ const Calendario = () => {
                     };
 
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-3 max-w-3xl mx-auto w-full">
                           {renderStatBar(
                             "Possesso Palla",
                             selected.match.home_poss,
