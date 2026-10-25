@@ -1,5 +1,5 @@
 import { supabase } from "@/supabaseClient";
-import { EA_PLAYER_DB_TABLE, ROOKIE_TABLE } from "@/constants/App";
+import { EA_PLAYER_DB_TABLE, ROOKIE_TABLE, PLAYER_TABLE, TEAM_TABLE } from "@/constants/App";
 import { EA_DB_COLUMNS, EADbColumn, EAPlayerDBRow } from "@/services/eaPlayerDbService";
 
 export interface RookieAnagraficaRow {
@@ -225,13 +225,112 @@ export function decodeTrait2(mask: number | null | undefined): string | null {
   return items.length > 0 ? items.join(', ') : null;
 }
 
-export function calculateStelle(ovr: number | null | undefined): number {
-  const o = Number(ovr) || 68;
-  if (o <= 66) return 1;
-  if (o <= 68) return 2;
-  if (o <= 71) return 3;
-  if (o <= 73) return 4;
-  return 5;
+/**
+ * Recupera la distribuzione degli OVR dei calciatori sotto contratto (Serie A attiva) per ciascun ruolo ("Posiz").
+ * Utilizzato per calcolare il percentile di merito e le Stelle (1..5) dei Rookie al momento dell'importazione.
+ */
+export async function fetchContractedPlayersRankings(): Promise<Record<string, number[]>> {
+  try {
+    const { data: teams, error: teamsErr } = await supabase
+      .from(TEAM_TABLE)
+      .select('TEAM_ID')
+      .eq('ACTIVE', true);
+
+    if (teamsErr) {
+      console.error('Errore recupero team attivi per ranking rookie:', teamsErr);
+      return {};
+    }
+
+    const teamIds = (teams || []).map((t: any) => t.TEAM_ID).filter(Boolean);
+    if (teamIds.length === 0) return {};
+
+    const { data: players, error: playersErr } = await supabase
+      .from(PLAYER_TABLE)
+      .select('Posiz, OVR')
+      .in('Squadra', teamIds)
+      .not('OVR', 'is', null);
+
+    if (playersErr) {
+      console.error('Errore recupero an_player per ranking rookie:', playersErr);
+      return {};
+    }
+
+    const rankings: Record<string, number[]> = {};
+    for (const p of players || []) {
+      if (!p.Posiz || p.OVR === null || p.OVR === undefined) continue;
+      const pos = p.Posiz.toUpperCase().trim();
+      const ovr = Number(p.OVR);
+      if (isNaN(ovr)) continue;
+
+      if (!rankings[pos]) {
+        rankings[pos] = [];
+      }
+      rankings[pos].push(ovr);
+    }
+
+    // Ordina in modo decrescente
+    for (const pos in rankings) {
+      rankings[pos].sort((a, b) => b - a);
+    }
+
+    return rankings;
+  } catch (err) {
+    console.error('Errore imprevisto in fetchContractedPlayersRankings:', err);
+    return {};
+  }
+}
+
+/**
+ * Calcola le stelle (1..5) del rookie in base al suo overall rispetto
+ * agli overall dei giocatori sotto contratto all'inizio dell'offseason nel suo ruolo.
+ *
+ * Regole ufficiali (Punto #23):
+ * - Se l'overall del rookie è peggiore di tutti i giocatori sotto contratto nel suo ruolo (OVR < min): 1 Stella.
+ * - Se l'overall del rookie è tra il 75° ed il 100° percentile di tutti i giocatori sotto contratto: 2 Stelle.
+ * - Se l'overall del rookie è tra il 50° ed il 75° percentile di tutti i giocatori sotto contratto: 3 Stelle.
+ * - Se l'overall del rookie è tra il 25° ed il 50° percentile di tutti i giocatori sotto contratto: 4 Stelle.
+ * - Se l'overall del rookie è tra l'1° ed il 25° percentile di tutti i giocatori sotto contratto (top tier): 5 Stelle.
+ */
+export function calculateStelle(
+  ovr: number | null | undefined,
+  posiz?: string,
+  rankings?: Record<string, number[]>
+): number {
+  const rookieOvr = Number(ovr) || 68;
+  const rawPos = (posiz || '').toUpperCase().trim();
+  const normalizedPos = rawPos === 'AT' ? 'ATT' : rawPos;
+  const posOvrsDesc = normalizedPos && rankings ? rankings[normalizedPos] : null;
+
+  if (!posOvrsDesc || posOvrsDesc.length === 0) {
+    // Fallback statico se i ranking non sono disponibili o ruolo non presente
+    if (rookieOvr <= 66) return 1;
+    if (rookieOvr <= 68) return 2;
+    if (rookieOvr <= 71) return 3;
+    if (rookieOvr <= 73) return 4;
+    return 5;
+  }
+
+  const N = posOvrsDesc.length;
+  const minOvr = posOvrsDesc[N - 1];
+
+  // Se l'overall del rookie è peggiore di tutti quanti i giocatori sotto contratto nel suo ruolo: 1 stella
+  if (rookieOvr < minOvr) {
+    return 1;
+  }
+
+  // Posizione / Rank all'interno della lista (percentile dal top: quanti sono strettamente migliori + 1)
+  const betterCount = posOvrsDesc.filter((o) => o > rookieOvr).length;
+  const rank = betterCount + 1;
+  const percentileFromTop = (rank / N) * 100;
+
+  // Tra 1° e 25° percentile dal top (migliori 25%)
+  if (percentileFromTop <= 25) return 5;
+  // Tra 25° e 50° percentile dal top
+  if (percentileFromTop <= 50) return 4;
+  // Tra 50° e 75° percentile dal top
+  if (percentileFromTop <= 75) return 3;
+  // Tra 75° e 100° percentile dal top
+  return 2;
 }
 
 // -------------------------------------------------------------
@@ -381,7 +480,8 @@ export function previewRookieImport(
   masterContent: string,
   anagraficaContent: string,
   file1Name?: string,
-  file2Name?: string
+  file2Name?: string,
+  rankings?: Record<string, number[]>
 ): RookieImportPreview {
   const masterRes = parseRookieMasterFile(masterContent);
   if (masterRes.error) {
@@ -439,7 +539,7 @@ export function previewRookieImport(
     const role1 = decodeRole(eaRow.role1);
     const role2 = decodeRole(eaRow.role2);
     const role3 = decodeRole(eaRow.role3);
-    const stelle = calculateStelle(ovr);
+    const stelle = calculateStelle(ovr, posiz, rankings);
 
     // Full row for an_rookie (matching the 75 columns in public.an_rookie)
     const fullRookieRow: Record<string, any> = {

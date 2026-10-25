@@ -523,16 +523,29 @@ Integrazione di un agente giornalista virtuale (stile "Fabrizio Romano / Gianluc
 5. **Integrazione Draft**: Quando un rookie viene scelto (`rpc_draft_rookie`), le sue statistiche vengono decifrate e scritte in `public.an_player` (entrando nella rosa della squadra) e in `public.ea_player_db`. In `an_rookie` i dati continuano a rimanere perennemente cifrati.
 ---
 
-## 📌 23. Calcolo Stelle per Rookie
-- **Stato**: 🟡 In attesa di definizione & implementazione
+## 📌 23. Calcolo Stelle per Rookie (Formula Ufficiale a Percentili di Ruolo)
+- **Stato**: 🟢 Completato & Testato (Implementato nell'Importazione Rookie & Allineato a DB)
 - **Priorità**: Media-Alta
-- **Moduli coinvolti**: Servizi Rookie / Scouting (`src/services/rookieImportService.ts`, `src/pages/Scouting.tsx`, `src/pages/Draft.tsx`)
-- **Tabelle coinvolte**: `an_rookie`, `an_player`
+- **Moduli coinvolti**: `src/services/rookieImportService.ts`, `src/components/admin/ImportRookieModal.tsx`, `src/pages/Scouting.tsx`, `src/pages/Draft.tsx`
+- **Tabelle coinvolte**: `an_rookie`, `an_player`, `an_team`
 
-### Descrizione
-Definizione e implementazione dell'algoritmo di calcolo del valore "Stelle" (potenziale/valutazione complessiva del rookie).
-- Definire i parametri che concorrono all'assegnazione delle stelle (es. range di OVR/Potenziale, età, ruoli coperti, tratti speciali).
-- Assegnazione automatica del valore in fase di importazione o scouting.
+### Descrizione & Regole Ufficiali
+Le stelle dei rookie (da 1 a 5 ⭐), impiegate per oscurare l'overall esatto ai manager prima dello scouting (Blind Database), vengono calcolate in base al rank del loro Overall rispetto alla distribuzione degli Overall dei calciatori sotto contratto all'inizio dell'offseason (Serie A attiva), raggruppati per posizione in campo (`Posiz`):
+
+1. **1 Stella (⭐)**: Se l'overall del rookie è strettamente peggiore di tutti quanti i giocatori sotto contratto nel suo ruolo ($OVR < \min$).
+2. **2 Stelle (⭐⭐)**: Se il rookie si posiziona tra il 75° ed il 100° percentile dal top dei giocatori sotto contratto nel suo ruolo.
+3. **3 Stelle (⭐⭐⭐)**: Se il rookie si posiziona tra il 50° ed il 75° percentile dal top dei giocatori sotto contratto nel suo ruolo.
+4. **4 Stelle (⭐⭐⭐⭐)**: Se il rookie si posiziona tra il 25° ed il 50° percentile dal top dei giocatori sotto contratto nel suo ruolo.
+5. **5 Stelle (⭐⭐⭐⭐⭐)**: Se il rookie si posiziona tra il 1° ed il 25° percentile dal top dei giocatori sotto contratto nel suo ruolo (top tier).
+
+> [!NOTE]
+> Il calcolo valuta la posizione effettiva dell'overall del rookie come **rank** all'interno della graduatoria ordinata in modo decrescente (quanti giocatori nel ruolo sono strettamente migliori $+ 1$, rapportato a $N$ giocatori), non come scostamento numerico lineare tra massimo e minimo. Ruoli EA speciali come `'AT'` vengono mappati su `'ATT'`.
+
+### Implementazione Architetturale
+- **`fetchContractedPlayersRankings()`**: Funzione asincrona in `src/services/rookieImportService.ts` che interroga Supabase (`an_player` per squadre attive in `an_team` con `OVR` non nullo) e genera la mappa decrescente degli OVR per ruolo.
+- **`calculateStelle(ovr, posiz, rankings)`**: Algoritmo che applica le 5 fasce di percentile con fallback sui range statici qualora i ranking di ruolo non siano disponibili.
+- **Integrazione Import Modal (`ImportRookieModal.tsx`)**: L'analisi dei file e la preview import caricano dinamicamente i ranking aggiornati prima di generare l'anteprima e cifrare i dati.
+- **Allineamento DB**: I record già censiti in `an_rookie` (es. Tiago Teixeira, ATT OVR 71, con $\min(\text{ATT}) = 74$) sono stati aggiornati a 1 ⭐.
 
 ---
 
