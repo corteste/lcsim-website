@@ -434,102 +434,6 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 5. DROPDOWN: LA MIA SQUADRA (IN EVIDENZA) */}
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger
-                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-2 outline-hidden ${
-                  isMiaSquadraActive
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/25"
-                    : user
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 shadow-xs"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-                }`}
-              >
-                {effectiveTeam ? (
-                  <img
-                    src={`/images/teams/${effectiveTeam}_Logo.png`}
-                    alt={effectiveTeam}
-                    className="h-4 w-4 object-contain shrink-0"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
-                    }}
-                  />
-                ) : (
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                )}
-                <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
-                <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
-                <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                  <span>{isAdmin ? "Amministrazione Lega" : "Gestione Club"}</span>
-                  {effectiveTeam ? (
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold flex items-center gap-1">
-                      <img
-                        src={`/images/teams/${effectiveTeam}_Logo.png`}
-                        alt={effectiveTeam}
-                        className="h-3 w-3 object-contain shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
-                        }}
-                      />
-                      {effectiveTeam}
-                    </Badge>
-                  ) : isAdmin ? (
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold text-amber-500 border-amber-500/30">
-                      LEGA
-                    </Badge>
-                  ) : null}
-                </div>
-                {isAdmin && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link
-                        to="/admin/automazioni"
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                          location.pathname === "/admin/automazioni" ? "bg-amber-500/15 font-bold text-amber-600 dark:text-amber-400" : "hover:bg-amber-500/10 text-foreground"
-                        }`}
-                      >
-                        <div className="p-1.5 rounded-md bg-amber-500/15 text-amber-500 shrink-0">
-                          <Cpu className="h-4 w-4" />
-                        </div>
-                        <div className="flex items-center justify-between flex-1">
-                          <span className="text-sm font-bold leading-tight">
-                            Automazioni
-                          </span>
-                          <Badge variant="outline" className="text-[9px] px-1 py-0 font-bold border-amber-500/40 text-amber-600 dark:text-amber-400">
-                            ADMIN
-                          </Badge>
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="my-1" />
-                  </>
-                )}
-                {miaSquadraItems.map((item) => {
-                  const Icon = item.icon;
-                  const isCurrent = location.pathname === item.path;
-                  return (
-                    <DropdownMenuItem key={item.path} asChild>
-                      <Link
-                        to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
-                        }`}
-                      >
-                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <span className="text-sm font-bold text-foreground leading-tight">
-                          {item.label}
-                        </span>
-                      </Link>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
           </div>
 
           {/* ================================================================= */}
@@ -562,99 +466,131 @@ const Navbar = () => {
               <span className="sr-only">Cambia Tema</span>
             </Button>
 
-            {/* Profilo Utente / Login */}
+            {/* Sezione La Mia Squadra / Amministrazione (Unificata con Profilo e Logout) */}
             {user ? (
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-card border border-border/80 hover:border-border hover:bg-muted/40 shadow-xs transition-all text-xs font-semibold outline-hidden">
-                    {isAdmin ? (
-                      <Badge
-                        variant="outline"
-                        className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 text-[9px] font-black px-1.5 py-0 flex items-center gap-1"
-                      >
-                        <ShieldCheck className="h-3 w-3" /> ADMIN
-                      </Badge>
+                  <button
+                    className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-2 outline-hidden border ${
+                      isMiaSquadraActive
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/25"
+                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 shadow-xs"
+                    }`}
+                  >
+                    {effectiveTeam ? (
+                      <img
+                        src={`/images/teams/${effectiveTeam}_Logo.png`}
+                        alt={effectiveTeam}
+                        className="h-4 w-4 object-contain shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                        }}
+                      />
+                    ) : isAdmin ? (
+                      <ShieldCheck className="h-4 w-4 text-amber-500" />
                     ) : (
-                      user.team && (
-                        <img
-                          src={`/images/teams/${user.team}_Logo.png`}
-                          alt={user.team}
-                          className="h-4 w-4 object-contain shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
-                          }}
-                        />
-                      )
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                     )}
-                    <span className="font-extrabold text-foreground truncate max-w-[95px] sm:max-w-[120px]">
-                      {user.name}
-                    </span>
-                    {user.team ? (
-                      <span className="text-[10px] text-muted-foreground font-mono">
-                        ({user.team})
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-amber-500 font-mono font-bold">
-                        (Lega)
-                      </span>
-                    )}
-                    <ChevronDown className="h-3 w-3 opacity-60 ml-0.5" />
+                    <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50"
+                  className="w-64 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50"
                 >
+                  {/* Intestazione Manager & Club */}
                   <div className="px-2.5 py-2 border-b border-border/60">
-                    <div className="font-bold text-xs text-foreground truncate">{user.name}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1 mt-0.5">
-                      {user.team ? (
-                        <span>Squadra: {user.team}</span>
-                      ) : (
-                        <span className="text-amber-500 font-bold">Super Admin di Lega</span>
-                      )}
-                      {isAdmin && user.team && <span className="text-amber-500 font-bold">• Admin</span>}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-bold text-xs text-foreground truncate">{user.name}</div>
+                      {effectiveTeam ? (
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold flex items-center gap-1">
+                          <img
+                            src={`/images/teams/${effectiveTeam}_Logo.png`}
+                            alt={effectiveTeam}
+                            className="h-3 w-3 object-contain shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                            }}
+                          />
+                          {effectiveTeam}
+                        </Badge>
+                      ) : isAdmin ? (
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold text-amber-500 border-amber-500/30">
+                          LEGA
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                      {isAdmin ? "Super Admin di Lega" : "Gestione Club"}
                     </div>
                   </div>
 
+                  {/* Automazioni Admin (se admin) */}
+                  {isAdmin && (
+                    <>
+                      <div className="py-1">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            to="/admin/automazioni"
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
+                              location.pathname === "/admin/automazioni" ? "bg-amber-500/15 font-bold text-amber-600 dark:text-amber-400" : "hover:bg-amber-500/10 text-foreground"
+                            }`}
+                          >
+                            <div className="p-1.5 rounded-md bg-amber-500/15 text-amber-500 shrink-0">
+                              <Cpu className="h-4 w-4" />
+                            </div>
+                            <div className="flex items-center justify-between flex-1">
+                              <span className="text-sm font-bold leading-tight">
+                                Automazioni
+                              </span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 font-bold border-amber-500/40 text-amber-600 dark:text-amber-400">
+                                ADMIN
+                              </Badge>
+                            </div>
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+                      <DropdownMenuSeparator className="my-1" />
+                    </>
+                  )}
+
+                  {/* Voci Gestione Squadra */}
                   <div className="py-1">
-                    <DropdownMenuItem asChild>
-                      <Link
-                        to="/mia-squadra/tattica"
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer"
-                      >
-                        <Compass className="h-3.5 w-3.5 text-emerald-500" />
-                        <span>La Mia Tattica</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link
-                        to="/mia-squadra/allenamenti"
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer"
-                      >
-                        <Zap className="h-3.5 w-3.5 text-yellow-500" />
-                        <span>I Miei Allenamenti</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link
-                        to="/mia-squadra/roster"
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer"
-                      >
-                        <Shirt className="h-3.5 w-3.5 text-blue-500" />
-                        <span>Gestione Roster</span>
-                      </Link>
-                    </DropdownMenuItem>
+                    {miaSquadraItems.map((item) => {
+                      const Icon = item.icon;
+                      const isCurrent = location.pathname === item.path;
+                      return (
+                        <DropdownMenuItem key={item.path} asChild>
+                          <Link
+                            to={item.path}
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
+                              isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                            }`}
+                          >
+                            <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <span className="text-sm font-bold text-foreground leading-tight">
+                              {item.label}
+                            </span>
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
                   </div>
 
                   <DropdownMenuSeparator className="my-1" />
 
+                  {/* Tasto Disconnetti integrato */}
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-rose-600 dark:text-rose-400 focus:bg-rose-500/10 focus:text-rose-600 cursor-pointer"
+                    className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 focus:bg-rose-500/10 focus:text-rose-600 cursor-pointer"
                   >
-                    <LogOut className="h-3.5 w-3.5" />
-                    <span>Disconnetti</span>
+                    <div className="p-1.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+                      <LogOut className="h-4 w-4" />
+                    </div>
+                    <span>Disconnetti ({user.name})</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -791,39 +727,57 @@ const Navbar = () => {
                       ))}
                     </div>
 
-                    {/* Gruppo: La Mia Squadra */}
-                    <div className="space-y-1 pt-2 border-t border-border/60">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 px-2 py-1 flex items-center gap-1.5 font-mono">
-                        {effectiveTeam ? (
-                          <img
-                            src={`/images/teams/${effectiveTeam}_Logo.png`}
-                            alt={effectiveTeam}
-                            className="h-3.5 w-3.5 object-contain shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
-                            }}
-                          />
-                        ) : (
-                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    {/* Gruppo: La Mia Squadra (Solo utenti autenticati) */}
+                    {user && (
+                      <div className="space-y-1 pt-2 border-t border-border/60">
+                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 px-2 py-1 flex items-center gap-1.5 font-mono">
+                          {effectiveTeam ? (
+                            <img
+                              src={`/images/teams/${effectiveTeam}_Logo.png`}
+                              alt={effectiveTeam}
+                              className="h-3.5 w-3.5 object-contain shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                              }}
+                            />
+                          ) : isAdmin ? (
+                            <ShieldCheck className="h-3.5 w-3.5 text-amber-500" />
+                          ) : (
+                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          )}
+                          <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
+                        </div>
+                        {isAdmin && (
+                          <Link
+                            to="/admin/automazioni"
+                            onClick={() => setIsOpen(false)}
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
+                              location.pathname === "/admin/automazioni"
+                                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 font-extrabold"
+                                : "text-foreground hover:bg-muted/50"
+                            }`}
+                          >
+                            <Cpu className="h-4 w-4 text-amber-500" />
+                            <span>Automazioni Lega</span>
+                          </Link>
                         )}
-                        <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
+                        {miaSquadraItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setIsOpen(false)}
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
+                              location.pathname === item.path
+                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                                : "text-foreground hover:bg-muted/50"
+                            }`}
+                          >
+                            <item.icon className={`h-4 w-4 ${item.colorClass}`} />
+                            <span>{item.label}</span>
+                          </Link>
+                        ))}
                       </div>
-                      {miaSquadraItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                            location.pathname === item.path
-                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                              : "text-foreground hover:bg-muted/50"
-                          }`}
-                        >
-                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-                    </div>
+                    )}
 
                   </div>
 
