@@ -470,34 +470,24 @@ const Draft = () => {
       const pickingTeamId = targetPickForConfirmation.team_id;
       const rookieId = Number(selectedRookie.ID);
 
-      // 1. Update an_rookie Squadra = pickingTeamId
-      const { error: rErr } = await supabase
-        .from(ROOKIE_TABLE)
-        .update({ Squadra: pickingTeamId })
-        .eq("ID", rookieId);
+      // Scelta draft atomica con decifratura e inserimento in an_player ed ea_player_db
+      const { error: rpcErr } = await supabase.rpc("rpc_draft_rookie", {
+        p_pick_overall: pickNo,
+        p_rookie_id: rookieId,
+        p_team_id: pickingTeamId,
+        p_picked_by: user.username || user.name || "Manager",
+      });
 
-      if (rErr) throw rErr;
-
-      // 2. Update an_draft_board slot
-      const { error: bErr } = await supabase
-        .from(DRAFT_BOARD_TABLE)
-        .update({
-          rookie_id: rookieId,
-          picked_at: new Date().toISOString(),
-          picked_by: user.username,
-        })
-        .eq("pick_overall", pickNo);
-
-      if (bErr) throw bErr;
+      if (rpcErr) throw rpcErr;
 
       toast.success(
         `Scelta #${pickNo} confermata: ${selectedRookie.Nome} ${selectedRookie.Cognome} (${selectedRookie.Posiz}) → ${pickingTeamId}!`
       );
       setSelectedRookieId(null);
       await fetchDraftData(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Errore conferma scelta:", err);
-      toast.error("Errore durante il salvataggio della scelta");
+      toast.error(err.message || "Errore durante il salvataggio della scelta");
     } finally {
       setSubmitting(false);
     }
@@ -509,27 +499,18 @@ const Draft = () => {
     setSubmitting(true);
     try {
       const rId = Number(pick.rookie_id);
-      const { error: bErr } = await supabase
-        .from(DRAFT_BOARD_TABLE)
-        .update({
-          rookie_id: null,
-          picked_at: null,
-          picked_by: null,
-        })
-        .eq("pick_overall", pick.pick_overall);
-      if (bErr) throw bErr;
-
-      const { error: rErr } = await supabase
-        .from(ROOKIE_TABLE)
-        .update({ Squadra: null })
-        .eq("ID", rId);
-      if (rErr) throw rErr;
+      // Undo atomico: resetta slot, an_rookie e rimuove da an_player ed ea_player_db
+      const { error: rpcErr } = await supabase.rpc("rpc_undo_draft_rookie", {
+        p_pick_overall: pick.pick_overall,
+        p_rookie_id: rId,
+      });
+      if (rpcErr) throw rpcErr;
 
       toast.success(`Pick #${pick.pick_overall} annullata. Il rookie è tornato disponibile.`);
       await fetchDraftData(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Errore annullamento pick:", err);
-      toast.error("Impossibile annullare la scelta");
+      toast.error(err.message || "Impossibile annullare la scelta");
     } finally {
       setSubmitting(false);
     }
@@ -550,6 +531,11 @@ const Draft = () => {
       if (targetPick?.rookie_id) {
         await supabase
           .from(ROOKIE_TABLE)
+          .update({ Squadra: newTeamId })
+          .eq("ID", targetPick.rookie_id);
+
+        await supabase
+          .from("an_player")
           .update({ Squadra: newTeamId })
           .eq("ID", targetPick.rookie_id);
       }
