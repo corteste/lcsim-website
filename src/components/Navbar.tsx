@@ -25,6 +25,7 @@ import {
   Megaphone,
   Cpu,
   ClipboardList,
+  Newspaper,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -106,6 +107,13 @@ const Navbar = () => {
       description: "Avvisi della Commissione, regolamento e giudice sportivo",
       icon: Megaphone,
       colorClass: "text-rose-500",
+    },
+    {
+      path: "/sala-stampa",
+      label: "Sala Stampa & Rumor",
+      description: "Dichiarazioni dei presidenti e scoop del Giornalista AI",
+      icon: Newspaper,
+      colorClass: "text-amber-500",
     },
   ];
 

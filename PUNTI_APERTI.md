@@ -474,37 +474,39 @@ Evoluzione della schermata di dettaglio partita per trasformarla in un vero e pr
 
 ---
 
-## 📌 20. Sala Stampa & Interviste Post-Partita Manager
-- **Stato**: 🟡 Da Progettare / In Backlog
-- **Priorità**: Bassa (Roleplay manageriale ed elemento social della Lega)
-- **Moduli coinvolti**: `src/pages/Calendario.tsx` (dettaglio match), modale conferenza stampa
-- **Tabelle coinvolte**: Tabella `match_press_interviews` (match_id, team_id, manager_id, statement, created_at)
+## 📌 20. Sala Stampa & Interviste Presidenti (Domande AI & Risposte Ufficiali)
+- **Stato**: 🟢 Completato & Testato (Pagina dedicata unificata `/sala-stampa` & DB Supabase)
+- **Priorità**: Media-Alta (Roleplay manageriale ed elemento social immersivo della Lega)
+- **Moduli coinvolti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`, `src/components/home/PressAndRumorsHomeCard.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle coinvolte**: `press_conferences`, `an_team`, `an_standings`, `an_schedule`
+- **Migrazione SQL**: `supabase/migrations/20261025_press_and_ai_rumors.sql`
 
-### Descrizione
-Uno spazio interattivo leggero legato all'incontro appena disputato:
-- Ciascun manager (dopo la pubblicazione dei risultati) può inserire una breve dichiarazione o commento a caldo post-partita (max 280 caratteri, stile conferenza stampa o tweet).
-- I commenti dei due manager rivali compaiono affiancati in calce al tabellino dell'incontro, visibili a tutta la Lega per alimentare il dibattito e la rivalità sportiva.
+### Descrizione & Risoluzione Tecnica
+1. **Generazione Domande AI per Giornata**: Ad ogni nuovo turno di campionato, il Giornalista AI (alimentato da Google Gemini 1.5/2.0 Flash o dal generatore procedurale interno di fallback) genera una domanda incalzante e personalizzata per ciascuno dei 12 presidenti/allenatori in base al rendimento recente, alla posizione in classifica e alla prossima partita.
+2. **Microfono Aperto & Risposta del Presidente**: Quando un manager effettua l'accesso, visualizza un box dedicato in cima alla Sala Stampa per rilasciare la dichiarazione ufficiale della propria società. La risposta viene registrata in tempo reale e resa pubblica a tutta la Lega.
+3. **Filtri & Archivio Storico**: Consultazione delle conferenze stampa per giornata (Matchday), club specifico o stato di risposta.
 
 ---
 
-## 📌 21. Giornalista AI di Lega: Rumor di Calciomercato & Cronache Partita (Modello AI Gratuito)
-- **Stato**: 🟡 Da Progettare / In Backlog
-- **Priorità**: Bassa (Innovazione immersiva e dinamismo dell'ecosistema)
-- **Tecnologie & Provider**: Google Gemini 1.5 Flash (Tier Free via Google AI Studio - 1.500 chiamate/giorno gratuite) o Groq Llama 3.3 70B (Free Tier istantaneo)
-- **Moduli coinvolti**: Ticker news in Homepage, sezione dedicata `/mercato/rumors`, feed Comunicati
-- **Tabelle coinvolte**: `market_trades`, `as_player_market`, `an_player`, tabella cache/post `league_ai_news`
+## 📌 21. Giornalista AI di Lega: Gossip & Rumor di Calciomercato (Modello AI Gratuito)
+- **Stato**: 🟢 Completato & Testato (Feed interattivo, Reazioni Realtime & Integrazione Mercato)
+- **Priorità**: Media-Alta (Dinamismo dell'ecosistema, gossip e intrattenimento sportivo)
+- **Tecnologie & Provider**: Google Gemini 1.5/2.0 Flash (chiave gratuita configurabile o in .env) con generatore procedurale dinamico di fallback
+- **Moduli coinvolti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`, `src/pages/UfficialitaScambi.tsx`, `src/components/home/PressAndRumorsHomeCard.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle coinvolte**: `league_market_rumors`, `market_trades`, `team_market_needs`, `as_player_market`, `league_automation_state`
+- **Migrazione SQL**: `supabase/migrations/20261025_press_and_ai_rumors.sql`
 
-### Descrizione
-Integrazione di un agente giornalista virtuale (stile "Fabrizio Romano / Gianluca Di Marzio di LCSIM") con compiti autonomi o richiamabili dall'Admin:
-1. **Rumor di Calciomercato (Market Insider)**:
-   - **Fonti Dati Reali**: Legge le proposte di scambio aperte (`market_trades`), i calciatori con status "In Trattativa" o "Cedibile", i bisogni di squadra dichiarati e i giocatori svincolati.
-   - **Generazione Post**: Crea brevi "Breaking News" narrative con percentuali di attendibilità (es. *"🚨 ESCLUSIVA LCSIM: Mar's Attack ha bussato alla porta di Valle FC per una maxi-trattativa in attacco. Parti al lavoro, probabilità 75%"* oppure smentite e voci inventate basate sui valori delle rose).
-   - Possibilità di generare rumor periodicamente o su richiesta dell'Admin.
-2. **Cronache e Pagelle di Giornata (Matchday Recap)**:
-   - Subito dopo l'importazione del CSV di giornata, l'AI analizza i risultati e i tabellini sintetizzando un articolo di cronaca:
-     - Titolo di giornata accattivante.
-     - Analisi dei big match, rimonte clamorose, flop e protagonisti.
-     - Pagelle tecniche e commenti ironici per club.
+### Descrizione & Risoluzione Tecnica
+1. **Algoritmo di Generazione Rumor a 4 Categorie**:
+   - **Trattative Reali (20%)**: Fondate su contatti o bisogni reali tra i club (credibilità 75-90%, badge "Pista Calda").
+   - **Trattative Distorte (40%)**: Prendono spunto da trattative o bisogni reali ma modificano un dettaglio chiave (es. contropartita tecnica scambiata o accordo bloccato sui bonus, credibilità 45-65%, badge "Indiscrezione").
+   - **Fake News Totali (30%)**: Notizie inventate di sana pianta per scatenare il dibattito (rotture shock, veti presidenziali, credibilità 10-35%, badge "Fake News").
+   - **Colpi a Sorpresa (10%)**: Blitz notturni improvvisi (credibilità 50-70%, badge "Bomba di Mercato").
+2. **Reazioni Live dei Manager**: Pulsanti di reazione rapida (🔥 Fuoco, 😂 Fake, 😱 Shock, 🤔 Dubbio) salvati in formato JSONB e aggiornati in tempo reale per tutti gli utenti.
+3. **Integrazione UI a 3 Livelli**:
+   - Pagina principale dedicata `/sala-stampa` (Tab "Gossip & Rumor di Mercato").
+   - Scheda anteprima nella **Bacheca Mercato** (`src/pages/UfficialitaScambi.tsx`).
+   - Widget di primo piano nella **Homepage** (`src/pages/Home.tsx`).
 
 ---
 

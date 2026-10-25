@@ -25,6 +25,8 @@ import {
   ExternalLink,
   Target,
   Send,
+  Flame,
+  Newspaper,
 } from "lucide-react";
 import { fetchCompletedTrades } from "@/services/tradesService";
 import { EnrichedTrade } from "@/types/trades";
@@ -169,6 +171,15 @@ export default function UfficialitaScambi() {
               <Badge variant="outline" className="text-[10px] font-mono font-bold ml-1">
                 {completedTrades.length} Conclusi
               </Badge>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="rumors"
+              className="text-xs font-black py-2.5 px-4 rounded-xl data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm flex items-center gap-2"
+            >
+              <Flame className="h-4 w-4 text-amber-500" />
+              <span>Gossip & Rumor AI</span>
+              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse ml-0.5" />
             </TabsTrigger>
           </TabsList>
 
@@ -406,6 +417,50 @@ export default function UfficialitaScambi() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* TAB 3: GOSSIP & RUMOR AI */}
+          <TabsContent value="rumors" className="space-y-4 outline-hidden">
+            <Card className="border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-card to-card p-6 rounded-2xl shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/80">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                    <Flame className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-foreground flex items-center gap-2">
+                      Gossip & Rumor del Giornalista AI
+                      <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] font-mono font-bold">
+                        Insider LCSIM
+                      </Badge>
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Indiscrezioni anonime, notizie rubate e presunti colpi di scena generati dall'AI in base alle trattative della lega.
+                    </p>
+                  </div>
+                </div>
+
+                <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 self-start md:self-auto">
+                  <Link to="/sala-stampa?tab=rumors">
+                    <Newspaper className="h-3.5 w-3.5" />
+                    Apri Feed Completo & Reazioni
+                  </Link>
+                </Button>
+              </div>
+
+              <div className="pt-6 text-center text-xs text-muted-foreground space-y-2">
+                <p>
+                  I rumor vengono scatenati automaticamente dal nostro agente giornalista o dai manager durante il periodo di calciomercato aperto.
+                </p>
+                <div className="pt-2">
+                  <Button variant="outline" size="sm" asChild className="text-xs font-bold gap-2">
+                    <Link to="/sala-stampa">
+                      Vai alla Sala Stampa & Rumor &rarr;
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>

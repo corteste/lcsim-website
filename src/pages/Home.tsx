@@ -9,6 +9,7 @@ import { getPlayers } from "@/hooks/use-players";
 import { getRoleColor } from "@/utils/functions";
 import { useState } from "react";
 import { NextOpponentCard } from "@/components/home/NextOpponentCard";
+import { PressAndRumorsHomeCard } from "@/components/home/PressAndRumorsHomeCard";
 
 const CURRENT_SEASON = 9;
 
@@ -413,6 +414,11 @@ const Home = () => {
             </Link>
           </div>
         </div>
+
+        {/* ========================================================= */}
+        {/* WIDGET SALA STAMPA & RUMOR DI CALCIOMERCATO */}
+        {/* ========================================================= */}
+        <PressAndRumorsHomeCard />
       </main>
     </div>
   );
