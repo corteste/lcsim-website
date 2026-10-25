@@ -810,16 +810,22 @@ Adeguamento della distinta gara nelle pagine Tattica e Foglio Commento:
 ---
 
 ## 📌 40. Possibilità di Scegliere Giocatori Svincolati al Draft (Oltre ai Rookie)
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Testato (Migrazione SQL, RPC draft/undo svincolati & UI unificata)
 - **Priorità**: Alta (Flessibilità delle chiamate al Draft)
-- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, modale scelta draft
-- **Tabelle coinvolte**: `public.an_draft_board`, `public.an_player`, `public.an_rookie`
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, `src/components/player/playerDetails.tsx`
+- **Tabelle & Funzioni coinvolte**: `public.an_draft_board`, `public.an_player`, `public.an_rookie`, `rpc_draft_free_agent`, `rpc_draft_rookie`, `rpc_undo_draft_rookie`
+- **Migrazioni**: `supabase/migrations/20261025_draft_free_agents.sql` e rollback `20261025_draft_free_agents_rollback.sql`
 
-### Descrizione
-Estensione delle opzioni di selezione durante il Draft di Lega:
-- Consentire a un club di utilizzare il proprio turno di scelta per tesserare un **calciatore svincolato** già presente nel database (`an_player` con `Squadra IS NULL`), in alternativa a un prospetto della classe rookie (`an_rookie`).
-- **Regola di Integrità DB**: i calciatori svincolati **NON** devono essere duplicati o inseriti nella tabella `an_rookie`.
-- All'atto della chiamata della scelta, il giocatore svincolato viene contrattualizzato direttamente (`an_player.Squadra = pickingTeamId`), registrando la scelta in `an_draft_board`.
+### Descrizione & Risoluzione Tecnica
+1. **Estensione Schema Draft Board & Funzioni RPC**:
+   - Tabella `an_draft_board` estesa con colonne `player_id BIGINT REFERENCES an_player("ID")` e `player_type TEXT DEFAULT 'rookie'`.
+   - **`rpc_draft_free_agent`**: funzione atomica di tesseramento che assegna la franchigia direttamente su `an_player.Squadra` (senza toccare o inquinare `an_rookie`) e scrive la scelta su `an_draft_board`.
+   - **`rpc_undo_draft_rookie`**: estesa per riconoscere automaticamente il tipo di scelta: se era uno svincolato reimposta `an_player.Squadra = NULL` senza cancellare il calciatore; se era un rookie ripristina `an_rookie` e rimuove il record temporaneo.
+2. **Interfaccia Unificata nel Pannello Draft (`Draft.tsx`)**:
+   - **Filtri Tipo**: pillole di selezione `Tutti`, `🌟 Rookie` e `🆓 Svincolati` con contatori in tempo reale degli elementi disponibili.
+   - **Visualizzazione Lista**: anagrafica uniforme con Volto, Ruolo, Nome, Cognome, Età, Nazionalità e badge distintivo (`[Rookie]` / `[Svincolato]`). Per gli svincolati viene esposto l'OVR noto, mentre per i rookie le stelle ⭐ e i gettoni spesi.
+   - **Schede di Dettaglio**: l'icona occhio apre il consueto profilo tecnico completo (`PlayerDetails`) per i calciatori svincolati e il report scouting a disclosure selettiva per i rookie.
+   - **Wishlist & Autopick Integrati**: supporto ai preferiti (⭐) sia per i rookie sia per i calciatori svincolati con prelazione automatica durante l'Autopick.
 
 ---
 

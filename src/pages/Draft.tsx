@@ -55,6 +55,7 @@ import { getTeams } from "@/hooks/use-teams";
 import { getStandings } from "@/hooks/use-standings";
 import { getPlayerImage, getRoleColor, getValueColor } from "@/utils/functions";
 import { Player } from "@/types/player";
+import PlayerDetails from "@/components/player/playerDetails";
 import {
   SCOUTING_DEPARTMENTS,
   isDepartmentUnlocked,
@@ -89,9 +90,19 @@ export interface DraftPickRow {
   team_id: string;
   original_team_id: string;
   rookie_id: number | null;
+  player_id?: number | null;
+  player_type?: "rookie" | "free_agent" | null;
   picked_at: string | null;
   picked_by: string | null;
   rookie?: Pick<Player, "ID" | "Nome" | "Cognome" | "Posiz" | "Squadra"> | null;
+  player?: Pick<Player, "ID" | "Nome" | "Cognome" | "Posiz" | "Squadra" | "OVR"> | null;
+}
+
+export interface DraftPoolItem {
+  id: number;
+  type: "rookie" | "free_agent";
+  player: Player;
+  isFavorite: boolean;
 }
 
 type ViewMode = "board" | "r1" | "r2" | "r3" | "r4" | "r5";
@@ -136,13 +147,17 @@ const Draft = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("board");
   const [teamFilter, setTeamFilter] = useState<string>("ALL");
 
-  // Right panel rookie selection state
+  // Right panel player & free agent selection state
+  const [freeAgents, setFreeAgents] = useState<Player[]>([]);
+  const [poolTypeFilter, setPoolTypeFilter] = useState<"ALL" | "ROOKIE" | "FREE_AGENT">("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
-  const [selectedRookieId, setSelectedRookieId] = useState<number | null>(null);
+  const [selectedPlayerItem, setSelectedPlayerItem] = useState<{ id: number; type: "rookie" | "free_agent"; player: Player } | null>(null);
+  const [inspectedFreeAgent, setInspectedFreeAgent] = useState<Player | null>(null);
 
-  // Watchlist & Autopick State (Punti 6 e 7)
+  // Watchlist & Autopick State (Punti 6, 7 e 40)
   const [favoriteRookieIds, setFavoriteRookieIds] = useState<Set<number>>(new Set());
+  const [favoriteFreeAgentIds, setFavoriteFreeAgentIds] = useState<Set<number>>(new Set());
   const [favoritesOnly, setFavoritesOnly] = useState<boolean>(false);
   const [isUserAutopickEnabled, setIsUserAutopickEnabled] = useState<boolean>(false);
   const [allAutopickSettings, setAllAutopickSettings] = useState<Record<string, boolean>>({});
@@ -195,19 +210,25 @@ const Draft = () => {
   const fetchDraftData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [boardRes, rookiesRes] = await Promise.all([
+      const [boardRes, rookiesRes, freeAgentsRes] = await Promise.all([
         supabase
           .from(DRAFT_BOARD_TABLE)
-          .select("*, rookie:an_rookie(ID, Nome, Cognome, Posiz, Squadra)")
+          .select("*, rookie:an_rookie(ID, Nome, Cognome, Posiz, Squadra), player:an_player(ID, Nome, Cognome, Posiz, Squadra, OVR)")
           .order("pick_overall", { ascending: true }),
         supabase
           .from(ROOKIE_TABLE)
           .select("*")
           .order("Cognome", { ascending: true }),
+        supabase
+          .from("an_player")
+          .select("*")
+          .is("Squadra", null)
+          .order("OVR", { ascending: false }),
       ]);
 
       if (boardRes.error) throw boardRes.error;
       if (rookiesRes.error) throw rookiesRes.error;
+      if (freeAgentsRes.error) throw freeAgentsRes.error;
 
       let boardRows = (boardRes.data ?? []) as DraftPickRow[];
       if (boardRows.length < 60) {
@@ -215,7 +236,7 @@ const Draft = () => {
         await supabase.rpc("rpc_ensure_draft_board");
         const recheck = await supabase
           .from(DRAFT_BOARD_TABLE)
-          .select("*, rookie:an_rookie(ID, Nome, Cognome, Posiz, Squadra)")
+          .select("*, rookie:an_rookie(ID, Nome, Cognome, Posiz, Squadra), player:an_player(ID, Nome, Cognome, Posiz, Squadra, OVR)")
           .order("pick_overall", { ascending: true });
         if (!recheck.error && recheck.data) {
           boardRows = recheck.data as DraftPickRow[];
@@ -224,6 +245,7 @@ const Draft = () => {
       setPicks(boardRows);
       const rkList = ((rookiesRes.data ?? []) as Player[]).sort((a, b) => (a.Cognome || "").localeCompare(b.Cognome || ""));
       setRookies(rkList);
+      setFreeAgents((freeAgentsRes.data ?? []) as Player[]);
 
       const r1 = boardRows
         .filter((p) => p.round === 1)
@@ -244,9 +266,9 @@ const Draft = () => {
     fetchDraftData();
   }, [fetchDraftData]);
 
-  // Current active pick ("On the Clock") = first pick with rookie_id === null
+  // Current active pick ("On the Clock") = first pick with rookie_id === null and player_id === null
   const currentOnTheClockPick = useMemo(() => {
-    return picks.find((p) => p.rookie_id === null) ?? null;
+    return picks.find((p) => p.rookie_id === null && (!p.player_id || p.player_id === null)) ?? null;
   }, [picks]);
 
   // Effective team for the right-hand user panel
@@ -278,15 +300,20 @@ const Draft = () => {
       });
   }, [activeUserTeamId]);
 
-  // Caricamento preferiti squadra (⭐ Punto 6)
+  // Caricamento preferiti squadra (⭐ Punto 6 e 40)
   const loadFavorites = useCallback(async () => {
     if (!activeUserTeamId) {
       setFavoriteRookieIds(new Set());
+      setFavoriteFreeAgentIds(new Set());
       return;
     }
     try {
-      const favs = await fetchTeamFavorites(activeUserTeamId, "rookie");
-      setFavoriteRookieIds(favs);
+      const [favRookies, favPlayers] = await Promise.all([
+        fetchTeamFavorites(activeUserTeamId, "rookie"),
+        fetchTeamFavorites(activeUserTeamId, "player"),
+      ]);
+      setFavoriteRookieIds(favRookies);
+      setFavoriteFreeAgentIds(favPlayers);
     } catch (err) {
       console.error("Errore caricamento preferiti draft:", err);
     }
@@ -297,6 +324,7 @@ const Draft = () => {
       loadFavorites();
     } else {
       setFavoriteRookieIds(new Set());
+      setFavoriteFreeAgentIds(new Set());
     }
   }, [activeUserTeamId, loadFavorites]);
 
@@ -413,12 +441,14 @@ const Draft = () => {
             const newRow = payload.new as DraftPickRow;
             const oldRow = payload.old as Partial<DraftPickRow> | undefined;
 
-            if (newRow?.rookie_id && (!oldRow?.rookie_id || oldRow.rookie_id !== newRow.rookie_id)) {
+            const newPid = newRow?.player_id || newRow?.rookie_id;
+            const oldPid = oldRow?.player_id || oldRow?.rookie_id;
+            if (newPid && (!oldPid || oldPid !== newPid)) {
               triggerPickAnnouncement(
                 newRow.pick_overall,
                 newRow.round,
                 newRow.team_id,
-                Number(newRow.rookie_id)
+                Number(newPid)
               );
             }
           }
@@ -443,29 +473,40 @@ const Draft = () => {
     };
   }, [fetchDraftData, loadFavorites, loadAutopickSettings, triggerPickAnnouncement]);
 
-  // Toggle preferiti (⭐)
-  const handleToggleFavorite = async (rookieId: number) => {
+  // Toggle preferiti (⭐) sia per Rookie sia per Svincolati
+  const handleToggleFavorite = async (id: number, type: "rookie" | "free_agent") => {
     if (!activeUserTeamId) {
       toast.error("Accedi o seleziona una squadra per salvare i preferiti.");
       return;
     }
 
-    setFavoriteRookieIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(rookieId)) next.delete(rookieId);
-      else next.add(rookieId);
-      return next;
-    });
+    const playerType = type === "free_agent" ? "player" : "rookie";
 
-    const res = await toggleTeamFavorite(activeUserTeamId, rookieId, "rookie");
+    if (type === "free_agent") {
+      setFavoriteFreeAgentIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    } else {
+      setFavoriteRookieIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    }
+
+    const res = await toggleTeamFavorite(activeUserTeamId, id, playerType);
     if (res.error) {
       toast.error("Errore salvataggio preferito");
       loadFavorites();
     } else {
       toast.success(
         res.isFavorite
-          ? "Rookie aggiunto ai preferiti (⭐)!"
-          : "Rookie rimosso dai preferiti"
+          ? `${type === "free_agent" ? "Calciatore" : "Rookie"} aggiunto ai preferiti (⭐)!`
+          : `${type === "free_agent" ? "Calciatore" : "Rookie"} rimosso dai preferiti`
       );
     }
   };
@@ -474,7 +515,7 @@ const Draft = () => {
   const handleTriggerAutopick = async (targetPick?: DraftPickRow | null) => {
     const pick = targetPick || currentOnTheClockPick;
     if (!user) return;
-    if (!pick || pick.rookie_id !== null) {
+    if (!pick || pick.rookie_id !== null || (pick.player_id !== undefined && pick.player_id !== null)) {
       toast.error("Nessuna scelta attiva da assegnare con l'autopick.");
       return;
     }
@@ -761,7 +802,7 @@ const Draft = () => {
   // Reusable Square Pick Card component (6 per row layout -> much wider & clearer)
   const renderPickSquare = (pick: DraftPickRow, large = false) => {
     const isOnTheClock = currentOnTheClockPick?.pick_overall === pick.pick_overall;
-    const isDrafted = pick.rookie_id !== null && !!pick.rookie;
+    const isDrafted = (pick.rookie_id !== null || pick.player_id !== null) && (!!pick.rookie || !!pick.player);
     const isTraded = pick.team_id !== pick.original_team_id;
     const isMyTeamPick = !!activeUserTeamId && pick.team_id === activeUserTeamId;
     const isFilteredOut = teamFilter !== "ALL" && pick.team_id !== teamFilter;
@@ -831,52 +872,66 @@ const Draft = () => {
           </div>
         </div>
 
-        {/* Center/Bottom Content: Drafted Rookie (ONLY Name & Position) or Status */}
+        {/* Center/Bottom Content: Drafted Player or Rookie or Status */}
         <div className="mt-2.5 pt-2 border-t border-border/50 flex flex-col justify-end">
-          {isDrafted && pick.rookie ? (
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full overflow-hidden bg-muted/50 border border-border/80 shrink-0 shadow-xs flex items-center justify-center">
-                <img
-                  src={getPlayerImage(Number(pick.rookie.ID || pick.rookie_id))}
-                  alt={`${pick.rookie.Nome} ${pick.rookie.Cognome}`}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
-                  }}
-                  className="h-full w-full object-cover object-top"
-                />
-              </div>
+          {((pick.rookie_id !== null || pick.player_id !== null) && (pick.rookie || pick.player)) ? (() => {
+            const dp = pick.rookie || pick.player!;
+            const isFa = pick.player_type === "free_agent";
+            return (
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full overflow-hidden bg-muted/50 border border-border/80 shrink-0 shadow-xs flex items-center justify-center">
+                  <img
+                    src={getPlayerImage(Number(pick.player_id || pick.rookie_id || dp.ID))}
+                    alt={`${dp.Nome} ${dp.Cognome}`}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
+                    }}
+                    className="h-full w-full object-cover object-top"
+                  />
+                </div>
 
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <div className="flex items-center justify-between gap-1">
-                  <Badge
-                    variant="outline"
-                    className={`text-[9px] font-extrabold px-1.5 py-0 h-3.5 leading-none ${getRoleColor(
-                      pick.rookie.Posiz
-                    )}`}
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center gap-1">
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] font-extrabold px-1.5 py-0 h-3.5 leading-none ${getRoleColor(
+                          dp.Posiz
+                        )}`}
+                      >
+                        {dp.Posiz}
+                      </Badge>
+                      {isFa && (
+                        <Badge
+                          variant="outline"
+                          className="text-[8px] font-bold px-1 py-0 h-3 leading-none bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30"
+                        >
+                          FA
+                        </Badge>
+                      )}
+                    </div>
+
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        title="Annulla questa scelta (Admin)"
+                        onClick={() => handleAdminUndoPick(pick)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <div
+                    className="font-extrabold text-foreground text-xs leading-tight truncate"
+                    title={`${dp.Nome} ${dp.Cognome}`}
                   >
-                    {pick.rookie.Posiz}
-                  </Badge>
-
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      title="Annulla questa scelta (Admin)"
-                      onClick={() => handleAdminUndoPick(pick)}
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-                <div
-                  className="font-extrabold text-foreground text-xs leading-tight truncate"
-                  title={`${pick.rookie.Nome} ${pick.rookie.Cognome}`}
-                >
-                  {pick.rookie.Nome} {pick.rookie.Cognome}
+                    {dp.Nome} {dp.Cognome}
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : isOnTheClock ? (
+            );
+          })() : isOnTheClock ? (
             <div className="flex items-center justify-between gap-1 py-1">
               <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 animate-pulse">
                 <Clock className="h-3.5 w-3.5" /> On Clock
@@ -1376,12 +1431,12 @@ const Draft = () => {
                   </div>
                 </CardHeader>
 
-                {/* 2. ROOKIE SELECTOR & CONFIRM BUTTON */}
+                {/* 2. DRAFT SELECTOR (ROOKIE & CALCIATORI SVINCOLATI - PUNTO 40) */}
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                       <UserPlus className="h-3.5 w-3.5 text-emerald-500" />
-                      Rookie Disponibili ({availableRookies.length})
+                      Disponibili al Draft ({availableDraftPool.length})
                     </span>
                     <Link
                       to="/mia-squadra/scouting"
@@ -1391,12 +1446,51 @@ const Draft = () => {
                     </Link>
                   </div>
 
+                  {/* Filter Pills for Type: Tutti, 🌟 Rookie, 🆓 Svincolati */}
+                  <div className="flex items-center gap-1.5 p-1 bg-muted/50 rounded-lg border border-border/60">
+                    <button
+                      type="button"
+                      onClick={() => setPoolTypeFilter("ALL")}
+                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center ${
+                        poolTypeFilter === "ALL"
+                          ? "bg-background text-foreground shadow-xs border border-border/80"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Tutti ({undraftedRookiesCount + undraftedFreeAgentsCount})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPoolTypeFilter("ROOKIE")}
+                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center flex items-center justify-center gap-1 ${
+                        poolTypeFilter === "ROOKIE"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span>🌟 Rookie</span>
+                      <span className="text-[10px] opacity-75">({undraftedRookiesCount})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPoolTypeFilter("FREE_AGENT")}
+                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center flex items-center justify-center gap-1 ${
+                        poolTypeFilter === "FREE_AGENT"
+                          ? "bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span>🆓 Svincolati</span>
+                      <span className="text-[10px] opacity-75">({undraftedFreeAgentsCount})</span>
+                    </button>
+                  </div>
+
                   {/* Search & Role group filter */}
                   <div className="space-y-2">
                     <div className="relative">
                       <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
                       <Input
-                        placeholder="Cerca rookie per nome o ruolo..."
+                        placeholder="Cerca calciatore o rookie per nome..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="h-8 pl-8 text-xs"
@@ -1411,10 +1505,10 @@ const Draft = () => {
                             ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/50 ring-1 ring-amber-500/30 shadow-xs"
                             : "bg-muted/60 text-muted-foreground hover:text-foreground border border-transparent"
                         }`}
-                        title="Filtra solo i tuoi rookie preferiti (⭐)"
+                        title="Filtra solo i tuoi preferiti (⭐)"
                       >
                         <Star className={`h-3.5 w-3.5 ${favoritesOnly ? "fill-amber-500 text-amber-500" : ""}`} />
-                        <span>Preferiti ({favoriteRookieIds.size})</span>
+                        <span>Preferiti ({favoriteRookieIds.size + favoriteFreeAgentIds.size})</span>
                       </button>
 
                       {ROLE_GROUPS.map((g) => (
@@ -1434,20 +1528,20 @@ const Draft = () => {
                     </div>
                   </div>
 
-                  {/* Scrollable Rookie List (ONLY Name and Position shown!) */}
-                  <div className="max-h-[260px] overflow-y-auto rounded-xl border border-border/80 divide-y divide-border/50 bg-background/50">
-                    {availableRookies.length === 0 ? (
+                  {/* Scrollable Draft Pool List */}
+                  <div className="max-h-[280px] overflow-y-auto rounded-xl border border-border/80 divide-y divide-border/50 bg-background/50">
+                    {availableDraftPool.length === 0 ? (
                       <div className="p-6 text-center text-xs text-muted-foreground">
-                        Nessun rookie disponibile con questi filtri.
+                        Nessun calciatore o rookie disponibile con questi filtri.
                       </div>
                     ) : (
-                      availableRookies.map((rookie) => {
-                        const rId = Number(rookie.ID);
-                        const isSelected = Number(selectedRookieId) === rId;
-                        const scoutTokens = scoutingByRookie[rId] ?? 0;
+                      availableDraftPool.map((item) => {
+                        const pId = Number(item.id);
+                        const isSelected = selectedPlayerItem?.id === pId;
+                        const scoutTokens = item.type === "rookie" ? (scoutingByRookie[pId] ?? 0) : 0;
                         return (
                           <div
-                            key={rookie.ID}
+                            key={`${item.type}-${item.id}`}
                             className={`w-full px-3 py-2 flex items-center justify-between gap-2 transition-colors ${
                               isSelected
                                 ? "bg-emerald-500/15 text-foreground font-bold"
@@ -1457,34 +1551,97 @@ const Draft = () => {
                             <button
                               type="button"
                               onClick={() =>
-                                setSelectedRookieId(isSelected ? null : rId)
+                                setSelectedPlayerItem(isSelected ? null : { id: pId, type: item.type, player: item.player })
                               }
                               className="flex items-center gap-2 min-w-0 flex-1 text-left"
                             >
+                              <div className="h-7 w-7 rounded-full overflow-hidden bg-muted/60 border border-border/70 shrink-0 flex items-center justify-center">
+                                <img
+                                  src={getPlayerImage(pId)}
+                                  alt={item.player.Nome || ""}
+                                  className="h-full w-full object-cover object-top"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
+                                  }}
+                                />
+                              </div>
+
                               <Badge
                                 variant="outline"
-                                className={`text-[10px] font-bold w-11 justify-center shrink-0 ${getRoleColor(
-                                  rookie.Posiz
+                                className={`text-[10px] font-bold w-10 justify-center shrink-0 ${getRoleColor(
+                                  item.player.Posiz
                                 )}`}
                               >
-                                {rookie.Posiz}
+                                {item.player.Posiz}
                               </Badge>
-                              <span className="text-xs sm:text-sm font-semibold truncate flex items-center gap-1">
-                                {rookie.Nome} {rookie.Cognome}
-                                {favoriteRookieIds.has(rId) && (
-                                  <Star className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0 inline" />
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-xs sm:text-sm font-semibold truncate">
+                                    {item.player.Nome} {item.player.Cognome}
+                                  </span>
+
+                                  {item.type === "free_agent" ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] px-1.5 py-0 h-4 leading-none bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0"
+                                    >
+                                      Svincolato
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] px-1.5 py-0 h-4 leading-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shrink-0"
+                                    >
+                                      Rookie
+                                    </Badge>
+                                  )}
+
+                                  {item.isFavorite && (
+                                    <Star className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0 inline" />
+                                  )}
+                                </div>
+
+                                <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                                  <span>{item.player.Età}a</span>
+                                  <span>•</span>
+                                  <span>{item.player.Nazionalità}</span>
+                                </div>
+                              </div>
+
+                              {/* OVR per Svincolati, Stelle / Scouting per Rookie */}
+                              <div className="shrink-0 text-right mr-1">
+                                {item.type === "free_agent" ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="font-mono font-black text-[11px] px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                                  >
+                                    OVR {item.player.OVR}
+                                  </Badge>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    {item.player.Stelle ? (
+                                      <span className="text-[11px] text-amber-500 font-bold">
+                                        {renderStars(item.player.Stelle, "h-3 w-3")}
+                                      </span>
+                                    ) : (
+                                      <Badge variant="outline" className="text-[9px] font-mono px-1 py-0">
+                                        1-5⭐
+                                      </Badge>
+                                    )}
+                                    {scoutTokens > 0 && (
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[9px] font-mono px-1 py-0 shrink-0 ${getTierBadgeStyle(
+                                          scoutTokens
+                                        )}`}
+                                      >
+                                        🔭 {scoutTokens}G
+                                      </Badge>
+                                    )}
+                                  </div>
                                 )}
-                              </span>
-                              {scoutTokens > 0 && (
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[9px] font-mono px-1.5 py-0 shrink-0 ${getTierBadgeStyle(
-                                    scoutTokens
-                                  )}`}
-                                >
-                                  🔭 {scoutTokens}G
-                                </Badge>
-                              )}
+                              </div>
                             </button>
 
                             <div className="flex items-center gap-1.5 shrink-0">
@@ -1492,30 +1649,36 @@ const Draft = () => {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleToggleFavorite(rId);
+                                  handleToggleFavorite(pId, item.type);
                                 }}
                                 className={`p-1 rounded-md transition-all ${
-                                  favoriteRookieIds.has(rId)
+                                  item.isFavorite
                                     ? "text-amber-500 hover:text-amber-600 hover:scale-110"
                                     : "text-muted-foreground/35 hover:text-amber-500 hover:scale-110"
                                 }`}
                                 title={
-                                  favoriteRookieIds.has(rId)
+                                  item.isFavorite
                                     ? "Rimuovi dai preferiti"
                                     : "Salva tra i preferiti (⭐)"
                                 }
                               >
                                 <Star
                                   className={`h-4 w-4 ${
-                                    favoriteRookieIds.has(rId) ? "fill-amber-500" : ""
+                                    item.isFavorite ? "fill-amber-500" : ""
                                   }`}
                                 />
                               </button>
 
                               <button
                                 type="button"
-                                title="Apri Report Scouting del rookie"
-                                onClick={() => setInspectedRookie(rookie)}
+                                title={item.type === "free_agent" ? "Apri scheda tecnica svincolato" : "Apri Report Scouting del rookie"}
+                                onClick={() => {
+                                  if (item.type === "free_agent") {
+                                    setInspectedFreeAgent(item.player);
+                                  } else {
+                                    setInspectedRookie(item.player);
+                                  }
+                                }}
                                 className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                               >
                                 <Eye className="h-3.5 w-3.5" />
@@ -1523,7 +1686,7 @@ const Draft = () => {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setSelectedRookieId(isSelected ? null : rId)
+                                  setSelectedPlayerItem(isSelected ? null : { id: pId, type: item.type, player: item.player })
                                 }
                                 className="text-[10px] text-muted-foreground font-mono"
                               >
@@ -1542,32 +1705,45 @@ const Draft = () => {
 
                   {/* Selection Box & Confirm Button */}
                   <div className="p-3 rounded-xl border border-border/80 bg-muted/30 space-y-2.5">
-                    {selectedRookie ? (
+                    {selectedPlayerItem ? (
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-xs">
                           <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                            Rookie Selezionato:
+                            {selectedPlayerItem.type === "free_agent" ? "Svincolato Selezionato:" : "Rookie Selezionato:"}
                           </span>
                           <div className="flex items-center gap-2 mt-0.5">
                             <Badge
                               variant="outline"
                               className={`text-[10px] font-bold ${getRoleColor(
-                                selectedRookie.Posiz
+                                selectedPlayerItem.player.Posiz
                               )}`}
                             >
-                              {selectedRookie.Posiz}
+                              {selectedPlayerItem.player.Posiz}
                             </Badge>
                             <span className="font-extrabold text-sm flex items-center gap-1.5">
-                              {selectedRookie.Nome} {selectedRookie.Cognome}
+                              {selectedPlayerItem.player.Nome} {selectedPlayerItem.player.Cognome}
+                              {selectedPlayerItem.type === "free_agent" && (
+                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold">
+                                  OVR {selectedPlayerItem.player.OVR}
+                                </Badge>
+                              )}
                               <button
                                 type="button"
-                                onClick={() => handleToggleFavorite(Number(selectedRookie.ID))}
+                                onClick={() => handleToggleFavorite(Number(selectedPlayerItem.id), selectedPlayerItem.type)}
                                 className="p-0.5 rounded text-muted-foreground hover:text-amber-500 transition-colors"
-                                title={favoriteRookieIds.has(Number(selectedRookie.ID)) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                                title={
+                                  (selectedPlayerItem.type === "free_agent"
+                                    ? favoriteFreeAgentIds.has(Number(selectedPlayerItem.id))
+                                    : favoriteRookieIds.has(Number(selectedPlayerItem.id)))
+                                    ? "Rimuovi dai preferiti"
+                                    : "Aggiungi ai preferiti"
+                                }
                               >
                                 <Star
                                   className={`h-3.5 w-3.5 ${
-                                    favoriteRookieIds.has(Number(selectedRookie.ID))
+                                    (selectedPlayerItem.type === "free_agent"
+                                      ? favoriteFreeAgentIds.has(Number(selectedPlayerItem.id))
+                                      : favoriteRookieIds.has(Number(selectedPlayerItem.id)))
                                       ? "fill-amber-500 text-amber-500"
                                       : "text-muted-foreground/40 hover:text-amber-500"
                                   }`}
@@ -1579,7 +1755,7 @@ const Draft = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setSelectedRookieId(null)}
+                          onClick={() => setSelectedPlayerItem(null)}
                           className="h-7 text-xs text-muted-foreground"
                         >
                           Cambia
@@ -1587,14 +1763,14 @@ const Draft = () => {
                       </div>
                     ) : (
                       <div className="text-xs text-muted-foreground text-center py-1">
-                        Clicca su un rookie nella lista sopra per prepararlo alla scelta.
+                        Clicca su un calciatore o rookie nella lista sopra per prepararlo alla scelta.
                       </div>
                     )}
 
                     <Button
                       className="w-full font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                       disabled={
-                        !selectedRookie ||
+                        !selectedPlayerItem ||
                         !isUserTeamOnTheClock ||
                         !targetPickForConfirmation ||
                         submitting
@@ -1604,7 +1780,7 @@ const Draft = () => {
                       {!isUserTeamOnTheClock ? (
                         <>
                           <Lock className="h-4 w-4" />
-                          In attesa del turno di {user.team}
+                          In attesa del turno di {user?.team || "Squadra"}
                         </>
                       ) : targetPickForConfirmation ? (
                         <>
@@ -1645,10 +1821,12 @@ const Draft = () => {
                     </div>
                   ) : (
                     userTeamPicks.map((pick) => {
-                      const isPicked = pick.rookie_id !== null && !!pick.rookie;
+                      const drafted = pick.rookie || pick.player;
+                      const isPicked = (pick.rookie_id !== null || (pick.player_id !== undefined && pick.player_id !== null)) && !!drafted;
                       const isCurrent =
                         currentOnTheClockPick?.pick_overall === pick.pick_overall;
                       const isTraded = pick.team_id !== pick.original_team_id;
+                      const isFa = pick.player_type === "free_agent";
 
                       return (
                         <div
@@ -1674,28 +1852,38 @@ const Draft = () => {
                             )}
                           </div>
 
-                          {isPicked && pick.rookie ? (
+                          {isPicked && drafted ? (
                             <div className="flex items-center gap-2">
                               <div className="h-6 w-6 rounded-full overflow-hidden bg-muted/50 border border-border/80 shrink-0 shadow-xs flex items-center justify-center">
                                 <img
-                                  src={getPlayerImage(Number(pick.rookie.ID || pick.rookie_id))}
-                                  alt={`${pick.rookie.Nome} ${pick.rookie.Cognome}`}
+                                  src={getPlayerImage(Number(pick.player_id || pick.rookie_id || drafted.ID))}
+                                  alt={`${drafted.Nome} ${drafted.Cognome}`}
                                   onError={(e) => {
                                     (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
                                   }}
                                   className="h-full w-full object-cover object-top"
                                 />
                               </div>
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
-                                  pick.rookie.Posiz
-                                )}`}
-                              >
-                                {pick.rookie.Posiz}
-                              </Badge>
+                              <div className="flex items-center gap-1">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
+                                    drafted.Posiz
+                                  )}`}
+                                >
+                                  {drafted.Posiz}
+                                </Badge>
+                                {isFa && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[8px] font-bold px-1 py-0 h-3 leading-none bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30"
+                                  >
+                                    FA
+                                  </Badge>
+                                )}
+                              </div>
                               <span className="text-xs sm:text-sm font-bold text-foreground truncate">
-                                {pick.rookie.Nome} {pick.rookie.Cognome}
+                                {drafted.Nome} {drafted.Cognome}
                               </span>
                             </div>
                           ) : isCurrent ? (

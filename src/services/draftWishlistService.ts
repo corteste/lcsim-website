@@ -121,19 +121,18 @@ export async function fetchTeamWishlist(teamId: string): Promise<DraftWishlistIt
 
     const rookieIds = wishlistRows.map((r: any) => Number(r.rookie_id));
 
-    // Carica i dettagli dei rookie corrispondenti
-    const { data: rookiesData, error: rErr } = await supabase
-      .from(ROOKIE_TABLE)
-      .select("*")
-      .in("ID", rookieIds);
+    // Carica i dettagli sia da an_rookie che da an_player (per svincolati in wishlist)
+    const [rookiesRes, playersRes] = await Promise.all([
+      supabase.from(ROOKIE_TABLE).select("*").in("ID", rookieIds),
+      supabase.from("an_player").select("*").in("ID", rookieIds),
+    ]);
 
-    if (rErr) {
-      console.error("fetchTeamWishlist rookies fetch error:", rErr);
-    }
-
-    const rookiesMap = new Map<number, Player>();
-    (rookiesData || []).forEach((rk: any) => {
-      rookiesMap.set(Number(rk.ID), rk as Player);
+    const playersMap = new Map<number, Player>();
+    (playersRes.data || []).forEach((p: any) => {
+      playersMap.set(Number(p.ID), p as Player);
+    });
+    (rookiesRes.data || []).forEach((rk: any) => {
+      playersMap.set(Number(rk.ID), rk as Player);
     });
 
     return wishlistRows.map((row: any) => ({
@@ -143,7 +142,7 @@ export async function fetchTeamWishlist(teamId: string): Promise<DraftWishlistIt
       priority_rank: Number(row.priority_rank),
       created_at: row.created_at,
       updated_at: row.updated_at,
-      rookie: rookiesMap.get(Number(row.rookie_id)),
+      rookie: playersMap.get(Number(row.rookie_id)),
     }));
   } catch (err) {
     console.error("fetchTeamWishlist exception:", err);
@@ -459,27 +458,36 @@ export async function executeAutopick(params: {
       return { success: false, error: "Scelta al draft non trovata" };
     }
 
-    if (pickRow.rookie_id !== null) {
+    if (pickRow.rookie_id !== null || pickRow.player_id !== null) {
       return { success: false, error: `La scelta #${pickOverall} è già stata assegnata!` };
     }
 
-    // 2. Recupera tutti i rookie attualmente non draftati (Squadra IS NULL)
-    const { data: availableRookies, error: rErr } = await supabase
-      .from(ROOKIE_TABLE)
-      .select("*")
-      .is("Squadra", null);
+    // 2. Recupera tutti i rookie e gli svincolati attualmente non draftati (Squadra IS NULL)
+    const [rookiesRes, freeAgentsRes] = await Promise.all([
+      supabase.from(ROOKIE_TABLE).select("*").is("Squadra", null),
+      supabase.from("an_player").select("*").is("Squadra", null),
+    ]);
 
-    if (rErr || !availableRookies || availableRookies.length === 0) {
-      return { success: false, error: "Nessun rookie disponibile rimasto da draftare!" };
+    const availableRookies = (rookiesRes.data || []) as Player[];
+    const availableFreeAgents = (freeAgentsRes.data || []) as Player[];
+
+    if (availableRookies.length === 0 && availableFreeAgents.length === 0) {
+      return { success: false, error: "Nessun calciatore o rookie disponibile rimasto da draftare!" };
     }
 
-    const availableMap = new Map<number, Player>();
-    availableRookies.forEach((rk: any) => availableMap.set(Number(rk.ID), rk as Player));
+    const availableMap = new Map<number, { player: Player; isFreeAgent: boolean }>();
+    availableFreeAgents.forEach((fa: any) =>
+      availableMap.set(Number(fa.ID), { player: fa as Player, isFreeAgent: true })
+    );
+    availableRookies.forEach((rk: any) =>
+      availableMap.set(Number(rk.ID), { player: rk as Player, isFreeAgent: false })
+    );
 
     // 3. Recupera la wishlist ordinata della squadra
     const wishlist = await fetchTeamWishlist(pickingTeamId);
 
-    let chosenRookie: Player | null = null;
+    let chosenPlayer: Player | null = null;
+    let isFreeAgent = false;
     let chosenSource: "wishlist" | "fallback" = "fallback";
     let chosenRank: number | undefined = undefined;
 
@@ -487,54 +495,70 @@ export async function executeAutopick(params: {
     for (const item of wishlist) {
       const match = availableMap.get(item.rookie_id);
       if (match) {
-        chosenRookie = match;
+        chosenPlayer = match.player;
+        isFreeAgent = match.isFreeAgent;
         chosenSource = "wishlist";
         chosenRank = item.priority_rank;
         break;
       }
     }
 
-    // 4. Se nessun rookie della lista è disponibile, applica Fallback A (Miglior OVR rimasto)
-    if (!chosenRookie) {
+    // 4. Se nessun giocatore della lista è disponibile, applica Fallback A (Miglior rookie, o miglior svincolato)
+    if (!chosenPlayer) {
       chosenSource = "fallback";
-      // Ordina per Stelle decrescente, poi per OVR decrescente, poi per ID crescente
-      const sortedByOvr = [...availableRookies].sort((a, b) => {
-        const starA = Number(a.Stelle) || 0;
-        const starB = Number(b.Stelle) || 0;
-        if (starB !== starA) return starB - starA;
-        const ovrA = Number(a.OVR) || 0;
-        const ovrB = Number(b.OVR) || 0;
-        if (ovrB !== ovrA) return ovrB - ovrA;
-        return Number(a.ID) - Number(b.ID);
-      });
-
-      chosenRookie = sortedByOvr[0] as Player;
+      if (availableRookies.length > 0) {
+        const sortedByOvr = [...availableRookies].sort((a, b) => {
+          const starA = Number(a.Stelle) || 0;
+          const starB = Number(b.Stelle) || 0;
+          if (starB !== starA) return starB - starA;
+          const ovrA = Number(a.OVR) || 0;
+          const ovrB = Number(b.OVR) || 0;
+          if (ovrB !== ovrA) return ovrB - ovrA;
+          return Number(a.ID) - Number(b.ID);
+        });
+        chosenPlayer = sortedByOvr[0] as Player;
+        isFreeAgent = false;
+      } else {
+        const sortedFreeAgents = [...availableFreeAgents].sort(
+          (a, b) => (Number(b.OVR) || 0) - (Number(a.OVR) || 0)
+        );
+        chosenPlayer = sortedFreeAgents[0] as Player;
+        isFreeAgent = true;
+      }
     }
 
-    if (!chosenRookie) {
-      return { success: false, error: "Impossibile determinare un rookie per l'autopick" };
+    if (!chosenPlayer) {
+      return { success: false, error: "Impossibile determinare una scelta per l'autopick" };
     }
 
-    const rookieId = Number(chosenRookie.ID);
-    const nowIso = new Date().toISOString();
+    const playerId = Number(chosenPlayer.ID);
     const pickedByString =
       chosenSource === "wishlist"
         ? `AUTOPICK (#${chosenRank} Wishlist da ${executedBy})`
         : `AUTOPICK (Fallback Max OVR da ${executedBy})`;
 
-    // 5. Esegui scelta draft atomica (con de-crittografia ed inserimento in an_player)
-    const { error: draftRpcErr } = await supabase.rpc("rpc_draft_rookie", {
-      p_pick_overall: pickOverall,
-      p_rookie_id: rookieId,
-      p_team_id: pickingTeamId,
-      p_picked_by: pickedByString,
-    });
-
-    if (draftRpcErr) throw draftRpcErr;
+    // 5. Esegui scelta draft atomica (free agent o rookie)
+    if (isFreeAgent) {
+      const { error: draftRpcErr } = await supabase.rpc("rpc_draft_free_agent", {
+        p_pick_overall: pickOverall,
+        p_player_id: playerId,
+        p_team_id: pickingTeamId,
+        p_picked_by: pickedByString,
+      });
+      if (draftRpcErr) throw draftRpcErr;
+    } else {
+      const { error: draftRpcErr } = await supabase.rpc("rpc_draft_rookie", {
+        p_pick_overall: pickOverall,
+        p_rookie_id: playerId,
+        p_team_id: pickingTeamId,
+        p_picked_by: pickedByString,
+      });
+      if (draftRpcErr) throw draftRpcErr;
+    }
 
     return {
       success: true,
-      rookie: chosenRookie,
+      rookie: chosenPlayer,
       source: chosenSource,
       rank: chosenRank,
     };
