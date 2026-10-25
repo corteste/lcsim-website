@@ -574,64 +574,106 @@ const Draft = () => {
   }, [picks, activeUserTeamId]);
 
   const nextUserPendingPick = useMemo(() => {
-    return userTeamPicks.find((p) => p.rookie_id === null) ?? null;
+    return userTeamPicks.find((p) => p.rookie_id === null && (!p.player_id || p.player_id === null)) ?? null;
   }, [userTeamPicks]);
 
-  // Drafted rookie IDs set
-  const draftedRookieIds = useMemo(() => {
+  // Drafted player IDs set (both rookies and free agents)
+  const draftedPlayerIds = useMemo(() => {
     const set = new Set<number>();
     for (const p of picks) {
       if (p.rookie_id !== null) set.add(Number(p.rookie_id));
+      if (p.player_id !== null && p.player_id !== undefined) set.add(Number(p.player_id));
     }
     return set;
   }, [picks]);
 
-  // Available (undrafted) rookies sorted by role priority then surname
-  const availableRookies = useMemo(() => {
-    return rookies
-      .filter((r) => !draftedRookieIds.has(Number(r.ID)) && !r.Squadra)
-      .filter((r) => {
-        if (favoritesOnly && !favoriteRookieIds.has(Number(r.ID))) {
-          return false;
-        }
+  // Conteggi per le pillole del tipo
+  const undraftedRookiesCount = useMemo(() => {
+    return rookies.filter((r) => !draftedPlayerIds.has(Number(r.ID)) && !r.Squadra).length;
+  }, [rookies, draftedPlayerIds]);
+
+  const undraftedFreeAgentsCount = useMemo(() => {
+    return freeAgents.filter((fa) => !draftedPlayerIds.has(Number(fa.ID)) && !fa.Squadra).length;
+  }, [freeAgents, draftedPlayerIds]);
+
+  // Available unified draft pool (Rookies + Calciatori Svincolati)
+  const availableDraftPool = useMemo(() => {
+    const items: DraftPoolItem[] = [];
+
+    // 1. Rookie disponibili
+    if (poolTypeFilter === "ALL" || poolTypeFilter === "ROOKIE") {
+      for (const rk of rookies) {
+        const id = Number(rk.ID);
+        if (draftedPlayerIds.has(id) || rk.Squadra) continue;
+        const isFav = favoriteRookieIds.has(id);
+        if (favoritesOnly && !isFav) continue;
         if (roleFilter !== "ALL") {
           const group = ROLE_GROUPS.find((g) => g.id === roleFilter);
-          if (group && group.roles.length > 0 && !group.roles.includes(r.Posiz)) {
-            return false;
-          }
+          if (group && group.roles.length > 0 && !group.roles.includes(rk.Posiz)) continue;
         }
         if (searchQuery.trim() !== "") {
           const q = searchQuery.toLowerCase().trim();
-          const full = `${r.Nome} ${r.Cognome} ${r.Posiz}`.toLowerCase();
-          return full.includes(q);
+          const full = `${rk.Nome || ""} ${rk.Cognome || ""} ${rk.Posiz || ""}`.toLowerCase();
+          if (!full.includes(q)) continue;
         }
-        return true;
-      })
-      .sort((a, b) => {
-        const rp = (ROLE_PRIORITY[a.Posiz] ?? 99) - (ROLE_PRIORITY[b.Posiz] ?? 99);
-        if (rp !== 0) return rp;
-        return `${a.Cognome} ${a.Nome}`.localeCompare(`${b.Cognome} ${b.Nome}`);
-      });
-  }, [rookies, draftedRookieIds, roleFilter, searchQuery, favoritesOnly, favoriteRookieIds]);
+        items.push({ id, type: "rookie", player: rk, isFavorite: isFav });
+      }
+    }
 
-  const selectedRookie = useMemo(() => {
-    if (selectedRookieId === null) return null;
-    return (
-      availableRookies.find((r) => Number(r.ID) === Number(selectedRookieId)) ??
-      rookies.find((r) => Number(r.ID) === Number(selectedRookieId)) ??
-      null
-    );
-  }, [selectedRookieId, availableRookies, rookies]);
+    // 2. Calciatori Svincolati disponibili
+    if (poolTypeFilter === "ALL" || poolTypeFilter === "FREE_AGENT") {
+      for (const fa of freeAgents) {
+        const id = Number(fa.ID);
+        if (draftedPlayerIds.has(id) || fa.Squadra) continue;
+        const isFav = favoriteFreeAgentIds.has(id);
+        if (favoritesOnly && !isFav) continue;
+        if (roleFilter !== "ALL") {
+          const group = ROLE_GROUPS.find((g) => g.id === roleFilter);
+          if (group && group.roles.length > 0 && !group.roles.includes(fa.Posiz)) continue;
+        }
+        if (searchQuery.trim() !== "") {
+          const q = searchQuery.toLowerCase().trim();
+          const full = `${fa.Nome || ""} ${fa.Cognome || ""} ${fa.Posiz || ""}`.toLowerCase();
+          if (!full.includes(q)) continue;
+        }
+        items.push({ id, type: "free_agent", player: fa, isFavorite: isFav });
+      }
+    }
 
-  // Confirm Draft Pick handler
+    return items.sort((a, b) => {
+      const rp = (ROLE_PRIORITY[a.player.Posiz] ?? 99) - (ROLE_PRIORITY[b.player.Posiz] ?? 99);
+      if (rp !== 0) return rp;
+      const ovrA = Number(a.player.OVR) || 0;
+      const ovrB = Number(b.player.OVR) || 0;
+      if (ovrB !== ovrA) return ovrB - ovrA;
+      return (a.player.Cognome || "").localeCompare(b.player.Cognome || "");
+    });
+  }, [
+    rookies,
+    freeAgents,
+    draftedPlayerIds,
+    poolTypeFilter,
+    roleFilter,
+    favoritesOnly,
+    favoriteRookieIds,
+    favoriteFreeAgentIds,
+    searchQuery,
+  ]);
+
+  // Backward-compat alias for rookie count
+  const availableRookies = useMemo(() => {
+    return availableDraftPool.filter((i) => i.type === "rookie").map((i) => i.player);
+  }, [availableDraftPool]);
+
+  // Confirm Draft Pick handler (supporta sia Rookie sia Svincolati)
   const handleConfirmPick = async () => {
     if (!user) return;
     if (!targetPickForConfirmation) {
       toast.error("Non è ancora il turno della tua squadra!");
       return;
     }
-    if (!selectedRookie) {
-      toast.error("Seleziona prima un rookie dalla lista!");
+    if (!selectedPlayerItem) {
+      toast.error("Seleziona prima un calciatore o un rookie dalla lista!");
       return;
     }
 
@@ -639,48 +681,59 @@ const Draft = () => {
     try {
       const pickNo = targetPickForConfirmation.pick_overall;
       const pickingTeamId = targetPickForConfirmation.team_id;
-      const rookieId = Number(selectedRookie.ID);
+      const pId = Number(selectedPlayerItem.id);
+      const isFa = selectedPlayerItem.type === "free_agent";
 
-      // Scelta draft atomica con decifratura e inserimento in an_player ed ea_player_db
-      const { error: rpcErr } = await supabase.rpc("rpc_draft_rookie", {
-        p_pick_overall: pickNo,
-        p_rookie_id: rookieId,
-        p_team_id: pickingTeamId,
-        p_picked_by: user.username || user.name || "Manager",
-      });
+      if (isFa) {
+        // Scelta calciatore svincolato
+        const { error: rpcErr } = await supabase.rpc("rpc_draft_free_agent", {
+          p_pick_overall: pickNo,
+          p_player_id: pId,
+          p_team_id: pickingTeamId,
+          p_picked_by: user.username || user.name || "Manager",
+        });
+        if (rpcErr) throw rpcErr;
+      } else {
+        // Scelta rookie con decifratura vault
+        const { error: rpcErr } = await supabase.rpc("rpc_draft_rookie", {
+          p_pick_overall: pickNo,
+          p_rookie_id: pId,
+          p_team_id: pickingTeamId,
+          p_picked_by: user.username || user.name || "Manager",
+        });
+        if (rpcErr) throw rpcErr;
+      }
 
-      if (rpcErr) throw rpcErr;
-
-      setSelectedRookieId(null);
+      setSelectedPlayerItem(null);
       await fetchDraftData(true);
       await triggerPickAnnouncement(
         pickNo,
         targetPickForConfirmation.round,
         pickingTeamId,
-        rookieId
+        pId
       );
     } catch (err: any) {
-      console.error("Errore conferma scelta:", err);
-      toast.error(err.message || "Errore durante il salvataggio della scelta");
+      console.error("Errore scelta draft:", err);
+      toast.error(err.message || "Errore durante la scelta al Draft");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Admin: Undo a specific pick
+  // Admin: Undo a specific pick (supporta sia Rookie sia Svincolati)
   const handleAdminUndoPick = async (pick: DraftPickRow) => {
-    if (!isAdmin || !pick.rookie_id) return;
+    const targetId = Number(pick.player_id || pick.rookie_id);
+    if (!isAdmin || !targetId) return;
     setSubmitting(true);
     try {
-      const rId = Number(pick.rookie_id);
-      // Undo atomico: resetta slot, an_rookie e rimuove da an_player ed ea_player_db
+      // Undo atomico: resetta slot e gestisce svincolo su an_player o ripristino an_rookie
       const { error: rpcErr } = await supabase.rpc("rpc_undo_draft_rookie", {
         p_pick_overall: pick.pick_overall,
-        p_rookie_id: rId,
+        p_rookie_id: targetId,
       });
       if (rpcErr) throw rpcErr;
 
-      toast.success(`Pick #${pick.pick_overall} annullata. Il rookie è tornato disponibile.`);
+      toast.success(`Pick #${pick.pick_overall} annullata. Il giocatore è tornato disponibile.`);
       await fetchDraftData(true);
     } catch (err: any) {
       console.error("Errore annullamento pick:", err);
