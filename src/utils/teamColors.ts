@@ -64,12 +64,12 @@ export const TEAM_COLORS: Record<string, TeamColorConfig> = {
   SKA: {
     name: "Sporting Karalis",
     primary: "#0d9488", // Teal / Petrolio
-    secondary: "#f43f5e", // Corallo / Rosso
+    secondary: "#ffffff", // Bianco
   },
   ASK: {
     name: "Sporting Karalis",
     primary: "#0d9488",
-    secondary: "#f43f5e",
+    secondary: "#ffffff", // Bianco
   },
   VFC: {
     name: "Valle FC",
