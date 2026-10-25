@@ -912,13 +912,12 @@ const Allenamenti = () => {
 
           <div className="flex items-center gap-2.5">
             <Button
-              variant="outline"
               size="sm"
               onClick={() => setIsReportModalOpen(true)}
-              className="h-8 gap-1.5 text-xs font-bold border-border/80 shadow-xs hover:bg-muted/80"
+              className="h-8 gap-2 text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border border-emerald-500/50 transition-all hover:scale-[1.02] cursor-pointer"
               title="Apri il resoconto dettagliato del calcolo XP stagionali per la rosa"
             >
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+              <TrendingUp className="h-4 w-4" />
               <span>Report XP Stagionali</span>
             </Button>
             <AdminTeamSelector />

@@ -1,5 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Cell,
+} from "recharts";
+import { supabase } from "@/supabaseClient";
+import {
+  fetchSeasonMatchStats,
+  computePlayerSeasonXp,
+  PlayerSeasonXpSummary,
+  getSeasonFormatConfig,
+} from "@/services/playerXpService";
 import { getPlayerImage, getRoleColor, getTeamBackground, getValueColor, getNationalityFlag } from "@/utils/functions";
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/player";
@@ -7,7 +24,8 @@ import { MarketStatus } from "@/types/marketStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, Ruler, Weight, Footprints, X, Shield, Zap, Target, Activity, 
-  Sparkles, Star, Award, Compass, Swords, Flame, TrendingUp
+  Sparkles, Star, Award, Compass, Swords, Flame, TrendingUp,
+  Calendar, Clock, CheckCircle2, AlertCircle
 } from "lucide-react";
 import { PlayerXpBreakdownModal } from "@/components/player/PlayerXpBreakdownModal";
 import { Button } from "@/components/ui/button";
@@ -103,6 +121,50 @@ const StatCardGroup = ({
 const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
   if (!currentPlayer) return null;
   const [showXpModal, setShowXpModal] = useState<boolean>(false);
+  const [xpSummary, setXpSummary] = useState<PlayerSeasonXpSummary | null>(null);
+  const [xpLoading, setXpLoading] = useState<boolean>(false);
+  const [xpSeason, setXpSeason] = useState<number>(10);
+
+  const formatConfig = useMemo(() => getSeasonFormatConfig(xpSeason), [xpSeason]);
+
+  // Caricamento rendimento e match stats dell'ultima stagione disputata
+  useEffect(() => {
+    if (!currentPlayer?.ID) return;
+    let isMounted = true;
+    setXpLoading(true);
+
+    async function loadLatestSeasonStats() {
+      try {
+        // Rileva l'ultima stagione in cui il calciatore ha disputato partite
+        const { data: maxStagRow } = await supabase
+          .from("AS_PLAYER_STAT")
+          .select("STAG")
+          .eq("ID", currentPlayer.ID)
+          .order("STAG", { ascending: false })
+          .limit(1);
+
+        const targetStag = maxStagRow && maxStagRow.length > 0 ? Number(maxStagRow[0].STAG) : 10;
+        if (!isMounted) return;
+        setXpSeason(targetStag);
+
+        const rows = await fetchSeasonMatchStats(targetStag, [Number(currentPlayer.ID)]);
+        if (!isMounted) return;
+
+        const summary = computePlayerSeasonXp(currentPlayer, rows, targetStag);
+        setXpSummary(summary);
+      } catch (err) {
+        console.error("Errore caricamento XP calciatore:", err);
+      } finally {
+        if (isMounted) setXpLoading(false);
+      }
+    }
+
+    loadLatestSeasonStats();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPlayer?.ID, currentPlayer?.Età]);
+
   const ovr = currentPlayer.OVR ?? 0;
   const isGoalkeeper = currentPlayer.Posiz === "POR";
 
@@ -277,6 +339,13 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               <Sparkles className="h-4 w-4 mr-2" />
               Ruoli & Tratti Speciali
             </TabsTrigger>
+            <TabsTrigger 
+              value="xp" 
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-sm px-2 transition-colors"
+            >
+              <TrendingUp className="h-4 w-4 mr-2 text-emerald-500" />
+              Rendimento &amp; Grafico XP
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -425,6 +494,298 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Tab 3: Rendimento & Grafico XP Partita per Partita (Ultima Stagione) */}
+        <TabsContent value="xp" className="flex-1 overflow-y-auto p-4 sm:p-6 m-0 focus-visible:outline-none space-y-5">
+          {xpLoading ? (
+            <div className="p-16 text-center text-xs text-muted-foreground font-mono space-y-2">
+              <Clock className="h-6 w-6 animate-spin mx-auto text-primary" />
+              <p>Caricamento statistiche e calcolo XP dell'ultima stagione...</p>
+            </div>
+          ) : !xpSummary || xpSummary.matches.length === 0 ? (
+            <Card className="p-10 text-center border border-border/70 bg-card/60 rounded-2xl space-y-3">
+              <div className="p-3 rounded-full bg-muted/40 w-fit mx-auto border border-border/60">
+                <Calendar className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-foreground">
+                  Nessuna presenza a referto nella Stagione {xpSeason}
+                </h4>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  Il calciatore non ha disputato incontri ufficiali registrati nell'ultima stagione. Gli XP partita per partita verranno calcolati automaticamente non appena scenderà in campo.
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-5">
+              {/* Header Box con Stagione e Parametri */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-card to-emerald-500/5 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      Rendimento Ultima Stagione
+                    </span>
+                    <Badge variant="outline" className="font-mono text-[10px] font-bold bg-background">
+                      Stagione {xpSeason}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Grafico ed evoluzione dei punti XP guadagnati giornata per giornata secondo la formula ufficiale LCSIM.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
+                  <span className="px-2 py-1 rounded bg-background/80 border border-border/60">
+                    RS: {formatConfig.regularSeasonWeeks} match
+                  </span>
+                  <span className="px-2 py-1 rounded bg-background/80 border border-border/60">
+                    PO: Top {formatConfig.playoffBestMatchesToKeep} match
+                  </span>
+                </div>
+              </div>
+
+              {/* KPI Cards Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <Card className="border border-border/70 bg-card shadow-xs">
+                  <CardContent className="p-3.5">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                      XP Totali Stagione
+                    </span>
+                    <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      {xpSummary.finalSeasonXp} XP
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-mono">
+                      {xpSummary.isYouth ? `inclusi +${xpSummary.youthBonusXp} XP giovani (+10%)` : "stagione completa"}
+                    </span>
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-border/70 bg-card shadow-xs">
+                  <CardContent className="p-3.5">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                      Regular Season vs Playoff
+                    </span>
+                    <div className="text-lg sm:text-xl font-black font-mono text-foreground mt-0.5">
+                      {xpSummary.rsXp} <span className="text-xs font-normal text-muted-foreground font-sans">RS</span> + {xpSummary.poXp} <span className="text-xs font-normal text-muted-foreground font-sans">PO</span>
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-mono">
+                      {xpSummary.rsMatchesCount} match RS • {xpSummary.poMatchesCount} match PO
+                    </span>
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-border/70 bg-card shadow-xs">
+                  <CardContent className="p-3.5">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                      Presenze &amp; Minutaggio
+                    </span>
+                    <div className="text-lg sm:text-xl font-black font-mono text-foreground mt-0.5">
+                      {xpSummary.matches.length} pres. ({xpSummary.totalMinutes}')
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-mono">
+                      media {Math.round(xpSummary.totalMinutes / (xpSummary.matches.length || 1))} min/partita
+                    </span>
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-border/70 bg-card shadow-xs">
+                  <CardContent className="p-3.5">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                      Voto Medio
+                    </span>
+                    <div className="text-lg sm:text-xl font-black font-mono text-foreground mt-0.5">
+                      {xpSummary.averageGrade !== null ? xpSummary.averageGrade : "S.V."}
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-mono">
+                      su {xpSummary.matches.filter((m) => m.voto !== null && m.voto > 0).length} gare valutate
+                    </span>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Banner Bonus Giovani */}
+              {xpSummary.isYouth && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-between gap-2 text-xs shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 shrink-0 text-amber-500" />
+                    <span>
+                      <strong>Bonus Crescita Under 25 (+10%)</strong>: avendo {xpSummary.age} anni, il giocatore beneficia del moltiplicatore ×1.1.
+                    </span>
+                  </div>
+                  <strong className="font-mono text-sm shrink-0">+{xpSummary.youthBonusXp} XP</strong>
+                </div>
+              )}
+
+              {/* Grafico Partita per Partita */}
+              <Card className="border border-border/70 bg-card shadow-sm overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      Progressione XP Partita per Partita
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    Verde: conteggiata • Trasparente: playoff scartata
+                  </span>
+                </div>
+                <CardContent className="p-4 sm:p-5">
+                  <div className="h-[250px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={xpSummary.matches.map((m) => ({
+                          week: m.week,
+                          label: m.isPlayoff ? `PO${m.week - formatConfig.regularSeasonWeeks}` : `G${m.week}`,
+                          matchXp: m.matchXp,
+                          minuti: m.minuti,
+                          voto: m.voto,
+                          xpMinuti: m.xpMinuti,
+                          xpVoto: m.xpVoto,
+                          isPlayoff: m.isPlayoff,
+                          isCountedInPlayoff: m.isCountedInPlayoff,
+                        }))}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                        <XAxis dataKey="label" stroke="#888888" fontSize={11} tickLine={false} />
+                        <YAxis stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
+                        <RechartsTooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload;
+                              return (
+                                <div className="rounded-xl border border-border/80 bg-card/95 backdrop-blur-md p-3 shadow-xl text-xs space-y-1.5 font-mono">
+                                  <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-1 font-bold text-foreground">
+                                    <span>Giornata #{d.week}</span>
+                                    <span className="text-[10px] uppercase opacity-75">
+                                      {d.isPlayoff ? "Playoff" : "Reg. Season"}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between gap-4 text-muted-foreground">
+                                    <span>Minuti:</span>
+                                    <strong className="text-foreground">{d.minuti}' (+{d.xpMinuti} XP)</strong>
+                                  </div>
+                                  <div className="flex justify-between gap-4 text-muted-foreground">
+                                    <span>Voto:</span>
+                                    <strong className="text-foreground">{d.voto ?? "S.V."} (+{d.xpVoto} XP)</strong>
+                                  </div>
+                                  <div className="pt-1 border-t border-border/50 flex justify-between gap-4 font-black text-emerald-500">
+                                    <span>Totale Gara:</span>
+                                    <span>+{d.matchXp} XP</span>
+                                  </div>
+                                  {d.isPlayoff && (
+                                    <div className="text-[10px] text-right">
+                                      {d.isCountedInPlayoff ? (
+                                        <span className="text-emerald-500 font-bold">✓ Conteggiata</span>
+                                      ) : (
+                                        <span className="text-muted-foreground">✗ Scartata</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar dataKey="matchXp" radius={[6, 6, 0, 0]}>
+                          {xpSummary.matches.map((m, idx) => {
+                            const isCounted = !m.isPlayoff || m.isCountedInPlayoff;
+                            return (
+                              <Cell
+                                key={idx}
+                                fill={isCounted ? "#10b981" : "#6b7280"}
+                                opacity={isCounted ? 1 : 0.35}
+                              />
+                            );
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Tabella Cronologica Partita per Partita */}
+              <div className="rounded-xl border border-border/70 overflow-hidden shadow-xs">
+                <div className="px-4 py-2.5 bg-muted/30 border-b border-border/60 flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Dettaglio Referto Partite ({xpSummary.matches.length} match disputati)
+                  </span>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    Stagione {xpSeason}
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="border-b border-border/60 text-[10px] uppercase text-muted-foreground bg-muted/15">
+                        <th className="py-2 px-3">Giornata</th>
+                        <th className="py-2 px-3">Fase</th>
+                        <th className="py-2 px-3">Minuti</th>
+                        <th className="py-2 px-3">Voto</th>
+                        <th className="py-2 px-3">XP Minuti</th>
+                        <th className="py-2 px-3">XP Voto</th>
+                        <th className="py-2 px-3 font-bold">Totale</th>
+                        <th className="py-2 px-3 text-right">Stato</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {xpSummary.matches.map((m) => {
+                        const isCounted = !m.isPlayoff || m.isCountedInPlayoff;
+                        return (
+                          <tr
+                            key={m.week}
+                            className={`hover:bg-muted/30 transition-colors ${
+                              !isCounted ? "opacity-40" : ""
+                            }`}
+                          >
+                            <td className="py-2 px-3 font-bold text-foreground">
+                              Giornata #{m.week}
+                            </td>
+                            <td className="py-2 px-3">
+                              {m.isPlayoff ? (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30">
+                                  Playoff
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[9px] px-1 py-0">
+                                  Reg. Season
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="py-2 px-3">{m.minuti > 0 ? `${m.minuti}'` : "0'"}</td>
+                            <td className="py-2 px-3 font-bold">{m.voto !== null ? m.voto : "S.V."}</td>
+                            <td className="py-2 px-3 text-muted-foreground">+{m.xpMinuti} XP</td>
+                            <td className="py-2 px-3 text-muted-foreground">+{m.xpVoto} XP</td>
+                            <td className="py-2 px-3 font-black text-foreground">+{m.matchXp} XP</td>
+                            <td className="py-2 px-3 text-right">
+                              {m.isPlayoff ? (
+                                m.isCountedInPlayoff ? (
+                                  <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[9px] gap-1">
+                                    <CheckCircle2 className="h-2.5 w-2.5" /> Top {formatConfig.playoffBestMatchesToKeep}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[9px] text-muted-foreground">
+                                    Scartata
+                                  </Badge>
+                                )
+                              ) : (
+                                <Badge variant="outline" className="text-[9px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                                  Conteggiata
+                                </Badge>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
