@@ -734,15 +734,20 @@ Introduzione della grafica delle magliette di gioco nella scheda dei calciatori:
 ---
 
 ## 📌 35. Invecchiamento Solo Anagrafico per Calciatori Ritirati (Senza Decadimenti Statistiche)
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Migrazione SQL & RPC aggiornata)
 - **Priorità**: Alta (Integrità storica dei dati delle vecchie glorie)
-- **Moduli coinvolti**: `src/services/playerAgingService.ts`, funzione SQL Postgres `rpc_apply_player_aging`
+- **Moduli coinvolti**: `src/services/playerAgingService.ts`, `src/components/admin/AgingModal.tsx`, funzione SQL Postgres `rpc_apply_player_aging`
 - **Tabelle coinvolte**: `public.an_player`, `public.ea_player_db`
+- **Migrazioni**: `supabase/migrations/20261025_player_aging_retired.sql` e rollback `20261025_player_aging_retired_rollback.sql`
 
-### Descrizione
-Rettifica della procedura batch di transizione stagionale (`rpc_apply_player_aging`):
-- Per i calciatori che risultano già ritirati (`Squadra = 'RITIRATO'`), la procedura deve incrementare **esclusivamente l'età anagrafica** (`Età = Età + 1`), in modo da mantenere coerente lo scorrere degli anni sportivi.
-- Viene rigorosamente **esclusa qualsiasi alterazione degli 11 attributi fisici/tecnici** e del valore di OVR, preservando intatta e immutabile la scheda tecnica con cui il calciatore ha concluso la propria carriera.
+### Descrizione & Risoluzione Tecnica
+1. **Aggiornamento Procedura Batch (`rpc_apply_player_aging`)**:
+   - Nella funzione RPC su Supabase, il passaggio stagionale è stato scorporato in due step chiari:
+     - **Calciatori Attivi**: incremento anagrafico (`"Età" = "Età" + 1`), traslazione data (`"DOB" = "DOB" - 365`), decadimenti fisici/tecnici per over 30 (`p_decay_updates`) e sincronizzazione `ea_player_db`.
+     - **Calciatori Già Ritirati (`Squadra = 'RITIRATO'`)**: incremento anagrafico (`"Età" = "Età" + 1`) e traslazione temporale (`"DOB" = "DOB" - 365` e `ea_player_db.birthdate - 365`).
+   - Gli 11 attributi fisici/tecnici e il valore di OVR dei calciatori ritirati **rimangono rigorosamente congelati ed inalterati**, preservando immutata la scheda tecnica storica del calciatore.
+2. **Coerenza Metriche & Toast Admin**:
+   - L'anteprima dell'AgingModal rimane focalizzata sui calciatori attivi e sulla gestione dei ritiri del campionato, mentre l'esecuzione a DB riporta nel toast di conferma e nei metadati lo scorporo trasparente (attivi vs ritirati storici).
 
 ---
 

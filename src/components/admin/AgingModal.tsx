@@ -95,8 +95,9 @@ export const AgingModal: React.FC<AgingModalProps> = ({
         throw new Error(res.error || "Operazione di invecchiamento non riuscita");
       }
 
+      const retiredNote = res.aged_retired_count ? ` e ${res.aged_retired_count} già ritirati` : "";
       toast.success(
-        `Invecchiamento completato con successo! Invecchiati ${res.aged_count ?? report.totalActive} calciatori, applicati ${res.decayed_count ?? report.decayCount} decadimenti e ufficializzati ${res.retired_count ?? report.retireCount} ritiri.`,
+        `Invecchiamento completato con successo! Invecchiati ${res.aged_active_count ?? res.aged_count ?? report.totalActive} calciatori attivi${retiredNote}, applicati ${res.decayed_count ?? report.decayCount} decadimenti e ufficializzati ${res.retired_count ?? report.retireCount} nuovi ritiri.`,
         { icon: "⏳", duration: 6000 }
       );
 

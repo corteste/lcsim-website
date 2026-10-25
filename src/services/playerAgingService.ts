@@ -175,7 +175,7 @@ export function buildAgingAnnouncementContent(
   decayCount: number,
   retireCount: number
 ): string {
-  let md = `La Lega LCSIM ha completato la procedura annuale di **invecchiamento anagrafico** (+1 anno) e adeguamento temporale delle date di nascita per tutti i calciatori della lega.\n\n`;
+  let md = `La Lega LCSIM ha completato la procedura annuale di **invecchiamento anagrafico** (+1 anno) e adeguamento temporale delle date di nascita per tutti i calciatori della lega (inclusi i calciatori già ritirati, per cui viene preservata immutata la scheda tecnica).\n\n`;
 
   md += `### 🛑 Calciatori Ritirati Ufficialmente (${retireCount})\n`;
   md += `Al termine della stagione, i seguenti calciatori hanno raggiunto i **35 anni di età**, concludendo ufficialmente la loro carriera agonistica in LCSIM e passando allo status di **RITIRATO**:\n\n`;
@@ -383,6 +383,8 @@ export async function executePlayerAgingRpc(
 ): Promise<{
   success: boolean;
   aged_count?: number;
+  aged_active_count?: number;
+  aged_retired_count?: number;
   ea_aged_count?: number;
   decayed_count?: number;
   ea_decayed_count?: number;
