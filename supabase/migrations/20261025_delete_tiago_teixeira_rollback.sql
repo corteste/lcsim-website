@@ -1,0 +1,3 @@
+-- Rollback Migrazione: Rimozione Tiago Teixeira (ID 50711)
+-- Per ripristinare il rookie Tiago Teixeira è sufficiente re-importare il file della classe rookie
+-- o ripristinare la riga se necessario.
