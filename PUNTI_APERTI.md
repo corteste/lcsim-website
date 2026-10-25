@@ -546,16 +546,39 @@ Le stelle dei rookie (da 1 a 5 ⭐), impiegate per oscurare l'overall esatto ai 
 ---
 
 ## 📌 24. Calcolo XP Giocatori (Punti Esperienza Settimanali / Stagionali)
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Testato (Formula ufficiale implementata, Service & Report UI in Allenamenti e Dettaglio Calciatore)
 - **Priorità**: Alta
-- **Moduli coinvolti**: Sezione Allenamenti (`src/pages/Allenamenti.tsx`, `src/services/playerTrainingService.ts`), statistiche partite (`"AS_PLAYER_STAT"`)
-- **Tabelle coinvolte**: `an_player_training`, `"AS_PLAYER_STAT"`, `an_player`
+- **Moduli coinvolti**: `src/services/playerXpService.ts`, `src/pages/Allenamenti.tsx` (`SeasonalXpReportModal.tsx`), `src/components/player/playerDetails.tsx` (`PlayerXpBreakdownModal.tsx`)
+- **Tabelle coinvolte**: `"AS_PLAYER_STAT"`, `an_player`, `an_schedule`
 
-### Descrizione
-Sistema automatico di calcolo e attribuzione dei punti esperienza (XP) ai calciatori:
-- Calcolo basato sulle prestazioni effettive in partita (minuti giocati, voto conseguito, gol/assist, porta inviolata per POR/DIF, premi MVP).
-- Regole di maturazione XP per fascia d'età (curva accelerata per gli under 21, curva standard per i prime, decrescente per i veterani).
-- Distribuzione nei montepremi allenamento della squadra e storico XP accumulati.
+### Formula Ufficiale Implementata
+La formula aggrega per ciascun calciatore i punti XP maturati in ogni singola giornata disputata:
+
+1. **XP Minuti in campo (singola partita)**:
+   - Se il calciatore non è entrato in campo (0 minuti): **0 XP**.
+   - Altrimenti: **1 XP ogni 20 minuti giocati** (arrotondato per eccesso all'unità), fino a un massimo di **5 XP** (es. 1-20 min $\to$ 1 XP; 21-40 min $\to$ 2 XP; 41-60 min $\to$ 3 XP; 61-80 min $\to$ 4 XP; 81+ min $\to$ 5 XP).
+2. **XP dal Voto (singola partita)**:
+   - Se il calciatore non ha ricevuto voto (S.V. o assente): **2 XP**.
+   - Altrimenti: $\lfloor (\text{Voto} - 3) \times 2 \rfloor$ (arrotondato per difetto all'unità).
+3. **Totale Singola Partita**:
+   - $\text{XP}_{\text{partita}} = \text{XP}_{\text{minuti}} + \text{XP}_{\text{voto}}$ (sempre numero intero).
+4. **Aggregazione Stagionale (Regular Season vs Playoff)**:
+   - **Regular Season**: somma di tutte le partite disputate (11 giornate nella Lega a 12 squadre della Stagione 11; 9 giornate per la Lega a 10 squadre delle Stagioni $\le$ 10).
+   - **Playoff**: si considerano **solamente le migliori prestazioni** per ovviare al diverso numero di incontri tra le squadre:
+     - Dalla **Stagione 11 (12 squadre)**: **top 3 migliori match** di playoff.
+     - Fino alla **Stagione 10 (10 squadre)**: **top 2 migliori match** di playoff.
+5. **Bonus Crescita Giovani (24 e 25 anni)**:
+   - Ai calciatori che all'atto della stagione hanno **24 o 25 anni** viene applicato un moltiplicatore di **$\times 1.1$ (+10%)**, simulando la crescita aumentata dei giovani.
+6. **Moltiplicatore Generale di Lega & Target Pool**:
+   - Calibrato per garantire uniformità e comparabilità statistica tra stagioni diverse a prescindere da variazioni di gameplay:
+     - Target storico per Lega a 10 squadre $\times$ 21 giocatori: **circa 20.000 XP**.
+     - Target per la nuova Lega a 12 squadre $\times$ 21 giocatori: **circa 24.000 XP**.
+   - $\text{XP}_{\text{finali}} = \text{round}(\text{XP}_{\text{giovane}} \times \text{MoltiplicatoreStagionale})$.
+
+### Componenti & Interfaccia
+- **`src/services/playerXpService.ts`**: motore di calcolo puro con supporto per formati dinamici per stagione, fetch delle statistiche da `AS_PLAYER_STAT` e riepiloghi di squadra/lega.
+- **`SeasonalXpReportModal.tsx` in Allenamenti (`/mia-squadra/allenamenti`)**: dashboard analitica con statistiche di squadra (totale XP, media, top earner, bonus giovani), tabella rosa filtrabile per ruolo/nome ed espansione a fisarmonica con il referto partita per partita (minuti, voto, XP parziali, badge per match inclusi o scartati nei playoff).
+- **`PlayerXpBreakdownModal.tsx` in Dettaglio Calciatore (`playerDetails.tsx`)**: pill interattiva `XP: {valore}` nell'intestazione della scheda calciatore che apre il popup dedicato con la timeline stagionale delle sue prestazioni.
 
 ---
 

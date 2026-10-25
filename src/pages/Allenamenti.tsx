@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import UnifiedRoleAndTraitSystem from "@/components/training/UnifiedRoleAndTraitSystem";
+import { SeasonalXpReportModal } from "@/components/training/SeasonalXpReportModal";
 import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
@@ -427,6 +428,7 @@ const Allenamenti = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isRosterLocked, setIsRosterLocked] = useState<boolean>(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     getRosterLockState().then((st) => setIsRosterLocked(st.isLocked));
@@ -908,7 +910,17 @@ const Allenamenti = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsReportModalOpen(true)}
+              className="h-8 gap-1.5 text-xs font-bold border-border/80 shadow-xs hover:bg-muted/80"
+              title="Apri il resoconto dettagliato del calcolo XP stagionali per la rosa"
+            >
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Report XP Stagionali</span>
+            </Button>
             <AdminTeamSelector />
           </div>
         </div>
@@ -1637,6 +1649,16 @@ const Allenamenti = () => {
             </div>
           </>
         )}
+
+        {/* MODALE REPORT CALCOLO XP STAGIONALI SQUADRA */}
+        <SeasonalXpReportModal
+          open={isReportModalOpen}
+          onOpenChange={setIsReportModalOpen}
+          teamId={currentTeam || ""}
+          teamName={effectiveTeamFullName || currentTeam || ""}
+          players={players}
+          defaultSeason={10}
+        />
       </main>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPlayerImage, getRoleColor, getTeamBackground, getValueColor, getNationalityFlag } from "@/utils/functions";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +7,9 @@ import { MarketStatus } from "@/types/marketStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, Ruler, Weight, Footprints, X, Shield, Zap, Target, Activity, 
-  Sparkles, Star, Award, Compass, Swords, Flame
+  Sparkles, Star, Award, Compass, Swords, Flame, TrendingUp
 } from "lucide-react";
+import { PlayerXpBreakdownModal } from "@/components/player/PlayerXpBreakdownModal";
 import { Button } from "@/components/ui/button";
 
 interface PlayerDetailsProps {
@@ -100,6 +102,7 @@ const StatCardGroup = ({
 
 const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
   if (!currentPlayer) return null;
+  const [showXpModal, setShowXpModal] = useState<boolean>(false);
   const ovr = currentPlayer.OVR ?? 0;
   const isGoalkeeper = currentPlayer.Posiz === "POR";
 
@@ -190,9 +193,15 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
                 </Badge>
               )}
               {currentPlayer.XP !== null && (
-                <Badge variant="outline" className="text-xs font-mono font-bold bg-primary/10 text-primary border-primary/20">
-                  XP: {currentPlayer.XP}
-                </Badge>
+                <button
+                  type="button"
+                  onClick={() => setShowXpModal(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-mono font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 hover:border-primary/45 px-2.5 py-0.5 rounded-full transition-all cursor-pointer shadow-xs"
+                  title="Clicca per visualizzare il report analitico XP partita per partita"
+                >
+                  <TrendingUp className="h-3 w-3" />
+                  <span>XP: {currentPlayer.XP}</span>
+                </button>
               )}
             </div>
 
@@ -418,6 +427,14 @@ const PlayerDetails = ({ currentPlayer, onClose }: PlayerDetailsProps) => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* MODALE DETTAGLIO XP PARTITA PER PARTITA */}
+      <PlayerXpBreakdownModal
+        player={currentPlayer}
+        open={showXpModal}
+        onOpenChange={setShowXpModal}
+        defaultSeason={10}
+      />
     </div>
   );
 };
