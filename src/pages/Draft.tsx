@@ -2165,6 +2165,14 @@ const Draft = () => {
         onClose={() => setAnnouncementPick(null)}
       />
 
+      {/* MODAL DETTAGLIO COMPLETO CALCIATORE SVINCOLATO (Punto 40) */}
+      {inspectedFreeAgent && (
+        <PlayerDetails
+          currentPlayer={inspectedFreeAgent}
+          onClose={() => setInspectedFreeAgent(null)}
+        />
+      )}
+
       {/* QUICK SCOUTING REPORT MODAL */}
       <Dialog
         open={!!inspectedRookie}
@@ -2320,7 +2328,11 @@ const Draft = () => {
                   <Button
                     size="sm"
                     onClick={() => {
-                      setSelectedRookieId(Number(inspectedRookie.ID));
+                      setSelectedPlayerItem({
+                        id: Number(inspectedRookie.ID),
+                        type: "rookie",
+                        player: inspectedRookie,
+                      });
                       setInspectedRookie(null);
                     }}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
