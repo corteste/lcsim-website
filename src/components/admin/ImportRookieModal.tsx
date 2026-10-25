@@ -33,6 +33,7 @@ import {
   previewRookieImport,
   executeRookieImport,
   RookieImportPreview,
+  fetchContractedPlayersRankings,
 } from "@/services/rookieImportService";
 
 interface ImportRookieModalProps {
@@ -80,16 +81,18 @@ export const ImportRookieModal: React.FC<ImportRookieModalProps> = ({
     if (updatedFile1 && updatedFile2) {
       try {
         setIsAnalyzing(true);
-        const [content1, content2] = await Promise.all([
+        const [content1, content2, rankings] = await Promise.all([
           updatedFile1.text(),
           updatedFile2.text(),
+          fetchContractedPlayersRankings(),
         ]);
 
         const prev = previewRookieImport(
           content1,
           content2,
           updatedFile1.name,
-          updatedFile2.name
+          updatedFile2.name,
+          rankings
         );
         setPreview(prev);
         if (prev.valid) {
