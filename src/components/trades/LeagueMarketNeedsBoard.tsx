@@ -26,6 +26,7 @@ import {
 } from "@/types/marketNeeds";
 import { fetchAllTeamMarketNeeds } from "@/services/marketNeedsService";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/supabaseClient";
 
 interface LeagueMarketNeedsBoardProps {
   onOpenTradeWithTeam?: (teamId: string) => void;
@@ -51,6 +52,25 @@ export const LeagueMarketNeedsBoard: React.FC<LeagueMarketNeedsBoardProps> = ({
 
   useEffect(() => {
     loadData();
+
+    const handleSync = () => loadData();
+    window.addEventListener("lcsim-market-needs-updated", handleSync);
+
+    const channel = supabase
+      .channel("lcsim-market-needs-board-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "team_market_needs" },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("lcsim-market-needs-updated", handleSync);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Calcolo conteggio club per ciascuna macro-categoria

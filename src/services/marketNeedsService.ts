@@ -10,10 +10,11 @@ import {
  */
 export async function fetchAllTeamMarketNeeds(): Promise<EnrichedTeamMarketNeed[]> {
   try {
-    // 1. Carica le squadre da an_team
+    // 1. Carica le squadre da an_team (solo club attivi di Serie A)
     const { data: teamsData, error: teamsError } = await supabase
       .from("an_team")
-      .select("TEAM_ID, NAME, Allenatore")
+      .select("TEAM_ID, NAME, MANAGER")
+      .eq("ACTIVE", true)
       .order("NAME", { ascending: true });
 
     if (teamsError) {
@@ -48,7 +49,7 @@ export async function fetchAllTeamMarketNeeds(): Promise<EnrichedTeamMarketNeed[
       return {
         team_id: t.TEAM_ID,
         team_name: t.NAME || t.TEAM_ID,
-        manager_name: t.Allenatore || null,
+        manager_name: t.MANAGER || null,
         needs: recorded ? recorded.needs : [],
         updated_at: recorded ? recorded.updated_at : new Date().toISOString(),
         updated_by: recorded ? recorded.updated_by : null,
@@ -112,6 +113,10 @@ export async function updateTeamMarketNeeds(
     if (error) {
       console.error(`Errore salvataggio bisogni per ${teamId}:`, error);
       return { success: false, error: error.message };
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("lcsim-market-needs-updated"));
     }
 
     return { success: true };
