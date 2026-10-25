@@ -117,17 +117,6 @@
 }
 
 @layer base {
-  html {
-    overflow-y: scroll !important;
-    scrollbar-gutter: stable !important;
-  }
-
-  body[data-scroll-locked] {
-    overflow: visible !important;
-    padding-right: 0px !important;
-    margin-right: 0px !important;
-  }
-
   * {
     @apply border-border;
   }
@@ -135,4 +124,19 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+}
+
+/* Prevent horizontal layout shifts and UI jumps across all browsers and Radix modals */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+:root {
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+body[data-scroll-locked] {
+  margin-right: 0px !important;
+  padding-right: 0px !important;
 }

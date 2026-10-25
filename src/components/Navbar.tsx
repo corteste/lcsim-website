@@ -226,7 +226,7 @@ const Navbar = () => {
   const isMiaSquadraActive = location.pathname.startsWith("/mia-squadra") || location.pathname.startsWith("/admin") || location.pathname.startsWith("/amministrazione");
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-card/90 backdrop-blur-md shadow-xs transition-colors">
+    <nav className="sticky top-0 z-50 w-full border-b bg-card/90 backdrop-blur-md shadow-xs transition-colors">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           
@@ -263,7 +263,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-1.5 lg:gap-2">
             
             {/* 1. DROPDOWN: CAMPIONATO */}
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger
                 className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
                   isCampionatoActive
@@ -304,7 +304,7 @@ const Navbar = () => {
             </DropdownMenu>
 
             {/* 2. DROPDOWN: CALCIATORI */}
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger
                 className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
                   isCalciatoriActive
@@ -345,7 +345,7 @@ const Navbar = () => {
             </DropdownMenu>
 
             {/* 3. DROPDOWN / LINK: DRAFT & MERCATO */}
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger
                 className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
                   isDraftActive
@@ -386,7 +386,7 @@ const Navbar = () => {
             </DropdownMenu>
 
             {/* 4. DROPDOWN: ARCHIVIO */}
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger
                 className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
                   isArchivioActive
@@ -427,7 +427,7 @@ const Navbar = () => {
             </DropdownMenu>
 
             {/* 5. DROPDOWN: LA MIA SQUADRA (IN EVIDENZA) */}
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger
                 className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-2 outline-hidden ${
                   isMiaSquadraActive
@@ -556,7 +556,7 @@ const Navbar = () => {
 
             {/* Profilo Utente / Login */}
             {user ? (
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-card border border-border/80 hover:border-border hover:bg-muted/40 shadow-xs transition-all text-xs font-semibold outline-hidden">
                     {isAdmin ? (
