@@ -36,6 +36,8 @@ import {
   getTeamBackground,
 } from "@/utils/functions";
 import { useSchedule } from "@/context/ScheduleContext";
+import { useTheme } from "next-themes";
+import { getMatchStatsColors } from "@/utils/teamColors";
 
 // Function to compute pitch coordinates for 11 starters
 function computePitchCoordinates(
@@ -158,6 +160,8 @@ function computePitchCoordinates(
 
 const Calendario = () => {
   const { schedule, loaded } = useSchedule();
+  const { resolvedTheme } = useTheme();
+  const isDarkMode = resolvedTheme !== "light";
 
   // Active selected week state (defaults to 1)
   const [activeWeek, setActiveWeek] = useState<number>(1);
@@ -1045,8 +1049,21 @@ const Calendario = () => {
 
               {/* TAB 2: STATISTICHE SQUADRE */}
               {modalTab === "stats" && (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {(() => {
+                    const statsColors = getMatchStatsColors(
+                      selected.match.home,
+                      selected.match.away,
+                      isDarkMode
+                    );
+                    const {
+                      homeColor,
+                      awayColor,
+                      homeTextColor,
+                      awayTextColor,
+                      isAwayUsingSecondary,
+                    } = statsColors;
+
                     const renderStatBar = (
                       label: string,
                       left: number | string | undefined,
@@ -1075,26 +1092,38 @@ const Calendario = () => {
                         : "0";
 
                       return (
-                        <div className="space-y-1.5 p-3 rounded-xl bg-card border border-border/80 shadow-xs">
+                        <div className="space-y-1.5 p-3 rounded-xl bg-card border border-border/80 shadow-xs hover:border-border transition-colors">
                           <div className="flex items-center justify-between text-xs font-mono">
-                            <span className="font-black text-sm text-emerald-600 dark:text-emerald-400 min-w-[3rem]">
+                            <span
+                              className="font-black text-sm min-w-[3rem]"
+                              style={{ color: homeTextColor }}
+                            >
                               {leftDisplay}
                             </span>
                             <span className="text-muted-foreground font-bold uppercase tracking-wider text-[11px]">
                               {label}
                             </span>
-                            <span className="font-black text-sm text-foreground min-w-[3rem] text-right">
+                            <span
+                              className="font-black text-sm min-w-[3rem] text-right"
+                              style={{ color: awayTextColor }}
+                            >
                               {rightDisplay}
                             </span>
                           </div>
-                          <div className="relative w-full h-2 rounded-full bg-muted/60 overflow-hidden flex">
+                          <div className="relative w-full h-2 rounded-full bg-muted/70 overflow-hidden flex">
                             <div
-                              className="h-full bg-emerald-500 transition-all duration-500"
-                              style={{ width: `${leftPct}%` }}
+                              className="h-full transition-all duration-500"
+                              style={{
+                                width: `${leftPct}%`,
+                                backgroundColor: homeColor,
+                              }}
                             />
                             <div
-                              className="h-full bg-primary/70 transition-all duration-500"
-                              style={{ width: `${rightPct}%` }}
+                              className="h-full transition-all duration-500"
+                              style={{
+                                width: `${rightPct}%`,
+                                backgroundColor: awayColor,
+                              }}
                             />
                           </div>
                         </div>
@@ -1102,48 +1131,147 @@ const Calendario = () => {
                     };
 
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderStatBar(
-                          "Possesso Palla",
-                          selected.match.home_poss,
-                          selected.match.away_poss,
-                          (v) => `${Math.round(v * 100)}%`
-                        )}
-                        {renderStatBar(
-                          "Tiri Totali",
-                          selected.match.home_tiri_tot,
-                          selected.match.away_tiri_tot
-                        )}
-                        {renderStatBar(
-                          "Tiri nello Specchio",
-                          selected.match.home_tiri_si,
-                          selected.match.away_tiri_si
-                        )}
-                        {renderStatBar(
-                          "Calci d'Angolo",
-                          selected.match.home_cangl,
-                          selected.match.away_cangl
-                        )}
-                        {renderStatBar(
-                          "Falli Commessi",
-                          selected.match.home_falli,
-                          selected.match.away_falli
-                        )}
-                        {renderStatBar(
-                          "Parate del Portiere",
-                          selected.match.home_para,
-                          selected.match.away_para
-                        )}
-                        {renderStatBar(
-                          "Passaggi Riusciti",
-                          selected.match.home_pass_si,
-                          selected.match.away_pass_si
-                        )}
-                        {renderStatBar(
-                          "Contrasti Vinti",
-                          selected.match.home_ctrs_si,
-                          selected.match.away_ctrs_si
-                        )}
+                      <div className="space-y-4">
+                        {/* OPZIONE A: Comparative Teams Header & Color Legend */}
+                        <div className="p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/80 shadow-xs">
+                          <div className="flex items-center justify-between gap-3">
+                            {/* Home Team */}
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className="w-9 h-9 rounded-lg p-1.5 flex items-center justify-center shrink-0 border"
+                                style={{
+                                  backgroundColor: `${homeColor}15`,
+                                  borderColor: `${homeColor}40`,
+                                }}
+                              >
+                                <img
+                                  src={`/images/teams/${selected.match.home}_Logo.png`}
+                                  alt={selected.match.home_team}
+                                  className="w-full h-full object-contain"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                                    style={{ backgroundColor: homeColor }}
+                                  />
+                                  <h4 className="font-extrabold text-xs sm:text-sm text-foreground truncate">
+                                    {selected.match.home_team}
+                                  </h4>
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                    Casa
+                                  </span>
+                                  <span
+                                    className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
+                                    style={{
+                                      backgroundColor: `${homeColor}20`,
+                                      color: homeTextColor,
+                                    }}
+                                  >
+                                    1° Colore
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Center VS pill */}
+                            <div className="flex flex-col items-center justify-center px-2.5 py-1 rounded-full bg-muted border border-border/60 shrink-0">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                                VS
+                              </span>
+                            </div>
+
+                            {/* Away Team */}
+                            <div className="flex items-center justify-end gap-2.5 min-w-0 text-right">
+                              <div className="min-w-0">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <h4 className="font-extrabold text-xs sm:text-sm text-foreground truncate">
+                                    {selected.match.away_team}
+                                  </h4>
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                                    style={{ backgroundColor: awayColor }}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                                  <span
+                                    className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
+                                    style={{
+                                      backgroundColor: `${awayColor}20`,
+                                      color: awayTextColor,
+                                    }}
+                                  >
+                                    {isAwayUsingSecondary ? "2° Colore (Contrasto)" : "1° Colore"}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                    Trasferta
+                                  </span>
+                                </div>
+                              </div>
+                              <div
+                                className="w-9 h-9 rounded-lg p-1.5 flex items-center justify-center shrink-0 border"
+                                style={{
+                                  backgroundColor: `${awayColor}15`,
+                                  borderColor: `${awayColor}40`,
+                                }}
+                              >
+                                <img
+                                  src={`/images/teams/${selected.match.away}_Logo.png`}
+                                  alt={selected.match.away_team}
+                                  className="w-full h-full object-contain"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Stat Bars Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {renderStatBar(
+                            "Possesso Palla",
+                            selected.match.home_poss,
+                            selected.match.away_poss,
+                            (v) => `${Math.round(v * 100)}%`
+                          )}
+                          {renderStatBar(
+                            "Tiri Totali",
+                            selected.match.home_tiri_tot,
+                            selected.match.away_tiri_tot
+                          )}
+                          {renderStatBar(
+                            "Tiri nello Specchio",
+                            selected.match.home_tiri_si,
+                            selected.match.away_tiri_si
+                          )}
+                          {renderStatBar(
+                            "Calci d'Angolo",
+                            selected.match.home_cangl,
+                            selected.match.away_cangl
+                          )}
+                          {renderStatBar(
+                            "Falli Commessi",
+                            selected.match.home_falli,
+                            selected.match.away_falli
+                          )}
+                          {renderStatBar(
+                            "Parate del Portiere",
+                            selected.match.home_para,
+                            selected.match.away_para
+                          )}
+                          {renderStatBar(
+                            "Passaggi Riusciti",
+                            selected.match.home_pass_si,
+                            selected.match.away_pass_si
+                          )}
+                          {renderStatBar(
+                            "Contrasti Vinti",
+                            selected.match.home_ctrs_si,
+                            selected.match.away_ctrs_si
+                          )}
+                        </div>
                       </div>
                     );
                   })()}
