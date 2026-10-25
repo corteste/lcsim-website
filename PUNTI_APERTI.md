@@ -665,3 +665,167 @@ Interfaccia web dedicata per l'inserimento manuale dei dati e dei referti delle 
 2. **Permanenza Barra Superiore allo Scrolling (Top Bar Permanentemente Visibile)**:
    - Quando l'utente era sceso con lo scroll e cliccava sulla barra superiore, il precedente scroll lock modale applicava `overflow: hidden` a livello di `body`, rompendo la proprietà CSS `position: sticky` del container `<nav>` e provocando la scomparsa della barra (rimasta ancorata a Y=0 fuori dal viewport) e il congelamento dello scroll.
    - Con la navigazione non-modale e `<nav className="sticky top-0 z-50 w-full ...">`, la barra superiore rimane permanentemente visibile, ancorata in cima durante qualsiasi livello di scorrimento, e l'interazione con i menu non blocca mai lo scorrimento della pagina.
+---
+
+## 📌 30. Sconto su Cambio Ruolo per Calciatori con Presenze da Titolari
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Media-Alta (Valorizzazione dell'esperienza in campo e continuità tattica)
+- **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/services/playerXpService.ts`, `an_player_training`
+- **Tabelle coinvolte**: `"AS_PLAYER_STAT"`, `an_player_training`, `an_player`
+
+### Descrizione
+Meccanica nella sezione Allenamenti (`/mia-squadra/allenamenti`) che premia la continuità di impiego dei calciatori:
+- Se un calciatore ha disputato almeno **$X$ partite da titolare** (con minutaggio $\ge 60'$ o titolare da distinta) nel corso della stagione, il costo XP per il **Cambio di Ruolo Principale** (attualmente standard a 40 XP) viene ridotto o azzerato.
+- Definizione della soglia minima di match (es. 5 o 7 partite) e calcolo dinamico dello sconto all'apertura della scheda di allenamento.
+
+---
+
+## 📌 31. Ridenominazione File di Export Master DB in `players.txt`
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Media (Allineamento con standard di importazione EA FC 25)
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/services/eaPlayerDbService.ts`
+- **Tabelle coinvolte**: `ea_player_db`, `an_player`, `an_rookie`
+
+### Descrizione
+Nella card dell'Hub Automazioni Admin dedicata all'**Export Master Table EA FC 25**, il download del file tabellare a 137 colonne (attualmente salvato come `DB_NEW.txt`) deve essere ridenominato ufficialmente in **`players.txt`**:
+- Garantisce l'immediata compatibilità "drag & drop" con i tool e gli editor interni di EA Sports FC 25 senza richiedere rinomine manuali da parte dell'Admin.
+
+---
+
+## 📌 32. Logica Scelte Compensatorie al Draft
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Media-Alta (Equità sportiva e gestione dei disallineamenti di lega)
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle coinvolte**: `public.an_draft_board`, `public.an_team`
+
+### Descrizione
+Integrazione e regolamentazione delle **scelte compensatorie** nel tabellone del Draft:
+- Assegnazione di pick supplementari a società che abbiano subito perdite di asset non imputabili a dinamiche di mercato o criteri speciali stabiliti dal regolamento di Lega.
+- Gestione della collocazione nel tabellone (es. slot di coda nei round 1, 2 o 3, oppure round compensatorio dedicato) con aggiornamento automatico della vista 60+ scelte in `Draft.tsx` e della funzione atomica di ripristino board.
+
+---
+
+## 📌 33. Tagli di Calciomercato su Numero Totale di Asset (Calciatori + Scelte Draft)
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Alta (Evoluzione strategica del calciomercato e del roster management)
+- **Moduli coinvolti**: `src/pages/Roster.tsx`, `src/services/cutsService.ts`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle coinvolte**: `team_cuts_registry`, `an_player`, `an_draft_board`
+
+### Descrizione
+Evoluzione della regola di conformità della rosa durante la finestra dei tagli:
+- Attualmente la regola verifica il numero di calciatori sotto contratto (minimo 13, massimo 16).
+- La nuova logica estende il controllo al **totale complessivo degli asset societari**:
+  $$\text{Totale Asset} = \text{Numero Calciatori in Rosa} + \text{Scelte del Draft Possedute}$$
+- Definizione dei tetti massimi consentiti e aggiornamento dei contatori in `Roster.tsx` e della card di validazione Admin.
+
+---
+
+## 📌 34. Visualizzazione Magliette Ufficiali nella Pagina Rosa
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Media (Arricchimento estetico e immersione grafica del club)
+- **Moduli coinvolti**: `src/pages/Roster.tsx` (`/mia-squadra/roster`), `src/pages/Squadre.tsx`, componenti profilo calciatore
+- **Tabelle & Asset coinvolti**: Cartella `/images/teams/` o `/images/jerseys/`, colonna `NumeroMaglia` in `an_player`
+
+### Descrizione
+Introduzione della grafica delle magliette di gioco nella scheda dei calciatori:
+- Mostrare accanto all'avatar del volto (o come badge grafico dedicato) la maglietta ufficiale del club (divisa Home/Away) con il numero di maglia effettivo impresso sopra.
+- Migliora l'impatto visivo della rosa e consente un colpo d'occhio immediato sulla numerazione assegnata ai giocatori.
+
+---
+
+## 📌 35. Invecchiamento Solo Anagrafico per Calciatori Ritirati (Senza Decadimenti Statistiche)
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Alta (Integrità storica dei dati delle vecchie glorie)
+- **Moduli coinvolti**: `src/services/playerAgingService.ts`, funzione SQL Postgres `rpc_apply_player_aging`
+- **Tabelle coinvolte**: `public.an_player`, `public.ea_player_db`
+
+### Descrizione
+Rettifica della procedura batch di transizione stagionale (`rpc_apply_player_aging`):
+- Per i calciatori che risultano già ritirati (`Squadra = 'RITIRATO'`), la procedura deve incrementare **esclusivamente l'età anagrafica** (`Età = Età + 1`), in modo da mantenere coerente lo scorrere degli anni sportivi.
+- Viene rigorosamente **esclusa qualsiasi alterazione degli 11 attributi fisici/tecnici** e del valore di OVR, preservando intatta e immutabile la scheda tecnica con cui il calciatore ha concluso la propria carriera.
+
+---
+
+## 📌 36. Segnalazione Calciatori con Ritiro Annunciato (Veterani all'Ultimo Anno)
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Media-Alta (Trasparenza contrattuale, valutazioni di mercato e pianificazione rosa)
+- **Moduli coinvolti**: `src/components/player/playerDetails.tsx`, `src/pages/Roster.tsx`, `src/pages/Trattative.tsx`, liste mercato
+- **Tabelle coinvolte**: `an_player`
+
+### Descrizione
+Identificazione visiva esplicita dei calciatori che disputeranno la loro ultima stagione:
+- In base al regolamento, i calciatori al compimento dei 35 anni passano automaticamente allo status `RITIRATO`.
+- Per tutti i calciatori di **34 anni** attivi in rosa, inserire un badge di avviso distintivo (es. `⏳ Ultima Stagione • Ritiro Annunciato`) nel popup giocatore, nel roster e nelle schermate di trattativa/scambio, consentendo a tutti i manager di sapere che il calciatore si ritirerà al termine del campionato in corso.
+
+---
+
+## 📌 37. Evidenziazione Modifiche Formazione Rispetto alla Settimana Precedente
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Media-Alta (Supporto avanzato per caster, commentatori e analisi avversaria)
+- **Moduli coinvolti**: `src/pages/FoglioCommento.tsx`, `src/components/home/OpponentScoutModal.tsx`, `src/pages/Tattica.tsx`
+- **Tabelle coinvolte**: `public.team_formation_history`, `public.an_team_tactic`
+
+### Descrizione
+Confronto automatico tra la formazione schierata nella settimana corrente e quella della settimana precedente:
+- Nel **Foglio Commento** (`/campionato/foglio-commento`) e nel popup di **Scouting Avversaria** in Homepage:
+  - Evidenziare sul campo 2D con icone/badge cromatici le novità rispetto all'ultimo incontro (es. *"Nuovo Titolare"*, *"Sostituzione Ruolo"*, *"Modulo Variato"*).
+  - Segnalare chi tra i titolari della settimana precedente è finito in panchina o in tribuna, fornendo una lettura immediata delle scelte tecniche dell'allenatore.
+
+---
+
+## 📌 38. Sistema Diffide e Squalifiche da Cartellini
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Alta (Regolarità disciplinare del campionato)
+- **Moduli coinvolti**: `src/pages/Tattica.tsx`, `src/pages/FoglioCommento.tsx`, gestione partite
+- **Tabelle coinvolte**: `"AS_PLAYER_STAT"`, `an_player`, `team_formation_history`
+
+### Descrizione
+Tracciamento e applicazione automatica dei provvedimenti del Giudice Sportivo:
+- Conteggio progressivo delle ammonizioni (`GIALLI`) ed espulsioni dirette o per doppio giallo (`ROSSI`) dal tabellino partite.
+- **Diffida**: badge visivo di avvertimento quando il calciatore è a 1 giallo dalla squalifica.
+- **Squalifica**: al raggiungimento della soglia disciplinare (es. 4 ammonizioni) o a seguito di cartellino rosso, il calciatore viene squalificato per la giornata successiva:
+  - In `Tattica.tsx` compare un badge rosso `🚫 Squalificato` con divieto assoluto di schierarlo tra gli 11 titolari o in panchina.
+  - Avviso nel Foglio Commento per i commentatori.
+
+---
+
+## 📌 39. Panchina da 9 Calciatori e 1 Giocatore in Tribuna
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Alta (Adeguamento al regolamento ufficiale e alle rose da 21)
+- **Moduli coinvolti**: `src/pages/Tattica.tsx`, `src/pages/FoglioCommento.tsx`, `src/components/tactics/`
+- **Tabelle coinvolte**: `an_team_tactic`, `team_formation_history`
+
+### Descrizione
+Adeguamento della distinta gara nelle pagine Tattica e Foglio Commento:
+- Nelle rose standard da 21 calciatori con 11 titolari:
+  - La **Panchina** deve ospitare esattamente **9 riserve** ordinate per priorità di subentro.
+  - Il 21° calciatore (ed eventuali ulteriori esuberi) viene alloggiato in una sezione dedicata denominata **"Tribuna"** (non disponibile per le sostituzioni a partita in corso).
+- Aggiornamento della logica di validazione e salvataggio in `Tattica.tsx` per gestire formalmente l'assegnazione alla tribuna.
+
+---
+
+## 📌 40. Possibilità di Scegliere Giocatori Svincolati al Draft (Oltre ai Rookie)
+- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Priorità**: Alta (Flessibilità delle chiamate al Draft)
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, modale scelta draft
+- **Tabelle coinvolte**: `public.an_draft_board`, `public.an_player`, `public.an_rookie`
+
+### Descrizione
+Estensione delle opzioni di selezione durante il Draft di Lega:
+- Consentire a un club di utilizzare il proprio turno di scelta per tesserare un **calciatore svincolato** già presente nel database (`an_player` con `Squadra IS NULL`), in alternativa a un prospetto della classe rookie (`an_rookie`).
+- **Regola di Integrità DB**: i calciatori svincolati **NON** devono essere duplicati o inseriti nella tabella `an_rookie`.
+- All'atto della chiamata della scelta, il giocatore svincolato viene contrattualizzato direttamente (`an_player.Squadra = pickingTeamId`), registrando la scelta in `an_draft_board`.
+
+---
+
+## 📌 41. Controllo di Salvaguardia Portieri sui Tagli di Calciomercato
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Alta (Integrità sportiva delle rose e prevenzione blocchi formazioni)
+- **Moduli coinvolti**: `src/pages/Roster.tsx` (`/mia-squadra/roster`), `src/services/cutsService.ts`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle coinvolte**: `team_cuts_registry`, `an_player`
+
+### Descrizione
+Regola di blocco preventivo nella procedura di taglio dei calciatori:
+- Nessuna squadra può completare o confermare un taglio che lasci la rosa con **meno di 2 portieri di ruolo** (`Posiz = 'POR'`).
+- In `Roster.tsx`: se una squadra ha solo 2 portieri in rosa, l'azione di taglio (`✂️ Taglia`) sui portieri viene automaticamente disabilitata con tooltip esplicito (*"Obbligatorio mantenere almeno 2 portieri in rosa"*).
+- Nel pannello Admin: controllo server/RPC che rigetta l'ufficializzazione dei tagli qualora un club risultasse non conforme su questo requisito.
