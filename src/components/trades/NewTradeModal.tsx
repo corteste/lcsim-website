@@ -155,6 +155,33 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
   const totalRequested = selectedRequestedPlayerIds.length + selectedRequestedPickNums.length;
   const isParityValid = totalOffered > 0 && totalOffered === totalRequested;
 
+  // Calcoli e vincoli Portieri (Punto #43: min 2, max 3)
+  const myCurGK = useMemo(() => myPlayers.filter((p) => p.Posiz === "POR").length, [myPlayers]);
+  const targetCurGK = useMemo(() => targetPlayers.filter((p) => p.Posiz === "POR").length, [targetPlayers]);
+
+  const offeredGK = useMemo(
+    () => myPlayers.filter((p) => selectedOfferedPlayerIds.includes(p.ID) && p.Posiz === "POR").length,
+    [myPlayers, selectedOfferedPlayerIds]
+  );
+  const requestedGK = useMemo(
+    () => targetPlayers.filter((p) => selectedRequestedPlayerIds.includes(p.ID) && p.Posiz === "POR").length,
+    [targetPlayers, selectedRequestedPlayerIds]
+  );
+
+  const myPostGK = myCurGK - offeredGK + requestedGK;
+  const targetPostGK = targetCurGK - requestedGK + offeredGK;
+
+  const gkError = useMemo(() => {
+    if (!targetTeam) return null;
+    if (myPostGK > 3) return `La tua squadra (${currentTeam}) avrebbe ${myPostGK} portieri (massimo 3 consentiti).`;
+    if (myPostGK < 2) return `La tua squadra (${currentTeam}) avrebbe ${myPostGK} portieri (minimo 2 obbligatori).`;
+    if (targetPostGK > 3) return `La squadra avversaria (${targetTeam}) avrebbe ${targetPostGK} portieri (massimo 3 consentiti).`;
+    if (targetPostGK < 2) return `La squadra avversaria (${targetTeam}) avrebbe ${targetPostGK} portieri (minimo 2 obbligatori).`;
+    return null;
+  }, [targetTeam, currentTeam, myPostGK, targetPostGK]);
+
+  const isGkRuleValid = !gkError;
+
   // Toggle selection helpers
   const toggleOfferedPlayer = (id: number) => {
     setSelectedOfferedPlayerIds((prev) =>
@@ -214,6 +241,10 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
     }
     if (!isParityValid) {
       toast.error("Lo scambio deve avere esatta parità di asset (es. 1 per 1, 2 per 2).");
+      return;
+    }
+    if (!isGkRuleValid) {
+      toast.error(gkError || "Lo scambio viola il vincolo sui portieri (minimo 2, massimo 3).");
       return;
     }
 
@@ -637,6 +668,12 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
             <span>Calciomercato Chiuso dalla Lega: l'invio di nuove proposte di scambio è al momento sospeso.</span>
           </div>
         )}
+        {targetTeam && !isGkRuleValid && (
+          <div className="px-4 py-2 bg-amber-500/15 border-t border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>⛔ Vincolo Portieri: {gkError}</span>
+          </div>
+        )}
         <div className="p-4 border-t border-border/70 bg-muted/20 flex flex-col sm:flex-row items-center gap-3">
           <div className="flex-1 w-full">
             <Input
@@ -660,7 +697,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
             <Button
               type="button"
               size="sm"
-              disabled={!isParityValid || !targetTeam || submitting || (!isMarketOpen && !isAdmin)}
+              disabled={!isParityValid || !targetTeam || submitting || (!isMarketOpen && !isAdmin) || !isGkRuleValid}
               onClick={handleSendProposal}
               className="text-xs font-black bg-blue-600 hover:bg-blue-500 text-white px-5"
             >

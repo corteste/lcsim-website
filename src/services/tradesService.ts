@@ -315,6 +315,53 @@ export async function createTrade(payload: CreateTradePayload): Promise<{
       return { success: false, error: "Non puoi proporre uno scambio alla tua stessa squadra." };
     }
 
+    // Controllo vincoli Portieri per entrambe le squadre (Punto #43: min 2, max 3)
+    const allTradedPlayerIds = [...payload.offered_player_ids, ...payload.requested_player_ids];
+    const { data: tradedPlayersData } = await supabase
+      .from("an_player")
+      .select("ID, Posiz, Squadra")
+      .or(
+        `Squadra.eq.${payload.sender_team},Squadra.eq.${payload.receiver_team}${
+          allTradedPlayerIds.length > 0 ? `,ID.in.(${allTradedPlayerIds.join(",")})` : ""
+        }`
+      );
+
+    if (tradedPlayersData) {
+      const senderCurGK = tradedPlayersData.filter((p) => p.Squadra === payload.sender_team && p.Posiz === "POR").length;
+      const receiverCurGK = tradedPlayersData.filter((p) => p.Squadra === payload.receiver_team && p.Posiz === "POR").length;
+
+      const offeredGK = tradedPlayersData.filter((p) => payload.offered_player_ids.includes(Number(p.ID)) && p.Posiz === "POR").length;
+      const requestedGK = tradedPlayersData.filter((p) => payload.requested_player_ids.includes(Number(p.ID)) && p.Posiz === "POR").length;
+
+      const senderPostGK = senderCurGK - offeredGK + requestedGK;
+      const receiverPostGK = receiverCurGK - requestedGK + offeredGK;
+
+      if (senderPostGK > 3) {
+        return {
+          success: false,
+          error: `Operazione non consentita: la tua squadra (${payload.sender_team}) supererebbe il limite massimo di 3 portieri in rosa (ne avrebbe ${senderPostGK}).`,
+        };
+      }
+      if (senderPostGK < 2) {
+        return {
+          success: false,
+          error: `Operazione non consentita: la tua squadra (${payload.sender_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${senderPostGK}).`,
+        };
+      }
+      if (receiverPostGK > 3) {
+        return {
+          success: false,
+          error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) supererebbe il limite massimo di 3 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
+        };
+      }
+      if (receiverPostGK < 2) {
+        return {
+          success: false,
+          error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from(TRADES_TABLE)
       .insert({
@@ -364,6 +411,48 @@ export async function acceptTrade(tradeId: string, teamId: string): Promise<{ su
         success: false,
         error: "Il Calciomercato è attualmente chiuso dalla Lega. Non è possibile accettare proposte di scambio.",
       };
+    }
+
+    const { data: tradeData } = await supabase
+      .from(TRADES_TABLE)
+      .select("*")
+      .eq("id", tradeId)
+      .single();
+
+    if (!tradeData) {
+      return { success: false, error: "Trattativa non trovata." };
+    }
+
+    // Verifica vincoli portieri al momento dell'accettazione
+    const offeredIds: number[] = tradeData.offered_player_ids || [];
+    const requestedIds: number[] = tradeData.requested_player_ids || [];
+    const allIds = [...offeredIds, ...requestedIds];
+
+    const { data: playersData } = await supabase
+      .from("an_player")
+      .select("ID, Posiz, Squadra")
+      .or(
+        `Squadra.eq.${tradeData.sender_team},Squadra.eq.${tradeData.receiver_team}${
+          allIds.length > 0 ? `,ID.in.(${allIds.join(",")})` : ""
+        }`
+      );
+
+    if (playersData) {
+      const senderCurGK = playersData.filter((p) => p.Squadra === tradeData.sender_team && p.Posiz === "POR").length;
+      const receiverCurGK = playersData.filter((p) => p.Squadra === tradeData.receiver_team && p.Posiz === "POR").length;
+
+      const offeredGK = playersData.filter((p) => offeredIds.includes(Number(p.ID)) && p.Posiz === "POR").length;
+      const requestedGK = playersData.filter((p) => requestedIds.includes(Number(p.ID)) && p.Posiz === "POR").length;
+
+      const senderPostGK = senderCurGK - offeredGK + requestedGK;
+      const receiverPostGK = receiverCurGK - requestedGK + offeredGK;
+
+      if (senderPostGK > 3 || senderPostGK < 2 || receiverPostGK > 3 || receiverPostGK < 2) {
+        return {
+          success: false,
+          error: "Impossibile accettare lo scambio: una delle due squadre violerebbe il limite regolamentare sui portieri (minimo 2, massimo 3).",
+        };
+      }
     }
 
     const { error } = await supabase

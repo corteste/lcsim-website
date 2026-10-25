@@ -47,6 +47,7 @@ import {
   Repeat,
   LayoutGrid,
   Compass,
+  AlertTriangle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/supabaseClient";
@@ -155,6 +156,7 @@ const Draft = () => {
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [selectedPlayerItem, setSelectedPlayerItem] = useState<{ id: number; type: "rookie" | "free_agent"; player: Player } | null>(null);
   const [inspectedFreeAgent, setInspectedFreeAgent] = useState<Player | null>(null);
+  const [teamGoalkeepersMap, setTeamGoalkeepersMap] = useState<Record<string, number>>({});
 
   // Apertura modale dettagli per calciatore svincolato (con caricamento lazy attributi completi se necessario)
   const handleOpenFreeAgentDetails = useCallback(async (player: Player) => {
@@ -224,7 +226,7 @@ const Draft = () => {
   const fetchDraftData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [boardRes, rookiesRes, freeAgentsRes] = await Promise.all([
+      const [boardRes, rookiesRes, freeAgentsRes, gkRes] = await Promise.all([
         supabase
           .from(DRAFT_BOARD_TABLE)
           .select("*, rookie:an_rookie(ID, Nome, Cognome, Posiz, Squadra), player:an_player(ID, Nome, Cognome, Posiz, Squadra, OVR)")
@@ -238,6 +240,11 @@ const Draft = () => {
           .select("*")
           .is("Squadra", null)
           .order("OVR", { ascending: false }),
+        supabase
+          .from("an_player")
+          .select("Squadra")
+          .eq("Posiz", "POR")
+          .not("Squadra", "is", null),
       ]);
 
       if (boardRes.error) throw boardRes.error;
@@ -260,6 +267,12 @@ const Draft = () => {
       const rkList = ((rookiesRes.data ?? []) as Player[]).sort((a, b) => (a.Cognome || "").localeCompare(b.Cognome || ""));
       setRookies(rkList);
       setFreeAgents((freeAgentsRes.data ?? []) as Player[]);
+
+      const gkCounts: Record<string, number> = {};
+      ((gkRes.data || []) as { Squadra: string }[]).forEach((r) => {
+        if (r.Squadra) gkCounts[r.Squadra] = (gkCounts[r.Squadra] || 0) + 1;
+      });
+      setTeamGoalkeepersMap(gkCounts);
 
       const r1 = boardRows
         .filter((p) => p.round === 1)
@@ -581,6 +594,33 @@ const Draft = () => {
     return null;
   }, [currentOnTheClockPick, isAdmin, user]);
 
+  // Squadra attiva al turno di scelta
+  const activePickingTeamId = targetPickForConfirmation?.team_id || currentOnTheClockPick?.team_id || null;
+
+  // Scelte ancora da effettuare per la squadra al turno (inclusa la corrente)
+  const activeTeamRemainingPicks = useMemo(() => {
+    if (!activePickingTeamId) return 0;
+    return picks.filter(
+      (p) => p.team_id === activePickingTeamId && p.rookie_id === null && (!p.player_id || p.player_id === null)
+    ).length;
+  }, [picks, activePickingTeamId]);
+
+  // Portieri attualmente sotto contratto per la franchigia
+  const activeTeamGkCount = useMemo(() => {
+    if (!activePickingTeamId) return 0;
+    return teamGoalkeepersMap[activePickingTeamId] || 0;
+  }, [teamGoalkeepersMap, activePickingTeamId]);
+
+  // Punto #42: Obbligo Portiere se all'ultima pick rimasta possiede 1 solo portiere a roster
+  const isGkDraftMandatory = useMemo(() => {
+    return activeTeamRemainingPicks === 1 && activeTeamGkCount === 1;
+  }, [activeTeamRemainingPicks, activeTeamGkCount]);
+
+  // Punto #43: Tetto massimo 3 portieri in squadra
+  const isGkDraftForbidden = useMemo(() => {
+    return activeTeamGkCount >= 3;
+  }, [activeTeamGkCount]);
+
   // All picks owned by activeUserTeamId (for the right-hand recap)
   const userTeamPicks = useMemo(() => {
     if (!activeUserTeamId) return [];
@@ -619,6 +659,8 @@ const Draft = () => {
       for (const rk of rookies) {
         const id = Number(rk.ID);
         if (draftedPlayerIds.has(id) || rk.Squadra) continue;
+        // Punto #42: se c'è l'obbligo portiere, escludi i giocatori di movimento
+        if (isGkDraftMandatory && rk.Posiz !== "POR") continue;
         const isFav = favoriteRookieIds.has(id);
         if (favoritesOnly && !isFav) continue;
         if (roleFilter !== "ALL") {
@@ -639,6 +681,8 @@ const Draft = () => {
       for (const fa of freeAgents) {
         const id = Number(fa.ID);
         if (draftedPlayerIds.has(id) || fa.Squadra) continue;
+        // Punto #42: se c'è l'obbligo portiere, escludi i giocatori di movimento
+        if (isGkDraftMandatory && fa.Posiz !== "POR") continue;
         const isFav = favoriteFreeAgentIds.has(id);
         if (favoritesOnly && !isFav) continue;
         if (roleFilter !== "ALL") {
@@ -672,6 +716,7 @@ const Draft = () => {
     favoriteRookieIds,
     favoriteFreeAgentIds,
     searchQuery,
+    isGkDraftMandatory,
   ]);
 
   // Backward-compat alias for rookie count
@@ -688,6 +733,16 @@ const Draft = () => {
     }
     if (!selectedPlayerItem) {
       toast.error("Seleziona prima un calciatore o un rookie dalla lista!");
+      return;
+    }
+
+    if (isGkDraftMandatory && selectedPlayerItem.player.Posiz !== "POR") {
+      toast.error("Obbligo Portiere: hai un solo portiere a roster ed è la tua ultima scelta. Devi selezionare un portiere (POR).");
+      return;
+    }
+
+    if (isGkDraftForbidden && selectedPlayerItem.player.Posiz === "POR") {
+      toast.error("Limite massimo portieri: la squadra possiede già 3 portieri in rosa. Non è consentito selezionarne altri.");
       return;
     }
 
@@ -1562,6 +1617,35 @@ const Draft = () => {
                     </button>
                   </div>
 
+                  {/* Banner Avviso Obbligo Portiere (Punto #42) */}
+                  {isGkDraftMandatory && (
+                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5 shadow-sm animate-in fade-in">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <div className="font-extrabold text-[12px] flex items-center gap-1.5">
+                          <span>Obbligo Portiere Attivo (Punto #42)</span>
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 font-bold">Ultima Scelta</Badge>
+                        </div>
+                        <p className="leading-snug text-muted-foreground text-[11px]">
+                          La squadra <strong>{activePickingTeamId}</strong> ha solo 1 portiere a roster ed è alla sua ultima scelta al Draft. Il regolamento impone la selezione esclusiva di un portiere (Rookie o Svincolato).
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Banner Avviso Limite Portieri (Punto #43) */}
+                  {isGkDraftForbidden && (
+                    <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2 shadow-sm animate-in fade-in">
+                      <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-extrabold text-[12px]">Tetto Massimo 3 Portieri Raggiunto (Punto #43)</span>
+                        <p className="leading-snug text-muted-foreground text-[11px]">
+                          La squadra <strong>{activePickingTeamId}</strong> ha già 3 portieri in rosa. I portieri non sono selezionabili.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Search & Role group filter */}
                   <div className="space-y-2">
                     <div className="relative">
@@ -1616,15 +1700,20 @@ const Draft = () => {
                         const pId = Number(item.id);
                         const isSelected = selectedPlayerItem?.id === pId;
                         const scoutTokens = item.type === "rookie" ? (scoutingByRookie[pId] ?? 0) : 0;
+                        const isItemGkForbidden = isGkDraftForbidden && item.player.Posiz === "POR";
                         return (
                           <div
                             key={`${item.type}-${item.id}`}
-                            onClick={() =>
+                            onClick={() => {
+                              if (isItemGkForbidden) {
+                                toast.error("Limite massimo portieri: la squadra ha già 3 portieri in rosa.");
+                                return;
+                              }
                               setSelectedPlayerItem(
                                 isSelected ? null : { id: pId, type: item.type, player: item.player }
-                              )
-                            }
-                            className={`w-full px-3 py-2.5 flex flex-col gap-1.5 transition-colors cursor-pointer select-none ${
+                              );
+                            }}
+                            className={`w-full px-3 py-2.5 flex flex-col gap-1.5 transition-colors ${isItemGkForbidden ? "opacity-60 cursor-not-allowed bg-muted/20" : "cursor-pointer select-none"} ${
                               isSelected
                                 ? "bg-emerald-500/15 border-l-4 border-l-emerald-500"
                                 : "hover:bg-muted/60"
@@ -1701,27 +1790,36 @@ const Draft = () => {
                                   <Eye className="h-3.5 w-3.5" />
                                 </button>
 
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setSelectedPlayerItem(
-                                      isSelected ? null : { id: pId, type: item.type, player: item.player }
-                                    )
-                                  }
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                                    isSelected
-                                      ? "bg-emerald-500 text-white shadow-xs"
-                                      : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                                  }`}
-                                >
-                                  {isSelected ? (
-                                    <span className="flex items-center gap-1">
-                                      <CheckCircle2 className="h-3 w-3" /> Scelto
-                                    </span>
-                                  ) : (
-                                    "Scegli"
-                                  )}
-                                </button>
+                                {isItemGkForbidden ? (
+                                  <span
+                                    className="px-2 py-0.5 rounded text-[10px] font-bold bg-muted/60 text-muted-foreground/60 border border-dashed border-border shrink-0 cursor-not-allowed"
+                                    title="Limite 3 portieri raggiunto: non puoi selezionare altri portieri"
+                                  >
+                                    Max 3 POR
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSelectedPlayerItem(
+                                        isSelected ? null : { id: pId, type: item.type, player: item.player }
+                                      )
+                                    }
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                      isSelected
+                                        ? "bg-emerald-500 text-white shadow-xs"
+                                        : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                                    }`}
+                                  >
+                                    {isSelected ? (
+                                      <span className="flex items-center gap-1">
+                                        <CheckCircle2 className="h-3 w-3" /> Scelto
+                                      </span>
+                                    ) : (
+                                      "Scegli"
+                                    )}
+                                  </button>
+                                )}
                               </div>
                             </div>
 

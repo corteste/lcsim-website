@@ -462,17 +462,41 @@ export async function executeAutopick(params: {
       return { success: false, error: `La scelta #${pickOverall} è già stata assegnata!` };
     }
 
-    // 2. Recupera tutti i rookie e gli svincolati attualmente non draftati (Squadra IS NULL)
-    const [rookiesRes, freeAgentsRes] = await Promise.all([
+    // 2. Recupera tutti i rookie e gli svincolati attualmente non draftati (Squadra IS NULL),
+    // oltre al conteggio portieri e scelte residue della franchigia (Punti #42 e #43)
+    const [rookiesRes, freeAgentsRes, teamGkRes, remainingPicksRes] = await Promise.all([
       supabase.from(ROOKIE_TABLE).select("*").is("Squadra", null),
       supabase.from("an_player").select("*").is("Squadra", null),
+      supabase.from("an_player").select("ID", { count: "exact", head: true }).eq("Squadra", pickingTeamId).eq("Posiz", "POR"),
+      supabase.from(DRAFT_BOARD_TABLE).select("pick_overall", { count: "exact", head: true }).eq("team_id", pickingTeamId).is("rookie_id", null).is("player_id", null),
     ]);
 
-    const availableRookies = (rookiesRes.data || []) as Player[];
-    const availableFreeAgents = (freeAgentsRes.data || []) as Player[];
+    const teamGkCount = teamGkRes.count || 0;
+    const remainingPicksCount = remainingPicksRes.count || 0;
+
+    // Punto #42: Obbligo Portiere se all'ultima pick ha solo 1 portiere in rosa
+    const isGkMandatory = remainingPicksCount <= 1 && teamGkCount === 1;
+    // Punto #43: Divieto Portiere se squadra ha già 3 o più portieri
+    const isGkForbidden = teamGkCount >= 3;
+
+    let availableRookies = (rookiesRes.data || []) as Player[];
+    let availableFreeAgents = (freeAgentsRes.data || []) as Player[];
+
+    if (isGkMandatory) {
+      availableRookies = availableRookies.filter((r) => r.Posiz === "POR");
+      availableFreeAgents = availableFreeAgents.filter((fa) => fa.Posiz === "POR");
+    } else if (isGkForbidden) {
+      availableRookies = availableRookies.filter((r) => r.Posiz !== "POR");
+      availableFreeAgents = availableFreeAgents.filter((fa) => fa.Posiz !== "POR");
+    }
 
     if (availableRookies.length === 0 && availableFreeAgents.length === 0) {
-      return { success: false, error: "Nessun calciatore o rookie disponibile rimasto da draftare!" };
+      return {
+        success: false,
+        error: isGkMandatory
+          ? "Nessun portiere (POR) disponibile per assolvere all'obbligo di scelta!"
+          : "Nessun calciatore o rookie disponibile rimasto da draftare!",
+      };
     }
 
     const availableMap = new Map<number, { player: Player; isFreeAgent: boolean }>();
@@ -503,27 +527,30 @@ export async function executeAutopick(params: {
       }
     }
 
-    // 4. Se nessun giocatore della lista è disponibile, applica Fallback A (Miglior rookie, o miglior svincolato)
+    // 4. Se nessun giocatore della lista è disponibile, applica Fallback (Miglior rookie/svincolato per rating)
     if (!chosenPlayer) {
       chosenSource = "fallback";
-      if (availableRookies.length > 0) {
-        const sortedByOvr = [...availableRookies].sort((a, b) => {
-          const starA = Number(a.Stelle) || 0;
-          const starB = Number(b.Stelle) || 0;
-          if (starB !== starA) return starB - starA;
-          const ovrA = Number(a.OVR) || 0;
-          const ovrB = Number(b.OVR) || 0;
-          if (ovrB !== ovrA) return ovrB - ovrA;
-          return Number(a.ID) - Number(b.ID);
-        });
-        chosenPlayer = sortedByOvr[0] as Player;
-        isFreeAgent = false;
-      } else {
-        const sortedFreeAgents = [...availableFreeAgents].sort(
-          (a, b) => (Number(b.OVR) || 0) - (Number(a.OVR) || 0)
-        );
-        chosenPlayer = sortedFreeAgents[0] as Player;
-        isFreeAgent = true;
+      const combinedPool = [
+        ...availableRookies.map((r) => ({ player: r, isFa: false })),
+        ...availableFreeAgents.map((fa) => ({ player: fa, isFa: true })),
+      ];
+
+      combinedPool.sort((a, b) => {
+        const starA = Number(a.player.Stelle) || 0;
+        const starB = Number(b.player.Stelle) || 0;
+        const ovrA = Number(a.player.OVR) || 0;
+        const ovrB = Number(b.player.OVR) || 0;
+
+        const scoreA = starA > 0 ? starA * 20 : ovrA;
+        const scoreB = starB > 0 ? starB * 20 : ovrB;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        if (ovrB !== ovrA) return ovrB - ovrA;
+        return Number(a.player.ID) - Number(b.player.ID);
+      });
+
+      if (combinedPool.length > 0) {
+        chosenPlayer = combinedPool[0].player;
+        isFreeAgent = combinedPool[0].isFa;
       }
     }
 

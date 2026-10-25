@@ -59,6 +59,47 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
   const [messageText, setMessageText] = useState("");
   const [sendingMsg, setSendingMsg] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [gkValidationNotice, setGkValidationNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!trade || !open) {
+      setGkValidationNotice(null);
+      return;
+    }
+
+    async function checkGkBalance() {
+      if (!trade) return;
+      const { data } = await supabase
+        .from("an_player")
+        .select("Posiz, Squadra")
+        .in("Squadra", [trade.sender_team, trade.receiver_team])
+        .eq("Posiz", "POR");
+
+      if (data) {
+        const senderCur = data.filter((p) => p.Squadra === trade.sender_team).length;
+        const receiverCur = data.filter((p) => p.Squadra === trade.receiver_team).length;
+
+        const offeredGK = (trade.offered_players || []).filter((p) => p.Posiz === "POR").length;
+        const requestedGK = (trade.requested_players || []).filter((p) => p.Posiz === "POR").length;
+
+        const senderPost = senderCur - offeredGK + requestedGK;
+        const receiverPost = receiverCur - requestedGK + offeredGK;
+
+        if (senderPost > 3 || senderPost < 2 || receiverPost > 3 || receiverPost < 2) {
+          const reasons: string[] = [];
+          if (senderPost > 3) reasons.push(`${trade.sender_team} avrebbe ${senderPost} portieri (max 3)`);
+          if (senderPost < 2) reasons.push(`${trade.sender_team} avrebbe ${senderPost} portieri (min 2)`);
+          if (receiverPost > 3) reasons.push(`${trade.receiver_team} avrebbe ${receiverPost} portieri (max 3)`);
+          if (receiverPost < 2) reasons.push(`${trade.receiver_team} avrebbe ${receiverPost} portieri (min 2)`);
+          setGkValidationNotice(reasons.join(", "));
+        } else {
+          setGkValidationNotice(null);
+        }
+      }
+    }
+
+    checkGkBalance();
+  }, [trade, open]);
 
   if (!trade) return null;
 
@@ -388,6 +429,14 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
           )}
         </div>
 
+        {/* Banner avviso vincolo portieri */}
+        {gkValidationNotice && (
+          <div className="px-4 py-2.5 bg-amber-500/15 border-t border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>⛔ Vincolo Portieri non rispettato: {gkValidationNotice}. Lo scambio non può essere accettato né approvato.</span>
+          </div>
+        )}
+
         {/* Footer Actions */}
         {!isMarketOpen && !isAdmin && isReceiver && trade.status === "pending" && (
           <div className="px-4 py-2 bg-rose-500/10 border-t border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
@@ -436,7 +485,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
                 <Button
                   size="sm"
                   onClick={handleAccept}
-                  disabled={actionLoading || (!isMarketOpen && !isAdmin)}
+                  disabled={actionLoading || (!isMarketOpen && !isAdmin) || !!gkValidationNotice}
                   className="h-8 text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Accetta Proposta
@@ -472,7 +521,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
                 <Button
                   size="sm"
                   onClick={handleAdminApprove}
-                  disabled={actionLoading}
+                  disabled={actionLoading || !!gkValidationNotice}
                   className="h-8 text-xs font-black bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-500/20 px-3"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approva & Registra Scambio Ufficiale

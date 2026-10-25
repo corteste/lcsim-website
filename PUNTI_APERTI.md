@@ -844,32 +844,48 @@ Regola di blocco preventivo nella procedura di taglio dei calciatori:
 ---
 
 ## 📌 42. Obbligo Portiere all'Ultima Scelta del Draft (Salvaguardia Minimo 2 Portieri)
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Migrazione SQL, RPC draft & Blocco UI)
 - **Priorità**: Alta (Integrità della rosa e rispetto dei requisiti di ruolo)
-- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, modale di selezione/chiamata pick
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, `rpc_draft_rookie`, `rpc_draft_free_agent`
 - **Tabelle coinvolte**: `public.an_draft_board`, `public.an_player`, `public.an_rookie`
+- **Migrazioni**: `supabase/migrations/20261025_goalkeeper_draft_and_trade_rules.sql` e rollback
 
-### Descrizione
-Regola di salvaguardia obbligatoria durante il Draft di Lega per garantire che ogni franchigia termini l'evento con il contingente minimo di estremi difensori (almeno 2 portieri):
-- Se una squadra arriva alla sua **ultima scelta del draft** e possiede attualmente **un solo portiere in rosa** (sommando i portieri già sotto contratto e gli eventuali portieri selezionati nelle pick precedenti dello stesso draft):
-  - Il sistema **obbliga la squadra a selezionare un portiere** (`Posiz = 'POR'`), sia esso un rookie (`an_rookie`) o un calciatore svincolato (`an_player`).
-  - La lista dei giocatori selezionabili nel modale di pick (e la wishlist) disabilita tutti i calciatori di movimento di ruoli diversi (`DIF`, `CEN`, `ATT`), con un banner di avviso esplicito: *"Avviso Regolamento: Avendo un solo portiere a roster, sei obbligato a selezionare un portiere con la tua ultima scelta a disposizione"*.
+### Specifiche Implementate & Risoluzione Tecnica
+1. **Rilevamento Dinamico Pick Residue & Portieri**:
+   - Conteggio portieri attualmente sotto contratto in `an_player` per la squadra al turno (`Squadra = teamId AND Posiz = 'POR'`).
+   - Calcolo delle scelte residue per la squadra (`rookie_id IS NULL AND player_id IS NULL`).
+   - Se `remainingPicks === 1` e `gkCount === 1`, scatta l'obbligo portiere (`isGkDraftMandatory = true`).
+2. **Interfaccia Draft & Lista Filtrata**:
+   - Banner prominente di avviso regolamento in cima al pannello di scelta.
+   - Esclusione automatica di tutti i giocatori di movimento da `availableDraftPool`, mostrando solo portieri (`POR`) disponibili tra rookie e svincolati.
+   - Blocco preventivo con toast esplicito in `handleConfirmPick`.
+3. **Autopick Intelligente**:
+   - In `executeAutopick`, cerca il primo portiere (`POR`) presente nella graduatoria/wishlist del club.
+   - Se assente in wishlist, attiva il fallback automatico selezionando il miglior portiere rimasto disponibile (rating per Stelle/OVR tra rookie e svincolati).
+4. **Guardia Atomica Server-Side (PostgreSQL)**:
+   - Funzioni `rpc_draft_rookie` e `rpc_draft_free_agent` sollevano un'eccezione bloccante se una squadra all'ultima scelta con 1 solo portiere tenta di chiamare un giocatore non portiere.
 
 ---
 
 ## 📌 43. Tetto Massimo di 3 Portieri in Rosa (Blocco Scambi e Blocco Chiamata al Draft)
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Migrazione SQL, Regola Scambi 2..3 POR & Blocco Draft)
 - **Priorità**: Alta (Regolamento composizione rosa ed equilibrio numerico)
-- **Moduli coinvolti**: `src/pages/Trattative.tsx`, `src/services/tradeService.ts`, `src/pages/Draft.tsx`, RPC scambi e draft
-- **Tabelle coinvolte**: `public.an_player`, `public.market_trades`, `public.an_draft_board`
+- **Moduli coinvolti**: `src/pages/Trattative.tsx`, `src/components/trades/NewTradeModal.tsx`, `src/components/trades/TradeDetailsModal.tsx`, `src/services/tradesService.ts`, `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`
+- **Tabelle & Funzioni coinvolte**: `public.an_player`, `public.market_trades`, `public.an_draft_board`, `rpc_execute_trade`, `rpc_draft_rookie`, `rpc_draft_free_agent`
+- **Migrazioni**: `supabase/migrations/20261025_goalkeeper_draft_and_trade_rules.sql` e rollback
 
-### Descrizione
-Nessuna società sportiva può possedere contemporaneamente più di **3 portieri di ruolo** (`count(POR) <= 3`) sotto contratto. Questo tetto massimo si applica in due snodi chiave di gestione:
-1. **Calciomercato & Scambi (`Trattative.tsx` / `tradeService.ts`)**:
-   - In fase di formulazione o controproposta di uno scambio, il sistema verifica preventivamente il saldo dei portieri scambiati per ciascuna squadra.
-   - Non è consentito confermare, inviare o approvare alcuna proposta di scambio che porterebbe una delle due squadre a superare il limite di 3 portieri in rosa (es. se una squadra ha già 3 portieri e acquisisce un portiere senza cederne almeno uno, o se ne ha 2 e ne acquisisce 2 cedendone 0).
-   - Segnalazione d'errore immediata a video: *"Operazione non consentita: la squadra {Nome} supererebbe il limite massimo consentito di 3 portieri in rosa"*.
-2. **Draft di Lega (`Draft.tsx`)**:
-   - Se una squadra ha già raggiunto la quota massima di **3 portieri** (tra rosa pre-esistente ed eventuali portieri chiamati nei round precedenti del draft in corso):
-     - L'opzione di selezionare ulteriori portieri (`Posiz = 'POR'`) viene interdetta e oscurata nel modale di chiamata.
-     - Tooltip esplicito: *"Limite raggiunto: hai già 3 portieri in rosa, non puoi selezionarne altri"*.
+### Specifiche Implementate & Risoluzione Tecnica
+1. **Calciomercato & Trattative Scambi (Vincolo Min 2, Max 3 Portieri per Club)**:
+   - **Nuovo Scambio (`NewTradeModal.tsx`)**:
+     - Calcolo in tempo reale del saldo per entrambe le franchigie: $\text{PostGK} = \text{CurGK} - \text{Ceduti} + \text{Ricevuti}$.
+     - Se per il mittente o per il destinatario $\text{PostGK} < 2$ o $\text{PostGK} > 3$, compare un banner d'errore dedicato e il pulsante *"Invia Proposta Ufficiale"* viene disabilitato.
+   - **Dettagli & Accettazione (`TradeDetailsModal.tsx` / `acceptTrade`)**:
+     - Verifica automatica delle rose al momento dell'accettazione: se il saldo viola il range $2..3$ portieri, l'accettazione viene bloccata.
+   - **Service & Database (`tradesService.ts` / `rpc_execute_trade`)**:
+     - Validazione con guardie server e controllo atomico in `rpc_execute_trade` con rollback in caso di non conformità.
+2. **Draft di Lega (`Draft.tsx` & Autopick)**:
+   - Se una franchigia possiede già 3 portieri in rosa, per quella squadra:
+     - Banner d'avviso: *"Tetto Massimo 3 Portieri Raggiunto: i portieri non sono selezionabili"*.
+     - Le schede dei portieri in lista sono disabilitate con badge *"Max 3 POR"*.
+     - In `executeAutopick`, tutti i portieri vengono esclusi dalla selezione automatica.
+     - Funzioni RPC sollevano eccezione in caso di chiamata di un 4° portiere.
