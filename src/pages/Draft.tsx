@@ -53,7 +53,7 @@ import { DRAFT_BOARD_TABLE, ROOKIE_TABLE, ROOKIE_SCOUTING_TABLE } from "@/consta
 import { useAuth } from "@/context/AuthContext";
 import { getTeams } from "@/hooks/use-teams";
 import { getStandings } from "@/hooks/use-standings";
-import { getRoleColor, getValueColor } from "@/utils/functions";
+import { getPlayerImage, getRoleColor, getValueColor } from "@/utils/functions";
 import { Player } from "@/types/player";
 import {
   SCOUTING_DEPARTMENTS,
@@ -834,33 +834,46 @@ const Draft = () => {
         {/* Center/Bottom Content: Drafted Rookie (ONLY Name & Position) or Status */}
         <div className="mt-2.5 pt-2 border-t border-border/50 flex flex-col justify-end">
           {isDrafted && pick.rookie ? (
-            <div className="space-y-1">
-              <div className="flex items-center justify-between gap-1">
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] font-extrabold px-1.5 py-0 h-4 ${getRoleColor(
-                    pick.rookie.Posiz
-                  )}`}
-                >
-                  {pick.rookie.Posiz}
-                </Badge>
-
-                {isAdmin && (
-                  <button
-                    type="button"
-                    title="Annulla questa scelta (Admin)"
-                    onClick={() => handleAdminUndoPick(pick)}
-                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  </button>
-                )}
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full overflow-hidden bg-muted/50 border border-border/80 shrink-0 shadow-xs flex items-center justify-center">
+                <img
+                  src={getPlayerImage(Number(pick.rookie.ID || pick.rookie_id))}
+                  alt={`${pick.rookie.Nome} ${pick.rookie.Cognome}`}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
+                  }}
+                  className="h-full w-full object-cover object-top"
+                />
               </div>
-              <div
-                className="font-extrabold text-foreground text-xs sm:text-sm leading-snug truncate"
-                title={`${pick.rookie.Nome} ${pick.rookie.Cognome}`}
-              >
-                {pick.rookie.Nome} {pick.rookie.Cognome}
+
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="flex items-center justify-between gap-1">
+                  <Badge
+                    variant="outline"
+                    className={`text-[9px] font-extrabold px-1.5 py-0 h-3.5 leading-none ${getRoleColor(
+                      pick.rookie.Posiz
+                    )}`}
+                  >
+                    {pick.rookie.Posiz}
+                  </Badge>
+
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      title="Annulla questa scelta (Admin)"
+                      onClick={() => handleAdminUndoPick(pick)}
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <div
+                  className="font-extrabold text-foreground text-xs leading-tight truncate"
+                  title={`${pick.rookie.Nome} ${pick.rookie.Cognome}`}
+                >
+                  {pick.rookie.Nome} {pick.rookie.Cognome}
+                </div>
               </div>
             </div>
           ) : isOnTheClock ? (
@@ -1663,6 +1676,16 @@ const Draft = () => {
 
                           {isPicked && pick.rookie ? (
                             <div className="flex items-center gap-2">
+                              <div className="h-6 w-6 rounded-full overflow-hidden bg-muted/50 border border-border/80 shrink-0 shadow-xs flex items-center justify-center">
+                                <img
+                                  src={getPlayerImage(Number(pick.rookie.ID || pick.rookie_id))}
+                                  alt={`${pick.rookie.Nome} ${pick.rookie.Cognome}`}
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
+                                  }}
+                                  className="h-full w-full object-cover object-top"
+                                />
+                              </div>
                               <Badge
                                 variant="outline"
                                 className={`text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
@@ -1671,7 +1694,7 @@ const Draft = () => {
                               >
                                 {pick.rookie.Posiz}
                               </Badge>
-                              <span className="text-xs sm:text-sm font-bold text-foreground">
+                              <span className="text-xs sm:text-sm font-bold text-foreground truncate">
                                 {pick.rookie.Nome} {pick.rookie.Cognome}
                               </span>
                             </div>
