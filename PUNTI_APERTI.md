@@ -829,3 +829,36 @@ Regola di blocco preventivo nella procedura di taglio dei calciatori:
 - Nessuna squadra può completare o confermare un taglio che lasci la rosa con **meno di 2 portieri di ruolo** (`Posiz = 'POR'`).
 - In `Roster.tsx`: se una squadra ha solo 2 portieri in rosa, l'azione di taglio (`✂️ Taglia`) sui portieri viene automaticamente disabilitata con tooltip esplicito (*"Obbligatorio mantenere almeno 2 portieri in rosa"*).
 - Nel pannello Admin: controllo server/RPC che rigetta l'ufficializzazione dei tagli qualora un club risultasse non conforme su questo requisito.
+
+---
+
+## 📌 42. Obbligo Portiere all'Ultima Scelta del Draft (Salvaguardia Minimo 2 Portieri)
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Alta (Integrità della rosa e rispetto dei requisiti di ruolo)
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, modale di selezione/chiamata pick
+- **Tabelle coinvolte**: `public.an_draft_board`, `public.an_player`, `public.an_rookie`
+
+### Descrizione
+Regola di salvaguardia obbligatoria durante il Draft di Lega per garantire che ogni franchigia termini l'evento con il contingente minimo di estremi difensori (almeno 2 portieri):
+- Se una squadra arriva alla sua **ultima scelta del draft** e possiede attualmente **un solo portiere in rosa** (sommando i portieri già sotto contratto e gli eventuali portieri selezionati nelle pick precedenti dello stesso draft):
+  - Il sistema **obbliga la squadra a selezionare un portiere** (`Posiz = 'POR'`), sia esso un rookie (`an_rookie`) o un calciatore svincolato (`an_player`).
+  - La lista dei giocatori selezionabili nel modale di pick (e la wishlist) disabilita tutti i calciatori di movimento di ruoli diversi (`DIF`, `CEN`, `ATT`), con un banner di avviso esplicito: *"Avviso Regolamento: Avendo un solo portiere a roster, sei obbligato a selezionare un portiere con la tua ultima scelta a disposizione"*.
+
+---
+
+## 📌 43. Tetto Massimo di 3 Portieri in Rosa (Blocco Scambi e Blocco Chiamata al Draft)
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Alta (Regolamento composizione rosa ed equilibrio numerico)
+- **Moduli coinvolti**: `src/pages/Trattative.tsx`, `src/services/tradeService.ts`, `src/pages/Draft.tsx`, RPC scambi e draft
+- **Tabelle coinvolte**: `public.an_player`, `public.market_trades`, `public.an_draft_board`
+
+### Descrizione
+Nessuna società sportiva può possedere contemporaneamente più di **3 portieri di ruolo** (`count(POR) <= 3`) sotto contratto. Questo tetto massimo si applica in due snodi chiave di gestione:
+1. **Calciomercato & Scambi (`Trattative.tsx` / `tradeService.ts`)**:
+   - In fase di formulazione o controproposta di uno scambio, il sistema verifica preventivamente il saldo dei portieri scambiati per ciascuna squadra.
+   - Non è consentito confermare, inviare o approvare alcuna proposta di scambio che porterebbe una delle due squadre a superare il limite di 3 portieri in rosa (es. se una squadra ha già 3 portieri e acquisisce un portiere senza cederne almeno uno, o se ne ha 2 e ne acquisisce 2 cedendone 0).
+   - Segnalazione d'errore immediata a video: *"Operazione non consentita: la squadra {Nome} supererebbe il limite massimo consentito di 3 portieri in rosa"*.
+2. **Draft di Lega (`Draft.tsx`)**:
+   - Se una squadra ha già raggiunto la quota massima di **3 portieri** (tra rosa pre-esistente ed eventuali portieri chiamati nei round precedenti del draft in corso):
+     - L'opzione di selezionare ulteriori portieri (`Posiz = 'POR'`) viene interdetta e oscurata nel modale di chiamata.
+     - Tooltip esplicito: *"Limite raggiunto: hai già 3 portieri in rosa, non puoi selezionarne altri"*.
