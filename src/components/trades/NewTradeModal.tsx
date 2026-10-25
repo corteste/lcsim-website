@@ -45,6 +45,7 @@ interface NewTradeModalProps {
   onOpenChange: (open: boolean) => void;
   onTradeCreated: () => void;
   counterOfferTrade?: EnrichedTrade | null;
+  initialTargetTeam?: string;
 }
 
 export const NewTradeModal: React.FC<NewTradeModalProps> = ({
@@ -52,6 +53,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
   onOpenChange,
   onTradeCreated,
   counterOfferTrade,
+  initialTargetTeam,
   isMarketOpen = true,
 }) => {
   const { user, isAdmin, effectiveTeam, availableTeams } = useAuth();
@@ -124,7 +126,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
       setNotes(`Controproposta rispetto alla trattativa #${counterOfferTrade.id.slice(0, 8)}`);
     } else if (open && !counterOfferTrade) {
       // Reset
-      setTargetTeam("");
+      setTargetTeam(initialTargetTeam || "");
       setSelectedOfferedPlayerIds([]);
       setSelectedOfferedPickNums([]);
       setSelectedRequestedPlayerIds([]);
