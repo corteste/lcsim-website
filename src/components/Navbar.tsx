@@ -492,29 +492,6 @@ const Navbar = () => {
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                     )}
                     <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
-                    {effectiveTeam ? (
-                      <Badge
-                        variant="outline"
-                        className={`text-[9px] px-1.5 py-0 font-mono font-bold hidden sm:inline-flex ${
-                          isMiaSquadraActive
-                            ? "border-white/40 text-white bg-white/10"
-                            : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-                        }`}
-                      >
-                        {effectiveTeam}
-                      </Badge>
-                    ) : isAdmin ? (
-                      <Badge
-                        variant="outline"
-                        className={`text-[9px] px-1.5 py-0 font-mono font-bold hidden sm:inline-flex ${
-                          isMiaSquadraActive
-                            ? "border-white/40 text-white bg-white/10"
-                            : "text-amber-500 border-amber-500/30 bg-amber-500/10"
-                        }`}
-                      >
-                        ADMIN
-                      </Badge>
-                    ) : null}
                     <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
                   </button>
                 </DropdownMenuTrigger>
