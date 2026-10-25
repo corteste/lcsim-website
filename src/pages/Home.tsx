@@ -39,17 +39,17 @@ const Home = () => {
 
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* ========================================================= */}
-        {/* TOP ROW: CENTRO DATI & SALA STAMPA (DUE BLOCCHI SEPARATI) */}
+        {/* TOP ROW: CENTRO DATI & SALA STAMPA (LAYOUT SFALSATO)      */}
         {/* ========================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {/* Blocco 1: Centro Dati (2 Cols) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* Blocco 1: Centro Dati (4 Colonne) */}
           <section
             aria-label="Centro Dati"
-            className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-background p-6 md:p-8 shadow-sm flex flex-col justify-center min-h-[300px]"
+            className="lg:col-span-4 relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-background p-6 md:p-7 shadow-sm flex flex-col justify-between min-h-[280px]"
           >
             {/* Sfondo ambient mesh pro */}
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-1/3 -mb-20 w-64 h-64 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
 
             <div className="relative z-10 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -57,21 +57,21 @@ const Home = () => {
                   Serie A • LCSIM
                 </span>
                 <span className="text-xs text-muted-foreground font-mono">
-                  Stagione 2024/25 • Edizione 9
+                  Edizione 9
                 </span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground">
                 Centro Dati
               </h1>
-              <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Monitora classifiche in tempo reale, statistiche avanzate dei giocatori e andamento delle rose con precisione broadcast.
               </p>
             </div>
           </section>
 
-          {/* Blocco 2: LCSIM Media & Sala Stampa (1 Col - Squadrata) */}
-          <div className="lg:col-span-1 h-full">
-            <PressAndRumorsHomeCard layout="stacked" className="h-full" />
+          {/* Blocco 2: LCSIM Media & Sala Stampa (8 Colonne - Squadrata) */}
+          <div className="lg:col-span-8 h-full">
+            <PressAndRumorsHomeCard layout="side-by-side" className="h-full" />
           </div>
         </div>
 
@@ -81,11 +81,11 @@ const Home = () => {
         <NextOpponentCard />
 
         {/* ========================================================= */}
-        {/* SPLIT SCREEN: STANDINGS SPOTLIGHT + LEADERBOARDS */}
+        {/* SPLIT SCREEN: STANDINGS SPOTLIGHT + LEADERBOARDS          */}
         {/* ========================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Standings Summary (2 Cols) */}
-          <div className="lg:col-span-2 rounded-2xl border border-border/80 bg-card p-5 md:p-6 shadow-sm space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Standings Summary (8 Colonne) */}
+          <div className="lg:col-span-8 rounded-2xl border border-border/80 bg-card p-5 md:p-6 shadow-sm space-y-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -201,8 +201,8 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Top Performers / Leaderboards (1 Col) */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 md:p-6 shadow-sm space-y-4 flex flex-col justify-between">
+          {/* Top Performers / Leaderboards (4 Colonne) */}
+          <div className="lg:col-span-4 rounded-2xl border border-border/80 bg-card p-5 md:p-6 shadow-sm space-y-4 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
