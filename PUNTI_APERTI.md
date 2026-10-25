@@ -830,16 +830,29 @@ Adeguamento della distinta gara nelle pagine Tattica e Foglio Commento:
 ---
 
 ## 📌 41. Controllo di Salvaguardia Portieri sui Tagli di Calciomercato
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Migrazione SQL RPC, Service, Blocco UI Roster & Dashboard Admin)
 - **Priorità**: Alta (Integrità sportiva delle rose e prevenzione blocchi formazioni)
 - **Moduli coinvolti**: `src/pages/Roster.tsx` (`/mia-squadra/roster`), `src/services/cutsService.ts`, `src/pages/admin/AdminAutomazioni.tsx`
-- **Tabelle coinvolte**: `team_cuts_registry`, `an_player`
+- **Tabelle coinvolte**: `team_cuts_registry`, `an_player`, `execute_official_cuts`
+- **Migrazioni**: `supabase/migrations/20261025_cuts_goalkeeper_protection.sql` e rollback
 
-### Descrizione
-Regola di blocco preventivo nella procedura di taglio dei calciatori:
-- Nessuna squadra può completare o confermare un taglio che lasci la rosa con **meno di 2 portieri di ruolo** (`Posiz = 'POR'`).
-- In `Roster.tsx`: se una squadra ha solo 2 portieri in rosa, l'azione di taglio (`✂️ Taglia`) sui portieri viene automaticamente disabilitata con tooltip esplicito (*"Obbligatorio mantenere almeno 2 portieri in rosa"*).
-- Nel pannello Admin: controllo server/RPC che rigetta l'ufficializzazione dei tagli qualora un club risultasse non conforme su questo requisito.
+### Specifiche Implementate & Risoluzione Tecnica
+1. **Regola di Salvaguardia Portieri sui Tagli**:
+   - Nessun club può tagliare un portiere se questo riduce i portieri di ruolo (`Posiz = 'POR'`) rimanenti al di sotto del minimo regolamentare di 2.
+2. **Interfaccia Rosa Club (`Roster.tsx`)**:
+   - Calcolo real-time di `totalGks`, `cutGks` e `remainingGks`.
+   - Disabilitazione condizionale del pulsante di taglio (`✂️ Taglia`) sui portieri quando `remainingGks <= 2`, con tooltip esplicito: *"Obbligatorio mantenere almeno 2 portieri in rosa"*.
+   - Blocco preventivo con notifica toast in `handleTogglePlayerCut`.
+   - Badge riassuntivo arricchito con conteggio portieri rimanenti (`{currentCutCount} ({remainingGks} POR rimasti)`) e banner di allerta se la squadra scende sotto la soglia.
+3. **Servizio Tagli (`cutsService.ts`)**:
+   - Estensione interfaccia `TeamCutCompliance` con `currentGk`, `cutGk`, `postGk` e `gkReason`.
+   - In `togglePlayerCut`: verifica preventiva su Supabase che blocca l'inserimento nel registro tagli se rimarrebbero $< 2$ portieri.
+   - In `getCutsComplianceReport`: calcolo dell'adempienza che richiede congiuntamente $13 le 	ext{postRoster} le 16$ e $	ext{postGk} ge 2$.
+4. **Pannello Admin Automazioni (`AdminAutomazioni.tsx`)**:
+   - Card *"Ufficializza Tagli di Lega"* con specifica dei parametri: *13-16 giocatori (min. 2 portieri)*.
+   - Lista delle squadre non conformi con evidenziazione del motivo specifico (es. *"Meno di 2 portieri rimasti (1 POR)"*).
+5. **Verifica Atomica PostgreSQL (`execute_official_cuts`)**:
+   - Controllo server-side sulle squadre attive: se per qualsiasi club `v_post_gk < 2`, la transazione viene respinta restituendo l'elenco dei club inadempienti.
 
 ---
 

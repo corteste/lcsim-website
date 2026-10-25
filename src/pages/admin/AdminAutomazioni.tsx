@@ -788,7 +788,7 @@ export default function AdminAutomazioni() {
                 <div className="p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs space-y-2">
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Parametri rosa post-tagli:</span>
-                    <span className="font-mono font-bold text-foreground">Minimo 13, Massimo 16</span>
+                    <span className="font-mono font-bold text-foreground">13-16 giocatori (min. 2 portieri)</span>
                   </div>
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Calciatori in lista tagli:</span>
@@ -817,15 +817,27 @@ export default function AdminAutomazioni() {
                           key={team.teamId}
                           className="flex items-center justify-between p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs"
                         >
-                          <span className="font-bold text-foreground truncate">{team.teamName}</span>
-                          <span className="font-mono font-bold text-destructive shrink-0">
-                            Tagliati: {team.cutsCount}
-                          </span>
+                          <div className="flex flex-col min-w-0 pr-2">
+                            <span className="font-bold text-foreground truncate">{team.teamName}</span>
+                            {team.postGk !== undefined && team.postGk < 2 && (
+                              <span className="text-[10px] text-destructive font-semibold">
+                                Meno di 2 portieri rimasti ({team.postGk} POR)
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="font-mono font-bold text-destructive block">
+                              Tagliati: {team.cutsCount}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              Rosa: {team.postRoster} (POR: {team.postGk})
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>
                     <p className="text-[11px] text-muted-foreground italic">
-                      L'ufficializzazione è bloccata finché tutte le squadre non avranno tra 13 e 16 giocatori dopo i tagli.
+                      L'ufficializzazione è bloccata finché tutte le squadre non avranno tra 13 e 16 giocatori e almeno 2 portieri dopo i tagli.
                     </p>
                     <Button
                       disabled={true}

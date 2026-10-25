@@ -407,7 +407,16 @@ const Roster = () => {
   const maxCutsAllowed = Math.max(0, currentRosterCount - 13);
   const currentCutCount = cutPlayerIds.size;
   const postCutRoster = currentRosterCount - currentCutCount;
-  const isCutsCompliant = postCutRoster >= 13 && postCutRoster <= 16;
+
+  // Calcolo salvaguardia portieri (Punto #41)
+  const totalGks = useMemo(() => players.filter((p) => p.Posiz === "POR").length, [players]);
+  const cutGks = useMemo(
+    () => players.filter((p) => p.Posiz === "POR" && cutPlayerIds.has(Number(p.ID))).length,
+    [players, cutPlayerIds]
+  );
+  const remainingGks = totalGks - cutGks;
+  const isGkCompliant = remainingGks >= 2;
+  const isCutsCompliant = postCutRoster >= 13 && postCutRoster <= 16 && isGkCompliant;
   const canAddMoreCuts = currentCutCount < maxCutsAllowed;
 
   const handleTogglePlayerCut = async (player: Player) => {
@@ -426,6 +435,11 @@ const Roster = () => {
 
     if (!isCurrentlyCut && !canAddMoreCuts) {
       toast.error(`Hai raggiunto il limite massimo di ${maxCutsAllowed} tagli per mantenere almeno 13 giocatori in rosa.`);
+      return;
+    }
+
+    if (!isCurrentlyCut && player.Posiz === "POR" && remainingGks <= 2) {
+      toast.error("Obbligatorio mantenere almeno 2 portieri in rosa. Impossibile tagliare questo portiere!");
       return;
     }
 
@@ -1243,10 +1257,10 @@ const Roster = () => {
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
                           : "bg-destructive/10 text-destructive border-destructive/40"
                       }`}
-                      title={`Rosa attuale: ${currentRosterCount}. Dopo i tagli: ${postCutRoster} (deve essere tra 13 e 16). Minimo tagli: ${minCutsNeeded}, Massimo tagli: ${maxCutsAllowed}.`}
+                      title={`Rosa attuale: ${currentRosterCount} (${totalGks} POR). Dopo i tagli: ${postCutRoster} (${remainingGks} POR - min. 2 obbligatori). Rosa finale ammessa: 13-16.`}
                     >
                       <Scissors className="h-3.5 w-3.5 mr-1.5 inline-block" />
-                      Giocatori Tagliati: {currentCutCount}
+                      Giocatori Tagliati: {currentCutCount} ({remainingGks} POR rimasti)
                     </Badge>
                     <Badge variant="outline" className="font-mono text-xs">
                       Status Assegnati: {players.length - marketCounts.noneCount} / {players.length}
@@ -1259,6 +1273,15 @@ const Roster = () => {
                     <Lock className="h-4 w-4 shrink-0" />
                     <span>
                       <strong>Rose Congelate dalla Lega:</strong> Le rose sono attualmente bloccate dall'amministrazione. La selezione o la modifica dei giocatori da tagliare è temporaneamente disabilitata.
+                    </span>
+                  </div>
+                )}
+
+                {!isGkCompliant && (
+                  <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center gap-2.5">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>
+                      <strong>Salvaguardia Portieri:</strong> È obbligatorio mantenere almeno 2 portieri in rosa dopo i tagli. Attualmente ne rimarrebbero {remainingGks}.
                     </span>
                   </div>
                 )}
@@ -1514,39 +1537,46 @@ const Roster = () => {
                             </span>
                           </div>
 
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={isCut ? "destructive" : "outline"}
-                            disabled={isTogglingCut || (!isCut && !canAddMoreCuts) || !canEdit || isRosterLocked}
-                            onClick={() => handleTogglePlayerCut(player)}
-                            className={`h-7 px-2.5 text-xs font-bold gap-1.5 transition-all ${
-                              isCut
-                                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
-                                : "hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/40"
-                            }`}
-                            title={
-                              !isCut && !canAddMoreCuts
-                                ? `Limite massimo di ${maxCutsAllowed} tagli raggiunto (per garantire almeno 13 giocatori in rosa)`
-                                : isCut
-                                ? "Rimuovi dalla lista tagli"
-                                : "Inserisci nella lista tagli"
-                            }
-                          >
-                            {isTogglingCut ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : isCut ? (
-                              <>
-                                <X className="h-3 w-3" />
-                                <span>Annulla Taglio</span>
-                              </>
-                            ) : (
-                              <>
-                                <Scissors className="h-3 w-3" />
-                                <span>Taglia</span>
-                              </>
-                            )}
-                          </Button>
+                          {(() => {
+                            const isGkCutBlocked = !isCut && player.Posiz === "POR" && remainingGks <= 2;
+                            return (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={isCut ? "destructive" : "outline"}
+                                disabled={isTogglingCut || (!isCut && (!canAddMoreCuts || isGkCutBlocked)) || !canEdit || isRosterLocked}
+                                onClick={() => handleTogglePlayerCut(player)}
+                                className={`h-7 px-2.5 text-xs font-bold gap-1.5 transition-all ${
+                                  isCut
+                                    ? "bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
+                                    : "hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/40"
+                                }`}
+                                title={
+                                  isGkCutBlocked
+                                    ? "Obbligatorio mantenere almeno 2 portieri in rosa"
+                                    : !isCut && !canAddMoreCuts
+                                    ? `Limite massimo di ${maxCutsAllowed} tagli raggiunto (per garantire almeno 13 giocatori in rosa)`
+                                    : isCut
+                                    ? "Rimuovi dalla lista tagli"
+                                    : "Inserisci nella lista tagli"
+                                }
+                              >
+                                {isTogglingCut ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : isCut ? (
+                                  <>
+                                    <X className="h-3 w-3" />
+                                    <span>Annulla Taglio</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Scissors className="h-3 w-3" />
+                                    <span>Taglia</span>
+                                  </>
+                                )}
+                              </Button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </Card>

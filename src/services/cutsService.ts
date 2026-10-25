@@ -15,7 +15,11 @@ export interface TeamCutCompliance {
   minCuts: number;
   maxCuts: number;
   postRoster: number;
+  currentGk: number;
+  cutGk: number;
+  postGk: number;
   isCompliant: boolean;
+  gkReason?: string;
 }
 
 export interface CutsComplianceReport {
@@ -44,7 +48,8 @@ export async function getTeamCutPlayerIds(teamId: string): Promise<number[]> {
 }
 
 /**
- * Aggiunge o rimuove un calciatore dalla lista tagli della squadra
+ * Aggiunge o rimuove un calciatore dalla lista tagli della squadra.
+ * Include il controllo di salvaguardia portieri (minimo 2 portieri rimanenti).
  */
 export async function togglePlayerCut(
   playerId: number,
@@ -61,6 +66,44 @@ export async function togglePlayerCut(
       if (error) throw error;
       return { success: true, isNowCut: false };
     } else {
+      // Controllo di salvaguardia portieri: se si taglia un portiere, la squadra deve mantenere almeno 2 portieri in rosa
+      const { data: player, error: pError } = await supabase
+        .from("an_player")
+        .select("Posiz")
+        .eq("ID", playerId)
+        .single();
+
+      if (pError) throw pError;
+
+      if (player?.Posiz === "POR") {
+        const { data: gks, error: gkError } = await supabase
+          .from("an_player")
+          .select("ID")
+          .eq("Squadra", teamId)
+          .eq("Posiz", "POR");
+
+        if (gkError) throw gkError;
+
+        const { data: cutRecords, error: cError } = await supabase
+          .from("team_cuts_registry")
+          .select("player_id")
+          .eq("team_id", teamId);
+
+        if (cError) throw cError;
+
+        const gkIds = new Set((gks || []).map((g) => Number(g.ID)));
+        const alreadyCutGkCount = (cutRecords || []).filter((c) => gkIds.has(Number(c.player_id))).length;
+        const remainingGk = (gks || []).length - alreadyCutGkCount;
+
+        if (remainingGk <= 2) {
+          return {
+            success: false,
+            isNowCut: false,
+            error: "Obbligatorio mantenere almeno 2 portieri in rosa. Impossibile tagliare questo portiere.",
+          };
+        }
+      }
+
       const { error } = await supabase
         .from("team_cuts_registry")
         .insert({
@@ -93,10 +136,10 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
     if (teamsError) throw teamsError;
     const teams = teamsData || [];
 
-    // 2. Giocatori attivi per squadra
+    // 2. Giocatori attivi per squadra (inclusa la posizione per verificare i portieri)
     const { data: playersData, error: playersError } = await supabase
       .from("an_player")
-      .select("ID, Squadra")
+      .select("ID, Squadra, Posiz")
       .not("Squadra", "is", null)
       .neq("Squadra", "RITIRATO");
 
@@ -114,15 +157,25 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
     // Costruzione report
     const teamReports: TeamCutCompliance[] = teams.map((t) => {
       const teamId = t.TEAM_ID;
-      const currentRoster = players.filter((p) => p.Squadra === teamId).length;
-      const cutsCount = cuts.filter((c) => c.team_id === teamId).length;
+      const teamPlayers = players.filter((p) => p.Squadra === teamId);
+      const currentRoster = teamPlayers.length;
+      const currentGk = teamPlayers.filter((p) => p.Posiz === "POR").length;
+
+      const teamCuts = cuts.filter((c) => c.team_id === teamId);
+      const cutsCount = teamCuts.length;
+
+      const cutPlayerIds = new Set(teamCuts.map((c) => Number(c.player_id)));
+      const cutGk = teamPlayers.filter((p) => p.Posiz === "POR" && cutPlayerIds.has(Number(p.ID))).length;
 
       const minCuts = Math.max(0, currentRoster - 16);
       const maxCuts = Math.max(0, currentRoster - 13);
       const postRoster = currentRoster - cutsCount;
+      const postGk = currentGk - cutGk;
 
-      // La squadra è in regola se la rosa finale è compresa tra 13 e 16 giocatori
-      const isCompliant = postRoster >= 13 && postRoster <= 16;
+      // La squadra è in regola se la rosa finale è compresa tra 13 e 16 giocatori E ha almeno 2 portieri
+      const isRosterCompliant = postRoster >= 13 && postRoster <= 16;
+      const isGkCompliant = postGk >= 2;
+      const isCompliant = isRosterCompliant && isGkCompliant;
 
       return {
         teamId,
@@ -132,7 +185,11 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
         minCuts,
         maxCuts,
         postRoster,
+        currentGk,
+        cutGk,
+        postGk,
         isCompliant,
+        gkReason: !isGkCompliant ? `Meno di 2 portieri rimasti (${postGk} POR)` : undefined,
       };
     });
 
