@@ -18,8 +18,37 @@ export interface TeamCutCompliance {
   currentGk: number;
   cutGk: number;
   postGk: number;
+  picksCount: number; // Scelte draft possedute e non ancora utilizzate (Punto #33)
+  postAssets: number; // Giocatori post-tagli + scelte draft (Punto #33)
   isCompliant: boolean;
   gkReason?: string;
+  assetReason?: string;
+}
+
+/** Limiti regolamentari della rosa post-tagli */
+export const CUTS_MIN_ROSTER = 13;
+export const CUTS_MAX_ROSTER = 16;
+export const CUTS_MAX_ASSETS = 21;
+export const CUTS_MIN_GK = 2;
+
+/**
+ * Conta le scelte draft possedute da una squadra e non ancora utilizzate (Punto #33)
+ */
+export async function getTeamAvailablePicksCount(teamId: string): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from("an_draft_board")
+      .select("pick_overall", { count: "exact", head: true })
+      .eq("team_id", teamId)
+      .is("rookie_id", null)
+      .is("player_id", null);
+
+    if (error) throw error;
+    return count ?? 0;
+  } catch (err) {
+    console.error("Errore conteggio scelte draft squadra:", err);
+    return 0;
+  }
 }
 
 export interface CutsComplianceReport {
@@ -154,6 +183,19 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
     if (cutsError) throw cutsError;
     const cuts = cutsData || [];
 
+    // 4. Scelte draft non ancora utilizzate (Punto #33)
+    const { data: picksData, error: picksError } = await supabase
+      .from("an_draft_board")
+      .select("team_id")
+      .is("rookie_id", null)
+      .is("player_id", null);
+
+    if (picksError) throw picksError;
+    const picksByTeam: Record<string, number> = {};
+    for (const p of picksData || []) {
+      picksByTeam[p.team_id] = (picksByTeam[p.team_id] || 0) + 1;
+    }
+
     // Costruzione report
     const teamReports: TeamCutCompliance[] = teams.map((t) => {
       const teamId = t.TEAM_ID;
@@ -167,15 +209,22 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
       const cutPlayerIds = new Set(teamCuts.map((c) => Number(c.player_id)));
       const cutGk = teamPlayers.filter((p) => p.Posiz === "POR" && cutPlayerIds.has(Number(p.ID))).length;
 
-      const minCuts = Math.max(0, currentRoster - 16);
-      const maxCuts = Math.max(0, currentRoster - 13);
+      const picksCount = picksByTeam[teamId] || 0;
+      const minCuts = Math.max(
+        0,
+        currentRoster - CUTS_MAX_ROSTER,
+        currentRoster + picksCount - CUTS_MAX_ASSETS
+      );
+      const maxCuts = Math.max(0, currentRoster - CUTS_MIN_ROSTER);
       const postRoster = currentRoster - cutsCount;
       const postGk = currentGk - cutGk;
+      const postAssets = postRoster + picksCount;
 
-      // La squadra è in regola se la rosa finale è compresa tra 13 e 16 giocatori E ha almeno 2 portieri
-      const isRosterCompliant = postRoster >= 13 && postRoster <= 16;
-      const isGkCompliant = postGk >= 2;
-      const isCompliant = isRosterCompliant && isGkCompliant;
+      // In regola se: 13-16 giocatori, giocatori + pick <= 21 asset, almeno 2 portieri
+      const isRosterCompliant = postRoster >= CUTS_MIN_ROSTER && postRoster <= CUTS_MAX_ROSTER;
+      const isGkCompliant = postGk >= CUTS_MIN_GK;
+      const isAssetCompliant = postAssets <= CUTS_MAX_ASSETS;
+      const isCompliant = isRosterCompliant && isGkCompliant && isAssetCompliant;
 
       return {
         teamId,
@@ -188,8 +237,13 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
         currentGk,
         cutGk,
         postGk,
+        picksCount,
+        postAssets,
         isCompliant,
         gkReason: !isGkCompliant ? `Meno di 2 portieri rimasti (${postGk} POR)` : undefined,
+        assetReason: !isAssetCompliant
+          ? `Asset oltre il limite: ${postAssets}/${CUTS_MAX_ASSETS} (${postRoster} giocatori + ${picksCount} pick)`
+          : undefined,
       };
     });
 

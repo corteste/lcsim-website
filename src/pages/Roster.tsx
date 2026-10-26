@@ -74,7 +74,14 @@ import {
   MarketStatusCode,
 } from "@/types/marketStatus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTeamCutPlayerIds, togglePlayerCut } from "@/services/cutsService";
+import {
+  getTeamCutPlayerIds,
+  togglePlayerCut,
+  getTeamAvailablePicksCount,
+  CUTS_MIN_ROSTER,
+  CUTS_MAX_ROSTER,
+  CUTS_MAX_ASSETS,
+} from "@/services/cutsService";
 import { getRosterLockState, subscribeToRosterLock } from "@/services/rosterLockService";
 import {
   JERSEY_STYLE_OPTIONS,
@@ -393,6 +400,13 @@ const Roster = () => {
   });
 
   const cutPlayerIds = useMemo(() => new Set(cutPlayerIdsArray), [cutPlayerIdsArray]);
+
+  // Scelte draft possedute e non ancora utilizzate (Punto #33 - Totale Asset)
+  const { data: availablePicksCount = 0 } = useQuery({
+    queryKey: ["team_available_picks", currentTeam],
+    queryFn: () => (currentTeam ? getTeamAvailablePicksCount(currentTeam) : Promise.resolve(0)),
+    enabled: Boolean(currentTeam),
+  });
   const [isTogglingCutId, setIsTogglingCutId] = useState<number | null>(null);
   const [isRosterLocked, setIsRosterLocked] = useState<boolean>(false);
 
@@ -403,10 +417,16 @@ const Roster = () => {
   }, []);
 
   const currentRosterCount = players.length;
-  const minCutsNeeded = Math.max(0, currentRosterCount - 16);
-  const maxCutsAllowed = Math.max(0, currentRosterCount - 13);
+  const minCutsNeeded = Math.max(
+    0,
+    currentRosterCount - CUTS_MAX_ROSTER,
+    currentRosterCount + availablePicksCount - CUTS_MAX_ASSETS
+  );
+  const maxCutsAllowed = Math.max(0, currentRosterCount - CUTS_MIN_ROSTER);
   const currentCutCount = cutPlayerIds.size;
   const postCutRoster = currentRosterCount - currentCutCount;
+  const postCutAssets = postCutRoster + availablePicksCount;
+  const isAssetCompliant = postCutAssets <= CUTS_MAX_ASSETS;
 
   // Calcolo salvaguardia portieri (Punto #41)
   const totalGks = useMemo(() => players.filter((p) => p.Posiz === "POR").length, [players]);
@@ -416,7 +436,11 @@ const Roster = () => {
   );
   const remainingGks = totalGks - cutGks;
   const isGkCompliant = remainingGks >= 2;
-  const isCutsCompliant = postCutRoster >= 13 && postCutRoster <= 16 && isGkCompliant;
+  const isCutsCompliant =
+    postCutRoster >= CUTS_MIN_ROSTER &&
+    postCutRoster <= CUTS_MAX_ROSTER &&
+    isAssetCompliant &&
+    isGkCompliant;
   const canAddMoreCuts = currentCutCount < maxCutsAllowed;
 
   const handleTogglePlayerCut = async (player: Player) => {
@@ -1250,6 +1274,19 @@ const Roster = () => {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <Badge
+                      variant="outline"
+                      className={`font-mono text-xs font-bold px-2.5 py-1 transition-colors ${
+                        isAssetCompliant &&
+                        postCutRoster >= CUTS_MIN_ROSTER &&
+                        postCutRoster <= CUTS_MAX_ROSTER
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
+                          : "bg-destructive/10 text-destructive border-destructive/40"
+                      }`}
+                      title={`Totale Asset dopo i tagli = giocatori in rosa + scelte draft non ancora utilizzate. Limite massimo: ${CUTS_MAX_ASSETS} asset, con una rosa tra ${CUTS_MIN_ROSTER} e ${CUTS_MAX_ROSTER} giocatori. Tagli minimi richiesti: ${minCutsNeeded}, massimi consentiti: ${maxCutsAllowed}.`}
+                    >
+                      Asset: {postCutAssets}/{CUTS_MAX_ASSETS} ({postCutRoster} giocatori + {availablePicksCount} pick)
+                    </Badge>
                     <Badge
                       variant="outline"
                       className={`font-mono text-xs font-bold px-2.5 py-1 transition-colors ${

@@ -596,7 +596,7 @@ Meccanica di decadimento/peggioramento dinamico degli attributi nel corso dell'a
 ---
 
 ## 📌 26. Curva di Crescita ed Esperienza del Calciatore (Popup Dettaglio Giocatore)
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato (Assorbito dal Punto #24: pill XP e `PlayerXpBreakdownModal` con timeline stagionale nel popup giocatore)
 - **Priorità**: Media
 - **Moduli coinvolti**: Modale dettaglio calciatore (`src/components/player/PlayerDetailModal.tsx` o componenti correlati in Rose/Scouting)
 - **Tabelle coinvolte**: `an_player`, `an_player_training`, storico XP
@@ -706,17 +706,25 @@ Integrazione e regolamentazione delle **scelte compensatorie** nel tabellone del
 ---
 
 ## 📌 33. Tagli di Calciomercato su Numero Totale di Asset (Calciatori + Scelte Draft)
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Testato (Migrazione SQL RPC, Service, Badge Rosa & Dashboard Admin)
 - **Priorità**: Alta (Evoluzione strategica del calciomercato e del roster management)
 - **Moduli coinvolti**: `src/pages/Roster.tsx`, `src/services/cutsService.ts`, `src/pages/admin/AdminAutomazioni.tsx`
-- **Tabelle coinvolte**: `team_cuts_registry`, `an_player`, `an_draft_board`
+- **Tabelle & Funzioni coinvolte**: `team_cuts_registry`, `an_player`, `an_draft_board`, `execute_official_cuts`
+- **Migrazioni**: `supabase/migrations/20261026_cuts_total_assets.sql` e rollback `20261026_cuts_total_assets_rollback.sql`
 
-### Descrizione
-Evoluzione della regola di conformità della rosa durante la finestra dei tagli:
-- Attualmente la regola verifica il numero di calciatori sotto contratto (minimo 13, massimo 16).
-- La nuova logica estende il controllo al **totale complessivo degli asset societari**:
-  $$\text{Totale Asset} = \text{Numero Calciatori in Rosa} + \text{Scelte del Draft Possedute}$$
-- Definizione dei tetti massimi consentiti e aggiornamento dei contatori in `Roster.tsx` e della card di validazione Admin.
+### Regole Approvate
+Dopo i tagli ogni squadra deve rispettare **contemporaneamente**:
+1. Rosa tra **13 e 16 giocatori** (vincolo precedente mantenuto).
+2. **Totale Asset ≤ 21**, dove $\text{Totale Asset} = \text{Giocatori in Rosa} + \text{Scelte Draft non ancora utilizzate}$ (pick con `rookie_id` e `player_id` nulli).
+3. Almeno **2 portieri** (Punto #41).
+
+Tagli minimi e massimi: $\text{minCuts} = \max(0,\ N-16,\ N+P-21)$, $\text{maxCuts} = \max(0,\ N-13)$.
+
+### Specifiche Implementate
+1. **Servizio (`cutsService.ts`)**: costanti `CUTS_MIN_ROSTER`, `CUTS_MAX_ROSTER`, `CUTS_MAX_ASSETS`, `CUTS_MIN_GK`; nuova `getTeamAvailablePicksCount`; `TeamCutCompliance` esteso con `picksCount`, `postAssets` e `assetReason`; `getCutsComplianceReport` include il vincolo asset.
+2. **Rosa (`Roster.tsx`, tab Status di Mercato)**: badge unico *"Asset: X/21 (Y giocatori + Z pick)"*, verde se in regola e rosso altrimenti, con tooltip che spiega la regola e i tagli minimi/massimi.
+3. **Pannello Admin (`AdminAutomazioni.tsx`)**: parametri aggiornati e motivo esplicito per le squadre inadempienti (*"Asset oltre il limite: 22/21 (17 giocatori + 5 pick)"*).
+4. **PostgreSQL (`execute_official_cuts`)**: conteggio delle pick libere per club e blocco dell'ufficializzazione se `v_post_assets > 21`.
 
 ---
 

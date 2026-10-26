@@ -788,7 +788,7 @@ export default function AdminAutomazioni() {
                 <div className="p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs space-y-2">
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Parametri rosa post-tagli:</span>
-                    <span className="font-mono font-bold text-foreground">13-16 giocatori (min. 2 portieri)</span>
+                    <span className="font-mono font-bold text-foreground">13-16 giocatori, max 21 asset (giocatori + pick), min. 2 portieri</span>
                   </div>
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Calciatori in lista tagli:</span>
@@ -824,20 +824,25 @@ export default function AdminAutomazioni() {
                                 Meno di 2 portieri rimasti ({team.postGk} POR)
                               </span>
                             )}
+                            {team.assetReason && (
+                              <span className="text-[10px] text-destructive font-semibold">
+                                {team.assetReason}
+                              </span>
+                            )}
                           </div>
                           <div className="text-right shrink-0">
                             <span className="font-mono font-bold text-destructive block">
                               Tagliati: {team.cutsCount}
                             </span>
                             <span className="text-[10px] text-muted-foreground font-mono">
-                              Rosa: {team.postRoster} (POR: {team.postGk})
+                              Rosa: {team.postRoster} (POR: {team.postGk}) • Asset: {team.postAssets}/21
                             </span>
                           </div>
                         </div>
                       ))}
                     </div>
                     <p className="text-[11px] text-muted-foreground italic">
-                      L'ufficializzazione è bloccata finché tutte le squadre non avranno tra 13 e 16 giocatori e almeno 2 portieri dopo i tagli.
+                      L'ufficializzazione è bloccata finché tutte le squadre non avranno, dopo i tagli, tra 13 e 16 giocatori, al massimo 21 asset tra giocatori e scelte draft, e almeno 2 portieri.
                     </p>
                     <Button
                       disabled={true}
