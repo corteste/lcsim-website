@@ -64,7 +64,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             </CardTitle>
             <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
-              Dichiarazioni ufficiali e indiscrezioni di mercato
+              Dichiarazioni ufficiali e indiscrezioni di mercato.
             </p>
           </div>
         </div>
@@ -83,15 +83,10 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
           }`}>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
+              <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
                 <Mic2 className="h-2.5 w-2.5" />
                 Sala Stampa
               </Badge>
-              {latestConference && (
-                <span className="text-[10px] font-mono text-muted-foreground font-bold">
-                  G{latestConference.matchday}
-                </span>
-              )}
             </div>
 
             {loading ? (
@@ -125,15 +120,10 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
           }`}>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
+              <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold flex items-center gap-1 py-0 px-1.5">
                 <Flame className="h-2.5 w-2.5 text-amber-500" />
-                Gossip AI
+                Ultime Notizie
               </Badge>
-              {latestRumor && (
-                <Badge variant="outline" className="text-[9px] font-mono py-0 px-1.5">
-                  {latestRumor.credibility_badge}
-                </Badge>
-              )}
             </div>
 
             {loading ? (

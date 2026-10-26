@@ -169,15 +169,16 @@ const ScoutingStatBar = ({
       </div>
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${
-            displayInfo.midpoint >= 85
+          className={`h-full rounded-full transition-all duration-500 ${displayInfo.midpoint >= 90
+            ? "bg-gradient-to-r from-purple-500 to-violet-500"
+            : displayInfo.midpoint >= 85
               ? "bg-gradient-to-r from-blue-500 to-cyan-500"
               : displayInfo.midpoint >= 78
-              ? "bg-gradient-to-r from-emerald-500 to-green-500"
-              : displayInfo.midpoint >= 70
-              ? "bg-gradient-to-r from-amber-500 to-yellow-500"
-              : "bg-gradient-to-r from-orange-500 to-rose-500"
-          }`}
+                ? "bg-gradient-to-r from-emerald-500 to-green-500"
+                : displayInfo.midpoint >= 70
+                  ? "bg-gradient-to-r from-amber-500 to-yellow-500"
+                  : "bg-gradient-to-r from-orange-500 to-rose-500"
+            }`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -423,9 +424,8 @@ const Scouting = () => {
       toast.success(
         currentTokens > 0
           ? `Scouting potenziato su ${rookie.Nome} ${rookie.Cognome}: da ${currentTokens}G a ${newTier}G (+${deltaCost} gettoni usati).`
-          : `Scouting avviato su ${rookie.Nome} ${rookie.Cognome}: Fascia ${newTier} Getton${
-              newTier === 1 ? "e" : "i"
-            }!`
+          : `Scouting avviato su ${rookie.Nome} ${rookie.Cognome}: Fascia ${newTier} Getton${newTier === 1 ? "e" : "i"
+          }!`
       );
       await fetchScoutingData(true);
     } catch (err: unknown) {
@@ -613,21 +613,6 @@ const Scouting = () => {
           {/* Progress Bar & Tier Legend */}
           <div className="px-5 py-3 bg-muted/30 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground">
-                Fasce Scouting:
-              </span>
-              <Badge variant="outline" className="text-[10px] font-mono">
-                0G: Età, Altezza, Peso, Posiz, Piede, Stelle
-              </Badge>
-              {SCOUTING_TIERS.map((t) => (
-                <Badge
-                  key={t.tokens}
-                  variant="outline"
-                  className={`text-[10px] font-mono ${t.badgeClass}`}
-                >
-                  {t.shortLabel}: {t.title.split("•")[1]?.trim()}
-                </Badge>
-              ))}
             </div>
 
             <div className="flex items-center gap-2 self-end md:self-auto">
@@ -685,11 +670,10 @@ const Scouting = () => {
                       <button
                         type="button"
                         onClick={() => setFavoritesOnly((prev) => !prev)}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors flex items-center gap-1 ${
-                          favoritesOnly
-                            ? "bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/50 shadow-xs"
-                            : "bg-muted text-muted-foreground hover:text-foreground"
-                        }`}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors flex items-center gap-1 ${favoritesOnly
+                          ? "bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/50 shadow-xs"
+                          : "bg-muted text-muted-foreground hover:text-foreground"
+                          }`}
                         title="Filtra solo rookie contrassegnati con la stella"
                       >
                         <Star className={`h-2.5 w-2.5 ${favoritesOnly ? "fill-amber-500 text-amber-500" : ""}`} />
@@ -706,11 +690,10 @@ const Scouting = () => {
                           key={st.id}
                           type="button"
                           onClick={() => setStatusFilter(st.id)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
-                            statusFilter === st.id
-                              ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
-                              : "bg-muted text-muted-foreground hover:text-foreground"
-                          }`}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${statusFilter === st.id
+                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
+                            : "bg-muted text-muted-foreground hover:text-foreground"
+                            }`}
                         >
                           {st.label}
                         </button>
@@ -734,11 +717,10 @@ const Scouting = () => {
                         key={g.id}
                         type="button"
                         onClick={() => setRoleFilter(g.id)}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
-                          roleFilter === g.id
-                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
-                            : "bg-muted/60 text-muted-foreground hover:text-foreground"
-                        }`}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${roleFilter === g.id
+                          ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
+                          : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                          }`}
                       >
                         {g.label}
                       </button>
@@ -762,11 +744,10 @@ const Scouting = () => {
                         <div
                           key={r.ID}
                           onClick={() => setSelectedRookieId(rId)}
-                          className={`w-full p-3 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                            isSelected
-                              ? "bg-emerald-500/15 border-l-4 border-l-emerald-500"
-                              : "hover:bg-muted/50"
-                          }`}
+                          className={`w-full p-3 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${isSelected
+                            ? "bg-emerald-500/15 border-l-4 border-l-emerald-500"
+                            : "hover:bg-muted/50"
+                            }`}
                         >
                           <div className="min-w-0 space-y-1 flex-1">
                             <div className="flex items-center gap-2">
@@ -801,11 +782,10 @@ const Scouting = () => {
                                 e.stopPropagation();
                                 handleToggleFavorite(rId);
                               }}
-                              className={`p-1.5 rounded-lg border transition-all ${
-                                isFav
-                                  ? "bg-amber-500/20 text-amber-500 border-amber-500/40 shadow-xs"
-                                  : "text-muted-foreground/40 border-transparent hover:border-border hover:bg-muted hover:text-amber-500"
-                              }`}
+                              className={`p-1.5 rounded-lg border transition-all ${isFav
+                                ? "bg-amber-500/20 text-amber-500 border-amber-500/40 shadow-xs"
+                                : "text-muted-foreground/40 border-transparent hover:border-border hover:bg-muted hover:text-amber-500"
+                                }`}
                               title={isFav ? "Rimuovi dai preferiti" : "Salva tra i preferiti (⭐)"}
                             >
                               <Star className={`h-4 w-4 ${isFav ? "fill-amber-500 text-amber-500" : ""}`} />
@@ -844,11 +824,10 @@ const Scouting = () => {
                             );
                             return (
                               <div
-                                className={`h-20 w-24 rounded-2xl flex flex-col items-center justify-center border-2 shadow-lg shrink-0 ${
-                                  ovrInfo.isExact
-                                    ? "bg-emerald-600 text-white border-emerald-400"
-                                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40"
-                                }`}
+                                className={`h-20 w-24 rounded-2xl flex flex-col items-center justify-center border-2 shadow-lg shrink-0 ${ovrInfo.isExact
+                                  ? "bg-emerald-600 text-white border-emerald-400"
+                                  : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40"
+                                  }`}
                               >
                                 <span className="text-[9px] font-bold uppercase tracking-widest opacity-85">
                                   {ovrInfo.isExact ? "OVR Esatto" : "Valutazione"}
@@ -889,18 +868,16 @@ const Scouting = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleToggleFavorite(Number(selectedRookie.ID))}
-                                className={`h-8 px-3 text-xs font-bold gap-1.5 rounded-xl transition-all shadow-xs ${
-                                  favoriteRookieIds.has(Number(selectedRookie.ID))
-                                    ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/50 hover:bg-amber-500/30 ring-1 ring-amber-500/30"
-                                    : "border-border/80 text-muted-foreground hover:text-amber-500 hover:border-amber-500/40 hover:bg-amber-500/10"
-                                }`}
+                                className={`h-8 px-3 text-xs font-bold gap-1.5 rounded-xl transition-all shadow-xs ${favoriteRookieIds.has(Number(selectedRookie.ID))
+                                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/50 hover:bg-amber-500/30 ring-1 ring-amber-500/30"
+                                  : "border-border/80 text-muted-foreground hover:text-amber-500 hover:border-amber-500/40 hover:bg-amber-500/10"
+                                  }`}
                               >
                                 <Star
-                                  className={`h-4 w-4 ${
-                                    favoriteRookieIds.has(Number(selectedRookie.ID))
-                                      ? "fill-amber-500 text-amber-500"
-                                      : ""
-                                  }`}
+                                  className={`h-4 w-4 ${favoriteRookieIds.has(Number(selectedRookie.ID))
+                                    ? "fill-amber-500 text-amber-500"
+                                    : ""
+                                    }`}
                                 />
                                 <span>
                                   {favoriteRookieIds.has(Number(selectedRookie.ID))
@@ -1041,13 +1018,12 @@ const Scouting = () => {
                           return (
                             <div
                               key={tier.tokens}
-                              className={`p-3.5 rounded-xl border flex flex-col justify-between gap-3 transition-all ${
-                                isCurrent
-                                  ? "bg-emerald-500/15 border-2 border-emerald-500 shadow-sm"
-                                  : isUnlocked
+                              className={`p-3.5 rounded-xl border flex flex-col justify-between gap-3 transition-all ${isCurrent
+                                ? "bg-emerald-500/15 border-2 border-emerald-500 shadow-sm"
+                                : isUnlocked
                                   ? "bg-muted/40 border-emerald-500/30 opacity-85"
                                   : "bg-card border-border/80 hover:border-emerald-500/40"
-                              }`}
+                                }`}
                             >
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2">
@@ -1257,11 +1233,10 @@ const Scouting = () => {
                               ].map((item, idx) => (
                                 <div
                                   key={idx}
-                                  className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                                    item.isIcon
-                                      ? "border-amber-500/30 bg-amber-500/5"
-                                      : "border-border/70 bg-muted/20"
-                                  }`}
+                                  className={`p-2.5 rounded-xl border flex flex-col justify-between ${item.isIcon
+                                    ? "border-amber-500/30 bg-amber-500/5"
+                                    : "border-border/70 bg-muted/20"
+                                    }`}
                                 >
                                   <span className="text-[10px] font-semibold uppercase text-muted-foreground flex items-center gap-1">
                                     {item.isIcon && (
@@ -1289,8 +1264,8 @@ const Scouting = () => {
                         selectedRookieTokens >= 2
                           ? "Dettaglio (Range 3)"
                           : selectedRookieTokens === 1
-                          ? "Stima (Range 10)"
-                          : "Bloccato (1G)";
+                            ? "Stima (Range 10)"
+                            : "Bloccato (1G)";
 
                       return (
                         <Card
@@ -1346,11 +1321,10 @@ const Scouting = () => {
                       </div>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] font-mono ${
-                          selectedRookieTokens >= 5
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                            : "bg-muted text-muted-foreground border-border"
-                        }`}
+                        className={`text-[10px] font-mono ${selectedRookieTokens >= 5
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                          : "bg-muted text-muted-foreground border-border"
+                          }`}
                       >
                         {selectedRookieTokens >= 5 ? "Sbloccato (5G)" : "Richiede 5G"}
                       </Badge>
@@ -1411,21 +1385,19 @@ const Scouting = () => {
                                 {roleEval.allPitchRoles.map((item) => (
                                   <div
                                     key={item.role}
-                                    className={`p-2 rounded-lg border text-center transition-all ${
-                                      item.isPrimary
-                                        ? "bg-emerald-500/20 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-extrabold ring-1 ring-emerald-500/40"
-                                        : item.isSecondary
+                                    className={`p-2 rounded-lg border text-center transition-all ${item.isPrimary
+                                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-extrabold ring-1 ring-emerald-500/40"
+                                      : item.isSecondary
                                         ? "bg-sky-500/15 border-sky-500/40 text-foreground font-bold"
                                         : "bg-muted/30 border-border/60 text-muted-foreground"
-                                    }`}
+                                      }`}
                                   >
                                     <div className="text-[10px] font-mono uppercase">{item.role}</div>
                                     <div
-                                      className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
-                                        item.isPrimary
-                                          ? "text-emerald-600 dark:text-emerald-400"
-                                          : getValueColor(item.ovr)
-                                      }`}
+                                      className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${item.isPrimary
+                                        ? "text-emerald-600 dark:text-emerald-400"
+                                        : getValueColor(item.ovr)
+                                        }`}
                                     >
                                       {item.ovr}
                                     </div>
@@ -1477,11 +1449,10 @@ const Scouting = () => {
                       size="sm"
                       variant={recapTierFilter === f.id ? "default" : "outline"}
                       onClick={() => setRecapTierFilter(f.id)}
-                      className={`h-8 text-xs font-semibold ${
-                        recapTierFilter === f.id
-                          ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          : ""
-                      }`}
+                      className={`h-8 text-xs font-semibold ${recapTierFilter === f.id
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        : ""
+                        }`}
                     >
                       {f.label}
                     </Button>
@@ -1494,11 +1465,10 @@ const Scouting = () => {
                       key={g.id}
                       type="button"
                       onClick={() => setRecapRoleFilter(g.id)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
-                        recapRoleFilter === g.id
-                          ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
-                          : "bg-muted/60 text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${recapRoleFilter === g.id
+                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
+                        : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       {g.label}
                     </button>

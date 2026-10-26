@@ -10,47 +10,47 @@ export const SCOUTING_TIERS: {
   description: string;
   badgeClass: string;
 }[] = [
-  {
-    tokens: 1,
-    label: "1 Gettone",
-    shortLabel: "1G",
-    title: "Fascia 1 • Stima Abilità (Range 10)",
-    description:
-      "Sblocca la stima di tutte le abilità tecniche e fisiche con decadi fisse (es. 70-79).",
-    badgeClass:
-      "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
-  },
-  {
-    tokens: 2,
-    label: "2 Gettoni",
-    shortLabel: "2G",
-    title: "Fascia 2 • Precisione Abilità (Range 3), Emotion & Conteggio Tratti",
-    description:
-      "Affina le abilità a range di 3 (es. 70-72, 73-75, 76-79), svela l'attitudine emotiva (Emotion) e il conteggio dei tratti posseduti.",
-    badgeClass:
-      "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
-  },
-  {
-    tokens: 3,
-    label: "3 Gettoni",
-    shortLabel: "3G",
-    title: "Fascia 3 • Tratti Esatti, Ruolo Tattico (Role 1), Piede Debole & Mosse Abilità",
-    description:
-      "Svela i nomi di tutti i tratti (base e icona), la specializzazione tattica Role 1 e il valore esatto di Piede Debole e Mosse Abilità.",
-    badgeClass:
-      "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
-  },
-  {
-    tokens: 5,
-    label: "5 Gettoni",
-    shortLabel: "5G",
-    title: "Fascia 4 • Scouting Completo & Overall per Ruolo",
-    description:
-      "Sblocca l'Overall numerico esatto e l'Overall ricalcolato per ciascun ruolo in campo in base ai pesi del simulatore.",
-    badgeClass:
-      "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-  },
-];
+    {
+      tokens: 1,
+      label: "1 Gettone",
+      shortLabel: "1G",
+      title: "Fascia 1 • Stima Abilità (Range 10)",
+      description:
+        "Sblocca la stima di tutte le abilità tecniche e fisiche con decadi fisse (es. 70-79).",
+      badgeClass:
+        "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
+    },
+    {
+      tokens: 2,
+      label: "2 Gettoni",
+      shortLabel: "2G",
+      title: "Fascia 2 • Precisione Abilità (Range 3), Emotion & Conteggio Tratti",
+      description:
+        "Affina le abilità a range di 3 (es. 70-72, 73-75, 76-79), svela l'attitudine emotiva (Emotion) e il conteggio dei tratti posseduti.",
+      badgeClass:
+        "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
+    },
+    {
+      tokens: 3,
+      label: "3 Gettoni",
+      shortLabel: "3G",
+      title: "Fascia 3 • Tratti Esatti, Ruolo Tattico (Role 1), Piede Debole & Mosse Abilità",
+      description:
+        "Svela i nomi di tutti i tratti (base e icona), la specializzazione tattica Role 1 e il valore esatto di Piede Debole e Mosse Abilità.",
+      badgeClass:
+        "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
+    },
+    {
+      tokens: 5,
+      label: "5 Gettoni",
+      shortLabel: "5G",
+      title: "Fascia 4 • Scouting Completo & Overall per Ruolo",
+      description:
+        "Sblocca l'Overall numerico esatto e l'Overall ricalcolato per ciascun ruolo in campo in base ai pesi del simulatore.",
+      badgeClass:
+        "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+    },
+  ];
 
 export type ScoutingDeptKey = "DIF" | "PAS" | "ATT" | "FIS" | "POR" | "CPZ";
 
@@ -66,82 +66,82 @@ export const SCOUTING_DEPARTMENTS: {
   colorClass: string;
   stats: ScoutingStatItem[];
 }[] = [
-  {
-    key: "DIF",
-    title: "Difesa & Marcatura",
-    colorClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    stats: [
-      { code: "CONT", label: "Contrasto", dept: "DIF" },
-      { code: "SCIV", label: "Scivolata", dept: "DIF" },
-      { code: "MARC", label: "Marcatura", dept: "DIF" },
-      { code: "AGGR", label: "Aggressività", dept: "DIF" },
-      { code: "INTR", label: "Intercettazione", dept: "DIF" },
-    ],
-  },
-  {
-    key: "PAS",
-    title: "Passaggi & Regia",
-    colorClass: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
-    stats: [
-      { code: "PASC", label: "Passaggio Corto", dept: "PAS" },
-      { code: "PASL", label: "Passaggio Lungo", dept: "PAS" },
-      { code: "CRSS", label: "Cross", dept: "PAS" },
-      { code: "CTRP", label: "Controllo Palla", dept: "PAS" },
-      { code: "VISI", label: "Visione di Gioco", dept: "PAS" },
-      { code: "EFFT", label: "Effetto", dept: "PAS" },
-    ],
-  },
-  {
-    key: "ATT",
-    title: "Attacco & Tiro",
-    colorClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-    stats: [
-      { code: "FINA", label: "Finalizzazione", dept: "ATT" },
-      { code: "PIAZ", label: "Piazzamento", dept: "ATT" },
-      { code: "PTIR", label: "Potenza Tiro", dept: "ATT" },
-      { code: "TIRD", label: "Tiri dalla Distanza", dept: "ATT" },
-      { code: "TIRV", label: "Tiri al Volo", dept: "ATT" },
-      { code: "DRBL", label: "Dribbling", dept: "ATT" },
-      { code: "TSTA", label: "Colpi di Testa", dept: "ATT" },
-    ],
-  },
-  {
-    key: "FIS",
-    title: "Fisico & Velocità",
-    colorClass: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-    stats: [
-      { code: "VELO", label: "Velocità Scatto", dept: "FIS" },
-      { code: "ACCL", label: "Accelerazione", dept: "FIS" },
-      { code: "AGIL", label: "Agilità", dept: "FIS" },
-      { code: "RESI", label: "Resistenza", dept: "FIS" },
-      { code: "FRZA", label: "Forza Fisica", dept: "FIS" },
-      { code: "ELEV", label: "Elevazione", dept: "FIS" },
-      { code: "EQLB", label: "Equilibrio", dept: "FIS" },
-      { code: "RIFL", label: "Riflessi", dept: "FIS" },
-    ],
-  },
-  {
-    key: "POR",
-    title: "Portiere",
-    colorClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    stats: [
-      { code: "PREP", label: "Presa", dept: "POR" },
-      { code: "POSP", label: "Posizionamento", dept: "POR" },
-      { code: "RINP", label: "Rinvio", dept: "POR" },
-      { code: "RIFP", label: "Riflessi Portiere", dept: "POR" },
-      { code: "TUFP", label: "Tuffo", dept: "POR" },
-    ],
-  },
-  {
-    key: "CPZ",
-    title: "Calci Piazzati",
-    colorClass: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-    stats: [
-      { code: "PNIZ", label: "Punizioni", dept: "CPZ" },
-      { code: "CRIG", label: "Rigori", dept: "CPZ" },
-    ],
-  },
-];
+    {
+      key: "DIF",
+      title: "Difesa & Marcatura",
+      colorClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+      stats: [
+        { code: "CONT", label: "Contrasto", dept: "DIF" },
+        { code: "SCIV", label: "Scivolata", dept: "DIF" },
+        { code: "MARC", label: "Marcatura", dept: "DIF" },
+        { code: "AGGR", label: "Aggressività", dept: "DIF" },
+        { code: "INTR", label: "Intercettazione", dept: "DIF" },
+      ],
+    },
+    {
+      key: "PAS",
+      title: "Passaggi & Regia",
+      colorClass: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
+      stats: [
+        { code: "PASC", label: "Passaggio Corto", dept: "PAS" },
+        { code: "PASL", label: "Passaggio Lungo", dept: "PAS" },
+        { code: "CRSS", label: "Cross", dept: "PAS" },
+        { code: "CTRP", label: "Controllo Palla", dept: "PAS" },
+        { code: "VISI", label: "Visione di Gioco", dept: "PAS" },
+        { code: "EFFT", label: "Effetto", dept: "PAS" },
+      ],
+    },
+    {
+      key: "ATT",
+      title: "Attacco & Tiro",
+      colorClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+      stats: [
+        { code: "FINA", label: "Finalizzazione", dept: "ATT" },
+        { code: "PIAZ", label: "Piazzamento", dept: "ATT" },
+        { code: "PTIR", label: "Potenza Tiro", dept: "ATT" },
+        { code: "TIRD", label: "Tiri dalla Distanza", dept: "ATT" },
+        { code: "TIRV", label: "Tiri al Volo", dept: "ATT" },
+        { code: "DRBL", label: "Dribbling", dept: "ATT" },
+        { code: "TSTA", label: "Colpi di Testa", dept: "ATT" },
+      ],
+    },
+    {
+      key: "FIS",
+      title: "Fisico & Velocità",
+      colorClass: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+      stats: [
+        { code: "VELO", label: "Velocità Scatto", dept: "FIS" },
+        { code: "ACCL", label: "Accelerazione", dept: "FIS" },
+        { code: "AGIL", label: "Agilità", dept: "FIS" },
+        { code: "RESI", label: "Resistenza", dept: "FIS" },
+        { code: "FRZA", label: "Forza Fisica", dept: "FIS" },
+        { code: "ELEV", label: "Elevazione", dept: "FIS" },
+        { code: "EQLB", label: "Equilibrio", dept: "FIS" },
+        { code: "RIFL", label: "Riflessi", dept: "FIS" },
+      ],
+    },
+    {
+      key: "POR",
+      title: "Portiere",
+      colorClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      stats: [
+        { code: "PREP", label: "Presa Portiere", dept: "POR" },
+        { code: "POSP", label: "Posizionamento Portiere", dept: "POR" },
+        { code: "RINP", label: "Rinvio Portiere", dept: "POR" },
+        { code: "RIFP", label: "Riflessi Portiere", dept: "POR" },
+        { code: "TUFP", label: "Tuffo Portiere", dept: "POR" },
+      ],
+    },
+    {
+      key: "CPZ",
+      title: "Calci Piazzati",
+      colorClass: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+      stats: [
+        { code: "PNIZ", label: "Punizioni", dept: "CPZ" },
+        { code: "CRIG", label: "Rigori", dept: "CPZ" },
+      ],
+    },
+  ];
 
 /**
  * Range di 10 (Opzione A - Decadi fisse):

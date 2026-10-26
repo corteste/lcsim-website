@@ -6,10 +6,10 @@ import { Player } from "@/types/player";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Plus, Minus, TrendingUp, Award, Save, RotateCcw, 
-  CheckCircle2, Clock, Sparkles, Shield, Zap, Flame, 
-  Dumbbell, Target, Activity, Swords, ArrowRight, Search, 
+import {
+  Plus, Minus, TrendingUp, Award, Save, RotateCcw,
+  CheckCircle2, Clock, Sparkles, Shield, Zap, Flame,
+  Dumbbell, Target, Activity, Swords, ArrowRight, Search,
   ChevronRight, AlertCircle, RefreshCw, Star, Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -640,7 +640,7 @@ const Allenamenti = () => {
       specializationsDraft.role2 !== savedDraftSpec.role2 ||
       (specializationsDraft.removedBaseTraits || []).join(",") !== (savedDraftSpec.removedBaseTraits || []).join(",") ||
       specializationsDraft.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",") !==
-        savedDraftSpec.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
+      savedDraftSpec.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
 
     return increasesChanged || specChanged;
   }, [player, increases, specializationsDraft, currentTrainingRecord]);
@@ -953,7 +953,7 @@ const Allenamenti = () => {
             {player && (
               <div className="rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-card/90 shadow-xl p-4 sm:p-5 backdrop-blur-md">
                 <div className="grid grid-cols-12 gap-4 items-center">
-                  
+
                   {/* Calciatore Profilo Rapido */}
                   <div className="col-span-12 lg:col-span-4 flex items-center gap-3.5 pr-0 lg:pr-4 lg:border-r border-border/70">
                     <div className="relative shrink-0">
@@ -1017,9 +1017,8 @@ const Allenamenti = () => {
                     </div>
 
                     {/* XP Usati al Momento */}
-                    <div className={`p-2.5 rounded-xl border text-center transition-all ${
-                      totalCost > 0 ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400" : "bg-muted/20 border-border/60 text-muted-foreground"
-                    }`}>
+                    <div className={`p-2.5 rounded-xl border text-center transition-all ${totalCost > 0 ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400" : "bg-muted/20 border-border/60 text-muted-foreground"
+                      }`}>
                       <div className="text-[10px] font-bold uppercase tracking-wider truncate">
                         Punti Usati
                       </div>
@@ -1030,11 +1029,10 @@ const Allenamenti = () => {
                     </div>
 
                     {/* XP Rimanenti */}
-                    <div className={`p-2.5 rounded-xl border text-center transition-all ${
-                      xpRemaining < 0 
-                        ? "bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 animate-pulse" 
-                        : "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                    }`}>
+                    <div className={`p-2.5 rounded-xl border text-center transition-all ${xpRemaining < 0
+                      ? "bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 animate-pulse"
+                      : "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                      }`}>
                       <div className="text-[10px] font-bold uppercase tracking-wider truncate">
                         XP Rimanenti
                       </div>
@@ -1061,18 +1059,16 @@ const Allenamenti = () => {
                       <ArrowRight className="h-4 w-4 text-emerald-500 shrink-0" />
 
                       {/* Post Overall */}
-                      <div className={`text-center p-2 rounded-xl border min-w-[75px] transition-all ${
-                        postOverall > preOverall 
-                          ? "bg-emerald-500/20 border-emerald-500/50 shadow-md" 
-                          : "bg-muted/40 border-border/70"
-                      }`}>
+                      <div className={`text-center p-2 rounded-xl border min-w-[75px] transition-all ${postOverall > preOverall
+                        ? "bg-emerald-500/20 border-emerald-500/50 shadow-md"
+                        : "bg-muted/40 border-border/70"
+                        }`}>
                         <span className="text-[9px] uppercase font-bold text-foreground block">
                           Post OVR
                         </span>
                         <div className="flex items-center justify-center gap-1">
-                          <span className={`text-xl sm:text-2xl font-black font-mono ${
-                            postOverall > preOverall ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
-                          }`}>
+                          <span className={`text-xl sm:text-2xl font-black font-mono ${postOverall > preOverall ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
+                            }`}>
                             {postOverall}
                           </span>
                           {postOverall > preOverall && (
@@ -1118,7 +1114,7 @@ const Allenamenti = () => {
             {/* CORPO DELLA PAGINA: SIDEBAR CALCIATORI + TABS SEZIONE CENTRALE + RIEPILOGO */}
             {/* ========================================================================= */}
             <div className="grid grid-cols-12 gap-6 items-start">
-              
+
               {/* ------------------------------------------------------------- */}
               {/* COLONNA SINISTRA: SELETTORE CALCIATORE DELLA ROSA              */}
               {/* ------------------------------------------------------------- */}
@@ -1156,9 +1152,8 @@ const Allenamenti = () => {
                           size="sm"
                           variant={roleFilter === r ? "default" : "outline"}
                           onClick={() => setRoleFilter(r)}
-                          className={`h-7 text-[10px] px-1 font-bold ${
-                            roleFilter === r ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                          }`}
+                          className={`h-7 text-[10px] px-1 font-bold ${roleFilter === r ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                            }`}
                         >
                           {r}
                         </Button>
@@ -1182,11 +1177,10 @@ const Allenamenti = () => {
                             <div
                               key={pId}
                               onClick={() => handlePlayerChange(pId)}
-                              className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-2.5 ${
-                                isSelected
-                                  ? "bg-emerald-500/10 border-emerald-500/50 shadow-sm"
-                                  : "hover:bg-muted/40 border-border/50"
-                              }`}
+                              className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-2.5 ${isSelected
+                                ? "bg-emerald-500/10 border-emerald-500/50 shadow-sm"
+                                : "hover:bg-muted/40 border-border/50"
+                                }`}
                             >
                               <div className="flex items-center gap-2.5 min-w-0">
                                 <div className="w-8 h-8 rounded-lg overflow-hidden border border-border/80 bg-muted/30 shrink-0">
@@ -1306,11 +1300,10 @@ const Allenamenti = () => {
                           return (
                             <Card
                               key={g.key}
-                              className={`transition-all duration-200 overflow-hidden border ${
-                                hasChange
-                                  ? "border-emerald-500/50 bg-gradient-to-b from-emerald-500/[0.05] to-transparent shadow-md"
-                                  : "border-border/80 hover:border-border bg-card"
-                              }`}
+                              className={`transition-all duration-200 overflow-hidden border ${hasChange
+                                ? "border-emerald-500/50 bg-gradient-to-b from-emerald-500/[0.05] to-transparent shadow-md"
+                                : "border-border/80 hover:border-border bg-card"
+                                }`}
                             >
                               {/* Header del Blocco di 3 Attributi */}
                               <div className="p-3.5 border-b border-border/50 bg-muted/20 flex items-center justify-between gap-2">
@@ -1363,26 +1356,24 @@ const Allenamenti = () => {
                                     <Minus className="h-3 w-3" />
                                   </Button>
 
-                                  <span className={`w-7 text-center font-mono text-xs font-bold ${
-                                    hasChange ? "text-emerald-600 dark:text-emerald-400 font-extrabold" : "text-muted-foreground"
-                                  }`}>
+                                  <span className={`w-7 text-center font-mono text-xs font-bold ${hasChange ? "text-emerald-600 dark:text-emerald-400 font-extrabold" : "text-muted-foreground"
+                                    }`}>
                                     +{inc}
                                   </span>
 
                                   <Button
                                     size="icon"
                                     variant="ghost"
-                                    className={`h-6 w-6 rounded-lg ${
-                                      canIncrement ? "hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : "text-muted-foreground opacity-40"
-                                    }`}
+                                    className={`h-6 w-6 rounded-lg ${canIncrement ? "hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : "text-muted-foreground opacity-40"
+                                      }`}
                                     onClick={() => setIncrease(g.key, inc + 1)}
                                     disabled={!canIncrement}
                                     title={
                                       allMaxed
                                         ? "Tutti gli attributi del gruppo hanno raggiunto 99"
                                         : xpRemaining < nextTickCost
-                                        ? `Servono ${nextTickCost} XP disponibili (ne hai ${xpRemaining})`
-                                        : `Aumenta di 1 livello (costo: ${nextTickCost} XP)`
+                                          ? `Servono ${nextTickCost} XP disponibili (ne hai ${xpRemaining})`
+                                          : `Aumenta di 1 livello (costo: ${nextTickCost} XP)`
                                     }
                                   >
                                     <Plus className="h-3 w-3" />
@@ -1402,11 +1393,10 @@ const Allenamenti = () => {
                                   return (
                                     <div
                                       key={s}
-                                      className={`p-2 rounded-lg transition-all ${
-                                        diff > 0 
-                                          ? "bg-emerald-500/10 border border-emerald-500/20" 
-                                          : "bg-muted/15 hover:bg-muted/30 border border-transparent"
-                                      }`}
+                                      className={`p-2 rounded-lg transition-all ${diff > 0
+                                        ? "bg-emerald-500/10 border border-emerald-500/20"
+                                        : "bg-muted/15 hover:bg-muted/30 border border-transparent"
+                                        }`}
                                     >
                                       <div className="flex items-center justify-between text-xs mb-1">
                                         <div className="flex items-center gap-1.5 min-w-0">
@@ -1418,7 +1408,7 @@ const Allenamenti = () => {
                                           </span>
                                           {isKeyForRole && (
                                             <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold" title="Attributo fondamentale per il calcolo OVR del ruolo">
-                                              ★ OVR {weight}%
+                                              ★
                                             </Badge>
                                           )}
                                         </div>
@@ -1428,9 +1418,8 @@ const Allenamenti = () => {
                                             {origVal}
                                           </span>
                                           <ArrowRight className="h-3 w-3 text-muted-foreground opacity-50" />
-                                          <span className={`text-xs font-black ${
-                                            diff > 0 ? "text-emerald-600 dark:text-emerald-400 font-extrabold" : "text-foreground"
-                                          }`}>
+                                          <span className={`text-xs font-black ${diff > 0 ? "text-emerald-600 dark:text-emerald-400 font-extrabold" : "text-foreground"
+                                            }`}>
                                             {newVal}
                                           </span>
                                         </div>
@@ -1485,7 +1474,7 @@ const Allenamenti = () => {
               {/* COLONNA DESTRA: RIEPILOGO DETTAGLIATO MODIFICHE & IMPATTO      */}
               {/* ------------------------------------------------------------- */}
               <div className="col-span-12 lg:col-span-3 xl:col-span-3 2xl:col-span-3 space-y-4">
-                
+
                 {/* Scheda Riepilogo Generale */}
                 <Card className="shadow-lg border-border/80 overflow-hidden">
                   <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
@@ -1495,7 +1484,7 @@ const Allenamenti = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="p-4 space-y-4">
-                    
+
                     {/* Visualizzatore OVR Grande */}
                     <div className="p-3.5 rounded-xl bg-gradient-to-br from-card to-muted/30 border border-border/80 text-center">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">

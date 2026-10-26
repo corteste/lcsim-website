@@ -136,10 +136,10 @@ const Home = () => {
                       >
                         <td className="py-3 px-3 text-center">
                           <span className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${isChampions
-                              ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                              : isPlayoff
-                                ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
-                                : "text-muted-foreground"
+                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                            : isPlayoff
+                              ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                              : "text-muted-foreground"
                             }`}>
                             {idx + 1}
                           </span>
@@ -208,8 +208,8 @@ const Home = () => {
                   <button
                     onClick={() => setActiveLeaderboardTab("scorers")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeLeaderboardTab === "scorers"
-                        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
-                        : "text-muted-foreground hover:bg-muted"
+                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                      : "text-muted-foreground hover:bg-muted"
                       }`}
                   >
                     <Flame className="h-3.5 w-3.5" />
@@ -218,12 +218,12 @@ const Home = () => {
                   <button
                     onClick={() => setActiveLeaderboardTab("mvp")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeLeaderboardTab === "mvp"
-                        ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30"
-                        : "text-muted-foreground hover:bg-muted"
+                      ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30"
+                      : "text-muted-foreground hover:bg-muted"
                       }`}
                   >
                     <Award className="h-3.5 w-3.5" />
-                    <span>MVP Media Voto</span>
+                    <span>Miglior Media Voto</span>
                   </button>
                 </div>
 
@@ -246,8 +246,8 @@ const Home = () => {
                       >
                         <div className="flex items-center gap-3">
                           <span className={`h-6 w-6 rounded-md font-mono text-xs font-bold flex items-center justify-center ${i === 0
-                              ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
-                              : "text-muted-foreground"
+                            ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                            : "text-muted-foreground"
                             }`}>
                             {i + 1}
                           </span>
@@ -283,8 +283,8 @@ const Home = () => {
                       >
                         <div className="flex items-center gap-3">
                           <span className={`h-6 w-6 rounded-md font-mono text-xs font-bold flex items-center justify-center ${i === 0
-                              ? "bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30"
-                              : "text-muted-foreground"
+                            ? "bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30"
+                            : "text-muted-foreground"
                             }`}>
                             {i + 1}
                           </span>

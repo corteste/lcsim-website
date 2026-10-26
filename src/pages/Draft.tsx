@@ -206,7 +206,7 @@ const Draft = () => {
     for (const s of standings) {
       const rawId =
         (s as unknown as { team?: { TEAM_ID?: string } | string }).team &&
-        typeof (s as unknown as { team?: { TEAM_ID?: string } }).team === "object"
+          typeof (s as unknown as { team?: { TEAM_ID?: string } }).team === "object"
           ? (s as unknown as { team: { TEAM_ID: string } }).team.TEAM_ID
           : String((s as unknown as { team?: string }).team || "");
       const mappedId = rawId === "ASK" ? "SKA" : rawId;
@@ -933,31 +933,27 @@ const Draft = () => {
     return (
       <div
         key={pick.pick_overall}
-        className={`group relative flex flex-col justify-between rounded-xl border transition-all ${
-          large ? "min-h-[138px] p-3.5" : "min-h-[116px] p-3"
-        } ${
-          isFilteredOut ? "opacity-25 scale-[0.98]" : "opacity-100"
-        } ${
-          isOnTheClock
+        className={`group relative flex flex-col justify-between rounded-xl border transition-all ${large ? "min-h-[138px] p-3.5" : "min-h-[116px] p-3"
+          } ${isFilteredOut ? "opacity-25 scale-[0.98]" : "opacity-100"
+          } ${isOnTheClock
             ? "bg-emerald-500/15 border-2 border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
             : isDrafted
-            ? isMyTeamPick
-              ? "bg-emerald-500/[0.08] border-emerald-500/40 shadow-sm"
-              : "bg-card border-border/90 shadow-sm"
-            : isMyTeamPick
-            ? "bg-primary/[0.04] border-emerald-500/35 border-dashed"
-            : "bg-muted/25 border-border/60 hover:bg-muted/40"
-        }`}
+              ? isMyTeamPick
+                ? "bg-emerald-500/[0.08] border-emerald-500/40 shadow-sm"
+                : "bg-card border-border/90 shadow-sm"
+              : isMyTeamPick
+                ? "bg-primary/[0.04] border-emerald-500/35 border-dashed"
+                : "bg-muted/25 border-border/60 hover:bg-muted/40"
+          }`}
       >
         {/* Top Row: Progressive Pick Number + Team Owner Logo & Name */}
         <div className="flex items-start justify-between gap-1.5">
           <div className="flex items-center gap-1.5">
             <span
-              className={`font-mono font-black text-sm sm:text-base leading-none ${
-                isOnTheClock
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-foreground"
-              }`}
+              className={`font-mono font-black text-sm sm:text-base leading-none ${isOnTheClock
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-foreground"
+                }`}
             >
               #{pick.pick_overall}
             </span>
@@ -974,11 +970,10 @@ const Draft = () => {
                 }}
               />
               <span
-                className={`font-mono font-extrabold text-xs ${
-                  isTraded
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-foreground"
-                }`}
+                className={`font-mono font-extrabold text-xs ${isTraded
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-foreground"
+                  }`}
               >
                 {pick.team_id}
               </span>
@@ -1066,20 +1061,14 @@ const Draft = () => {
           })() : isOnTheClock ? (
             <div className="flex items-center justify-between gap-1 py-1">
               <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 animate-pulse">
-                <Clock className="h-3.5 w-3.5" /> On Clock
-              </span>
-              <span className="text-[11px] font-semibold text-foreground truncate">
-                {teamObj?.NAME_ABBR || pick.team_id}
+                <Clock className="h-3.5 w-3.5" /> On the Clock
               </span>
             </div>
           ) : (
             <div className="flex items-center justify-between gap-1 text-xs text-muted-foreground/75 py-1">
-              <span className="truncate font-medium">
-                {teamObj?.NAME_ABBR || pick.team_id}
-              </span>
               {isMyTeamPick && (
                 <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
-                  TUA
+                  TUA SCELTA
                 </span>
               )}
             </div>
@@ -1103,16 +1092,13 @@ const Draft = () => {
                   <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
                     <Sparkles className="h-3 w-3" /> LCSIM Official Rookie Draft
                   </span>
-                  <Badge variant="outline" className="font-mono text-[11px] border-border/80">
-                    Classifica Inversa • 5 Round × 12 Squadre (60 Pick)
-                  </Badge>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-3">
                   <Trophy className="h-7 w-7 text-emerald-500 shrink-0" />
                   Draft Board &amp; Rookie Selection
                 </h1>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                  Ordine di scelta basato sulla classifica inversa in ogni round (stile NFL Draft). I valori dei rookie sono coperti fino al completamento dello scouting.
+                  Ordine di scelta basato sulla classifica inversa rispetto al campionato precedente.
                 </p>
               </div>
 
@@ -1151,7 +1137,7 @@ const Draft = () => {
                   <span className="text-xs font-extrabold uppercase tracking-wider">
                     ON THE CLOCK
                   </span>
-                  <span className="font-mono font-black text-sm ml-1">
+                  <span className="text-xs font-extrabold uppercase tracking-wider font-black text-sm ml-1">
                     SCELTA #{currentOnTheClockPick.pick_overall}
                   </span>
                 </div>
@@ -1220,6 +1206,14 @@ const Draft = () => {
                       >
                         <span className="text-muted-foreground">#{q.pick_overall}</span>
                         <span className="font-bold text-foreground">{q.team_id}</span>
+                        <img
+                          src={`/images/teams/${q.team_id}_Logo.png`}
+                          alt={q.team_id}
+                          className="h-6 w-6 object-contain shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                          }}
+                        />
                       </span>
                     ))}
                   </div>
@@ -1253,9 +1247,8 @@ const Draft = () => {
 
         {/* MAIN CONTENT GRID: Full width if logged out, 2 columns (Board Left + User Team Right) if logged in */}
         <div
-          className={`grid gap-6 items-start ${
-            user ? "grid-cols-1 xl:grid-cols-[1fr_390px]" : "grid-cols-1"
-          }`}
+          className={`grid gap-6 items-start ${user ? "grid-cols-1 xl:grid-cols-[1fr_390px]" : "grid-cols-1"
+            }`}
         >
           {/* LEFT SECTION: DRAFT BOARD (Unified 60-Square Grid OR Single Round View) */}
           <div className="space-y-4 min-w-0">
@@ -1267,11 +1260,10 @@ const Draft = () => {
                     variant={viewMode === "board" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setViewMode("board")}
-                    className={`h-8 text-xs font-bold gap-1.5 ${
-                      viewMode === "board"
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                        : ""
-                    }`}
+                    className={`h-8 text-xs font-bold gap-1.5 ${viewMode === "board"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : ""
+                      }`}
                   >
                     <LayoutGrid className="h-3.5 w-3.5" />
                     Tabellone Completo (60 Scelte)
@@ -1285,11 +1277,10 @@ const Draft = () => {
                       variant={viewMode === rm.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => setViewMode(rm.id)}
-                      className={`h-8 px-3 text-xs font-semibold ${
-                        viewMode === rm.id
-                          ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          : ""
-                      }`}
+                      className={`h-8 px-3 text-xs font-semibold ${viewMode === rm.id
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        : ""
+                        }`}
                     >
                       {rm.label}
                     </Button>
@@ -1325,12 +1316,9 @@ const Draft = () => {
                   <div className="flex items-center gap-2">
                     <LayoutGrid className="h-4 w-4 text-emerald-500" />
                     <CardTitle className="text-sm md:text-base font-extrabold">
-                      Riepilogo Completo Draft Board (5 Round • 6 Scelte per Riga)
+                      Draft Board
                     </CardTitle>
                   </div>
-                  <span className="text-[11px] text-muted-foreground font-mono hidden sm:inline">
-                    Ogni Round è diviso su 2 righe accoppiate (Pick 1–6 e Pick 7–12)
-                  </span>
                 </CardHeader>
 
                 <CardContent className="p-3.5 md:p-4 space-y-4">
@@ -1512,7 +1500,7 @@ const Draft = () => {
                   {/* Turn Banner */}
                   <div className="mt-3">
                     {currentOnTheClockPick &&
-                    currentOnTheClockPick.team_id === activeUserTeamId ? (
+                      currentOnTheClockPick.team_id === activeUserTeamId ? (
                       <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
                         <span className="flex items-center gap-1.5">
                           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
@@ -1583,22 +1571,20 @@ const Draft = () => {
                     <button
                       type="button"
                       onClick={() => setPoolTypeFilter("ALL")}
-                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center ${
-                        poolTypeFilter === "ALL"
-                          ? "bg-background text-foreground shadow-xs border border-border/80"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center ${poolTypeFilter === "ALL"
+                        ? "bg-background text-foreground shadow-xs border border-border/80"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       Tutti ({undraftedRookiesCount + undraftedFreeAgentsCount})
                     </button>
                     <button
                       type="button"
                       onClick={() => setPoolTypeFilter("ROOKIE")}
-                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center flex items-center justify-center gap-1 ${
-                        poolTypeFilter === "ROOKIE"
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center flex items-center justify-center gap-1 ${poolTypeFilter === "ROOKIE"
+                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       <span>🌟 Rookie</span>
                       <span className="text-[10px] opacity-75">({undraftedRookiesCount})</span>
@@ -1606,11 +1592,10 @@ const Draft = () => {
                     <button
                       type="button"
                       onClick={() => setPoolTypeFilter("FREE_AGENT")}
-                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center flex items-center justify-center gap-1 ${
-                        poolTypeFilter === "FREE_AGENT"
-                          ? "bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all flex-1 text-center flex items-center justify-center gap-1 ${poolTypeFilter === "FREE_AGENT"
+                        ? "bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       <span>🆓 Svincolati</span>
                       <span className="text-[10px] opacity-75">({undraftedFreeAgentsCount})</span>
@@ -1661,11 +1646,10 @@ const Draft = () => {
                       <button
                         type="button"
                         onClick={() => setFavoritesOnly((prev) => !prev)}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${
-                          favoritesOnly
-                            ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/50 ring-1 ring-amber-500/30 shadow-xs"
-                            : "bg-muted/60 text-muted-foreground hover:text-foreground border border-transparent"
-                        }`}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${favoritesOnly
+                          ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/50 ring-1 ring-amber-500/30 shadow-xs"
+                          : "bg-muted/60 text-muted-foreground hover:text-foreground border border-transparent"
+                          }`}
                         title="Filtra solo i tuoi preferiti (⭐)"
                       >
                         <Star className={`h-3.5 w-3.5 ${favoritesOnly ? "fill-amber-500 text-amber-500" : ""}`} />
@@ -1677,11 +1661,10 @@ const Draft = () => {
                           key={g.id}
                           type="button"
                           onClick={() => setRoleFilter(g.id)}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
-                            roleFilter === g.id
-                              ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
-                              : "bg-muted/60 text-muted-foreground hover:text-foreground"
-                          }`}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${roleFilter === g.id
+                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
+                            : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                            }`}
                         >
                           {g.label}
                         </button>
@@ -1713,11 +1696,10 @@ const Draft = () => {
                                 isSelected ? null : { id: pId, type: item.type, player: item.player }
                               );
                             }}
-                            className={`w-full px-3 py-2.5 flex flex-col gap-1.5 transition-colors ${isItemGkForbidden ? "opacity-60 cursor-not-allowed bg-muted/20" : "cursor-pointer select-none"} ${
-                              isSelected
-                                ? "bg-emerald-500/15 border-l-4 border-l-emerald-500"
-                                : "hover:bg-muted/60"
-                            }`}
+                            className={`w-full px-3 py-2.5 flex flex-col gap-1.5 transition-colors ${isItemGkForbidden ? "opacity-60 cursor-not-allowed bg-muted/20" : "cursor-pointer select-none"} ${isSelected
+                              ? "bg-emerald-500/15 border-l-4 border-l-emerald-500"
+                              : "hover:bg-muted/60"
+                              }`}
                           >
                             {/* RIGA 1: Avatar + Ruolo + NOME E COGNOME COMPLETO (priorità assoluta) + Azioni */}
                             <div className="flex items-center justify-between gap-2 min-w-0">
@@ -1756,11 +1738,10 @@ const Draft = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleToggleFavorite(pId, item.type)}
-                                  className={`p-1 rounded-md transition-all ${
-                                    item.isFavorite
-                                      ? "text-amber-500 hover:text-amber-600 hover:scale-110"
-                                      : "text-muted-foreground/35 hover:text-amber-500 hover:scale-110"
-                                  }`}
+                                  className={`p-1 rounded-md transition-all ${item.isFavorite
+                                    ? "text-amber-500 hover:text-amber-600 hover:scale-110"
+                                    : "text-muted-foreground/35 hover:text-amber-500 hover:scale-110"
+                                    }`}
                                   title={
                                     item.isFavorite
                                       ? "Rimuovi dai preferiti"
@@ -1768,9 +1749,8 @@ const Draft = () => {
                                   }
                                 >
                                   <Star
-                                    className={`h-4 w-4 ${
-                                      item.isFavorite ? "fill-amber-500" : ""
-                                    }`}
+                                    className={`h-4 w-4 ${item.isFavorite ? "fill-amber-500" : ""
+                                      }`}
                                   />
                                 </button>
 
@@ -1805,11 +1785,10 @@ const Draft = () => {
                                         isSelected ? null : { id: pId, type: item.type, player: item.player }
                                       )
                                     }
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                                      isSelected
-                                        ? "bg-emerald-500 text-white shadow-xs"
-                                        : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${isSelected
+                                      ? "bg-emerald-500 text-white shadow-xs"
+                                      : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                                      }`}
                                   >
                                     {isSelected ? (
                                       <span className="flex items-center gap-1">
@@ -1924,13 +1903,12 @@ const Draft = () => {
                                 }
                               >
                                 <Star
-                                  className={`h-3.5 w-3.5 ${
-                                    (selectedPlayerItem.type === "free_agent"
-                                      ? favoriteFreeAgentIds.has(Number(selectedPlayerItem.id))
-                                      : favoriteRookieIds.has(Number(selectedPlayerItem.id)))
-                                      ? "fill-amber-500 text-amber-500"
-                                      : "text-muted-foreground/40 hover:text-amber-500"
-                                  }`}
+                                  className={`h-3.5 w-3.5 ${(selectedPlayerItem.type === "free_agent"
+                                    ? favoriteFreeAgentIds.has(Number(selectedPlayerItem.id))
+                                    : favoriteRookieIds.has(Number(selectedPlayerItem.id)))
+                                    ? "fill-amber-500 text-amber-500"
+                                    : "text-muted-foreground/40 hover:text-amber-500"
+                                    }`}
                                 />
                               </button>
                             </span>
@@ -2015,9 +1993,8 @@ const Draft = () => {
                       return (
                         <div
                           key={pick.pick_overall}
-                          className={`py-2.5 px-2.5 flex items-center justify-between gap-2 rounded-lg ${
-                            isCurrent ? "bg-emerald-500/10 border border-emerald-500/30" : ""
-                          }`}
+                          className={`py-2.5 px-2.5 flex items-center justify-between gap-2 rounded-lg ${isCurrent ? "bg-emerald-500/10 border border-emerald-500/30" : ""
+                            }`}
                         >
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs font-bold px-2 py-1 rounded bg-muted border border-border/70">

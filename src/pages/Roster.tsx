@@ -678,11 +678,8 @@ const Roster = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      Roster Ufficiale Serie A
+                      Roster Completo
                     </span>
-                    <Badge variant="outline" className="font-mono text-[10px]">
-                      {currentTeam}
-                    </Badge>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                     {currentTeamFullName}
@@ -815,11 +812,10 @@ const Roster = () => {
                 key={g.id}
                 type="button"
                 onClick={() => setRoleFilter(g.id)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  roleFilter === g.id
-                    ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm"
-                    : "bg-card border border-border text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${roleFilter === g.id
+                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm"
+                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 {g.label}
               </button>
@@ -861,11 +857,10 @@ const Roster = () => {
 
                           {/* Jersey number badge */}
                           <div
-                            className={`absolute -bottom-1 -right-1 h-6 min-w-[24px] px-1 rounded-md flex items-center justify-center font-mono font-black text-xs border shadow ${
-                              player.NumeroMaglia
-                                ? "bg-emerald-600 text-white border-emerald-400"
-                                : "bg-muted text-muted-foreground border-border text-[10px]"
-                            }`}
+                            className={`absolute -bottom-1 -right-1 h-6 min-w-[24px] px-1 rounded-md flex items-center justify-center font-mono font-black text-xs border shadow ${player.NumeroMaglia
+                              ? "bg-emerald-600 text-white border-emerald-400"
+                              : "bg-muted text-muted-foreground border-border text-[10px]"
+                              }`}
                             title={
                               player.NumeroMaglia
                                 ? `Numero di maglia: #${player.NumeroMaglia}`
@@ -989,11 +984,10 @@ const Roster = () => {
                         key={cat.id}
                         type="button"
                         onClick={() => setTableStatCategory(cat.id)}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
-                          tableStatCategory === cat.id
-                            ? "bg-emerald-600 text-white shadow-sm"
-                            : "bg-card border border-border text-muted-foreground hover:text-foreground"
-                        }`}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${tableStatCategory === cat.id
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                          }`}
                       >
                         {cat.label}
                       </button>
@@ -1276,24 +1270,22 @@ const Roster = () => {
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <Badge
                       variant="outline"
-                      className={`font-mono text-xs font-bold px-2.5 py-1 transition-colors ${
-                        isAssetCompliant &&
+                      className={`font-mono text-xs font-bold px-2.5 py-1 transition-colors ${isAssetCompliant &&
                         postCutRoster >= CUTS_MIN_ROSTER &&
                         postCutRoster <= CUTS_MAX_ROSTER
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
-                          : "bg-destructive/10 text-destructive border-destructive/40"
-                      }`}
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
+                        : "bg-destructive/10 text-destructive border-destructive/40"
+                        }`}
                       title={`Totale Asset dopo i tagli = giocatori in rosa + scelte draft non ancora utilizzate. Limite massimo: ${CUTS_MAX_ASSETS} asset, con una rosa tra ${CUTS_MIN_ROSTER} e ${CUTS_MAX_ROSTER} giocatori. Tagli minimi richiesti: ${minCutsNeeded}, massimi consentiti: ${maxCutsAllowed}.`}
                     >
                       Asset: {postCutAssets}/{CUTS_MAX_ASSETS} ({postCutRoster} giocatori + {availablePicksCount} pick)
                     </Badge>
                     <Badge
                       variant="outline"
-                      className={`font-mono text-xs font-bold px-2.5 py-1 transition-colors ${
-                        isCutsCompliant
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
-                          : "bg-destructive/10 text-destructive border-destructive/40"
-                      }`}
+                      className={`font-mono text-xs font-bold px-2.5 py-1 transition-colors ${isCutsCompliant
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
+                        : "bg-destructive/10 text-destructive border-destructive/40"
+                        }`}
                       title={`Rosa attuale: ${currentRosterCount} (${totalGks} POR). Dopo i tagli: ${postCutRoster} (${remainingGks} POR - min. 2 obbligatori). Rosa finale ammessa: 13-16.`}
                     >
                       <Scissors className="h-3.5 w-3.5 mr-1.5 inline-block" />
@@ -1328,11 +1320,10 @@ const Roster = () => {
                   <button
                     type="button"
                     onClick={() => setMarketFilterTab("ALL")}
-                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                      marketFilterTab === "ALL"
-                        ? "bg-muted border-primary shadow-sm"
-                        : "bg-card border-border hover:bg-muted/40"
-                    }`}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${marketFilterTab === "ALL"
+                      ? "bg-muted border-primary shadow-sm"
+                      : "bg-card border-border hover:bg-muted/40"
+                      }`}
                   >
                     <div className="text-[10px] uppercase font-bold text-muted-foreground">Tutti</div>
                     <div className="text-lg font-black font-mono text-foreground">{players.length}</div>
@@ -1342,11 +1333,10 @@ const Roster = () => {
                   <button
                     type="button"
                     onClick={() => setMarketFilterTab("cut")}
-                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                      marketFilterTab === "cut"
-                        ? "bg-rose-500/20 border-rose-500 shadow-sm"
-                        : "bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10"
-                    }`}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${marketFilterTab === "cut"
+                      ? "bg-rose-500/20 border-rose-500 shadow-sm"
+                      : "bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10"
+                      }`}
                   >
                     <div className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 flex items-center justify-between">
                       <span>In Taglio</span>
@@ -1359,11 +1349,10 @@ const Roster = () => {
                   <button
                     type="button"
                     onClick={() => setMarketFilterTab("int")}
-                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                      marketFilterTab === "int"
-                        ? "bg-purple-500/20 border-purple-500 shadow-sm"
-                        : "bg-purple-500/5 border-purple-500/20 hover:bg-purple-500/10"
-                    }`}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${marketFilterTab === "int"
+                      ? "bg-purple-500/20 border-purple-500 shadow-sm"
+                      : "bg-purple-500/5 border-purple-500/20 hover:bg-purple-500/10"
+                      }`}
                   >
                     <div className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400">Intoccabili</div>
                     <div className="text-lg font-black font-mono text-purple-600 dark:text-purple-400">{marketCounts.intCount}</div>
@@ -1373,11 +1362,10 @@ const Roster = () => {
                   <button
                     type="button"
                     onClick={() => setMarketFilterTab("fis")}
-                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                      marketFilterTab === "fis"
-                        ? "bg-blue-500/20 border-blue-500 shadow-sm"
-                        : "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
-                    }`}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${marketFilterTab === "fis"
+                      ? "bg-blue-500/20 border-blue-500 shadow-sm"
+                      : "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
+                      }`}
                   >
                     <div className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400">Elementi Fissi</div>
                     <div className="text-lg font-black font-mono text-blue-600 dark:text-blue-400">{marketCounts.fisCount}</div>
@@ -1387,11 +1375,10 @@ const Roster = () => {
                   <button
                     type="button"
                     onClick={() => setMarketFilterTab("tra")}
-                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                      marketFilterTab === "tra"
-                        ? "bg-amber-500/20 border-amber-500 shadow-sm"
-                        : "bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10"
-                    }`}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${marketFilterTab === "tra"
+                      ? "bg-amber-500/20 border-amber-500 shadow-sm"
+                      : "bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10"
+                      }`}
                   >
                     <div className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400">In Trattativa</div>
                     <div className="text-lg font-black font-mono text-amber-600 dark:text-amber-400">{marketCounts.traCount}</div>
@@ -1401,11 +1388,10 @@ const Roster = () => {
                   <button
                     type="button"
                     onClick={() => setMarketFilterTab("ced")}
-                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
-                      marketFilterTab === "ced"
-                        ? "bg-emerald-500/20 border-emerald-500 shadow-sm"
-                        : "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
-                    }`}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${marketFilterTab === "ced"
+                      ? "bg-emerald-500/20 border-emerald-500 shadow-sm"
+                      : "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
+                      }`}
                   >
                     <div className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Cedibili</div>
                     <div className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400">{marketCounts.cedCount}</div>
@@ -1433,11 +1419,10 @@ const Roster = () => {
                   return (
                     <Card
                       key={player.ID}
-                      className={`border bg-card shadow-sm transition-all overflow-hidden p-4 flex flex-col justify-between gap-3.5 ${
-                        isCut
-                          ? "border-rose-500/60 bg-rose-500/[0.04] ring-1 ring-rose-500/30 shadow-rose-500/5"
-                          : "border-border/80 hover:border-emerald-500/40"
-                      }`}
+                      className={`border bg-card shadow-sm transition-all overflow-hidden p-4 flex flex-col justify-between gap-3.5 ${isCut
+                        ? "border-rose-500/60 bg-rose-500/[0.04] ring-1 ring-rose-500/30 shadow-rose-500/5"
+                        : "border-border/80 hover:border-emerald-500/40"
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
@@ -1537,11 +1522,10 @@ const Roster = () => {
                                   )
                                 }
                                 title={opt.description}
-                                className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1 text-center ${
-                                  isSelected
-                                    ? `${opt.badgeClass} ring-2 ring-primary/40 font-black shadow-xs`
-                                    : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/80 hover:text-foreground"
-                                } ${!canEdit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1 text-center ${isSelected
+                                  ? `${opt.badgeClass} ring-2 ring-primary/40 font-black shadow-xs`
+                                  : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/80 hover:text-foreground"
+                                  } ${!canEdit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                               >
                                 {isSelected && <Check className="h-3 w-3 shrink-0" />}
                                 <span className="truncate">{opt.label}</span>
@@ -1583,19 +1567,18 @@ const Roster = () => {
                                 variant={isCut ? "destructive" : "outline"}
                                 disabled={isTogglingCut || (!isCut && (!canAddMoreCuts || isGkCutBlocked)) || !canEdit || isRosterLocked}
                                 onClick={() => handleTogglePlayerCut(player)}
-                                className={`h-7 px-2.5 text-xs font-bold gap-1.5 transition-all ${
-                                  isCut
-                                    ? "bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
-                                    : "hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/40"
-                                }`}
+                                className={`h-7 px-2.5 text-xs font-bold gap-1.5 transition-all ${isCut
+                                  ? "bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
+                                  : "hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/40"
+                                  }`}
                                 title={
                                   isGkCutBlocked
                                     ? "Obbligatorio mantenere almeno 2 portieri in rosa"
                                     : !isCut && !canAddMoreCuts
-                                    ? `Limite massimo di ${maxCutsAllowed} tagli raggiunto (per garantire almeno 13 giocatori in rosa)`
-                                    : isCut
-                                    ? "Rimuovi dalla lista tagli"
-                                    : "Inserisci nella lista tagli"
+                                      ? `Limite massimo di ${maxCutsAllowed} tagli raggiunto (per garantire almeno 13 giocatori in rosa)`
+                                      : isCut
+                                        ? "Rimuovi dalla lista tagli"
+                                        : "Inserisci nella lista tagli"
                                 }
                               >
                                 {isTogglingCut ? (
@@ -1663,11 +1646,10 @@ const Roster = () => {
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Big Kit Number Badge */}
                         <div
-                          className={`h-12 w-12 rounded-xl flex flex-col items-center justify-center font-mono font-black border shadow-sm shrink-0 ${
-                            player.NumeroMaglia
-                              ? "bg-emerald-600 text-white border-emerald-400 text-lg"
-                              : "bg-muted text-muted-foreground border-border text-xs"
-                          }`}
+                          className={`h-12 w-12 rounded-xl flex flex-col items-center justify-center font-mono font-black border shadow-sm shrink-0 ${player.NumeroMaglia
+                            ? "bg-emerald-600 text-white border-emerald-400 text-lg"
+                            : "bg-muted text-muted-foreground border-border text-xs"
+                            }`}
                         >
                           {player.NumeroMaglia ? `#${player.NumeroMaglia}` : "—"}
                         </div>
@@ -1819,9 +1801,8 @@ const Roster = () => {
                           setKitForm((prev) => ({ ...prev, NumeroMaglia: val }));
                         }}
                         placeholder="N°"
-                        className={`text-center font-mono font-black text-lg h-10 ${
-                          kitNumberConflict ? "border-destructive text-destructive" : ""
-                        }`}
+                        className={`text-center font-mono font-black text-lg h-10 ${kitNumberConflict ? "border-destructive text-destructive" : ""
+                          }`}
                       />
                     </div>
 
@@ -1861,11 +1842,10 @@ const Roster = () => {
                         onClick={() =>
                           setKitForm((prev) => ({ ...prev, NumeroMaglia: n }))
                         }
-                        className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-colors ${
-                          kitForm.NumeroMaglia === n
-                            ? "bg-emerald-600 text-white"
-                            : "bg-background border border-border/70 hover:bg-muted"
-                        }`}
+                        className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-colors ${kitForm.NumeroMaglia === n
+                          ? "bg-emerald-600 text-white"
+                          : "bg-background border border-border/70 hover:bg-muted"
+                          }`}
                       >
                         #{n}
                       </button>
