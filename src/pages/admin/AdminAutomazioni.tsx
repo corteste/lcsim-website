@@ -136,7 +136,7 @@ export default function AdminAutomazioni() {
       try {
         const raw = localStorage.getItem("lcsim_automation_state");
         if (raw) setStateMap(JSON.parse(raw));
-      } catch (_) {}
+      } catch (_) { }
     } finally {
       setIsLoadingState(false);
     }
@@ -164,7 +164,7 @@ export default function AdminAutomazioni() {
       };
       try {
         localStorage.setItem("lcsim_automation_state", JSON.stringify(updated));
-      } catch (_) {}
+      } catch (_) { }
       return updated;
     });
 
@@ -258,7 +258,7 @@ export default function AdminAutomazioni() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const dateStr = new Date().toISOString().slice(0, 10);
-      
+
       // Filename: DB_NEW.txt is the default expected by EA FC 25
       link.href = url;
       link.download = isFull ? `DB_NEW.txt` : `DB_NEW_LCSIM_ROSTERS_${dateStr}.tsv`;
@@ -344,7 +344,7 @@ export default function AdminAutomazioni() {
                 className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold px-2.5 py-0.5 text-[11px] uppercase tracking-wider flex items-center gap-1.5"
               >
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Pannello Super Admin • Lega Calcio Simulato
+                Pannello Admin • Lega Calcio Simulato
               </Badge>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
@@ -363,14 +363,14 @@ export default function AdminAutomazioni() {
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 shadow-md shadow-emerald-600/20"
             >
               <Download className="h-4 w-4" />
-              {isExportingFull ? "Elaborazione..." : "Scarica DB_NEW.txt Completo"}
+              {isExportingFull ? "Elaborazione..." : "Scarica players.txt Completo"}
             </Button>
           </div>
         </div>
 
         {/* Griglia Funzionalità Automazioni */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* 1. EXPORT MASTER TABLE */}
           <Card className="border-emerald-500/30 bg-gradient-to-br from-card via-card/95 to-emerald-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
@@ -403,7 +403,7 @@ export default function AdminAutomazioni() {
                   </div>
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Destinazione file:</span>
-                    <span className="font-mono text-muted-foreground text-[11px]">Cartella di gioco EA FC 25 (`DB_NEW.txt`)</span>
+                    <span className="font-mono text-muted-foreground text-[11px]">Cartella di gioco EA FC 25 (`players.txt`)</span>
                   </div>
                 </div>
 
@@ -414,7 +414,7 @@ export default function AdminAutomazioni() {
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-emerald-600/20"
                   >
                     <Download className="h-4 w-4" />
-                    {isExportingFull ? "Elaborazione in corso..." : "Scarica Database Completo (DB_NEW.txt per EA FC 25)"}
+                    {isExportingFull ? "Elaborazione in corso..." : "Scarica Database Completo"}
                   </Button>
 
                   <Button
@@ -557,9 +557,8 @@ export default function AdminAutomazioni() {
           {(() => {
             const isMarketClosed = stateMap["market_toggle"]?.details?.status === "closed";
             return (
-              <Card className={`bg-card shadow-md relative overflow-hidden flex flex-col justify-between transition-colors ${
-                isMarketClosed ? "border-rose-500/40 bg-gradient-to-br from-card via-card to-rose-500/5" : "border-emerald-500/30 bg-gradient-to-br from-card via-card to-emerald-500/5"
-              }`}>
+              <Card className={`bg-card shadow-md relative overflow-hidden flex flex-col justify-between transition-colors ${isMarketClosed ? "border-rose-500/40 bg-gradient-to-br from-card via-card to-rose-500/5" : "border-emerald-500/30 bg-gradient-to-br from-card via-card to-emerald-500/5"
+                }`}>
                 <div>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between mb-1">
@@ -610,9 +609,8 @@ export default function AdminAutomazioni() {
                             icon: "🔒",
                           });
                         }}
-                        className={`flex-1 font-bold gap-2 text-xs border-rose-500/30 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 ${
-                          isMarketClosed ? "bg-rose-500/15 border-rose-500/50 shadow-sm" : ""
-                        }`}
+                        className={`flex-1 font-bold gap-2 text-xs border-rose-500/30 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 ${isMarketClosed ? "bg-rose-500/15 border-rose-500/50 shadow-sm" : ""
+                          }`}
                       >
                         <Lock className="h-3.5 w-3.5" />
                         Chiudi Mercato di Lega
@@ -626,9 +624,8 @@ export default function AdminAutomazioni() {
                             icon: "🔓",
                           });
                         }}
-                        className={`flex-1 font-bold gap-2 text-xs border-emerald-500/30 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ${
-                          !isMarketClosed ? "bg-emerald-500/15 border-emerald-500/50 shadow-sm" : ""
-                        }`}
+                        className={`flex-1 font-bold gap-2 text-xs border-emerald-500/30 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ${!isMarketClosed ? "bg-emerald-500/15 border-emerald-500/50 shadow-sm" : ""
+                          }`}
                       >
                         <Unlock className="h-3.5 w-3.5" />
                         Apri Mercato di Lega
@@ -656,11 +653,10 @@ export default function AdminAutomazioni() {
             const isRosterLocked = stateMap["roster_lock"]?.details?.status === "locked";
             return (
               <Card
-                className={`border shadow-md relative overflow-hidden flex flex-col justify-between transition-all ${
-                  isRosterLocked
-                    ? "border-rose-500/40 bg-gradient-to-br from-card via-card to-rose-500/5"
-                    : "border-purple-500/30 bg-gradient-to-br from-card via-card to-purple-500/5"
-                }`}
+                className={`border shadow-md relative overflow-hidden flex flex-col justify-between transition-all ${isRosterLocked
+                  ? "border-rose-500/40 bg-gradient-to-br from-card via-card to-rose-500/5"
+                  : "border-purple-500/30 bg-gradient-to-br from-card via-card to-purple-500/5"
+                  }`}
               >
                 <div>
                   <CardHeader className="pb-3">
@@ -685,11 +681,10 @@ export default function AdminAutomazioni() {
 
                   <CardContent className="space-y-4">
                     <div
-                      className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
-                        isRosterLocked
-                          ? "bg-rose-500/10 border-rose-500/20 text-rose-800 dark:text-rose-300"
-                          : "bg-muted/40 border-border/70 text-muted-foreground"
-                      }`}
+                      className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${isRosterLocked
+                        ? "bg-rose-500/10 border-rose-500/20 text-rose-800 dark:text-rose-300"
+                        : "bg-muted/40 border-border/70 text-muted-foreground"
+                        }`}
                     >
                       <div className="flex items-center justify-between font-bold">
                         <span>Stato Operazioni Rose:</span>
@@ -713,9 +708,8 @@ export default function AdminAutomazioni() {
                             icon: "🔒",
                           });
                         }}
-                        className={`flex-1 font-bold gap-2 text-xs border-rose-500/30 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 ${
-                          isRosterLocked ? "bg-rose-500/15 border-rose-500/50 shadow-sm" : ""
-                        }`}
+                        className={`flex-1 font-bold gap-2 text-xs border-rose-500/30 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 ${isRosterLocked ? "bg-rose-500/15 border-rose-500/50 shadow-sm" : ""
+                          }`}
                       >
                         <Lock className="h-3.5 w-3.5" />
                         Blocca Tutte le Rose
@@ -729,9 +723,8 @@ export default function AdminAutomazioni() {
                             icon: "🔓",
                           });
                         }}
-                        className={`flex-1 font-bold gap-2 text-xs border-emerald-500/30 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ${
-                          !isRosterLocked ? "bg-emerald-500/15 border-emerald-500/50 shadow-sm" : ""
-                        }`}
+                        className={`flex-1 font-bold gap-2 text-xs border-emerald-500/30 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ${!isRosterLocked ? "bg-emerald-500/15 border-emerald-500/50 shadow-sm" : ""
+                          }`}
                       >
                         <Unlock className="h-3.5 w-3.5" />
                         Sblocca Tutte le Rose

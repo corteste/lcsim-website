@@ -22,7 +22,7 @@ const Classifica = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                LCSIM Ufficiale • Serie A
+                LCSIM
               </span>
               <span className="text-xs text-muted-foreground">
                 Stagione 2024/25 • Giornata {maxMatchday}
@@ -33,7 +33,7 @@ const Classifica = () => {
               Classifica Generale
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Ricalcolata in tempo reale ad ogni referto gara registrato.
+              Classifica della regular season
             </p>
           </div>
 
@@ -52,7 +52,7 @@ const Classifica = () => {
         <Card className="border border-border/80 shadow-md overflow-hidden bg-card">
           <CardHeader className="bg-muted/20 border-b border-border/60 py-4 px-6 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-lg font-bold">Tabella Punti & Rendimento</CardTitle>
+              <CardTitle className="text-lg font-bold">Classifica</CardTitle>
               <CardDescription className="text-xs">
                 Criteri parità: Punti &gt; Scontri Diretti &gt; Differenza Reti &gt; Gol Fatti
               </CardDescription>
@@ -83,32 +83,30 @@ const Classifica = () => {
                   const isPlayIn = index >= 6 && index < 10;
 
                   return (
-                    <TableRow 
-                      key={index} 
-                      className={`hover:bg-muted/50 transition-colors ${
-                        isChampions ? "border-l-4 border-l-emerald-500 bg-emerald-500/[0.02]" :
+                    <TableRow
+                      key={index}
+                      className={`hover:bg-muted/50 transition-colors ${isChampions ? "border-l-4 border-l-emerald-500 bg-emerald-500/[0.02]" :
                         isPlayoff ? "border-l-4 border-l-blue-500 bg-blue-500/[0.02]" :
-                        isPlayIn ? "border-l-4 border-l-amber-500 bg-amber-500/[0.02]" : ""
-                      }`}
+                          isPlayIn ? "border-l-4 border-l-amber-500 bg-amber-500/[0.02]" : ""
+                        }`}
                     >
                       <TableCell className="text-center font-mono font-bold">
-                        <span className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${
-                          isChampions 
-                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" 
-                            : isPlayoff 
-                              ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
-                              : isPlayIn
-                                ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
-                                : "text-muted-foreground"
-                        }`}>
+                        <span className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${isChampions
+                          ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                          : isPlayoff
+                            ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                            : isPlayIn
+                              ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                              : "text-muted-foreground"
+                          }`}>
                           {index + 1}
                         </span>
                       </TableCell>
                       <TableCell className="text-center py-2.5">
-                        <img 
-                          src={`/images/teams/${team.team.TEAM_ID}_Logo.png`} 
-                          alt={`${team.team.TEAM_ID} Logo`} 
-                          className="h-8 w-8 object-contain mx-auto filter drop-shadow-sm" 
+                        <img
+                          src={`/images/teams/${team.team.TEAM_ID}_Logo.png`}
+                          alt={`${team.team.TEAM_ID} Logo`}
+                          className="h-8 w-8 object-contain mx-auto filter drop-shadow-sm"
                           onError={(e) => (e.currentTarget.style.display = 'none')}
                         />
                       </TableCell>
