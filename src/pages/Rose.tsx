@@ -198,7 +198,7 @@ const Rose = () => {
 
   const avgAge = useMemo(() => {
     if (rawPlayers.length === 0) return "0.0";
-    const sum = rawPlayers.reduce((acc, p) => acc + (Number(p.EtÃ ) || 0), 0);
+    const sum = rawPlayers.reduce((acc, p) => acc + (Number(p.Età) || 0), 0);
     return (sum / rawPlayers.length).toFixed(1);
   }, [rawPlayers]);
 
@@ -231,7 +231,7 @@ const Rose = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                LCSIM Ufficiale â€¢ Serie A
+                LCSIM Ufficiale • Serie A
               </span>
               <span className="text-xs text-muted-foreground">
                 {sortedTeams.length} Club Professionistici
@@ -242,7 +242,7 @@ const Rose = () => {
               Rose Complete
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Organici ufficiali, schede tecniche e disponibilitÃ  di mercato di tutte le squadre della lega.
+              Organici ufficiali, schede tecniche e disponibilità di mercato di tutte le squadre della lega.
             </p>
           </div>
 
@@ -470,7 +470,7 @@ const Rose = () => {
 
                   <div className="px-3.5 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      EtÃ  Media
+                      Età Media
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
                       {avgAge} <span className="text-xs font-normal text-muted-foreground">a</span>
@@ -617,7 +617,7 @@ const Rose = () => {
                               : "Nessun numero assegnato"
                           }
                         >
-                          {player.NumeroMaglia ? `#${player.NumeroMaglia}` : "â€”"}
+                          {player.NumeroMaglia ? `#${player.NumeroMaglia}` : "—"}
                         </div>
                       </div>
 
@@ -636,17 +636,17 @@ const Rose = () => {
                             {player.Nome} {player.Cognome}
                           </span>
                           <img
-                            src={getNationalityFlag(player.NazionalitÃ )}
-                            alt={player.NazionalitÃ }
+                            src={getNationalityFlag(player.Nazionalità)}
+                            alt={player.Nazionalità}
                             className="h-3.5 w-5 object-cover rounded-sm shrink-0"
                           />
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <span>{player.EtÃ } anni</span>
-                          <span>â€¢</span>
+                          <span>{player.Età} anni</span>
+                          <span>•</span>
                           <span>{player.Altezza} cm</span>
-                          <span>â€¢</span>
+                          <span>•</span>
                           <span>Piede {player.Piede}</span>
                         </div>
 
@@ -655,7 +655,7 @@ const Rose = () => {
                           {marketOpt ? (
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${marketOpt.badgeClass}`}
-                              title={`Status di mercato: ${marketOpt.label} â€” ${marketOpt.description}`}
+                              title={`Status di mercato: ${marketOpt.label} — ${marketOpt.description}`}
                             >
                               <Tag className="h-2.5 w-2.5" />
                               {marketOpt.label}
@@ -719,7 +719,7 @@ const Rose = () => {
                     <th className="py-3 px-3">Giocatore</th>
                     <th className="py-3 px-2 text-center w-14">Ruolo</th>
                     <th className="py-3 px-2 text-center w-14">OVR</th>
-                    <th className="py-3 px-2 text-center w-14">EtÃ </th>
+                    <th className="py-3 px-2 text-center w-14">Età</th>
                     <th className="py-3 px-2 text-center w-16">Altezza</th>
                     <th className="py-3 px-2 text-center w-14">Piede</th>
                     <th className="py-3 px-2 text-center w-14">XP</th>
@@ -745,7 +745,7 @@ const Rose = () => {
                               #{player.NumeroMaglia}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground/40">â€”</span>
+                            <span className="text-muted-foreground/40">—</span>
                           )}
                         </td>
 
@@ -767,8 +767,8 @@ const Rose = () => {
                                   {player.Nome} {player.Cognome}
                                 </span>
                                 <img
-                                  src={getNationalityFlag(player.NazionalitÃ )}
-                                  alt={player.NazionalitÃ }
+                                  src={getNationalityFlag(player.Nazionalità)}
+                                  alt={player.Nazionalità}
                                   className="h-3 w-4 object-cover rounded-sm shrink-0"
                                 />
                               </div>
@@ -797,17 +797,17 @@ const Rose = () => {
 
                         {/* Age */}
                         <td className="py-2.5 px-2 text-center font-mono text-muted-foreground">
-                          {player.EtÃ }
+                          {player.Età}
                         </td>
 
                         {/* Height */}
                         <td className="py-2.5 px-2 text-center font-mono text-muted-foreground">
-                          {player.Altezza ? `${player.Altezza} cm` : "â€”"}
+                          {player.Altezza ? `${player.Altezza} cm` : "—"}
                         </td>
 
                         {/* Foot */}
                         <td className="py-2.5 px-2 text-center font-bold text-xs">
-                          {player.Piede || "â€”"}
+                          {player.Piede || "—"}
                         </td>
 
                         {/* XP */}
