@@ -1,10 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Users,
   Search,
@@ -18,6 +23,9 @@ import {
   X,
   ChevronRight,
   RotateCcw,
+  Volume2,
+  VolumeX,
+  Pause,
 } from "lucide-react";
 import {
   getRoleColor,
@@ -60,6 +68,9 @@ const ROLE_GROUPS = [
   { id: "ATT", label: "Attaccanti", roles: ["AD", "AS", "AT", "ATT"] },
 ];
 
+// Known teams with an official anthem available in public/sounds
+const KNOWN_ANTHEMS = new Set(["ACD", "APD", "COS", "MAR", "PFC", "SKA", "ASK"]);
+
 const Rose = () => {
   const { teams, loading: loadingTeams, refetch: refetchTeams } = getTeams();
 
@@ -74,6 +85,74 @@ const Rose = () => {
   const currentTeam: Team | undefined = useMemo(() => {
     return sortedTeams.find((t) => t.TEAM_ID === activeTeamId) || sortedTeams[0];
   }, [sortedTeams, activeTeamId]);
+
+  // Audio Anthem Player state
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlayingAnthem, setIsPlayingAnthem] = useState<boolean>(false);
+
+  // Stop anthem playback when team changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlayingAnthem(false);
+  }, [currentTeam?.TEAM_ID]);
+
+  // Clean up audio element on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const hasAnthem = currentTeam ? KNOWN_ANTHEMS.has(currentTeam.TEAM_ID) : false;
+
+  const handleToggleAnthem = () => {
+    if (!currentTeam || !hasAnthem) return;
+
+    if (isPlayingAnthem && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlayingAnthem(false);
+      return;
+    }
+
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+
+    const audio = audioRef.current;
+    const anthemPath = `/sounds/${currentTeam.TEAM_ID}.mp3`;
+
+    if (!audio.src.endsWith(anthemPath)) {
+      audio.src = anthemPath;
+    }
+
+    // Moderate/contained volume
+    audio.volume = 0.25;
+
+    audio.onended = () => {
+      setIsPlayingAnthem(false);
+    };
+
+    audio.onerror = () => {
+      setIsPlayingAnthem(false);
+    };
+
+    audio
+      .play()
+      .then(() => {
+        setIsPlayingAnthem(true);
+      })
+      .catch((err) => {
+        console.warn("Impossibile riprodurre l'inno della squadra:", err);
+        setIsPlayingAnthem(false);
+      });
+  };
 
   // View & Filter states
   const [viewLayout, setViewLayout] = useState<"grid" | "table">("grid");
@@ -119,7 +198,7 @@ const Rose = () => {
 
   const avgAge = useMemo(() => {
     if (rawPlayers.length === 0) return "0.0";
-    const sum = rawPlayers.reduce((acc, p) => acc + (Number(p.Età) || 0), 0);
+    const sum = rawPlayers.reduce((acc, p) => acc + (Number(p.EtÃ ) || 0), 0);
     return (sum / rawPlayers.length).toFixed(1);
   }, [rawPlayers]);
 
@@ -152,7 +231,7 @@ const Rose = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                LCSIM Ufficiale • Serie A
+                LCSIM Ufficiale â€¢ Serie A
               </span>
               <span className="text-xs text-muted-foreground">
                 {sortedTeams.length} Club Professionistici
@@ -163,7 +242,7 @@ const Rose = () => {
               Rose Complete
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Organici ufficiali, schede tecniche e disponibilità di mercato di tutte le squadre della lega.
+              Organici ufficiali, schede tecniche e disponibilitÃ  di mercato di tutte le squadre della lega.
             </p>
           </div>
 
@@ -294,8 +373,8 @@ const Rose = () => {
                       {currentTeam.NAME}
                     </h2>
 
-                    {/* Palmares if any */}
-                    <div className="flex items-center gap-3 pt-0.5 flex-wrap">
+                    {/* Palmares and Team Anthem */}
+                    <div className="flex items-center gap-2.5 pt-1 flex-wrap">
                       {currentTeam.scudetto > 0 && (
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2.5 py-0.5 rounded-md border border-amber-500/30">
                           <Trophy className="h-3.5 w-3.5" />
@@ -310,10 +389,60 @@ const Rose = () => {
                           {currentTeam.supercoppa === 1 ? "Supercoppa" : "Supercoppe"}
                         </span>
                       )}
-                      {currentTeam.scudetto === 0 && currentTeam.supercoppa === 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          Organico ufficiale e rosa della prima squadra.
-                        </span>
+
+                      {/* Anthem Audio Button */}
+                      {hasAnthem ? (
+                        <button
+                          type="button"
+                          onClick={handleToggleAnthem}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold transition-all duration-200 border cursor-pointer select-none shadow-sm ${
+                            isPlayingAnthem
+                              ? "bg-emerald-500 text-white border-emerald-400 dark:bg-emerald-600 dark:border-emerald-500 shadow-emerald-500/20"
+                              : "bg-card/90 hover:bg-muted text-foreground border-border hover:border-emerald-500/50"
+                          }`}
+                          title={
+                            isPlayingAnthem
+                              ? `Metti in pausa l'inno di ${currentTeam.NAME}`
+                              : `Ascolta l'inno ufficiale di ${currentTeam.NAME}`
+                          }
+                          aria-label={
+                            isPlayingAnthem
+                              ? `Metti in pausa l'inno di ${currentTeam.NAME}`
+                              : `Ascolta l'inno ufficiale di ${currentTeam.NAME}`
+                          }
+                        >
+                          {isPlayingAnthem ? (
+                            <>
+                              <Pause className="h-3.5 w-3.5 shrink-0 fill-current" />
+                              <span>Inno in Riproduzione</span>
+                              <span className="flex items-center gap-0.5 ml-1">
+                                <span className="w-1 h-2.5 bg-white rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                                <span className="w-1 h-3.5 bg-white rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                                <span className="w-1 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                              <span>Inno Ufficiale</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              tabIndex={0}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground/60 border border-border/40 cursor-not-allowed select-none"
+                            >
+                              <VolumeX className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+                              <span>Inno non disponibile</span>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs">
+                            Inno ufficiale non ancora disponibile per questo club
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   </div>
@@ -341,7 +470,7 @@ const Rose = () => {
 
                   <div className="px-3.5 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      Età Media
+                      EtÃ  Media
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
                       {avgAge} <span className="text-xs font-normal text-muted-foreground">a</span>
@@ -488,7 +617,7 @@ const Rose = () => {
                               : "Nessun numero assegnato"
                           }
                         >
-                          {player.NumeroMaglia ? `#${player.NumeroMaglia}` : "—"}
+                          {player.NumeroMaglia ? `#${player.NumeroMaglia}` : "â€”"}
                         </div>
                       </div>
 
@@ -507,17 +636,17 @@ const Rose = () => {
                             {player.Nome} {player.Cognome}
                           </span>
                           <img
-                            src={getNationalityFlag(player.Nazionalità)}
-                            alt={player.Nazionalità}
+                            src={getNationalityFlag(player.NazionalitÃ )}
+                            alt={player.NazionalitÃ }
                             className="h-3.5 w-5 object-cover rounded-sm shrink-0"
                           />
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <span>{player.Età} anni</span>
-                          <span>•</span>
+                          <span>{player.EtÃ } anni</span>
+                          <span>â€¢</span>
                           <span>{player.Altezza} cm</span>
-                          <span>•</span>
+                          <span>â€¢</span>
                           <span>Piede {player.Piede}</span>
                         </div>
 
@@ -526,7 +655,7 @@ const Rose = () => {
                           {marketOpt ? (
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${marketOpt.badgeClass}`}
-                              title={`Status di mercato: ${marketOpt.label} — ${marketOpt.description}`}
+                              title={`Status di mercato: ${marketOpt.label} â€” ${marketOpt.description}`}
                             >
                               <Tag className="h-2.5 w-2.5" />
                               {marketOpt.label}
@@ -590,7 +719,7 @@ const Rose = () => {
                     <th className="py-3 px-3">Giocatore</th>
                     <th className="py-3 px-2 text-center w-14">Ruolo</th>
                     <th className="py-3 px-2 text-center w-14">OVR</th>
-                    <th className="py-3 px-2 text-center w-14">Età</th>
+                    <th className="py-3 px-2 text-center w-14">EtÃ </th>
                     <th className="py-3 px-2 text-center w-16">Altezza</th>
                     <th className="py-3 px-2 text-center w-14">Piede</th>
                     <th className="py-3 px-2 text-center w-14">XP</th>
@@ -616,7 +745,7 @@ const Rose = () => {
                               #{player.NumeroMaglia}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground/40">—</span>
+                            <span className="text-muted-foreground/40">â€”</span>
                           )}
                         </td>
 
@@ -638,8 +767,8 @@ const Rose = () => {
                                   {player.Nome} {player.Cognome}
                                 </span>
                                 <img
-                                  src={getNationalityFlag(player.Nazionalità)}
-                                  alt={player.Nazionalità}
+                                  src={getNationalityFlag(player.NazionalitÃ )}
+                                  alt={player.NazionalitÃ }
                                   className="h-3 w-4 object-cover rounded-sm shrink-0"
                                 />
                               </div>
@@ -668,17 +797,17 @@ const Rose = () => {
 
                         {/* Age */}
                         <td className="py-2.5 px-2 text-center font-mono text-muted-foreground">
-                          {player.Età}
+                          {player.EtÃ }
                         </td>
 
                         {/* Height */}
                         <td className="py-2.5 px-2 text-center font-mono text-muted-foreground">
-                          {player.Altezza ? `${player.Altezza} cm` : "—"}
+                          {player.Altezza ? `${player.Altezza} cm` : "â€”"}
                         </td>
 
                         {/* Foot */}
                         <td className="py-2.5 px-2 text-center font-bold text-xs">
-                          {player.Piede || "—"}
+                          {player.Piede || "â€”"}
                         </td>
 
                         {/* XP */}
