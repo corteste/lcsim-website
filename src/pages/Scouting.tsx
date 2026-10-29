@@ -127,9 +127,7 @@ const ScoutingStatBar = ({
     return (
       <div className="p-2.5 rounded-lg bg-muted/25 border border-dashed border-border/60 flex items-center justify-between gap-2 opacity-75">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold border border-border/40">
-            {code}
-          </span>
+          
           <span className="text-xs font-medium text-muted-foreground truncate">
             {label}
           </span>
@@ -147,17 +145,13 @@ const ScoutingStatBar = ({
     <div className="p-2.5 rounded-lg bg-card/80 border border-border/70 shadow-sm">
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold border border-border/40 shrink-0">
-            {code}
-          </span>
+          
           <span className="text-xs font-semibold text-foreground truncate">
             {label}
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[9px] font-mono uppercase px-1 py-0.5 rounded bg-muted/70 text-muted-foreground font-semibold">
-            {displayInfo.rangeType === "10" ? "Range 10" : "Range 3"}
-          </span>
+          
           <span
             className={`text-xs sm:text-sm font-black font-mono ${getValueColor(
               displayInfo.midpoint
