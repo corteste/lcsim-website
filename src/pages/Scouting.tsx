@@ -547,114 +547,111 @@ const Scouting = () => {
       <main className="container mx-auto px-4 py-6 space-y-6">
         <AdminTeamSelector />
 
-        {/* TOP TELEMETRY COMMAND HUD */}
-        <div className="rounded-2xl border border-border/80 bg-card shadow-lg overflow-hidden">
-          <div className="p-5 md:p-6 bg-gradient-to-r from-emerald-500/10 via-card to-sky-500/5 border-b border-border/70">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
-                    <Compass className="h-3 w-3" /> La Mia Squadra • Intelligence &amp; Osservatori
-                  </span>
-                  <Badge variant="outline" className="font-mono text-[11px]">
-                    Squadra: {activeTeamId}
-                  </Badge>
+        {/* MAIN TABS & UNIFIED COMMAND CARD */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          {/* UNIFIED COMMAND CARD */}
+          <div className="rounded-2xl border border-border/80 bg-card shadow-lg overflow-hidden">
+            <div className="p-5 md:p-6 bg-gradient-to-r from-emerald-500/10 via-card to-sky-500/5">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
+                      <Compass className="h-3 w-3" /> La Mia Squadra • Intelligence &amp; Osservatori
+                    </span>
+                    <Badge variant="outline" className="font-mono text-[11px]">
+                      Squadra: {activeTeamId}
+                    </Badge>
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-3">
+                    <Eye className="h-7 w-7 text-emerald-500 shrink-0" />
+                    Centro Scouting Rookie
+                  </h1>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                    Investi i tuoi <strong>60 gettoni</strong> sulle 4 fasce di visibilità (1G, 2G, 3G, 5G). Fa fede la fascia massima raggiunta sul singolo rookie; non è mai possibile diminuire i gettoni assegnati.
+                  </p>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-3">
-                  <Eye className="h-7 w-7 text-emerald-500 shrink-0" />
-                  Centro Scouting Rookie
-                </h1>
-                <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                  Investi i tuoi <strong>60 gettoni</strong> sulle 4 fasce di visibilità (1G, 2G, 3G, 5G). Fa fede la fascia massima raggiunta sul singolo rookie; non è mai possibile diminuire i gettoni assegnati.
-                </p>
+
+                {/* Telemetry Budget Widgets */}
+                <div className="grid grid-cols-3 gap-2.5 sm:gap-3 shrink-0">
+                  <div className="px-3.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      Gettoni Rimasti
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      {remainingTokens}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono">
+                      su {MAX_SCOUTING_TOKENS} totali
+                    </div>
+                  </div>
+
+                  <div className="px-3.5 py-2.5 rounded-xl bg-muted/50 border border-border text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Gettoni Spesi
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black font-mono text-foreground mt-0.5">
+                      {totalTokensSpent}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono">
+                      {Math.round((totalTokensSpent / MAX_SCOUTING_TOKENS) * 100)}% budget
+                    </div>
+                  </div>
+
+                  <div className="px-3.5 py-2.5 rounded-xl bg-muted/50 border border-border text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Rookie Scoutati
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black font-mono text-foreground mt-0.5">
+                      {scoutedRookiesCount}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono">
+                      su {rookies.length} rookie
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
 
-              {/* Telemetry Budget Widgets */}
-              <div className="grid grid-cols-3 gap-2.5 sm:gap-3 shrink-0">
-                <div className="px-3.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Gettoni Rimasti
-                  </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
-                    {remainingTokens}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono">
-                    su {MAX_SCOUTING_TOKENS} totali
-                  </div>
-                </div>
+            {/* Bottom Bar: Unified Navigation Tabs + Sync Button */}
+            <div className="px-4 py-2.5 sm:px-5 bg-muted/30 border-t border-border/70 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <TabsList className="bg-background/80 p-1 h-auto flex flex-wrap gap-1 border border-border/60 w-full sm:w-auto">
+                <TabsTrigger
+                  value="single"
+                  className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  Scheda Singolo Rookie &amp; Assegnazione Gettoni
+                </TabsTrigger>
+                <TabsTrigger
+                  value="recap"
+                  className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
+                >
+                  <Layers className="h-4 w-4" />
+                  Recap Rookie Scoutati ({scoutedRookiesCount})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="autopick"
+                  className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
+                >
+                  <Bot className="h-4 w-4" />
+                  Graduatoria Draft &amp; Autopick
+                </TabsTrigger>
+              </TabsList>
 
-                <div className="px-3.5 py-2.5 rounded-xl bg-muted/50 border border-border text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Gettoni Spesi
-                  </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono text-foreground mt-0.5">
-                    {totalTokensSpent}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono">
-                    {Math.round((totalTokensSpent / MAX_SCOUTING_TOKENS) * 100)}% budget
-                  </div>
-                </div>
-
-                <div className="px-3.5 py-2.5 rounded-xl bg-muted/50 border border-border text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Rookie Scoutati
-                  </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono text-foreground mt-0.5">
-                    {scoutedRookiesCount}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono">
-                    su {rookies.length} rookie
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchScoutingData(false)}
+                  disabled={loading}
+                  className="h-8 text-xs gap-1.5 px-3"
+                >
+                  <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+                  Sincronizza
+                </Button>
               </div>
             </div>
           </div>
-
-          {/* Progress Bar & Tier Legend */}
-          <div className="px-5 py-3 bg-muted/30 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-            </div>
-
-            <div className="flex items-center gap-2 self-end md:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fetchScoutingData(false)}
-                disabled={loading}
-                className="h-7 text-xs gap-1.5"
-              >
-                <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-                Sincronizza
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* MAIN TABS: 1) SCHEDA SINGOLO ROOKIE | 2) RECAP ROOKIE SCOUTATI | 3) GRADUATORIA & AUTOPICK */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
-          <TabsList className="bg-card border border-border/80 p-1 h-auto flex flex-wrap gap-1 w-full sm:w-auto">
-            <TabsTrigger
-              value="single"
-              className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
-            >
-              <Eye className="h-4 w-4" />
-              Scheda Singolo Rookie &amp; Assegnazione Gettoni
-            </TabsTrigger>
-            <TabsTrigger
-              value="recap"
-              className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
-            >
-              <Layers className="h-4 w-4" />
-              Recap Rookie Scoutati ({scoutedRookiesCount})
-            </TabsTrigger>
-            <TabsTrigger
-              value="autopick"
-              className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
-            >
-              <Bot className="h-4 w-4" />
-              Graduatoria Draft &amp; Autopick
-            </TabsTrigger>
-          </TabsList>
 
           {/* TAB 1: SINGLE ROOKIE INSPECTOR */}
           <TabsContent value="single" className="m-0">
