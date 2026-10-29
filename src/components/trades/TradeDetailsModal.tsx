@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,11 +19,13 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  AlertTriangle,
   MessageSquare,
   Send,
   Clock,
   RotateCcw,
 } from "lucide-react";
+import { supabase } from "@/supabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import {
   acceptTrade,
