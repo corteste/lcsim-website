@@ -7,7 +7,6 @@ import { FormationDef } from "@/pages/Tattica";
 import {
   TacticalSettings,
   BUILD_UP_STYLES,
-  DEFENSIVE_APPROACHES,
   DEFENSIVE_LINE_OPTIONS,
   getDefensiveLineOption,
   FC25_ROLES_BY_POSITION,
@@ -52,14 +51,11 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
   onOpenPlayerModal,
   onOpenInstructionModal,
 }) => {
-  const { buildUpStyle, defensiveApproach, defensiveLine } =
+  const { buildUpStyle, defensiveLine } =
     tacticalSettings.teamTactics;
 
   const currentBuildUp =
     BUILD_UP_STYLES.find((b) => b.id === buildUpStyle) || BUILD_UP_STYLES[1];
-  const currentDef =
-    DEFENSIVE_APPROACHES.find((d) => d.id === defensiveApproach) ||
-    DEFENSIVE_APPROACHES[1];
 
   const assignedCount = formationSlots.filter(Boolean).length;
   const setPieces = tacticalSettings.setPieces || {};
@@ -130,18 +126,18 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
           </Button>
         </Card>
 
-        {/* Approccio Difensivo & Linea */}
+        {/* Altezza Linea Difensiva */}
         <Card className="border-border/70 bg-gradient-to-br from-card to-muted/20 shadow-sm p-4 flex items-center justify-between">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-sky-500" />
+              <Shield className="w-3.5 h-3.5 text-emerald-500" />
               <span>Assetto Difensivo</span>
             </div>
             <div className="text-xl font-black tracking-tight text-foreground mt-0.5">
-              {currentDef.name}
+              Linea {getDefensiveLineOption(defensiveLine).name}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              Altezza Linea: <b className="text-foreground">{getDefensiveLineOption(defensiveLine).name}</b> <span className="font-mono text-[11px] text-muted-foreground">({getDefensiveLineOption(defensiveLine).value}/100)</span>
+              Altezza: <b className="text-foreground">{getDefensiveLineOption(defensiveLine).value}/100</b> • {getDefensiveLineOption(defensiveLine).shortDesc}
             </div>
           </div>
           <Button

@@ -1028,15 +1028,15 @@ Valore per Ruolo: in Scouting il valore per ruolo risulta calcolato sul minimo d
 
 ---
 
-## 📌 48. Tattica: Approccio Difensivo e Altezza della Linea
-- **Stato**: 🟢 Completato & Testato (Sostituito slider libero con 4 altezze fisse e definite: Bassa, Media, Alta, Aggressiva)
+## 📌 48. Tattica: Altezza della Linea Difensiva
+- **Stato**: 🟢 Completato & Testato (Unificato assetto difensivo e sostituito slider libero con 4 altezze fisse e definite: Bassa, Media, Alta, Aggressiva)
 - **Priorità**: Media-Alta
 - **Moduli coinvolti**: `src/types/tactics.ts`, `src/components/tactics/TeamTacticsCard.tsx`, `src/components/tactics/TacticsOverviewTab.tsx`, `src/pages/Tattica.tsx`
 - **Tabelle coinvolte**: `an_team_tactic`, `team_formation_history`
 Descrizione
 Riorganizzata la gestione dell'assetto difensivo nella pagina Tattica (`/mia-squadra/tattica`):
 
-- **Approccio Difensivo**: confermata e consolidata la scelta a 3 opzioni (*Basso / Prudente*, *Equilibrato*, *Alto / Aggressivo*).
+- **Unificazione**: rimosso il selettore ridondante "Approccio Difensivo" mantenendo unicamente **Altezza Linea Difensiva**.
 - **Altezza Linea Difensiva**: rimosso lo slider continuo (1-100) e introdotte **4 opzioni predefinite fisse** con descrizione e badge:
   1. **Bassa** (valore 25): Protezione dell'area di rigore e limitazione dei varchi alle spalle dei difensori centrali.
   2. **Media** (valore 50): Assetto equilibrato con blocco compatto sulla propria trequarti.

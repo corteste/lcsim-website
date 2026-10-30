@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import {
   BUILD_UP_STYLES,
-  DEFENSIVE_APPROACHES,
   DEFENSIVE_LINE_OPTIONS,
   getDefensiveLineOption,
   TacticalSettings,
@@ -32,14 +31,11 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(true);
 
-  const { buildUpStyle, defensiveApproach, defensiveLine } =
+  const { buildUpStyle, defensiveLine } =
     tacticalSettings.teamTactics;
 
   const currentBuildUp =
     BUILD_UP_STYLES.find((b) => b.id === buildUpStyle) || BUILD_UP_STYLES[1];
-  const currentDef =
-    DEFENSIVE_APPROACHES.find((d) => d.id === defensiveApproach) ||
-    DEFENSIVE_APPROACHES[1];
   const currentLineOption = getDefensiveLineOption(defensiveLine);
 
   const handleBuildUpChange = (id: "short_passing" | "balanced" | "counter") => {
@@ -49,17 +45,6 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
       teamTactics: {
         ...tacticalSettings.teamTactics,
         buildUpStyle: id,
-      },
-    });
-  };
-
-  const handleDefensiveApproachChange = (id: "deep" | "balanced" | "high") => {
-    if (disabled) return;
-    onChange({
-      ...tacticalSettings,
-      teamTactics: {
-        ...tacticalSettings.teamTactics,
-        defensiveApproach: id,
       },
     });
   };
@@ -99,7 +84,7 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
                 </Badge>
               </div>
               <CardDescription className="text-xs">
-                Imposta lo stile di costruzione e l'approccio difensivo globale della squadra
+                Imposta lo stile di costruzione e l'altezza della linea difensiva della squadra
               </CardDescription>
             </div>
           </div>
@@ -112,10 +97,7 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
                 {currentBuildUp.name}
               </Badge>
               <Badge variant="secondary" className="text-[11px] font-bold px-2 py-0.5">
-                <Shield className="w-3 h-3 mr-1 text-sky-500" />
-                {currentDef.name}
-              </Badge>
-              <Badge variant="secondary" className="text-[11px] font-mono font-bold px-2 py-0.5">
+                <Shield className="w-3 h-3 mr-1 text-emerald-500" />
                 Linea: {currentLineOption.name}
               </Badge>
             </div>
@@ -183,43 +165,49 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
               </div>
             </div>
 
-            {/* SEZIONE 2: APPROCCIO DIFENSIVO */}
+            {/* SEZIONE 2: ALTEZZA LINEA DIFENSIVA (4 OPZIONI FISSE) */}
             <div className="space-y-3 bg-muted/20 p-3.5 rounded-xl border border-border/60">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-sky-500" />
+                  <Shield className="w-4 h-4 text-emerald-500" />
                   <span className="text-xs font-black uppercase tracking-wider text-foreground">
-                    Approccio Difensivo
+                    Altezza Linea Difensiva
                   </span>
                 </div>
-                <Badge variant="outline" className="text-[10px] font-bold">
-                  Fase Non Possesso
+                <Badge variant="outline" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                  {currentLineOption.name} ({currentLineOption.value})
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                {DEFENSIVE_APPROACHES.map((approach) => {
-                  const isSelected = defensiveApproach === approach.id;
+              {/* 4 Opzioni Fisse Selezionabili */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {DEFENSIVE_LINE_OPTIONS.map((opt) => {
+                  const isSelected = currentLineOption.id === opt.id;
                   return (
                     <button
-                      key={approach.id}
+                      key={opt.id}
                       type="button"
                       disabled={disabled}
-                      onClick={() => handleDefensiveApproachChange(approach.id)}
-                      className={`relative flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all ${
+                      onClick={() => handleDefensiveLineSelect(opt.value)}
+                      className={`flex flex-col text-left p-2.5 rounded-xl border transition-all text-xs relative ${
                         isSelected
-                          ? "bg-sky-500/10 border-sky-500/80 text-foreground ring-2 ring-sky-500/20 shadow-sm"
-                          : "bg-card/70 border-border/70 text-muted-foreground hover:border-sky-500/40 hover:bg-card"
+                          ? "bg-emerald-500/15 border-emerald-500/80 ring-2 ring-emerald-500/20 text-foreground shadow-xs"
+                          : "bg-card/70 border-border/70 text-muted-foreground hover:border-emerald-500/40 hover:bg-card"
                       } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                     >
-                      <span className="text-xs font-black tracking-tight mb-1">
-                        {approach.name.split("/")[0].trim()}
-                      </span>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-extrabold text-foreground text-xs">
+                          {opt.name}
+                        </span>
+                        <span className="font-mono text-[10px] text-muted-foreground font-semibold">
+                          {opt.value}
+                        </span>
+                      </div>
                       <span className="text-[10px] leading-tight text-muted-foreground line-clamp-2">
-                        {approach.shortDesc}
+                        {opt.shortDesc}
                       </span>
                       {isSelected && (
-                        <div className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-sky-500" />
+                        <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       )}
                     </button>
                   );
@@ -228,66 +216,8 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
 
               <div className="text-[11px] text-muted-foreground bg-background/50 p-2 rounded-lg border border-border/40 flex items-start gap-1.5">
                 <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                <span>{currentDef.description}</span>
+                <span>{currentLineOption.description}</span>
               </div>
-            </div>
-          </div>
-
-          {/* 4 ALTEZZE DEFINITE LINEA DIFENSIVA (BASSA / MEDIA / ALTA / AGGRESSIVA) */}
-          <div className="p-3.5 rounded-xl bg-muted/15 border border-border/60 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs font-black uppercase tracking-wider text-foreground">
-                  Altezza Linea Difensiva
-                </span>
-                <Badge variant="secondary" className="font-mono text-xs px-2 py-0">
-                  {currentLineOption.value}/100
-                </Badge>
-              </div>
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                {currentLineOption.name}
-              </span>
-            </div>
-
-            {/* 4 Opzioni Fisse Selezionabili */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {DEFENSIVE_LINE_OPTIONS.map((opt) => {
-                const isSelected = currentLineOption.id === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => handleDefensiveLineSelect(opt.value)}
-                    className={`flex flex-col text-left p-2.5 rounded-xl border transition-all text-xs relative ${
-                      isSelected
-                        ? "bg-emerald-500/15 border-emerald-500/60 shadow-xs"
-                        : "bg-card/70 border-border/60 hover:border-border hover:bg-muted/40"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-foreground text-xs">
-                        {opt.name}
-                      </span>
-                      <span className="font-mono text-[10px] text-muted-foreground font-semibold">
-                        {opt.value}
-                      </span>
-                    </div>
-                    <span className="text-[10px] leading-tight text-muted-foreground line-clamp-2">
-                      {opt.shortDesc}
-                    </span>
-                    {isSelected && (
-                      <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="text-[11px] text-muted-foreground bg-background/50 p-2 rounded-lg border border-border/40 flex items-start gap-1.5">
-              <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-              <span>{currentLineOption.description}</span>
             </div>
           </div>
         </CardContent>
