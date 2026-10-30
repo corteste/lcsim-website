@@ -140,3 +140,32 @@ body[data-scroll-locked] {
   margin-right: 0px !important;
   padding-right: 0px !important;
 }
+
+/* ==========================================================================
+   Marquee Animation for Global Announcement Banner (#60)
+   ========================================================================== */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-infinite {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee-scroll var(--marquee-duration, 24s) linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-infinite:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-infinite {
+    animation: none !important;
+  }
+}

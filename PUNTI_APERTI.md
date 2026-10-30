@@ -1179,17 +1179,21 @@ Controllare che i colori associati ai ruoli (POR, difensori, centrocampisti, att
 ---
 
 ## 📌 60. Barra Annunci Fissa, Non Chiudibile & Testo Scorrevole (Marquee)
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Banner permanente non chiudibile, rilevamento overflow automatico & animazione marquee orizzontale)
 - **Priorità**: Media-Alta (Visibilità garantita dei comunicati di Lega)
-- **Moduli coinvolti**: componente banner globale sotto la Navbar (da verificare), src/components/Navbar.tsx, src/index.css
-- **Tabelle coinvolte**: league_announcements (campo is_banner), announcement_reads
+- **Moduli coinvolti**: `src/components/GlobalAnnouncementBanner.tsx`, `src/index.css`, `src/components/Navbar.tsx`
+- **Tabelle coinvolte**: `league_announcements` (campo `is_banner`)
 Descrizione
-Evoluzione del Banner Globale in Cima al Sito (vedi punto #2.2):
-Barra Fissa e Non Chiudibile: la barra annunci deve restare sempre visibile in alto, rimuovendo il pulsante di chiusura oggi a disposizione dell'utente. Il banner scompare solo quando l'Admin disattiva is_banner sul comunicato.
-Testo Scorrevole: se il messaggio è troppo lungo per la larghezza disponibile, deve scorrere in orizzontale da destra verso sinistra (effetto marquee/ticker) in modo da poter essere letto per intero.
-Lo scorrimento si attiva solo quando il testo supera lo spazio disponibile; i messaggi brevi restano statici.
-Valutare la pausa dello scorrimento al passaggio del mouse e il rispetto di prefers-reduced-motion.
-Verificare la compatibilità con la Navbar sticky (vedi punto #29) e il corretto comportamento su mobile.
+Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
+
+- **Barra Fissa e Non Chiudibile**: rimosso il pulsante "X" di chiusura locale a disposizione dell'utente; il banner rimane permanente e scompare unicamente quando l'Admin disattiva la spunta `is_banner` o quando il comunicato supera la data di scadenza.
+- **Testo Scorrevole Automatico (Marquee)**:
+  - Il componente misura dinamicamente la larghezza del testo rispetto allo spazio orizzontale disponibile nel viewport.
+  - Se il testo eccede lo spazio (su mobile o con messaggi lunghi), si attiva l'animazione marquee orizzontale continua e fluida (senza scatti grazie al doppio segmento gemello loopato).
+  - La velocità è calibrata dinamicamente in base alla lunghezza del messaggio (~45-50px al secondo per massima leggibilità).
+  - **Pausa su Hover**: al passaggio del mouse o touch l'animazione va in pausa per consentire la lettura o il click.
+  - Rispetto dell'accessibilità (`prefers-reduced-motion`).
+  - Se il testo è breve, rimane statico e perfettamente centrato/visibile.
 
 
 ---
