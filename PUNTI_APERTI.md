@@ -910,3 +910,14 @@ Adeguamento della distinta gara nelle pagine Tattica e Foglio Commento:
      - Le schede dei portieri in lista sono disabilitate con badge *"Max 3 POR"*.
      - In `executeAutopick`, tutti i portieri vengono esclusi dalla selezione automatica.
      - Funzioni RPC sollevano eccezione in caso di chiamata di un 4° portiere.
+
+
+---
+
+## 📌 44. Prospetto Riepilogativo Overall per Ruolo/Posizione in Schermata Allenamento
+- **Stato**: 🟡 In attesa di implementazione
+- **Priorità**: Media
+- **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/utils/playerOvrCalculator.ts`
+- **Descrizione**:
+  - Aggiungere nella schermata di Allenamento (`/allenamenti`), sulla colonna di destra sotto la card *Riepilogo Avanzamento*, un prospetto riassuntivo che mostra l'Overall (OVR) calcolato del calciatore selezionato in ogni possibile posizione/ruolo del campo (POR, DC, TD, TS, CDC, CC, COC, ED, ES, AD, AS, AT, ATT).
+  - Permette al manager di valutare istantaneamente l'adattabilità e l'efficacia del giocatore nei diversi ruoli del campo prima di effettuare cambi ruolo o potenziamenti.
