@@ -125,24 +125,181 @@ const StatCardGroup = ({
 const StatItemCard = ({ 
   label, 
   value, 
+  subValue,
   icon: Icon, 
   colorClass 
 }: { 
   label: string; 
   value: string | number; 
+  subValue?: string | React.ReactNode;
   icon?: React.ElementType;
   colorClass?: string;
 }) => (
-  <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs hover:border-primary/40 transition-colors">
+  <div className="p-3 rounded-xl bg-card border border-border/70 shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between">
     <div className="flex items-center gap-1.5 mb-1 text-muted-foreground">
-      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-      <span className="text-[11px] font-medium tracking-wide">{label}</span>
+      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+      <span className="text-[11px] font-medium tracking-wide truncate">{label}</span>
     </div>
-    <div className={`text-xl sm:text-2xl font-black font-mono ${colorClass || "text-foreground"}`}>
-      {value}
+    <div>
+      <div className={`text-xl sm:text-2xl font-black font-mono leading-tight ${colorClass || "text-foreground"}`}>
+        {value}
+      </div>
+      {subValue && (
+        <div className="text-[10px] font-mono text-muted-foreground mt-1 truncate">
+          {subValue}
+        </div>
+      )}
     </div>
   </div>
 );
+
+function computeDetailedStats(matches: any[], fallbackSum: PlayerStatsSum | null) {
+  let sum_minuti = 0, sum_voto = 0, sum_gol = 0, sum_asst = 0, sum_agol = 0;
+  let sum_tiri_in = 0, sum_tiri_tot = 0, sum_pass_si = 0, sum_pass_tot = 0;
+  let sum_drib_si = 0, sum_drib_tot = 0, sum_cros_si = 0, sum_cros_tot = 0;
+  let sum_ctrs_si = 0, sum_ctrs_tot = 0, sum_falli = 0, sum_para = 0, sum_gsub = 0;
+  let sum_gialli = 0, sum_rossi = 0, sum_fgioco = 0;
+  let matchCount = matches?.length || 0;
+  let best: { voto: number; stag: number; week: number } | null = null;
+  let cleanSheets = 0;
+  const seasonsSet = new Set<number>();
+
+  if (matchCount > 0) {
+    for (const r of matches) {
+      if (r.STAG) seasonsSet.add(Number(r.STAG));
+      sum_minuti += r.MINUTI || 0;
+      sum_voto += r.VOTO || 0;
+      sum_gol += r.GOL || 0;
+      sum_asst += r.ASST || 0;
+      sum_agol += r.AGOL || 0;
+      sum_tiri_in += r.TIRI_IN || 0;
+      sum_tiri_tot += r.TIRI_TOT || 0;
+      sum_pass_si += r.PASS_SI || 0;
+      sum_pass_tot += r.PASS_TOT || 0;
+      sum_drib_si += r.DRIB_SI || 0;
+      sum_drib_tot += r.DRIB_TOT || 0;
+      sum_cros_si += r.CROS_SI || 0;
+      sum_cros_tot += r.CROS_TOT || 0;
+      sum_ctrs_si += r.CTRS_SI || 0;
+      sum_ctrs_tot += r.CTRS_TOT || 0;
+      sum_falli += r.FALLI || 0;
+      sum_para += r.PARA || 0;
+      sum_gsub += r.GSUB || 0;
+      sum_gialli += r.GIALLI || 0;
+      sum_rossi += r.ROSSI || 0;
+      sum_fgioco += r.FGIOCO || 0;
+
+      if (r.VOTO && (!best || r.VOTO > best.voto)) {
+        best = { voto: Number(r.VOTO), stag: Number(r.STAG), week: Number(r.WEEK) };
+      }
+      if ((r.MINUTI || 0) >= 45 && (r.GSUB || 0) === 0) {
+        cleanSheets++;
+      }
+    }
+  } else if (fallbackSum && fallbackSum.matches_played > 0) {
+    matchCount = fallbackSum.matches_played;
+    sum_minuti = fallbackSum.sum_minuti || 0;
+    sum_voto = fallbackSum.sum_voto || 0;
+    sum_gol = fallbackSum.sum_gol || 0;
+    sum_asst = fallbackSum.sum_asst || 0;
+    sum_agol = fallbackSum.sum_agol || 0;
+    sum_tiri_in = fallbackSum.sum_tiri_in || 0;
+    sum_tiri_tot = fallbackSum.sum_tiri_tot || 0;
+    sum_pass_si = fallbackSum.sum_pass_si || 0;
+    sum_pass_tot = fallbackSum.sum_pass_tot || 0;
+    sum_drib_si = fallbackSum.sum_drib_si || 0;
+    sum_drib_tot = fallbackSum.sum_drib_tot || 0;
+    sum_cros_si = fallbackSum.sum_cros_si || 0;
+    sum_cros_tot = fallbackSum.sum_cros_tot || 0;
+    sum_ctrs_si = fallbackSum.sum_ctrs_si || 0;
+    sum_ctrs_tot = fallbackSum.sum_ctrs_tot || 0;
+    sum_falli = fallbackSum.sum_falli || 0;
+    sum_para = fallbackSum.sum_para || 0;
+    sum_gsub = fallbackSum.sum_gsub || 0;
+    sum_gialli = fallbackSum.sum_gialli || 0;
+    sum_rossi = fallbackSum.sum_rossi || 0;
+    sum_fgioco = fallbackSum.sum_fgioco || 0;
+  }
+
+  if (matchCount === 0) return null;
+
+  const p90 = (val: number) => sum_minuti > 0 ? ((val / sum_minuti) * 90).toFixed(2) : "0.00";
+  const pct = (num: number, den: number) => den > 0 ? Math.round((num / den) * 100) : 0;
+
+  const goalContrib = sum_gol + sum_asst;
+  const tiriOut = Math.max(0, sum_tiri_tot - sum_tiri_in);
+  const passNo = Math.max(0, sum_pass_tot - sum_pass_si);
+  const dribNo = Math.max(0, sum_drib_tot - sum_drib_si);
+  const crosNo = Math.max(0, sum_cros_tot - sum_cros_si);
+  const ctrsNo = Math.max(0, sum_ctrs_tot - sum_ctrs_si);
+  const totalShotsAgainst = sum_para + sum_gsub;
+
+  return {
+    matches: matchCount,
+    seasonsCount: seasonsSet.size || 1,
+    minuti: sum_minuti,
+    avgRating: matchCount > 0 && sum_voto > 0 ? (sum_voto / matchCount).toFixed(2) : "S.V.",
+    bestRating: best,
+    avgMinPerMatch: matchCount > 0 ? Math.round(sum_minuti / matchCount) : 0,
+
+    gol: sum_gol,
+    asst: sum_asst,
+    goalContrib,
+    golP90: p90(sum_gol),
+    asstP90: p90(sum_asst),
+    goalContribP90: p90(goalContrib),
+    minPerGol: sum_gol > 0 ? Math.round(sum_minuti / sum_gol) : null,
+    minPerContrib: goalContrib > 0 ? Math.round(sum_minuti / goalContrib) : null,
+
+    tiriIn: sum_tiri_in,
+    tiriTot: sum_tiri_tot,
+    tiriOut,
+    shotPct: pct(sum_tiri_in, sum_tiri_tot),
+    conversionPct: pct(sum_gol, sum_tiri_tot),
+    tiriP90: p90(sum_tiri_tot),
+    tiriInP90: p90(sum_tiri_in),
+
+    passSi: sum_pass_si,
+    passTot: sum_pass_tot,
+    passNo,
+    passPct: pct(sum_pass_si, sum_pass_tot),
+    passP90: p90(sum_pass_si),
+
+    dribSi: sum_drib_si,
+    dribTot: sum_drib_tot,
+    dribNo,
+    dribPct: pct(sum_drib_si, sum_drib_tot),
+    dribP90: p90(sum_drib_si),
+
+    crosSi: sum_cros_si,
+    crosTot: sum_cros_tot,
+    crosNo,
+    crosPct: pct(sum_cros_si, sum_cros_tot),
+    crosP90: p90(sum_cros_si),
+
+    ctrsSi: sum_ctrs_si,
+    ctrsTot: sum_ctrs_tot,
+    ctrsNo,
+    ctrsPct: pct(sum_ctrs_si, sum_ctrs_tot),
+    ctrsP90: p90(sum_ctrs_si),
+    agol: sum_agol,
+
+    falli: sum_falli,
+    falliP90: p90(sum_falli),
+    fgioco: sum_fgioco,
+    fgiocoP90: p90(sum_fgioco),
+    gialli: sum_gialli,
+    rossi: sum_rossi,
+
+    para: sum_para,
+    paraP90: p90(sum_para),
+    gsub: sum_gsub,
+    gsubP90: p90(sum_gsub),
+    savePct: pct(sum_para, totalShotsAgainst),
+    minPerGsub: sum_gsub > 0 ? Math.round(sum_minuti / sum_gsub) : null,
+    cleanSheets
+  };
+}
 
 const AccuracyBar = ({ 
   label, 
@@ -183,6 +340,9 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
   const [xpSeason, setXpSeason] = useState<number>(10);
   const [seasonStats, setSeasonStats] = useState<PlayerStatsSum | null>(initialStats || null);
   const [statsLoading, setStatsLoading] = useState<boolean>(!initialStats);
+  const [allMatches, setAllMatches] = useState<any[]>([]);
+  const [matchesLoading, setMatchesLoading] = useState<boolean>(true);
+  const [statsScope, setStatsScope] = useState<"season" | "career">("season");
 
   const formatConfig = useMemo(() => getSeasonFormatConfig(xpSeason), [xpSeason]);
 
@@ -255,6 +415,50 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
       isMounted = false;
     };
   }, [currentPlayer?.ID, xpSeason, initialStats]);
+
+  // Caricamento di tutti i match a DB per statistiche di carriera e metriche avanzate
+  useEffect(() => {
+    if (!currentPlayer?.ID) return;
+    let isMounted = true;
+    setMatchesLoading(true);
+
+    async function loadAllPlayerMatches() {
+      try {
+        const { data, error } = await supabase
+          .from("AS_PLAYER_STAT")
+          .select("*")
+          .eq("ID", Number(currentPlayer.ID))
+          .order("STAG", { ascending: true })
+          .order("WEEK", { ascending: true });
+
+        if (error) throw error;
+        if (isMounted) {
+          setAllMatches(data || []);
+        }
+      } catch (err) {
+        console.error("Errore caricamento match statistiche giocatore:", err);
+      } finally {
+        if (isMounted) setMatchesLoading(false);
+      }
+    }
+
+    loadAllPlayerMatches();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPlayer?.ID]);
+
+  // Calcolo statistiche stagionali vs carriera
+  const seasonMatches = useMemo(() => {
+    return allMatches.filter((m) => Number(m.STAG) === Number(xpSeason));
+  }, [allMatches, xpSeason]);
+
+  const activeMatches = statsScope === "season" ? seasonMatches : allMatches;
+
+  const detailedStats = useMemo(() => {
+    const fallback = (statsScope === "season" && seasonMatches.length === 0) ? (seasonStats || initialStats || null) : null;
+    return computeDetailedStats(activeMatches, fallback);
+  }, [activeMatches, statsScope, seasonMatches.length, seasonStats, initialStats]);
 
   const ovr = currentPlayer.OVR ?? 0;
   const isGoalkeeper = currentPlayer.Posiz === "POR";
@@ -594,154 +798,383 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
           </div>
         </TabsContent>
 
-        {/* Tab: Statistiche Stagionali Complete */}
-        <TabsContent value="stats" className="flex-1 overflow-y-auto p-4 sm:p-6 m-0 focus-visible:outline-none space-y-5">
-          {statsLoading ? (
+        {/* Tab: Statistiche Stagionali & Carriera Complete */}
+        <TabsContent value="stats" className="flex-1 overflow-y-auto p-4 sm:p-6 m-0 focus-visible:outline-none space-y-6">
+          {/* Header Barra di Controllo: Ambito Stagione / Carriera */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-muted/30 border border-border/70 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-foreground">
+                    {statsScope === "season" ? `Statistiche Stagione ${xpSeason}` : "Statistiche Intera Carriera"}
+                  </h3>
+                  <Badge variant="outline" className="font-mono text-[10px] font-bold">
+                    {statsScope === "season" ? `Stagione ${xpSeason}` : `${detailedStats?.seasonsCount ?? 1} Stagioni LCSIM`}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                  {detailedStats 
+                    ? `${detailedStats.matches} presenze a referto • ${detailedStats.minuti}' minuti giocati`
+                    : "Caricamento parametri in corso..."}
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle Switch Stagione / Carriera */}
+            <div className="flex items-center p-1 bg-background/80 rounded-xl border border-border/70 self-start sm:self-auto shadow-xs">
+              <button
+                type="button"
+                onClick={() => setStatsScope("season")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  statsScope === "season" 
+                    ? "bg-primary text-primary-foreground shadow-xs" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Stagione {xpSeason}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatsScope("career")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  statsScope === "career" 
+                    ? "bg-primary text-primary-foreground shadow-xs" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tutta la Carriera
+              </button>
+            </div>
+          </div>
+
+          {(statsLoading && matchesLoading && !detailedStats) ? (
             <div className="p-16 text-center text-xs text-muted-foreground font-mono space-y-2">
               <Clock className="h-6 w-6 animate-spin mx-auto text-primary" />
-              <p>Caricamento statistiche dettagliate della stagione...</p>
+              <p>Caricamento statistiche dettagliate...</p>
             </div>
-          ) : !seasonStats || (seasonStats.matches_played ?? 0) === 0 ? (
+          ) : !detailedStats || detailedStats.matches === 0 ? (
             <Card className="p-10 text-center border border-border/70 bg-card/60 rounded-2xl space-y-3">
               <div className="p-3 rounded-full bg-muted/40 w-fit mx-auto border border-border/60">
                 <BarChart3 className="h-6 w-6 text-muted-foreground" />
               </div>
               <div className="space-y-1">
                 <h4 className="text-base font-bold text-foreground">
-                  Nessuna statistica registrata nella Stagione {xpSeason}
+                  {statsScope === "season" 
+                    ? `Nessuna statistica registrata nella Stagione ${xpSeason}`
+                    : "Nessuna presenza ufficiale registrata in carriera"}
                 </h4>
                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Il calciatore non ha ancora collezionato presenze ufficiali in questa stagione. Le statistiche verranno aggiornate automaticamente al termine delle giornate di campionato.
+                  {statsScope === "season"
+                    ? "Il calciatore non ha ancora disputato incontri ufficiali in questa stagione. Puoi consultare il rendimento complessivo cliccando su 'Tutta la Carriera'."
+                    : "Nessun dato di gara registrato nei tabellini ufficiali LCSIM per questo giocatore."}
                 </p>
               </div>
             </Card>
-          ) : (() => {
-            const matches = seasonStats.matches_played || 0;
-            const avgRating = matches > 0 ? (seasonStats.sum_voto / matches).toFixed(2) : "S.V.";
-            const shotPct = seasonStats.sum_tiri_tot ? Math.round(((seasonStats.sum_tiri_in ?? 0) / seasonStats.sum_tiri_tot) * 100) : 0;
-            const passPct = seasonStats.sum_pass_tot ? Math.round(((seasonStats.sum_pass_si ?? 0) / seasonStats.sum_pass_tot) * 100) : 0;
-            const dribPct = seasonStats.sum_drib_tot ? Math.round(((seasonStats.sum_drib_si ?? 0) / seasonStats.sum_drib_tot) * 100) : 0;
-            const crosPct = seasonStats.sum_cros_tot ? Math.round(((seasonStats.sum_cros_si ?? 0) / seasonStats.sum_cros_tot) * 100) : 0;
-            const tackPct = seasonStats.sum_ctrs_tot ? Math.round(((seasonStats.sum_ctrs_si ?? 0) / seasonStats.sum_ctrs_tot) * 100) : 0;
-
-            return (
-              <div className="space-y-6">
-                {isGoalkeeper ? (
-                  /* GOALKEEPER STATS DASHBOARD */
-                  <div className="space-y-5">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <StatItemCard label="Parate Totali" value={seasonStats.sum_para ?? 0} icon={Shield} colorClass="text-emerald-600 dark:text-emerald-400" />
-                      <StatItemCard label="Gol Subiti" value={seasonStats.sum_gsub ?? 0} icon={Target} colorClass="text-rose-600 dark:text-rose-400" />
-                      <StatItemCard label="Voto Medio" value={avgRating} icon={Star} colorClass="text-purple-600 dark:text-purple-400" />
-                      <StatItemCard label="Minuti Giocati" value={`${seasonStats.sum_minuti ?? 0}'`} icon={Timer} colorClass="text-blue-600 dark:text-blue-400" />
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <StatItemCard label="Partite Disputate" value={matches} icon={Activity} />
-                      <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
-                      <StatItemCard label="Cartellini Gialli" value={seasonStats.sum_gialli ?? 0} colorClass="text-amber-500" />
-                      <StatItemCard label="Cartellini Rossi" value={seasonStats.sum_rossi ?? 0} colorClass="text-rose-500" />
-                    </div>
-                  </div>
-                ) : (
-                  /* OUTFIELD PLAYER STATS DASHBOARD (UNIFIED IN SINGLE VIEW) */
-                  <div className="space-y-6">
-                    {/* 1. Panoramica Generale */}
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                        <Activity className="h-3.5 w-3.5 text-primary" />
-                        <span>Panoramica Generale</span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <StatItemCard label="Gol Segnati" value={seasonStats.sum_gol ?? 0} icon={Target} colorClass="text-emerald-600 dark:text-emerald-400" />
-                        <StatItemCard label="Assist Serviti" value={seasonStats.sum_asst ?? 0} icon={TrendingUp} colorClass="text-blue-600 dark:text-blue-400" />
-                        <StatItemCard label="Media Voto" value={avgRating} icon={Star} colorClass="text-purple-600 dark:text-purple-400" />
-                        <StatItemCard label="Minuti Giocati" value={`${seasonStats.sum_minuti ?? 0}'`} icon={Timer} />
-                        <StatItemCard label="Partite Disputate" value={matches} icon={Activity} />
-                        <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
-                        <StatItemCard label="Fuorigioco" value={seasonStats.sum_fgioco ?? 0} />
-                        <StatItemCard label="Disciplina" value={`${seasonStats.sum_gialli ?? 0}G / ${seasonStats.sum_rossi ?? 0}R`} colorClass={seasonStats.sum_rossi ? "text-rose-500" : seasonStats.sum_gialli ? "text-amber-500" : "text-muted-foreground"} />
-                      </div>
-                    </div>
-
-                    {/* 2. Attacco & Tiri */}
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 border-b border-border/40 pb-1.5">
-                        <Target className="h-3.5 w-3.5" />
-                        <span>Attacco & Tiri</span>
-                      </div>
-                      <AccuracyBar 
-                        label="Precisione Conclusioni in Porta" 
-                        success={seasonStats.sum_tiri_in ?? 0} 
-                        total={seasonStats.sum_tiri_tot ?? 0} 
-                        percentage={shotPct} 
-                      />
-                      <div className="grid grid-cols-3 gap-3">
-                        <StatItemCard label="Gol" value={seasonStats.sum_gol ?? 0} colorClass="text-emerald-600 dark:text-emerald-400" />
-                        <StatItemCard label="Tiri in Porta" value={seasonStats.sum_tiri_in ?? 0} colorClass="text-foreground" />
-                        <StatItemCard label="Tiri Totali Tentati" value={seasonStats.sum_tiri_tot ?? 0} colorClass="text-muted-foreground" />
-                      </div>
-                    </div>
-
-                    {/* 3. Possesso, Passaggi & Dribbling */}
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/40 pb-1.5">
-                        <Compass className="h-3.5 w-3.5" />
-                        <span>Possesso, Passaggi & Dribbling</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <AccuracyBar 
-                          label="Precisione Passaggi" 
-                          success={seasonStats.sum_pass_si ?? 0} 
-                          total={seasonStats.sum_pass_tot ?? 0} 
-                          percentage={passPct} 
-                        />
-                        <AccuracyBar 
-                          label="Precisione Dribbling" 
-                          success={seasonStats.sum_drib_si ?? 0} 
-                          total={seasonStats.sum_drib_tot ?? 0} 
-                          percentage={dribPct} 
-                        />
-                        <AccuracyBar 
-                          label="Precisione Cross" 
-                          success={seasonStats.sum_cros_si ?? 0} 
-                          total={seasonStats.sum_cros_tot ?? 0} 
-                          percentage={crosPct} 
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                        <StatItemCard label="Passaggi Riusciti" value={seasonStats.sum_pass_si ?? 0} />
-                        <StatItemCard label="Passaggi Totali" value={seasonStats.sum_pass_tot ?? 0} colorClass="text-muted-foreground" />
-                        <StatItemCard label="Dribbling Riusciti" value={seasonStats.sum_drib_si ?? 0} />
-                        <StatItemCard label="Dribbling Totali" value={seasonStats.sum_drib_tot ?? 0} colorClass="text-muted-foreground" />
-                        <StatItemCard label="Cross Riusciti" value={seasonStats.sum_cros_si ?? 0} />
-                        <StatItemCard label="Cross Totali" value={seasonStats.sum_cros_tot ?? 0} colorClass="text-muted-foreground" />
-                      </div>
-                    </div>
-
-                    {/* 4. Difesa & Contrasti */}
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 border-b border-border/40 pb-1.5">
-                        <Shield className="h-3.5 w-3.5" />
-                        <span>Difesa & Contrasti</span>
-                      </div>
-                      <AccuracyBar 
-                        label="Precisione Contrasti & Interventi" 
-                        success={seasonStats.sum_ctrs_si ?? 0} 
-                        total={seasonStats.sum_ctrs_tot ?? 0} 
-                        percentage={tackPct} 
-                      />
-                      <div className="grid grid-cols-3 gap-3">
-                        <StatItemCard label="Contrasti Vinti" value={seasonStats.sum_ctrs_si ?? 0} icon={Shield} colorClass="text-blue-600 dark:text-blue-400" />
-                        <StatItemCard label="Contrasti Tentati" value={seasonStats.sum_ctrs_tot ?? 0} colorClass="text-muted-foreground" />
-                        <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
-                      </div>
-                    </div>
-                  </div>
-                )}
+          ) : isGoalkeeper ? (
+            /* ========================================================
+               GOALKEEPER STATS DASHBOARD (COMPLETO)
+               ======================================================== */
+            <div className="space-y-6">
+              {/* 1. Rendimento tra i Pali */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/40 pb-1.5">
+                  <Shield className="h-3.5 w-3.5" />
+                  <span>Rendimento tra i Pali & Efficacia Difensiva</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <StatItemCard 
+                    label="Parate Totali" 
+                    value={detailedStats.para} 
+                    subValue={`${detailedStats.paraP90} parate / 90'`}
+                    icon={Shield} 
+                    colorClass="text-emerald-600 dark:text-emerald-400" 
+                  />
+                  <StatItemCard 
+                    label="Gol Subiti" 
+                    value={detailedStats.gsub} 
+                    subValue={`${detailedStats.gsubP90} subiti / 90'`}
+                    icon={Target} 
+                    colorClass="text-rose-600 dark:text-rose-400" 
+                  />
+                  <StatItemCard 
+                    label="% Parate Riuscite" 
+                    value={`${detailedStats.savePct}%`} 
+                    subValue={`${detailedStats.para} su ${detailedStats.para + detailedStats.gsub} tiri subiti`}
+                    icon={TrendingUp} 
+                    colorClass={detailedStats.savePct >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"} 
+                  />
+                  <StatItemCard 
+                    label="Porta Inviolata" 
+                    value={detailedStats.cleanSheets} 
+                    subValue={`Clean sheet (${Math.round((detailedStats.cleanSheets / detailedStats.matches) * 100)}% gare)`}
+                    icon={Award} 
+                    colorClass="text-blue-600 dark:text-blue-400" 
+                  />
+                  <StatItemCard 
+                    label="Minuti per Gol Subito" 
+                    value={detailedStats.minPerGsub ? `${detailedStats.minPerGsub}'` : "-"} 
+                    subValue="Frequenza gol incassati"
+                    icon={Timer} 
+                  />
+                  <StatItemCard 
+                    label="Media Voto" 
+                    value={detailedStats.avgRating} 
+                    subValue="Rendimento medio in campo"
+                    icon={Star} 
+                    colorClass="text-purple-600 dark:text-purple-400" 
+                  />
+                  <StatItemCard 
+                    label="Miglior Partita" 
+                    value={detailedStats.bestRating ? detailedStats.bestRating.voto : "-"} 
+                    subValue={detailedStats.bestRating ? `Stag. ${detailedStats.bestRating.stag} - G. ${detailedStats.bestRating.week}` : "-"}
+                    icon={Sparkles} 
+                    colorClass="text-amber-500" 
+                  />
+                  <StatItemCard 
+                    label="Presenze & Minuti" 
+                    value={`${detailedStats.matches}`} 
+                    subValue={`${detailedStats.minuti}' tot. (${detailedStats.avgMinPerMatch}'/gara)`}
+                    icon={Activity} 
+                  />
+                </div>
               </div>
-            );
-          })()}
+
+              {/* 2. Partecipazione al Gioco & Rinvii */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 border-b border-border/40 pb-1.5">
+                  <Compass className="h-3.5 w-3.5" />
+                  <span>Distribuzione, Rinvii & Manovra dal Basso</span>
+                </div>
+                <AccuracyBar 
+                  label="Precisione Passaggi & Rinvii del Portiere" 
+                  success={detailedStats.passSi} 
+                  total={detailedStats.passTot} 
+                  percentage={detailedStats.passPct} 
+                />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <StatItemCard label="Passaggi Riusciti" value={detailedStats.passSi} subValue={`${detailedStats.passP90} / 90'`} />
+                  <StatItemCard label="Passaggi Sbagliati" value={detailedStats.passNo} subValue={`${100 - detailedStats.passPct}% errori`} colorClass="text-muted-foreground" />
+                  <StatItemCard label="Uscite con Palla / Dribbling" value={detailedStats.dribSi} subValue={`su ${detailedStats.dribTot} tentati`} />
+                  <StatItemCard label="Falli Commessi" value={detailedStats.falli} subValue={`${detailedStats.falliP90} / 90'`} />
+                </div>
+              </div>
+
+              {/* 3. Disciplina */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
+                  <Activity className="h-3.5 w-3.5 text-primary" />
+                  <span>Disciplina & Sanzioni</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <StatItemCard label="Ammonizioni" value={detailedStats.gialli} colorClass="text-amber-500" />
+                  <StatItemCard label="Espulsioni" value={detailedStats.rossi} colorClass="text-rose-500" />
+                  <StatItemCard label="Autogol Commessi" value={detailedStats.agol} colorClass={detailedStats.agol > 0 ? "text-rose-600" : "text-muted-foreground"} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ========================================================
+               OUTFIELD PLAYER STATS DASHBOARD (COMPLETO)
+               ======================================================== */
+            <div className="space-y-6">
+              {/* 1. Panoramica Generale & Produzione */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
+                  <Activity className="h-3.5 w-3.5 text-primary" />
+                  <span>Panoramica Generale & Rendimento Globale</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <StatItemCard 
+                    label="Gol Segnati" 
+                    value={detailedStats.gol} 
+                    subValue={`${detailedStats.golP90} P90 ${detailedStats.minPerGol ? `• 1 ogni ${detailedStats.minPerGol}'` : ''}`}
+                    icon={Target} 
+                    colorClass="text-emerald-600 dark:text-emerald-400" 
+                  />
+                  <StatItemCard 
+                    label="Assist Serviti" 
+                    value={detailedStats.asst} 
+                    subValue={`${detailedStats.asstP90} P90`}
+                    icon={TrendingUp} 
+                    colorClass="text-blue-600 dark:text-blue-400" 
+                  />
+                  <StatItemCard 
+                    label="Partecipazione ai Gol (G+A)" 
+                    value={detailedStats.goalContrib} 
+                    subValue={`${detailedStats.goalContribP90} P90 ${detailedStats.minPerContrib ? `• 1 ogni ${detailedStats.minPerContrib}'` : ''}`}
+                    icon={Award} 
+                    colorClass="text-purple-600 dark:text-purple-400" 
+                  />
+                  <StatItemCard 
+                    label="Media Voto" 
+                    value={detailedStats.avgRating} 
+                    subValue="Rendimento medio gare"
+                    icon={Star} 
+                    colorClass="text-amber-500" 
+                  />
+                  <StatItemCard 
+                    label="Miglior Partita" 
+                    value={detailedStats.bestRating ? detailedStats.bestRating.voto : "-"} 
+                    subValue={detailedStats.bestRating ? `Stag. ${detailedStats.bestRating.stag} - G. ${detailedStats.bestRating.week}` : "-"}
+                    icon={Sparkles} 
+                    colorClass="text-amber-500" 
+                  />
+                  <StatItemCard 
+                    label="Presenze Disputate" 
+                    value={detailedStats.matches} 
+                    subValue={`Media ${detailedStats.avgMinPerMatch}' a presenza`}
+                    icon={Activity} 
+                  />
+                  <StatItemCard 
+                    label="Minuti Totali" 
+                    value={`${detailedStats.minuti}'`} 
+                    subValue="Tempo effettivo in campo"
+                    icon={Timer} 
+                  />
+                  <StatItemCard 
+                    label="Disciplina" 
+                    value={`${detailedStats.gialli}G / ${detailedStats.rossi}R`} 
+                    subValue={`${detailedStats.falli} falli commessi`}
+                    colorClass={detailedStats.rossi ? "text-rose-500" : detailedStats.gialli ? "text-amber-500" : "text-muted-foreground"} 
+                  />
+                </div>
+              </div>
+
+              {/* 2. Attacco, Tiri & Finalizzazione */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 border-b border-border/40 pb-1.5">
+                  <Target className="h-3.5 w-3.5" />
+                  <span>Attacco, Tiri & Precisione Balistica</span>
+                </div>
+                <AccuracyBar 
+                  label="Precisione Conclusioni Nello Specchio" 
+                  success={detailedStats.tiriIn} 
+                  total={detailedStats.tiriTot} 
+                  percentage={detailedStats.shotPct} 
+                />
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <StatItemCard 
+                    label="Tiri Totali" 
+                    value={detailedStats.tiriTot} 
+                    subValue={`${detailedStats.tiriP90} tiri / 90'`}
+                    colorClass="text-muted-foreground" 
+                  />
+                  <StatItemCard 
+                    label="Tiri in Porta" 
+                    value={detailedStats.tiriIn} 
+                    subValue={`${detailedStats.tiriInP90} nello specchio / 90'`}
+                    colorClass="text-foreground" 
+                  />
+                  <StatItemCard 
+                    label="Tiri Fuori / Respinti" 
+                    value={detailedStats.tiriOut} 
+                    subValue={`${100 - detailedStats.shotPct}% non a bersaglio`}
+                    colorClass="text-muted-foreground" 
+                  />
+                  <StatItemCard 
+                    label="Conversione Tiri / Gol" 
+                    value={`${detailedStats.conversionPct}%`} 
+                    subValue="Efficienza realizzativa"
+                    colorClass={detailedStats.conversionPct >= 20 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"} 
+                  />
+                  <StatItemCard 
+                    label="Frequenza Gol" 
+                    value={detailedStats.minPerGol ? `${detailedStats.minPerGol}'` : "-"} 
+                    subValue="Minuti per 1 gol"
+                    colorClass="text-emerald-600 dark:text-emerald-400" 
+                  />
+                </div>
+              </div>
+
+              {/* 3. Costruzione, Passaggi & Dribbling */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/40 pb-1.5">
+                  <Compass className="h-3.5 w-3.5" />
+                  <span>Costruzione del Gioco, Passaggi & Dribbling</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <AccuracyBar 
+                    label="Precisione Passaggi" 
+                    success={detailedStats.passSi} 
+                    total={detailedStats.passTot} 
+                    percentage={detailedStats.passPct} 
+                  />
+                  <AccuracyBar 
+                    label="Successo Dribbling" 
+                    success={detailedStats.dribSi} 
+                    total={detailedStats.dribTot} 
+                    percentage={detailedStats.dribPct} 
+                  />
+                  <AccuracyBar 
+                    label="Precisione Cross" 
+                    success={detailedStats.crosSi} 
+                    total={detailedStats.crosTot} 
+                    percentage={detailedStats.crosPct} 
+                  />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <StatItemCard label="Passaggi Riusciti" value={detailedStats.passSi} subValue={`${detailedStats.passP90} / 90'`} />
+                  <StatItemCard label="Passaggi Sbagliati" value={detailedStats.passNo} subValue={`${100 - detailedStats.passPct}% errori`} colorClass="text-muted-foreground" />
+                  <StatItemCard label="Dribbling Riusciti" value={detailedStats.dribSi} subValue={`${detailedStats.dribP90} / 90'`} />
+                  <StatItemCard label="Dribbling Fermati" value={detailedStats.dribNo} subValue={`${100 - detailedStats.dribPct}% fermati`} colorClass="text-muted-foreground" />
+                  <StatItemCard label="Cross a Segno" value={detailedStats.crosSi} subValue={`${detailedStats.crosP90} / 90'`} />
+                  <StatItemCard label="Cross Sprecati" value={detailedStats.crosNo} subValue={`${100 - detailedStats.crosPct}% non riusciti`} colorClass="text-muted-foreground" />
+                </div>
+              </div>
+
+              {/* 4. Fase Difensiva & Contrasti */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 border-b border-border/40 pb-1.5">
+                  <Shield className="h-3.5 w-3.5" />
+                  <span>Fase Difensiva & Contrasti</span>
+                </div>
+                <AccuracyBar 
+                  label="Percentuale Contrasti Vinti" 
+                  success={detailedStats.ctrsSi} 
+                  total={detailedStats.ctrsTot} 
+                  percentage={detailedStats.ctrsPct} 
+                />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <StatItemCard 
+                    label="Contrasti Vinti" 
+                    value={detailedStats.ctrsSi} 
+                    subValue={`${detailedStats.ctrsP90} contrasti / 90'`}
+                    icon={Shield} 
+                    colorClass="text-blue-600 dark:text-blue-400" 
+                  />
+                  <StatItemCard 
+                    label="Contrasti Persi" 
+                    value={detailedStats.ctrsNo} 
+                    subValue={`${100 - detailedStats.ctrsPct}% superato`}
+                    colorClass="text-muted-foreground" 
+                  />
+                  <StatItemCard 
+                    label="Autogol" 
+                    value={detailedStats.agol} 
+                    subValue={detailedStats.agol > 0 ? "Autoreti commesse" : "Nessuna autorete"}
+                    colorClass={detailedStats.agol > 0 ? "text-rose-600" : "text-muted-foreground"} 
+                  />
+                </div>
+              </div>
+
+              {/* 5. Disciplina & Posizione */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
+                  <Activity className="h-3.5 w-3.5 text-primary" />
+                  <span>Disciplina, Condotta & Fuorigioco</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <StatItemCard label="Falli Commessi" value={detailedStats.falli} subValue={`${detailedStats.falliP90} falli / 90'`} />
+                  <StatItemCard label="Fuorigioco Rilevati" value={detailedStats.fgioco} subValue={`${detailedStats.fgiocoP90} offside / 90'`} />
+                  <StatItemCard label="Cartellini Gialli" value={detailedStats.gialli} subValue="Ammonizioni" colorClass="text-amber-500" />
+                  <StatItemCard label="Cartellini Rossi" value={detailedStats.rossi} subValue="Espulsioni dirette/doppio giallo" colorClass="text-rose-500" />
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Tab 3: Rendimento & Grafico XP Partita per Partita (Ultima Stagione) */}
