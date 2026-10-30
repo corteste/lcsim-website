@@ -463,23 +463,49 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
   const ovr = currentPlayer.OVR ?? 0;
   const isGoalkeeper = currentPlayer.Posiz === "POR";
 
-  // Macro pillars with full non-truncated names
-  const macroStats = isGoalkeeper ? [
-    { label: "Tuffo", value: currentPlayer.TUFP, color: "from-amber-500/20 to-orange-500/10 text-orange-600 dark:text-orange-400" },
-    { label: "Presa", value: currentPlayer.PREP, color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
-    { label: "Rinvio", value: currentPlayer.RINP, color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
-    { label: "Riflessi", value: currentPlayer.RIFP, color: "from-purple-500/20 to-indigo-500/10 text-purple-600 dark:text-purple-400" },
-    { label: "Piazzamento", value: currentPlayer.POSP, color: "from-rose-500/20 to-pink-500/10 text-rose-600 dark:text-rose-400" },
-    { label: "Fisico", value: currentPlayer.FIS, color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
-  ] : [
-    { label: "Velocità", value: currentPlayer.VELO, color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
-    { label: "Tiro", value: currentPlayer.ATT, color: "from-red-500/20 to-rose-500/10 text-red-600 dark:text-red-400" },
-    { label: "Passaggio", value: currentPlayer.CEN, color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
-    { label: "Dribbling", value: currentPlayer.DRBL, color: "from-amber-500/20 to-yellow-500/10 text-amber-600 dark:text-amber-400" },
-    { label: "Difesa", value: currentPlayer.DIF, color: "from-indigo-500/20 to-blue-500/10 text-indigo-600 dark:text-indigo-400" },
-    { label: "Fisico", value: currentPlayer.FIS, color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
-    { label: "Mentale", value: currentPlayer.MEN, color: "from-pink-500/20 to-rose-500/10 text-pink-600 dark:text-pink-400" },
-  ];
+  // Helper per media ponderata / aggregata dei pilastri macro-attributi
+  const calcPillarAvg = (vals: (number | null | undefined)[]) => {
+    const valid = vals.filter((v): v is number => v !== null && v !== undefined && !isNaN(Number(v)) && Number(v) > 0);
+    if (!valid.length) return null;
+    return Math.round(valid.reduce((a, b) => a + Number(b), 0) / valid.length);
+  };
+
+  // Macro pillars con calcolo dinamico dagli attributi analitici a DB
+  const macroStats = useMemo(() => {
+    if (isGoalkeeper) {
+      const gkFis = currentPlayer.FIS ?? calcPillarAvg([currentPlayer.FRZA, currentPlayer.RESI, currentPlayer.ELEV]) ?? currentPlayer.FRZA;
+      return [
+        { label: "Tuffo", value: currentPlayer.TUFP, color: "from-amber-500/20 to-orange-500/10 text-orange-600 dark:text-orange-400" },
+        { label: "Presa", value: currentPlayer.PREP, color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
+        { label: "Rinvio", value: currentPlayer.RINP, color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
+        { label: "Riflessi", value: currentPlayer.RIFP, color: "from-purple-500/20 to-indigo-500/10 text-purple-600 dark:text-purple-400" },
+        { label: "Piazzamento", value: currentPlayer.POSP, color: "from-rose-500/20 to-pink-500/10 text-rose-600 dark:text-rose-400" },
+        { label: "Fisico", value: gkFis, color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
+      ];
+    }
+
+    const vel = currentPlayer.VELO && currentPlayer.ACCL 
+      ? calcPillarAvg([currentPlayer.VELO, currentPlayer.ACCL]) 
+      : currentPlayer.VELO;
+    const tir = currentPlayer.ATT ?? calcPillarAvg([currentPlayer.FINA, currentPlayer.PTIR, currentPlayer.TIRD, currentPlayer.PIAZ]);
+    const pas = currentPlayer.CEN ?? calcPillarAvg([currentPlayer.PASC, currentPlayer.PASL, currentPlayer.CTRP, currentPlayer.VISI]);
+    const drb = currentPlayer.DRBL && (currentPlayer.CTRP || currentPlayer.AGIL)
+      ? calcPillarAvg([currentPlayer.DRBL, currentPlayer.CTRP, currentPlayer.AGIL])
+      : currentPlayer.DRBL;
+    const dif = currentPlayer.DIF ?? calcPillarAvg([currentPlayer.CONT, currentPlayer.MARC, currentPlayer.INTR, currentPlayer.SCIV]);
+    const fis = currentPlayer.FIS ?? calcPillarAvg([currentPlayer.FRZA, currentPlayer.RESI, currentPlayer.ELEV]);
+    const men = currentPlayer.MEN ?? calcPillarAvg([currentPlayer.FRED, currentPlayer.VISI, currentPlayer.AGGR, currentPlayer.PIAZ]);
+
+    return [
+      { label: "Velocità", value: vel, color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
+      { label: "Tiro", value: tir, color: "from-red-500/20 to-rose-500/10 text-red-600 dark:text-red-400" },
+      { label: "Passaggio", value: pas, color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
+      { label: "Dribbling", value: drb, color: "from-amber-500/20 to-yellow-500/10 text-amber-600 dark:text-amber-400" },
+      { label: "Difesa", value: dif, color: "from-indigo-500/20 to-blue-500/10 text-indigo-600 dark:text-indigo-400" },
+      { label: "Fisico", value: fis, color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
+      { label: "Mentale", value: men, color: "from-pink-500/20 to-rose-500/10 text-pink-600 dark:text-pink-400" },
+    ];
+  }, [currentPlayer, isGoalkeeper]);
 
   return (
     <div 
