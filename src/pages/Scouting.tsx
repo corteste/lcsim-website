@@ -1247,7 +1247,7 @@ const Scouting = () => {
                     </Card>
                   </div>
 
-                  {/* 4. ALL 6 ATTRIBUTE DEPARTMENTS (33 INDIVIDUAL STATS) */}
+                  {/* 4. ALL 6 ATTRIBUTE DEPARTMENTS (34 INDIVIDUAL STATS) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {SCOUTING_DEPARTMENTS.map((dept) => {
                       const isUnlocked = selectedRookieTokens >= 1;

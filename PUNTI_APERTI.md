@@ -1000,15 +1000,16 @@ Layout più ampio con sezioni dedicate (informazioni club, allenatore, palmarès
 ---
 
 ## 📌 46. Valore "Freddezza" Mancante in Scouting e Confronto Rookie
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Incluso in `SCOUTING_DEPARTMENTS`, Scouting, Draft e Confronto Giocatori con decifrazione a gettoni)
 - **Priorità**: Media-Alta (Completezza degli attributi mostrati)
-- **Moduli coinvolti**: src/pages/Scouting.tsx, src/pages/ConfrontoGiocatori.tsx (confronto rookie), src/utils/scoutingConfig.ts
-- **Tabelle coinvolte**: an_rookie, ea_player_db
+- **Moduli coinvolti**: `src/utils/scoutingConfig.ts`, `src/pages/Scouting.tsx`, `src/pages/Draft.tsx`, `src/pages/ConfrontoGiocatori.tsx`
+- **Tabelle coinvolte**: `an_rookie`, `ea_player_db`, RPC `rpc_get_scouted_rookies`
 Descrizione
-L'attributo Freddezza non è mostrato né nella scheda di scouting del rookie né nella pagina di confronto rookie:
+L'attributo Freddezza (`FRED`) è ora pienamente integrato nel reparto Calci Piazzati (`CPZ`) in tutte le viste di Scouting, nel Draft e nel Confronto Giocatori:
 
-Aggiungere Freddezza tra gli attributi visualizzati, rispettando la disclosure selettiva a gettoni (Blind Database, vedi punto #22).
-Verificare che il valore sia incluso nella decifrazione di rpc_get_scouted_rookies e nel confronto.
+- Inserito in `SCOUTING_DEPARTMENTS` (`src/utils/scoutingConfig.ts`) con codice `FRED` e label "Freddezza".
+- Rispettata la disclosure selettiva del Blind Database: 0 gettoni (`??`), 1 gettone (Range 10 es. `80-89`), 2+ gettoni (Range 3 es. `80-82`), 5 gettoni o Admin (valore esatto `83`).
+- Incluso e decifrato sia da `rpc_get_scouted_rookies` sia visualizzato nei grafici e nelle barre statistiche del Confronto Giocatori.
 
 
 

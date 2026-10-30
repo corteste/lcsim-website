@@ -139,6 +139,7 @@ export const SCOUTING_DEPARTMENTS: {
       stats: [
         { code: "PNIZ", label: "Punizioni", dept: "CPZ" },
         { code: "CRIG", label: "Rigori", dept: "CPZ" },
+        { code: "FRED", label: "Freddezza", dept: "CPZ" },
       ],
     },
   ];
