@@ -716,7 +716,7 @@ Definizione della soglia minima di match (es. 5 o 7 partite) e calcolo dinamico 
 ---
 
 ## 📌 31. Ridenominazione File di Export Master DB in players.txt
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato
 - **Priorità**: Media (Allineamento con standard di importazione EA FC 25)
 - **Moduli coinvolti**: src/pages/admin/AdminAutomazioni.tsx, src/services/eaPlayerDbService.ts
 - **Tabelle coinvolte**: ea_player_db, an_player, an_rookie
@@ -1054,23 +1054,6 @@ Valore sul Campetto: mostrare sul campo 2D il valore del giocatore nella posizio
 
 
 
----
-
-## 📌 50. Rimozione Limite di 25 Miglioramenti per Categoria in Allenamento
-- **Stato**: 🟡 In attesa di implementazione
-- **Priorità**: Media-Alta
-- **Moduli coinvolti**: src/pages/Allenamenti.tsx, src/components/training/UnifiedRoleAndTraitSystem.tsx, src/types/training.ts
-- **Tabelle coinvolte**: an_player_training, an_player, ea_player_db
-Descrizione
-Eliminare il tetto di 25 miglioramenti per categoria di attributi nella sezione Allenamenti (vedi punto #28):
-
-Rimuovere il vincolo da UI, validazione e salvataggio bozza.
-Verificare che il limite non sia replicato anche lato database o nella funzione recompute_ea_player_from_an_and_training.
-
-
-
----
-
 ## 📌 51. Classifica: Campo Neutro, Accesso Diretto alle Semifinali & Tabellone Playoff
 - **Stato**: 🟡 In attesa di implementazione
 - **Priorità**: Alta (Correttezza della classifica e dei playoff)
@@ -1166,7 +1149,7 @@ Da definire il contenuto di entrambe e il collegamento con il palmarès delle sq
 ---
 
 ## 📌 58. Roster: Etichetta POR e Rimozione Opzioni Vuote in Accessori
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato
 - **Priorità**: Bassa-Media (Rifinitura UI)
 - **Moduli coinvolti**: src/pages/Roster.tsx (/mia-squadra/roster)
 - **Tabelle coinvolte**: an_player
