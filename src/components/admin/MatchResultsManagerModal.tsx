@@ -80,8 +80,8 @@ export function MatchResultsManagerModal({
   const { reloadSchedule } = useSchedule();
   const queryClient = useQueryClient();
 
-  const [seasons, setSeasons] = useState<number[]>([10, 11]);
-  const [selectedSeason, setSelectedSeason] = useState<number>(10);
+  const [seasons, setSeasons] = useState<number[]>([11, 10]);
+  const [selectedSeason, setSelectedSeason] = useState<number>(11);
   const [scheduleList, setScheduleList] = useState<AdminScheduleMatchSummary[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [selectedMatchKey, setSelectedMatchKey] = useState<string>("");

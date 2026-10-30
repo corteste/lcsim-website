@@ -159,7 +159,7 @@ function computePitchCoordinates(
 }
 
 const Calendario = () => {
-  const { schedule, loaded } = useSchedule();
+  const { schedule, loaded, season, setSeason } = useSchedule();
   const { resolvedTheme } = useTheme();
   const isDarkMode = resolvedTheme !== "light";
 
@@ -239,9 +239,18 @@ const Calendario = () => {
             <div className="px-3.5 py-1.5 rounded-xl border border-border/80 bg-card text-xs flex items-center gap-2 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-muted-foreground">Stagione Attiva:</span>
-              <span className="font-semibold text-foreground font-mono">
-                Stagione 10
-              </span>
+              <select
+                value={season}
+                onChange={(e) => {
+                  setSeason(Number(e.target.value));
+                  setActiveWeek(1);
+                }}
+                className="font-semibold text-foreground font-mono bg-transparent focus:outline-none cursor-pointer"
+              >
+                <option value={11} className="bg-card text-foreground">Stagione 11</option>
+                <option value={10} className="bg-card text-foreground">Stagione 10</option>
+                <option value={9} className="bg-card text-foreground">Stagione 9</option>
+              </select>
             </div>
           </div>
         </div>
