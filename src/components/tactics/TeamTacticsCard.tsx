@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
 import {
   BUILD_UP_STYLES,
   DEFENSIVE_APPROACHES,
+  DEFENSIVE_LINE_OPTIONS,
+  getDefensiveLineOption,
   TacticalSettings,
 } from "@/types/tactics";
 import {
@@ -39,6 +40,7 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
   const currentDef =
     DEFENSIVE_APPROACHES.find((d) => d.id === defensiveApproach) ||
     DEFENSIVE_APPROACHES[1];
+  const currentLineOption = getDefensiveLineOption(defensiveLine);
 
   const handleBuildUpChange = (id: "short_passing" | "balanced" | "counter") => {
     if (disabled) return;
@@ -62,21 +64,15 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
     });
   };
 
-  const handleDefensiveLineChange = (val: number[]) => {
+  const handleDefensiveLineSelect = (optionValue: number) => {
     if (disabled) return;
     onChange({
       ...tacticalSettings,
       teamTactics: {
         ...tacticalSettings.teamTactics,
-        defensiveLine: val[0] ?? 50,
+        defensiveLine: optionValue,
       },
     });
-  };
-
-  const getDefensiveLineLabel = (val: number) => {
-    if (val < 35) return "Bassa / Prudente";
-    if (val <= 65) return "Media / Bilanciata";
-    return "Alta / Fuorigioco";
   };
 
   return (
@@ -120,7 +116,7 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
                 {currentDef.name}
               </Badge>
               <Badge variant="secondary" className="text-[11px] font-mono font-bold px-2 py-0.5">
-                Linea: {defensiveLine}
+                Linea: {currentLineOption.name}
               </Badge>
             </div>
 
@@ -237,8 +233,8 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
             </div>
           </div>
 
-          {/* SLIDER ALTEZZA LINEA DIFENSIVA */}
-          <div className="p-3.5 rounded-xl bg-muted/15 border border-border/60 space-y-2.5">
+          {/* 4 ALTEZZE DEFINITE LINEA DIFENSIVA (BASSA / MEDIA / ALTA / AGGRESSIVA) */}
+          <div className="p-3.5 rounded-xl bg-muted/15 border border-border/60 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-emerald-500" />
@@ -246,30 +242,52 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
                   Altezza Linea Difensiva
                 </span>
                 <Badge variant="secondary" className="font-mono text-xs px-2 py-0">
-                  {defensiveLine}/100
+                  {currentLineOption.value}/100
                 </Badge>
               </div>
-              <span className="text-xs font-bold text-muted-foreground">
-                {getDefensiveLineLabel(defensiveLine)}
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                {currentLineOption.name}
               </span>
             </div>
 
-            <div className="pt-2 pb-1 px-1">
-              <Slider
-                value={[defensiveLine]}
-                min={1}
-                max={100}
-                step={1}
-                disabled={disabled}
-                onValueChange={handleDefensiveLineChange}
-                className="w-full"
-              />
+            {/* 4 Opzioni Fisse Selezionabili */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {DEFENSIVE_LINE_OPTIONS.map((opt) => {
+                const isSelected = currentLineOption.id === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => handleDefensiveLineSelect(opt.value)}
+                    className={`flex flex-col text-left p-2.5 rounded-xl border transition-all text-xs relative ${
+                      isSelected
+                        ? "bg-emerald-500/15 border-emerald-500/60 shadow-xs"
+                        : "bg-card/70 border-border/60 hover:border-border hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-extrabold text-foreground text-xs">
+                        {opt.name}
+                      </span>
+                      <span className="font-mono text-[10px] text-muted-foreground font-semibold">
+                        {opt.value}
+                      </span>
+                    </div>
+                    <span className="text-[10px] leading-tight text-muted-foreground line-clamp-2">
+                      {opt.shortDesc}
+                    </span>
+                    {isSelected && (
+                      <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="flex justify-between text-[10px] font-mono text-muted-foreground px-1">
-              <span>1 (Molto Bassa)</span>
-              <span>50 (Media)</span>
-              <span>100 (Altissima)</span>
+            <div className="text-[11px] text-muted-foreground bg-background/50 p-2 rounded-lg border border-border/40 flex items-start gap-1.5">
+              <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              <span>{currentLineOption.description}</span>
             </div>
           </div>
         </CardContent>

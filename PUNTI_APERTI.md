@@ -1029,14 +1029,20 @@ Valore per Ruolo: in Scouting il valore per ruolo risulta calcolato sul minimo d
 ---
 
 ## 📌 48. Tattica: Approccio Difensivo e Altezza della Linea
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Testato (Sostituito slider libero con 4 altezze fisse e definite: Bassa, Media, Alta, Aggressiva)
 - **Priorità**: Media-Alta
-- **Moduli coinvolti**: src/pages/Tattica.tsx, src/pages/OpponentScout.tsx
-- **Tabelle coinvolte**: an_team_tactic, team_formation_history
+- **Moduli coinvolti**: `src/types/tactics.ts`, `src/components/tactics/TeamTacticsCard.tsx`, `src/components/tactics/TacticsOverviewTab.tsx`, `src/pages/Tattica.tsx`
+- **Tabelle coinvolte**: `an_team_tactic`, `team_formation_history`
 Descrizione
-Approccio Difensivo: aggiungere o rivedere nella pagina Tattica l'opzione di approccio difensivo della squadra.
-Altezza della Linea: valutare se rimuovere l'impostazione libera (slider) e sostituirla con sole 4 opzioni predefinite.
-Le scelte vanno salvate in an_team_tactic e tracciate negli snapshot di team_formation_history.
+Riorganizzata la gestione dell'assetto difensivo nella pagina Tattica (`/mia-squadra/tattica`):
+
+- **Approccio Difensivo**: confermata e consolidata la scelta a 3 opzioni (*Basso / Prudente*, *Equilibrato*, *Alto / Aggressivo*).
+- **Altezza Linea Difensiva**: rimosso lo slider continuo (1-100) e introdotte **4 opzioni predefinite fisse** con descrizione e badge:
+  1. **Bassa** (valore 25): Protezione dell'area di rigore e limitazione dei varchi alle spalle dei difensori centrali.
+  2. **Media** (valore 50): Assetto equilibrato con blocco compatto sulla propria trequarti.
+  3. **Alta** (valore 75): Difesa a ridosso della linea di metà campo con pressing avanzato.
+  4. **Aggressiva** (valore 95): Difensori che salgono nella metà campo avversaria applicando la trappola sistematica del fuorigioco.
+- Garantita piena retrocompatibilità sia per i valori numerici storici sia per il simulatore e gli snapshot di `team_formation_history` tramite la funzione helper `getDefensiveLineOption`.
 
 
 

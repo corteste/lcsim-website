@@ -8,6 +8,8 @@ import {
   TacticalSettings,
   BUILD_UP_STYLES,
   DEFENSIVE_APPROACHES,
+  DEFENSIVE_LINE_OPTIONS,
+  getDefensiveLineOption,
   FC25_ROLES_BY_POSITION,
   SET_PIECES_DEFINITIONS,
   evaluateRoleFit,
@@ -139,7 +141,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
               {currentDef.name}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              Altezza Linea: <b className="text-foreground">{defensiveLine}/100</b>
+              Altezza Linea: <b className="text-foreground">{getDefensiveLineOption(defensiveLine).name}</b> <span className="font-mono text-[11px] text-muted-foreground">({getDefensiveLineOption(defensiveLine).value}/100)</span>
             </div>
           </div>
           <Button

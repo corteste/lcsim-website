@@ -18,6 +18,59 @@ export interface TeamDefensiveApproach {
   description: string;
 }
 
+export type DefensiveLineLevel = "bassa" | "media" | "alta" | "aggressiva";
+
+export interface DefensiveLineOption {
+  id: DefensiveLineLevel;
+  value: number; // Valore numerico normalizzato 1-100 per retrocompatibilità e simulatore
+  name: string;
+  shortDesc: string;
+  description: string;
+}
+
+export const DEFENSIVE_LINE_OPTIONS: DefensiveLineOption[] = [
+  {
+    id: "bassa",
+    value: 25,
+    name: "Bassa",
+    shortDesc: "Protezione area di rigore",
+    description: "La squadra arretra a ridosso dei sedici metri difendendo l'area e limitando i varchi alle spalle dei centrali.",
+  },
+  {
+    id: "media",
+    value: 50,
+    name: "Media",
+    shortDesc: "Equilibrata sulla trequarti",
+    description: "Assetto bilanciato che mantiene le distanze tra i reparti ed esce in pressione non appena la palla entra nella propria trequarti.",
+  },
+  {
+    id: "alta",
+    value: 75,
+    name: "Alta",
+    shortDesc: "Presidio linea di metà campo",
+    description: "La difesa staziona stabilmente a ridosso della linea mediana, accorciando la squadra e favorendo la riconquista immediata.",
+  },
+  {
+    id: "aggressiva",
+    value: 95,
+    name: "Aggressiva",
+    shortDesc: "Pressione a tutto campo e fuorigioco",
+    description: "I difensori salgono aggressivamente nella metà campo avversaria applicando la trappola sistematica del fuorigioco.",
+  },
+];
+
+export function getDefensiveLineOption(val: number | string | undefined | null): DefensiveLineOption {
+  if (typeof val === "string") {
+    const found = DEFENSIVE_LINE_OPTIONS.find((opt) => opt.id === val.toLowerCase());
+    if (found) return found;
+  }
+  const numeric = typeof val === "number" ? val : Number(val) || 50;
+  if (numeric <= 37) return DEFENSIVE_LINE_OPTIONS[0]; // Bassa (25)
+  if (numeric <= 62) return DEFENSIVE_LINE_OPTIONS[1]; // Media (50)
+  if (numeric <= 85) return DEFENSIVE_LINE_OPTIONS[2]; // Alta (75)
+  return DEFENSIVE_LINE_OPTIONS[3]; // Aggressiva (95)
+}
+
 export const BUILD_UP_STYLES: TeamTacticStyle[] = [
   {
     id: "short_passing",
