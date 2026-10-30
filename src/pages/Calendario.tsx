@@ -515,11 +515,11 @@ const Calendario = () => {
                             {isPlayed
                               ? "Finale"
                               : match.date
-                              ? new Date(match.date).toLocaleDateString(
+                              ? `${new Date(match.date).toLocaleDateString(
                                   "it-IT",
                                   { day: "2-digit", month: "short" }
-                                )
-                              : "21:00"}
+                                )} • ${match.match_time || "21:00"}`
+                              : match.match_time || "21:00"}
                           </span>
                         </div>
 
@@ -631,10 +631,10 @@ const Calendario = () => {
                   <Badge variant="outline" className="font-mono text-[10px]">
                     <CalendarIcon className="h-3 w-3 mr-1 text-emerald-500" />
                     {selected.match.date
-                      ? new Date(selected.match.date).toLocaleDateString(
+                      ? `${new Date(selected.match.date).toLocaleDateString(
                           "it-IT",
                           { day: "2-digit", month: "long", year: "numeric" }
-                        )
+                        )}${selected.match.match_time ? ` • ${selected.match.match_time}` : ""}`
                       : "Data da definire"}
                   </Badge>
                 </div>

@@ -6,11 +6,11 @@ Questo documento tiene traccia di tutte le attività, requisiti aperti, logiche 
 
 ---
 
-## 📌 1. Logica di Caricamento & Importazione Risultati (CSV Admin)
-- **Stato**: 🟡 In attesa di implementazione
+## 📌 1. Logica di Caricamento & Importazione Risultati (CSV & Screenshot Admin)
+- **Stato**: 🟢 Completato & Integrato in Amministrazione (Screenshot OCR 32/422+ file + CSV Import/Export + Sblocco Programmato +45 min)
 - **Priorità**: Alta (Funzionalità chiave per la gestione della nuova stagione)
-- **File di riferimento**: context/LCSIM Stagione 11 - Week1.csv
-- **Tabelle coinvolte**: an_schedule, "AS_TEAM_STAT", "AS_PLAYER_STAT", an_team, an_player
+- **File di riferimento**: `src/services/matchStatsImportService.ts`, `src/components/admin/MatchResultsManagerModal.tsx`, `src/pages/admin/AdminAutomazioni.tsx`, `supabase/migrations/20261030_match_stats_and_unlock.sql`
+- **Tabelle coinvolte**: `an_schedule`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`, `an_team`, `an_player`, `an_standings`
 Descrizione
 L'Admin caricherà settimanalmente un file CSV contenente i dati e i risultati delle partite della giornata di campionato. Il file ha una struttura peculiare a blocchi verticali (foglio di calcolo esportato) e necessita di un parser dedicato per distribuire correttamente i record nel database relazionale Supabase.
 Struttura del CSV analizzata
@@ -638,10 +638,10 @@ Visualizzazione della curva di potenziale e trend di sviluppo teorico in base al
 ---
 
 ## 📌 27. Inserimento Partite Manuale da Interfaccia Web & Export CSV
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Integrato in Amministrazione (`MatchResultsManagerModal.tsx` in `/admin/automazioni`)
 - **Priorità**: Alta
-- **Moduli coinvolti**: Area Amministrazione Partite / Calendario (src/pages/admin/)
-- **Tabelle coinvolte**: an_schedule, "AS_TEAM_STAT", "AS_PLAYER_STAT", an_standings
+- **Moduli coinvolti**: Area Amministrazione Partite (`src/pages/admin/AdminAutomazioni.tsx`, `src/components/admin/MatchResultsManagerModal.tsx`, `src/services/matchStatsImportService.ts`)
+- **Tabelle coinvolte**: `an_schedule`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`, `an_standings`
 Descrizione
 Interfaccia web dedicata per l'inserimento manuale dei dati e dei referti delle partite:
 

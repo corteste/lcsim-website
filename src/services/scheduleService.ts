@@ -60,6 +60,12 @@ export async function fetchSchedule(stag: number, week: number): Promise<MatchSt
  * Replaces 18 Edge Function requests with a single parallel fetch taking < 300ms.
  */
 export async function fetchSeasonSchedule(stag: number): Promise<Schedule[]> {
+  try {
+    await supabase.rpc('sync_unlocked_standings', { p_stag: stag });
+  } catch {
+    // Non-blocking sync
+  }
+
   const [scheduleGenRes, teamStatsRes, playerStatsRes] = await Promise.all([
     supabase.from('an_schedule').select('*').eq('stag', stag).order('week', { ascending: true }),
     supabase.from('view_team_stats').select('*').eq('stag', stag).order('week', { ascending: true }),
@@ -99,6 +105,8 @@ export async function fetchSeasonSchedule(stag: number): Promise<Schedule[]> {
       referee: gen?.referee ?? "",
       weather: gen?.weather ?? "",
       date: gen?.date ? new Date(gen.date) : new Date(),
+      match_time: (gen as any)?.match_time ?? match.match_time ?? "21:00",
+      unlock_at: (gen as any)?.unlock_at ?? match.unlock_at ?? null,
       home_player_stats: sortPlayersByRole(homePlayerStats),
       away_player_stats: sortPlayersByRole(awayPlayerStats),
     };

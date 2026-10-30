@@ -2,6 +2,12 @@ import { Standings } from "@/types/standings";
 import { supabase } from "@/supabaseClient";
 
 export async function fetchStandings(season?: number): Promise<Standings[]> {
+  try {
+    await supabase.rpc('sync_unlocked_standings', { p_stag: season ?? null });
+  } catch {
+    // Non-blocking sync
+  }
+
   let query = supabase
     .from('an_standings')
     .select('*, team:an_team(*)')

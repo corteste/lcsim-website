@@ -111,7 +111,7 @@ async function callGeminiApi(prompt: string, apiKey?: string): Promise<string | 
   if (!activeKey) return null;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${activeKey}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -487,16 +487,16 @@ export async function reactToRumor(
 
 export async function checkIsMarketOpen(): Promise<boolean> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('league_automation_state')
       .select('details')
-      .eq('automation_key', 'market_toggle')
+      .eq('id', 'market_toggle')
       .maybeSingle();
 
-    if (!data || !data.details) return true;
-    return data.details.status !== 'closed';
+    if (error || !data || !data.details) return false;
+    return data.details.status === 'open';
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -550,8 +550,8 @@ export async function generateRandomMarketRumors(
 ): Promise<{ success: boolean; generated: number; error?: string }> {
   try {
     const isOpen = await checkIsMarketOpen();
-    if (!isOpen && !force) {
-      return { success: false, generated: 0, error: 'Il calciomercato è chiuso. I rumor sono sospesi.' };
+    if (!isOpen) {
+      return { success: false, generated: 0, error: 'Il calciomercato è chiuso. La generazione di voci di mercato è disattivata.' };
     }
 
     // 1. Recupera club attivi
@@ -650,36 +650,18 @@ Linee guida:
   "content": "Articolo di 2 o 3 paragrafi brevi con dettagli succosi sulla trattativa o sull'interesse"
 }`;
 
-      const aiJson = await callGeminiApi(prompt);
-      let parsed = false;
-
-      if (aiJson) {
-        try {
-          const cleanJson = aiJson.replace(/```json/g, '').replace(/```/g, '').trim();
-          const obj = JSON.parse(cleanJson);
-          if (obj.headline && obj.content) {
-            headline = obj.headline;
-            content = obj.content;
-            parsed = true;
-          }
-        } catch {
-          // Fallback procedurale
-        }
-      }
-
-      if (!parsed) {
-        const proc = generateImmersiveProceduralRumor(
-          internalCategory,
-          teamA.NAME,
-          teamB.NAME,
-          playerAName,
-          playerBName,
-          playerA.Posiz,
-          playerB.Posiz
-        );
-        headline = proc.headline;
-        content = proc.content;
-      }
+      // Usa sempre il generatore procedurale per le voci di mercato (nessuna chiamata alle API Gemini)
+      const proc = generateImmersiveProceduralRumor(
+        internalCategory,
+        teamA.NAME,
+        teamB.NAME,
+        playerAName,
+        playerBName,
+        playerA.Posiz,
+        playerB.Posiz
+      );
+      headline = proc.headline;
+      content = proc.content;
 
       const { error: insErr } = await supabase.from('league_market_rumors').insert({
         category: internalCategory,

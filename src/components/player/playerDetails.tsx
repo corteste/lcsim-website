@@ -159,6 +159,10 @@ function computeDetailedStats(matches: any[], fallbackSum: PlayerStatsSum | null
   let sum_drib_si = 0, sum_drib_tot = 0, sum_cros_si = 0, sum_cros_tot = 0;
   let sum_ctrs_si = 0, sum_ctrs_tot = 0, sum_falli = 0, sum_para = 0, sum_gsub = 0;
   let sum_gialli = 0, sum_rossi = 0, sum_fgioco = 0;
+  let sum_motm = 0, sum_sub = 0, sum_poss_vinti = 0, sum_palle_perse = 0;
+  let sum_dist_tot = 0, sum_dist_scatto = 0;
+  const extraSums: Record<string, number> = {};
+  let hasExtraData = false;
   let matchCount = matches?.length || 0;
   let best: { voto: number; stag: number; week: number } | null = null;
   let cleanSheets = 0;
@@ -188,6 +192,21 @@ function computeDetailedStats(matches: any[], fallbackSum: PlayerStatsSum | null
       sum_gialli += r.GIALLI || 0;
       sum_rossi += r.ROSSI || 0;
       sum_fgioco += r.FGIOCO || 0;
+      if (r.MOTM) sum_motm++;
+      if (r.SUB) sum_sub++;
+      if (r.POSS_VINTI) { sum_poss_vinti += Number(r.POSS_VINTI) || 0; hasExtraData = true; }
+      if (r.PALLE_PERSE) { sum_palle_perse += Number(r.PALLE_PERSE) || 0; hasExtraData = true; }
+      if (r.DIST_TOT) { sum_dist_tot += Number(r.DIST_TOT) || 0; hasExtraData = true; }
+      if (r.DIST_SCATTO) { sum_dist_scatto += Number(r.DIST_SCATTO) || 0; hasExtraData = true; }
+      if (r.EXTRA_STATS && typeof r.EXTRA_STATS === "object") {
+        for (const [k, v] of Object.entries(r.EXTRA_STATS)) {
+          const num = Number(v);
+          if (!isNaN(num) && num !== 0) {
+            extraSums[k] = (extraSums[k] || 0) + num;
+            hasExtraData = true;
+          }
+        }
+      }
 
       if (r.VOTO && (!best || r.VOTO > best.voto)) {
         best = { voto: Number(r.VOTO), stag: Number(r.STAG), week: Number(r.WEEK) };
@@ -298,7 +317,15 @@ function computeDetailedStats(matches: any[], fallbackSum: PlayerStatsSum | null
     gsubP90: p90(sum_gsub),
     savePct: pct(sum_para, totalShotsAgainst),
     minPerGsub: sum_gsub > 0 ? Math.round(sum_minuti / sum_gsub) : null,
-    cleanSheets
+    cleanSheets,
+    motm: sum_motm,
+    sub: sum_sub,
+    possVinti: sum_poss_vinti,
+    pallePerse: sum_palle_perse,
+    distTot: Number(sum_dist_tot.toFixed(1)),
+    distScatto: Number(sum_dist_scatto.toFixed(1)),
+    extraSums,
+    hasExtraData: hasExtraData || sum_motm > 0 || sum_sub > 0
   };
 }
 
@@ -355,11 +382,12 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
 
     async function loadLatestSeasonStats() {
       try {
-        // Rileva l'ultima stagione in cui il calciatore ha disputato partite
+        // Rileva l'ultima stagione in cui il calciatore ha disputato partite (rispettando l'embargo)
         const { data: maxStagRow } = await supabase
-          .from("AS_PLAYER_STAT")
+          .from("VIEW_PLAYER_STATS")
           .select("STAG")
           .eq("ID", currentPlayer.ID)
+          .not("STAG", "is", null)
           .order("STAG", { ascending: false })
           .limit(1);
 
@@ -426,9 +454,10 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
     async function loadAllPlayerMatches() {
       try {
         const { data, error } = await supabase
-          .from("AS_PLAYER_STAT")
+          .from("VIEW_PLAYER_STATS")
           .select("*")
           .eq("ID", Number(currentPlayer.ID))
+          .not("STAG", "is", null)
           .order("STAG", { ascending: true })
           .order("WEEK", { ascending: true });
 
@@ -1001,6 +1030,31 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <StatItemCard label="Autogol Commessi" value={detailedStats.agol} colorClass={detailedStats.agol > 0 ? "text-rose-600" : "text-muted-foreground"} />
                 </div>
               </div>
+
+              {detailedStats.hasExtraData && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/40 pb-1.5">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Metriche Avanzate Portiere & Telemetria EA Sports FC 25</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {detailedStats.motm > 0 && (
+                      <StatItemCard label="Premi MVP (MOTM)" value={detailedStats.motm} subValue="Migliore in campo" colorClass="text-amber-500" />
+                    )}
+                    {detailedStats.distTot > 0 && (
+                      <StatItemCard label="Distanza Percorsa" value={`${detailedStats.distTot} km`} subValue={detailedStats.distScatto > 0 ? `${detailedStats.distScatto} km in scatto` : "Chilometraggio totale"} />
+                    )}
+                    {Object.entries(detailedStats.extraSums).map(([key, val]) => (
+                      <StatItemCard
+                        key={key}
+                        label={key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                        value={Number.isInteger(val) ? val : val.toFixed(1)}
+                        subValue="Telemetria avanzata"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             /* ========================================================
@@ -1200,6 +1254,38 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <StatItemCard label="Cartellini Rossi" value={detailedStats.rossi} subValue="Espulsioni dirette/doppio giallo" colorClass="text-rose-500" />
                 </div>
               </div>
+
+              {/* 6. Metriche Avanzate EA Sports FC 25 (Dai Tabellini Dettagliati) */}
+              {detailedStats.hasExtraData && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/40 pb-1.5">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Metriche Avanzate & Telemetria EA Sports FC 25</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {detailedStats.motm > 0 && (
+                      <StatItemCard label="Premi MVP (MOTM)" value={detailedStats.motm} subValue="Migliore in campo" colorClass="text-amber-500" />
+                    )}
+                    {detailedStats.possVinti > 0 && (
+                      <StatItemCard label="Possessi Vinti" value={detailedStats.possVinti} subValue="Palloni recuperati" colorClass="text-emerald-500" />
+                    )}
+                    {detailedStats.pallePerse > 0 && (
+                      <StatItemCard label="Palle Perse" value={detailedStats.pallePerse} subValue="Possessi persi" colorClass="text-muted-foreground" />
+                    )}
+                    {detailedStats.distTot > 0 && (
+                      <StatItemCard label="Distanza Percorsa" value={`${detailedStats.distTot} km`} subValue={detailedStats.distScatto > 0 ? `${detailedStats.distScatto} km in scatto` : "Chilometraggio totale"} />
+                    )}
+                    {Object.entries(detailedStats.extraSums).map(([key, val]) => (
+                      <StatItemCard
+                        key={key}
+                        label={key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                        value={Number.isInteger(val) ? val : val.toFixed(1)}
+                        subValue="Telemetria avanzata"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </TabsContent>

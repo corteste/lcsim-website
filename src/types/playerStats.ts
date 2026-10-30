@@ -32,6 +32,15 @@ export type PlayerStats = {
     WEEK: number;
     Squadra: string;
     NumeroMaglia?: number | null;
+    TEAM_ID?: string | null;
+    POS_GIOCATA?: string | null;
+    SUB?: boolean;
+    MOTM?: boolean;
+    POSS_VINTI?: number;
+    PALLE_PERSE?: number;
+    DIST_TOT?: number;
+    DIST_SCATTO?: number;
+    EXTRA_STATS?: Record<string, any>;
 };
 
 export type PlayerStatsAvg = {

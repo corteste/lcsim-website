@@ -33,10 +33,11 @@ import { supabase } from "@/supabaseClient";
 import { exportEADatabaseTSV } from "@/services/eaPlayerDbService";
 import { ImportRookieModal } from "@/components/admin/ImportRookieModal";
 import { AgingModal } from "@/components/admin/AgingModal";
+import { MatchResultsManagerModal } from "@/components/admin/MatchResultsManagerModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCutsComplianceReport, executeOfficialCutsRpc } from "@/services/cutsService";
 import { generatePressQuestionsForMatchday, generateRandomMarketRumors } from "@/services/aiJournalistService";
-import { Newspaper, Mic2, Flame } from "lucide-react";
+import { Newspaper, Mic2, Flame, Camera, Trophy } from "lucide-react";
 
 interface AutomationStateItem {
   id: string;
@@ -61,6 +62,7 @@ export default function AdminAutomazioni() {
   const [isPatching, setIsPatching] = useState(false);
   const [rookieModalOpen, setRookieModalOpen] = useState(false);
   const [agingModalOpen, setAgingModalOpen] = useState(false);
+  const [matchResultsModalOpen, setMatchResultsModalOpen] = useState(false);
 
   // Official cuts state & query
   const queryClient = useQueryClient();
@@ -370,6 +372,66 @@ export default function AdminAutomazioni() {
 
         {/* Griglia Funzionalità Automazioni */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* 0. CARICAMENTO RISULTATI, TABELLINI & SCREENSHOT PARTITE (#1 & #27) */}
+          <Card className="border-indigo-500/40 bg-gradient-to-br from-card via-card/95 to-indigo-500/10 shadow-lg relative overflow-hidden flex flex-col justify-between md:col-span-2">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/15 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <Badge className="bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Camera className="h-3 w-3" /> OCR Locale Gratuito + Editor Referti + Sblocco +45 min
+                  </Badge>
+                  <Trophy className="h-6 w-6 text-indigo-500" />
+                </div>
+                <CardTitle className="text-xl font-black">Caricamento Risultati, Tabellini &amp; Screenshot Partite</CardTitle>
+                <CardDescription className="text-xs">
+                  Gestione completa dei referti gara: carica cartelle da 32 o 422+ screenshot EA Sports FC 25 con estrazione automatica OCR, importa/esporta il CSV del match o modifica manualmente tabellino, telemetria avanzata e orario di sblocco programmato (+45 minuti dall'inizio gara).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Screenshot Supportati:</span>
+                    <span className="font-mono font-bold text-foreground">Da 32 a 422+ file per match</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Sblocco Automatico (Embargo):</span>
+                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">Data + Ora Inizio + 45 min</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Telemetria Salvata:</span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">Tutte le 6 schede EA FC 25</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Import / Export &amp; Manuale:</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">CSV Blocchi + Griglia Web</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                  <Button
+                    onClick={() => setMatchResultsModalOpen(true)}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-indigo-600/20"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Apri Gestione Risultati, Screenshot &amp; Referti Partite
+                  </Button>
+                </div>
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-indigo-500" />
+                Ultimo salvataggio referto:
+              </span>
+              <span className="font-semibold text-foreground truncate max-w-[320px]">
+                {formatLastRun(stateMap["import_match_results"]?.last_run_at, stateMap["import_match_results"]?.last_run_by)}
+              </span>
+            </div>
+          </Card>
 
           {/* 1. EXPORT MASTER TABLE */}
           <Card className="border-emerald-500/30 bg-gradient-to-br from-card via-card/95 to-emerald-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between">
@@ -1065,6 +1127,20 @@ export default function AdminAutomazioni() {
           await queryClient.invalidateQueries({ queryKey: ["players"] });
         }}
         authorName={user?.name || user?.team || "Super Admin"}
+      />
+
+      {/* MODALE: CARICAMENTO RISULTATI, SCREENSHOT & REFERTI PARTITE (#1 & #27) */}
+      <MatchResultsManagerModal
+        open={matchResultsModalOpen}
+        onOpenChange={setMatchResultsModalOpen}
+        adminName={user?.name || user?.team || "Super Admin"}
+        onSaved={async () => {
+          await loadAutomationStates();
+          await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+          await queryClient.invalidateQueries({ queryKey: ["standings"] });
+          await queryClient.invalidateQueries({ queryKey: ["teamStats"] });
+          await queryClient.invalidateQueries({ queryKey: ["playerStats"] });
+        }}
       />
 
       {/* DIALOG: INFO PUNTO APERTO PLACEHOLDER */}
