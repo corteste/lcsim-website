@@ -424,18 +424,18 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               Tutti gli Attributi
             </TabsTrigger>
             <TabsTrigger 
-              value="stats" 
-              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
-            >
-              <BarChart3 className="h-4 w-4 mr-1.5 sm:mr-2 text-blue-500" />
-              Statistiche Stagionali
-            </TabsTrigger>
-            <TabsTrigger 
               value="ruoli" 
               className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
               <Sparkles className="h-4 w-4 mr-1.5 sm:mr-2" />
               Ruoli & Tratti Speciali
+            </TabsTrigger>
+            <TabsTrigger 
+              value="stats" 
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
+            >
+              <BarChart3 className="h-4 w-4 mr-1.5 sm:mr-2 text-blue-500" />
+              Statistiche Stagionali
             </TabsTrigger>
             <TabsTrigger 
               value="xp" 
@@ -508,183 +508,6 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               <StatBar label="Tuffo" code="TUFP" value={currentPlayer.TUFP} />
             </StatCardGroup>
           </div>
-        </TabsContent>
-
-        {/* Tab: Statistiche Stagionali Complete */}
-        <TabsContent value="stats" className="flex-1 overflow-y-auto p-4 sm:p-6 m-0 focus-visible:outline-none space-y-6">
-          {statsLoading ? (
-            <div className="p-16 text-center text-xs text-muted-foreground font-mono space-y-2">
-              <Clock className="h-6 w-6 animate-spin mx-auto text-primary" />
-              <p>Caricamento statistiche dettagliate della stagione...</p>
-            </div>
-          ) : !seasonStats || (seasonStats.matches_played ?? 0) === 0 ? (
-            <Card className="p-10 text-center border border-border/70 bg-card/60 rounded-2xl space-y-3">
-              <div className="p-3 rounded-full bg-muted/40 w-fit mx-auto border border-border/60">
-                <BarChart3 className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-base font-bold text-foreground">
-                  Nessuna statistica registrata nella Stagione {xpSeason}
-                </h4>
-                <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Il calciatore non ha ancora collezionato presenze ufficiali in questa stagione. Le statistiche verranno aggiornate automaticamente al termine delle giornate di campionato.
-                </p>
-              </div>
-            </Card>
-          ) : (() => {
-            const matches = seasonStats.matches_played || 0;
-            const avgRating = matches > 0 ? (seasonStats.sum_voto / matches).toFixed(2) : "S.V.";
-            const shotPct = seasonStats.sum_tiri_tot ? Math.round(((seasonStats.sum_tiri_in ?? 0) / seasonStats.sum_tiri_tot) * 100) : 0;
-            const passPct = seasonStats.sum_pass_tot ? Math.round(((seasonStats.sum_pass_si ?? 0) / seasonStats.sum_pass_tot) * 100) : 0;
-            const dribPct = seasonStats.sum_drib_tot ? Math.round(((seasonStats.sum_drib_si ?? 0) / seasonStats.sum_drib_tot) * 100) : 0;
-            const crosPct = seasonStats.sum_cros_tot ? Math.round(((seasonStats.sum_cros_si ?? 0) / seasonStats.sum_cros_tot) * 100) : 0;
-            const tackPct = seasonStats.sum_ctrs_tot ? Math.round(((seasonStats.sum_ctrs_si ?? 0) / seasonStats.sum_ctrs_tot) * 100) : 0;
-
-            return (
-              <div className="space-y-6">
-                {/* Header Stagione e Parametri */}
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 via-card to-emerald-500/5 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                        Riepilogo Prestazioni Ufficiali
-                      </span>
-                      <Badge variant="outline" className="font-mono text-[10px] font-bold bg-background">
-                        Stagione {xpSeason}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Statistiche individuali complessive maturate nelle partite disputate di campionato e coppa.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-                    <span className="px-2.5 py-1 rounded bg-background/80 border border-border/60">
-                      <strong>{matches}</strong> gare a referto
-                    </span>
-                    <span className="px-2.5 py-1 rounded bg-background/80 border border-border/60">
-                      <strong>{seasonStats.sum_minuti ?? 0}'</strong> giocati
-                    </span>
-                  </div>
-                </div>
-
-                {isGoalkeeper ? (
-                  /* GOALKEEPER STATS DASHBOARD */
-                  <div className="space-y-5">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <StatItemCard label="Parate Totali" value={seasonStats.sum_para ?? 0} icon={Shield} colorClass="text-emerald-600 dark:text-emerald-400" />
-                      <StatItemCard label="Gol Subiti" value={seasonStats.sum_gsub ?? 0} icon={Target} colorClass="text-rose-600 dark:text-rose-400" />
-                      <StatItemCard label="Voto Medio" value={avgRating} icon={Star} colorClass="text-purple-600 dark:text-purple-400" />
-                      <StatItemCard label="Minuti Giocati" value={`${seasonStats.sum_minuti ?? 0}'`} icon={Timer} colorClass="text-blue-600 dark:text-blue-400" />
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <StatItemCard label="Partite Disputate" value={matches} icon={Activity} />
-                      <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
-                      <StatItemCard label="Cartellini Gialli" value={seasonStats.sum_gialli ?? 0} colorClass="text-amber-500" />
-                      <StatItemCard label="Cartellini Rossi" value={seasonStats.sum_rossi ?? 0} colorClass="text-rose-500" />
-                    </div>
-                  </div>
-                ) : (
-                  /* OUTFIELD PLAYER STATS DASHBOARD (Tabbed / Segmented) */
-                  <Tabs defaultValue="generale" className="w-full space-y-4">
-                    <TabsList className="bg-muted/40 p-1 border border-border/70 rounded-xl h-auto flex flex-wrap gap-1">
-                      <TabsTrigger value="generale" className="text-xs font-bold px-3 py-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-xs">
-                        Panoramica Generale
-                      </TabsTrigger>
-                      <TabsTrigger value="offensivo" className="text-xs font-bold px-3 py-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-xs text-rose-600 dark:text-rose-400">
-                        Attacco & Tiri
-                      </TabsTrigger>
-                      <TabsTrigger value="possesso" className="text-xs font-bold px-3 py-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-xs text-emerald-600 dark:text-emerald-400">
-                        Possesso, Passaggi & Dribbling
-                      </TabsTrigger>
-                      <TabsTrigger value="difensivo" className="text-xs font-bold px-3 py-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-xs text-blue-600 dark:text-blue-400">
-                        Difesa & Contrasti
-                      </TabsTrigger>
-                    </TabsList>
-
-                    {/* 1. Generale */}
-                    <TabsContent value="generale" className="space-y-4 m-0 focus-visible:outline-none">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
-                        <StatItemCard label="Gol Segnati" value={seasonStats.sum_gol ?? 0} icon={Target} colorClass="text-emerald-600 dark:text-emerald-400" />
-                        <StatItemCard label="Assist Serviti" value={seasonStats.sum_asst ?? 0} icon={TrendingUp} colorClass="text-blue-600 dark:text-blue-400" />
-                        <StatItemCard label="Media Voto" value={avgRating} icon={Star} colorClass="text-purple-600 dark:text-purple-400" />
-                        <StatItemCard label="Minuti Giocati" value={`${seasonStats.sum_minuti ?? 0}'`} icon={Timer} />
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
-                        <StatItemCard label="Partite Disputate" value={matches} icon={Activity} />
-                        <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
-                        <StatItemCard label="Fuorigioco" value={seasonStats.sum_fgioco ?? 0} />
-                        <StatItemCard label="Disciplina" value={`${seasonStats.sum_gialli ?? 0}G / ${seasonStats.sum_rossi ?? 0}R`} colorClass={seasonStats.sum_rossi ? "text-rose-500" : seasonStats.sum_gialli ? "text-amber-500" : "text-muted-foreground"} />
-                      </div>
-                    </TabsContent>
-
-                    {/* 2. Offensivo */}
-                    <TabsContent value="offensivo" className="space-y-4 m-0 focus-visible:outline-none">
-                      <AccuracyBar 
-                        label="Precisione Conclusioni in Porta" 
-                        success={seasonStats.sum_tiri_in ?? 0} 
-                        total={seasonStats.sum_tiri_tot ?? 0} 
-                        percentage={shotPct} 
-                      />
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <StatItemCard label="Gol" value={seasonStats.sum_gol ?? 0} colorClass="text-emerald-600 dark:text-emerald-400" />
-                        <StatItemCard label="Tiri in Porta" value={seasonStats.sum_tiri_in ?? 0} colorClass="text-foreground" />
-                        <StatItemCard label="Tiri Totali Tentati" value={seasonStats.sum_tiri_tot ?? 0} colorClass="text-muted-foreground" />
-                      </div>
-                    </TabsContent>
-
-                    {/* 3. Possesso & Costruzione */}
-                    <TabsContent value="possesso" className="space-y-4 m-0 focus-visible:outline-none">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <AccuracyBar 
-                          label="Precisione Passaggi" 
-                          success={seasonStats.sum_pass_si ?? 0} 
-                          total={seasonStats.sum_pass_tot ?? 0} 
-                          percentage={passPct} 
-                        />
-                        <AccuracyBar 
-                          label="Precisione Dribbling" 
-                          success={seasonStats.sum_drib_si ?? 0} 
-                          total={seasonStats.sum_drib_tot ?? 0} 
-                          percentage={dribPct} 
-                        />
-                        <AccuracyBar 
-                          label="Precisione Cross" 
-                          success={seasonStats.sum_cros_si ?? 0} 
-                          total={seasonStats.sum_cros_tot ?? 0} 
-                          percentage={crosPct} 
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                        <StatItemCard label="Passaggi Riusciti" value={seasonStats.sum_pass_si ?? 0} />
-                        <StatItemCard label="Passaggi Totali" value={seasonStats.sum_pass_tot ?? 0} colorClass="text-muted-foreground" />
-                        <StatItemCard label="Dribbling Riusciti" value={seasonStats.sum_drib_si ?? 0} />
-                        <StatItemCard label="Dribbling Totali" value={seasonStats.sum_drib_tot ?? 0} colorClass="text-muted-foreground" />
-                        <StatItemCard label="Cross Riusciti" value={seasonStats.sum_cros_si ?? 0} />
-                        <StatItemCard label="Cross Totali" value={seasonStats.sum_cros_tot ?? 0} colorClass="text-muted-foreground" />
-                      </div>
-                    </TabsContent>
-
-                    {/* 4. Difensivo */}
-                    <TabsContent value="difensivo" className="space-y-4 m-0 focus-visible:outline-none">
-                      <AccuracyBar 
-                        label="Precisione Contrasti & Interventi" 
-                        success={seasonStats.sum_ctrs_si ?? 0} 
-                        total={seasonStats.sum_ctrs_tot ?? 0} 
-                        percentage={tackPct} 
-                      />
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <StatItemCard label="Contrasti Vinti" value={seasonStats.sum_ctrs_si ?? 0} icon={Shield} colorClass="text-blue-600 dark:text-blue-400" />
-                        <StatItemCard label="Contrasti Tentati" value={seasonStats.sum_ctrs_tot ?? 0} colorClass="text-muted-foreground" />
-                        <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                )}
-              </div>
-            );
-          })()}
         </TabsContent>
 
         {/* Tab 2: Ruoli & Tratti Speciali */}
@@ -769,6 +592,156 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Tab: Statistiche Stagionali Complete */}
+        <TabsContent value="stats" className="flex-1 overflow-y-auto p-4 sm:p-6 m-0 focus-visible:outline-none space-y-5">
+          {statsLoading ? (
+            <div className="p-16 text-center text-xs text-muted-foreground font-mono space-y-2">
+              <Clock className="h-6 w-6 animate-spin mx-auto text-primary" />
+              <p>Caricamento statistiche dettagliate della stagione...</p>
+            </div>
+          ) : !seasonStats || (seasonStats.matches_played ?? 0) === 0 ? (
+            <Card className="p-10 text-center border border-border/70 bg-card/60 rounded-2xl space-y-3">
+              <div className="p-3 rounded-full bg-muted/40 w-fit mx-auto border border-border/60">
+                <BarChart3 className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-foreground">
+                  Nessuna statistica registrata nella Stagione {xpSeason}
+                </h4>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  Il calciatore non ha ancora collezionato presenze ufficiali in questa stagione. Le statistiche verranno aggiornate automaticamente al termine delle giornate di campionato.
+                </p>
+              </div>
+            </Card>
+          ) : (() => {
+            const matches = seasonStats.matches_played || 0;
+            const avgRating = matches > 0 ? (seasonStats.sum_voto / matches).toFixed(2) : "S.V.";
+            const shotPct = seasonStats.sum_tiri_tot ? Math.round(((seasonStats.sum_tiri_in ?? 0) / seasonStats.sum_tiri_tot) * 100) : 0;
+            const passPct = seasonStats.sum_pass_tot ? Math.round(((seasonStats.sum_pass_si ?? 0) / seasonStats.sum_pass_tot) * 100) : 0;
+            const dribPct = seasonStats.sum_drib_tot ? Math.round(((seasonStats.sum_drib_si ?? 0) / seasonStats.sum_drib_tot) * 100) : 0;
+            const crosPct = seasonStats.sum_cros_tot ? Math.round(((seasonStats.sum_cros_si ?? 0) / seasonStats.sum_cros_tot) * 100) : 0;
+            const tackPct = seasonStats.sum_ctrs_tot ? Math.round(((seasonStats.sum_ctrs_si ?? 0) / seasonStats.sum_ctrs_tot) * 100) : 0;
+
+            return (
+              <div className="space-y-6">
+                {isGoalkeeper ? (
+                  /* GOALKEEPER STATS DASHBOARD */
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <StatItemCard label="Parate Totali" value={seasonStats.sum_para ?? 0} icon={Shield} colorClass="text-emerald-600 dark:text-emerald-400" />
+                      <StatItemCard label="Gol Subiti" value={seasonStats.sum_gsub ?? 0} icon={Target} colorClass="text-rose-600 dark:text-rose-400" />
+                      <StatItemCard label="Voto Medio" value={avgRating} icon={Star} colorClass="text-purple-600 dark:text-purple-400" />
+                      <StatItemCard label="Minuti Giocati" value={`${seasonStats.sum_minuti ?? 0}'`} icon={Timer} colorClass="text-blue-600 dark:text-blue-400" />
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <StatItemCard label="Partite Disputate" value={matches} icon={Activity} />
+                      <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
+                      <StatItemCard label="Cartellini Gialli" value={seasonStats.sum_gialli ?? 0} colorClass="text-amber-500" />
+                      <StatItemCard label="Cartellini Rossi" value={seasonStats.sum_rossi ?? 0} colorClass="text-rose-500" />
+                    </div>
+                  </div>
+                ) : (
+                  /* OUTFIELD PLAYER STATS DASHBOARD (UNIFIED IN SINGLE VIEW) */
+                  <div className="space-y-6">
+                    {/* 1. Panoramica Generale */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
+                        <Activity className="h-3.5 w-3.5 text-primary" />
+                        <span>Panoramica Generale</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <StatItemCard label="Gol Segnati" value={seasonStats.sum_gol ?? 0} icon={Target} colorClass="text-emerald-600 dark:text-emerald-400" />
+                        <StatItemCard label="Assist Serviti" value={seasonStats.sum_asst ?? 0} icon={TrendingUp} colorClass="text-blue-600 dark:text-blue-400" />
+                        <StatItemCard label="Media Voto" value={avgRating} icon={Star} colorClass="text-purple-600 dark:text-purple-400" />
+                        <StatItemCard label="Minuti Giocati" value={`${seasonStats.sum_minuti ?? 0}'`} icon={Timer} />
+                        <StatItemCard label="Partite Disputate" value={matches} icon={Activity} />
+                        <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
+                        <StatItemCard label="Fuorigioco" value={seasonStats.sum_fgioco ?? 0} />
+                        <StatItemCard label="Disciplina" value={`${seasonStats.sum_gialli ?? 0}G / ${seasonStats.sum_rossi ?? 0}R`} colorClass={seasonStats.sum_rossi ? "text-rose-500" : seasonStats.sum_gialli ? "text-amber-500" : "text-muted-foreground"} />
+                      </div>
+                    </div>
+
+                    {/* 2. Attacco & Tiri */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 border-b border-border/40 pb-1.5">
+                        <Target className="h-3.5 w-3.5" />
+                        <span>Attacco & Tiri</span>
+                      </div>
+                      <AccuracyBar 
+                        label="Precisione Conclusioni in Porta" 
+                        success={seasonStats.sum_tiri_in ?? 0} 
+                        total={seasonStats.sum_tiri_tot ?? 0} 
+                        percentage={shotPct} 
+                      />
+                      <div className="grid grid-cols-3 gap-3">
+                        <StatItemCard label="Gol" value={seasonStats.sum_gol ?? 0} colorClass="text-emerald-600 dark:text-emerald-400" />
+                        <StatItemCard label="Tiri in Porta" value={seasonStats.sum_tiri_in ?? 0} colorClass="text-foreground" />
+                        <StatItemCard label="Tiri Totali Tentati" value={seasonStats.sum_tiri_tot ?? 0} colorClass="text-muted-foreground" />
+                      </div>
+                    </div>
+
+                    {/* 3. Possesso, Passaggi & Dribbling */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/40 pb-1.5">
+                        <Compass className="h-3.5 w-3.5" />
+                        <span>Possesso, Passaggi & Dribbling</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <AccuracyBar 
+                          label="Precisione Passaggi" 
+                          success={seasonStats.sum_pass_si ?? 0} 
+                          total={seasonStats.sum_pass_tot ?? 0} 
+                          percentage={passPct} 
+                        />
+                        <AccuracyBar 
+                          label="Precisione Dribbling" 
+                          success={seasonStats.sum_drib_si ?? 0} 
+                          total={seasonStats.sum_drib_tot ?? 0} 
+                          percentage={dribPct} 
+                        />
+                        <AccuracyBar 
+                          label="Precisione Cross" 
+                          success={seasonStats.sum_cros_si ?? 0} 
+                          total={seasonStats.sum_cros_tot ?? 0} 
+                          percentage={crosPct} 
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <StatItemCard label="Passaggi Riusciti" value={seasonStats.sum_pass_si ?? 0} />
+                        <StatItemCard label="Passaggi Totali" value={seasonStats.sum_pass_tot ?? 0} colorClass="text-muted-foreground" />
+                        <StatItemCard label="Dribbling Riusciti" value={seasonStats.sum_drib_si ?? 0} />
+                        <StatItemCard label="Dribbling Totali" value={seasonStats.sum_drib_tot ?? 0} colorClass="text-muted-foreground" />
+                        <StatItemCard label="Cross Riusciti" value={seasonStats.sum_cros_si ?? 0} />
+                        <StatItemCard label="Cross Totali" value={seasonStats.sum_cros_tot ?? 0} colorClass="text-muted-foreground" />
+                      </div>
+                    </div>
+
+                    {/* 4. Difesa & Contrasti */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 border-b border-border/40 pb-1.5">
+                        <Shield className="h-3.5 w-3.5" />
+                        <span>Difesa & Contrasti</span>
+                      </div>
+                      <AccuracyBar 
+                        label="Precisione Contrasti & Interventi" 
+                        success={seasonStats.sum_ctrs_si ?? 0} 
+                        total={seasonStats.sum_ctrs_tot ?? 0} 
+                        percentage={tackPct} 
+                      />
+                      <div className="grid grid-cols-3 gap-3">
+                        <StatItemCard label="Contrasti Vinti" value={seasonStats.sum_ctrs_si ?? 0} icon={Shield} colorClass="text-blue-600 dark:text-blue-400" />
+                        <StatItemCard label="Contrasti Tentati" value={seasonStats.sum_ctrs_tot ?? 0} colorClass="text-muted-foreground" />
+                        <StatItemCard label="Falli Commessi" value={seasonStats.sum_falli ?? 0} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* Tab 3: Rendimento & Grafico XP Partita per Partita (Ultima Stagione) */}
