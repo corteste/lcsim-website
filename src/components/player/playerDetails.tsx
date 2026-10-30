@@ -25,14 +25,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, Ruler, Weight, Footprints, X, Shield, Zap, Target, Activity, 
   Sparkles, Star, Award, Compass, Swords, Flame, TrendingUp,
-  Calendar, Clock, CheckCircle2, AlertCircle
+  Calendar, Clock, CheckCircle2, AlertCircle, BarChart3, Timer
 } from "lucide-react";
 import { PlayerXpBreakdownModal } from "@/components/player/PlayerXpBreakdownModal";
 import { Button } from "@/components/ui/button";
+import { fetchPlayerSumBySeason } from "@/services/playerStatsService";
+import { PlayerStatsSum } from "@/types/playerStats";
 
 interface PlayerDetailsProps {
   currentPlayer: Player;
   onClose?: () => void;
+  defaultTab?: string;
+  initialStats?: PlayerStatsSum | null;
 }
 
 const getMarketStatus = (market?: MarketStatus | null) => {
@@ -409,28 +413,35 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
       </div>
 
       {/* Tabs and Detailed Content */}
-      <Tabs defaultValue="tutti" className="flex-1 flex flex-col min-h-0">
-        <div className="px-6 border-b border-border/60 bg-muted/20 shrink-0">
-          <TabsList className="bg-transparent h-12 p-0 gap-6 justify-start">
+      <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col min-h-0">
+        <div className="px-6 border-b border-border/60 bg-muted/20 shrink-0 overflow-x-auto">
+          <TabsList className="bg-transparent h-12 p-0 gap-4 sm:gap-6 justify-start">
             <TabsTrigger 
               value="tutti" 
-              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-sm px-2 transition-colors"
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
-              <Activity className="h-4 w-4 mr-2" />
+              <Activity className="h-4 w-4 mr-1.5 sm:mr-2" />
               Tutti gli Attributi
             </TabsTrigger>
             <TabsTrigger 
-              value="ruoli" 
-              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-sm px-2 transition-colors"
+              value="stats" 
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
-              <Sparkles className="h-4 w-4 mr-2" />
+              <BarChart3 className="h-4 w-4 mr-1.5 sm:mr-2 text-blue-500" />
+              Statistiche Stagionali
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ruoli" 
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
+            >
+              <Sparkles className="h-4 w-4 mr-1.5 sm:mr-2" />
               Ruoli & Tratti Speciali
             </TabsTrigger>
             <TabsTrigger 
               value="xp" 
-              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-sm px-2 transition-colors"
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
-              <TrendingUp className="h-4 w-4 mr-2 text-emerald-500" />
+              <TrendingUp className="h-4 w-4 mr-1.5 sm:mr-2 text-emerald-500" />
               Rendimento &amp; Grafico XP
             </TabsTrigger>
           </TabsList>
