@@ -30,3 +30,19 @@ export async function fetchPlayersByTeam(team: string): Promise<Player[]> {
 
   return (data as Player[]) ?? [];
 }
+
+export async function fetchPlayerById(id: number): Promise<Player | null> {
+  const { data, error } = await supabase
+    .from(PLAYER_TABLE)
+    .select('*, MarketStatus:as_player_market(Status)')
+    .eq('ID', id)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`Error fetching player with ID ${id}:`, error);
+    throw new Error(error.message || 'Failed to fetch player');
+  }
+
+  return (data as Player) ?? null;
+}
+

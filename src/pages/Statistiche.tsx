@@ -39,7 +39,10 @@ import {
 import { getPlayersSumStats } from "@/hooks/use-players-stats";
 import { PlayerStatsSum } from "@/types/playerStats";
 import { getTeams } from "@/hooks/use-teams";
-import PlayerAdvancedStats from "@/components/player/playerAdvancedStats";
+import PlayerDetails from "@/components/player/playerDetails";
+import { Player } from "@/types/player";
+import { fetchPlayerById } from "@/services/playersService";
+import { Loader2 } from "lucide-react";
 
 const PLAYERS_PER_PAGE = 10;
 const CURRENT_SEASON = 9;
@@ -242,6 +245,58 @@ const Statistiche = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerStatsSum | null>(null);
+  const [fullPlayer, setFullPlayer] = useState<Player | null>(null);
+  const [loadingFullPlayer, setLoadingFullPlayer] = useState<boolean>(false);
+
+  // Fetch full Player details when a player is selected
+  const handleSelectPlayer = async (playerStat: PlayerStatsSum) => {
+    setSelectedPlayer(playerStat);
+    setLoadingFullPlayer(true);
+    try {
+      const full = await fetchPlayerById(Number(playerStat.ID));
+      if (full) {
+        setFullPlayer(full);
+      } else {
+        // Fallback minimal player object
+        setFullPlayer({
+          ID: Number(playerStat.ID),
+          Nome: playerStat.Nome,
+          Cognome: playerStat.Cognome,
+          Posiz: playerStat.Posiz,
+          Squadra: playerStat.Squadra,
+          DOB: new Date(),
+          Età: 25,
+          Nazionalità: "ITA",
+          Altezza: 180,
+          Peso: 75,
+          Piede: "DX",
+          PiedeDebole: "3",
+          XP: 0,
+          WROff: null,
+          WRDef: null,
+          OVR: 75,
+          POR: null, DIF: null, CEN: null, MEN: null, ATT: null, FIS: null, CPZ: null,
+          RIFP: null, PREP: null, TUFP: null, POSP: null, RINP: null, MARC: null,
+          CONT: null, AGGR: null, SCIV: null, INTR: null, PASC: null, PASL: null,
+          CRSS: null, CTRP: null, VISI: null, EFFT: null, POTN: null, PIAZ: null,
+          PTIR: null, TIRD: null, DRBL: null, TIRV: null, TSTA: null, FINA: null,
+          ACCL: null, VELO: null, RESI: null, FRZA: null, AGIL: null, ELEV: null,
+          RIFL: null, EQLB: null, PNIZ: null, CRIG: null, MABI: null, Tratti: null,
+          RuoloInCampo: null, MarketStatus: null, Role1: null, Role2: null,
+          Trait1: null, Trait2: null, IconTrait1: null, IconTrait2: null
+        });
+      }
+    } catch (err) {
+      console.error("Errore fetch dati completi calciatore:", err);
+    } finally {
+      setLoadingFullPlayer(false);
+    }
+  };
+
+  const handleClosePlayerModal = () => {
+    setSelectedPlayer(null);
+    setFullPlayer(null);
+  };
 
   const { teams } = getTeams();
   const { playersStats, loading: loadingStats } = getPlayersSumStats(
@@ -477,7 +532,7 @@ const Statistiche = () => {
                 const stat = getStatDisplay(player, statType);
                 return (
                   <Card
-                    onClick={() => setSelectedPlayer(player)}
+                    onClick={() => handleSelectPlayer(player)}
                     className="order-2 md:order-1 border-2 border-slate-300/60 dark:border-slate-600/60 bg-gradient-to-b from-card to-slate-500/5 hover:border-slate-400 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden p-4 group"
                   >
                     <div className="flex flex-col items-center text-center space-y-3">
@@ -552,7 +607,7 @@ const Statistiche = () => {
                 const stat = getStatDisplay(player, statType);
                 return (
                   <Card
-                    onClick={() => setSelectedPlayer(player)}
+                    onClick={() => handleSelectPlayer(player)}
                     className="order-1 md:order-2 border-2 border-amber-500/70 bg-gradient-to-b from-card via-amber-500/5 to-amber-500/15 hover:border-amber-400 hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden p-5 group md:-translate-y-2 ring-2 ring-amber-500/20"
                   >
                     <div className="flex flex-col items-center text-center space-y-3">
@@ -627,7 +682,7 @@ const Statistiche = () => {
                 const stat = getStatDisplay(player, statType);
                 return (
                   <Card
-                    onClick={() => setSelectedPlayer(player)}
+                    onClick={() => handleSelectPlayer(player)}
                     className="order-3 md:order-3 border-2 border-amber-700/40 bg-gradient-to-b from-card to-amber-900/5 hover:border-amber-600 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden p-4 group"
                   >
                     <div className="flex flex-col items-center text-center space-y-3">
@@ -827,7 +882,7 @@ const Statistiche = () => {
                     return (
                       <tr
                         key={player.ID}
-                        onClick={() => setSelectedPlayer(player)}
+                        onClick={() => handleSelectPlayer(player)}
                         className={`hover:bg-muted/40 transition-colors group cursor-pointer ${
                           globalRank === 1
                             ? "bg-amber-500/[0.04]"
