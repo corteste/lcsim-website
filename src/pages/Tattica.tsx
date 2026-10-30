@@ -2111,7 +2111,7 @@ const Tattica = () => {
                   </CardHeader>
 
                   <CardContent className="p-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
                       {Array.from({ length: 9 }).map((_, slotIdx) => {
                         const player = benchPlayers[slotIdx];
                         if (!player) {
@@ -2124,15 +2124,15 @@ const Tattica = () => {
                                 e.stopPropagation();
                               }}
                               onDrop={(e) => handleDropOnBenchZone(e, slotIdx)}
-                              className="p-2.5 rounded-xl border border-dashed border-border/70 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground select-none"
+                              className="p-2 rounded-xl border border-dashed border-border/70 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground select-none"
                             >
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono font-bold text-muted-foreground w-5 text-center">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-[10px] font-mono font-bold text-muted-foreground w-5 text-center shrink-0">
                                   P{slotIdx + 1}
                                 </span>
-                                <span className="text-xs italic">Slot Panchina Libero</span>
+                                <span className="text-xs italic truncate">Slot Panchina Libero</span>
                               </div>
-                              <span className="text-[10px] font-mono opacity-60">Trascina qui</span>
+                              <span className="text-[10px] font-mono opacity-60 shrink-0 ml-1">Trascina qui</span>
                             </div>
                           );
                         }
@@ -2163,7 +2163,7 @@ const Tattica = () => {
                           >
                             <div
                               onClick={() => setSelectedPlayerModal(player)}
-                              className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                              className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
                             >
                               <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 w-5 text-center shrink-0">
                                 P{slotIdx + 1}
@@ -2176,12 +2176,15 @@ const Tattica = () => {
                               >
                                 {player.Posiz}
                               </Badge>
-                              <span className="font-bold text-xs text-foreground truncate">
+                              <span
+                                className="font-bold text-xs text-foreground truncate min-w-0"
+                                title={`${player.Nome} ${player.Cognome}`}
+                              >
                                 {player.Nome?.[0]}. {player.Cognome}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-1 shrink-0 ml-1">
                               <span
                                 className={`text-[11px] font-black font-mono mr-0.5 ${getValueColor(
                                   player.OVR ?? 70
@@ -2194,7 +2197,10 @@ const Tattica = () => {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                onClick={() => quickInsertToStarters(player)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  quickInsertToStarters(player);
+                                }}
                                 className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                                 title="Schiera negli 11 titolari"
                               >
@@ -2205,7 +2211,10 @@ const Tattica = () => {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                onClick={() => handleMoveToTribuna(pId)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveToTribuna(pId);
+                                }}
                                 className="h-6 w-6 rounded-lg hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
                                 title="Manda in Tribuna (Non convocato)"
                               >
@@ -2261,7 +2270,7 @@ const Tattica = () => {
                         Nessun calciatore in tribuna. Tutta la rosa attiva è schierata tra titolari e panchina.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
                         {tribunaPlayers.map((player) => {
                           const pId = Number(player.ID);
                           return (
@@ -2274,7 +2283,7 @@ const Tattica = () => {
                             >
                               <div
                                 onClick={() => setSelectedPlayerModal(player)}
-                                className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                                className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
                               >
                                 <span className="text-[10px] font-mono font-bold text-muted-foreground/80 w-5 text-center shrink-0">
                                   TRB
@@ -2287,12 +2296,15 @@ const Tattica = () => {
                                 >
                                   {player.Posiz}
                                 </Badge>
-                                <span className="font-semibold text-xs text-foreground/90 truncate">
+                                <span
+                                  className="font-semibold text-xs text-foreground/90 truncate min-w-0"
+                                  title={`${player.Nome} ${player.Cognome}`}
+                                >
                                   {player.Nome?.[0]}. {player.Cognome}
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-1 shrink-0">
+                              <div className="flex items-center gap-1 shrink-0 ml-1">
                                 <span
                                   className={`text-[11px] font-black font-mono mr-0.5 opacity-80 ${getValueColor(
                                     player.OVR ?? 70
@@ -2305,7 +2317,10 @@ const Tattica = () => {
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  onClick={() => handlePromoteToBench(pId)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePromoteToBench(pId);
+                                  }}
                                   className="h-6 w-6 rounded-lg hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
                                   title="Promuovi in Panchina (Slot P1)"
                                 >
