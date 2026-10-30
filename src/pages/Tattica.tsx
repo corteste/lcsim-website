@@ -33,6 +33,9 @@ import {
   UserPlus,
   AlertTriangle,
   GripVertical,
+  Armchair,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -813,6 +816,7 @@ const Tattica = () => {
   const [dragOverSlotIndex, setDragOverSlotIndex] = useState<number | null>(null);
   const [dragOverBenchId, setDragOverBenchId] = useState<number | null>(null);
   const [dragOverBenchZone, setDragOverBenchZone] = useState<boolean>(false);
+  const [dragOverTribunaZone, setDragOverTribunaZone] = useState<boolean>(false);
 
   // Definizione del modulo attivo
   const currentFormation = useMemo(
@@ -929,9 +933,10 @@ const Tattica = () => {
     return map;
   }, [starterIds]);
 
-  // Panchinari automatici: tutti i giocatori del roster che NON sono tra gli 11 titolari
-  // Mantiene l'eventuale ordine personalizzato in benchOrderIds e accoda i restanti ordinati per ruolo
-  const benchPlayers: Player[] = useMemo(() => {
+  // Riserve ordinate (Panchina + Tribuna)
+  // I primi 9 slot sono destinati alla PANCHINA UFFICIALE (P1..P9)
+  // Il 10° calciatore (e successivi) finiscono in TRIBUNA (non convocati a gara)
+  const nonStarterPlayers: Player[] = useMemo(() => {
     const nonStarters = orderedRoster.filter((p) => !starterSlotByPlayerId.has(Number(p.ID)));
     if (benchOrderIds.length === 0) return nonStarters;
 
@@ -950,6 +955,16 @@ const Tattica = () => {
       return (b.OVR ?? 0) - (a.OVR ?? 0);
     });
   }, [orderedRoster, starterSlotByPlayerId, benchOrderIds]);
+
+  // Esattamente fino a 9 panchinari ufficiali (Slot P1..P9)
+  const benchPlayers: Player[] = useMemo(() => {
+    return nonStarterPlayers.slice(0, 9);
+  }, [nonStarterPlayers]);
+
+  // Dal 10° in poi: Giocatori in Tribuna (es. 21° calciatore nelle rose standard)
+  const tribunaPlayers: Player[] = useMemo(() => {
+    return nonStarterPlayers.slice(9);
+  }, [nonStarterPlayers]);
 
   // Roster filtrato nella colonna sinistra
   const filteredRoster = useMemo(() => {
@@ -1218,6 +1233,7 @@ const Tattica = () => {
     setDragOverSlotIndex(null);
     setDragOverBenchId(null);
     setDragOverBenchZone(false);
+    setDragOverTribunaZone(false);
   };
 
   const handleDropOnStarterSlot = (e: React.DragEvent, slotIndex: number) => {
@@ -1249,7 +1265,7 @@ const Tattica = () => {
 
     const sourceSlot = starterSlotByPlayerId.get(sourceId);
     if (sourceSlot !== undefined) {
-      // Un titolare è stato trascinato sopra uno specifico panchinaro -> Sostituzione diretta!
+      // Un titolare è stato trascinato sopra uno specifico panchinaro/tribunaro -> Sostituzione diretta!
       assignPlayerToSlot(sourceSlot, targetBenchPlayerId);
       const inPlayer = playerById.get(targetBenchPlayerId);
       const outPlayer = playerById.get(sourceId);
@@ -1257,8 +1273,8 @@ const Tattica = () => {
         toast.success(`Sostituzione: entra ${inPlayer.Cognome} per ${outPlayer.Cognome}`);
       }
     } else {
-      // Riordino tra due giocatori già in panchina
-      const currentIds = benchPlayers.map((p) => Number(p.ID));
+      // Riordino tra riserve (Panchina o Tribuna)
+      const currentIds = nonStarterPlayers.map((p) => Number(p.ID));
       const fromIdx = currentIds.indexOf(sourceId);
       const toIdx = currentIds.indexOf(targetBenchPlayerId);
       if (fromIdx !== -1 && toIdx !== -1) {
@@ -1271,7 +1287,7 @@ const Tattica = () => {
     handleDragEnd();
   };
 
-  const handleDropOnBenchZone = (e: React.DragEvent) => {
+  const handleDropOnBenchZone = (e: React.DragEvent, targetSlotIdx?: number) => {
     e.preventDefault();
     const sourceId = draggedPlayerId ?? Number(e.dataTransfer.getData("text/plain"));
     if (!sourceId || Number.isNaN(sourceId)) {
@@ -1283,7 +1299,49 @@ const Tattica = () => {
       removePlayerFromStarters(sourceId);
       const p = playerById.get(sourceId);
       if (p) toast.info(`${p.Cognome} spostato in panchina`);
+    } else if (targetSlotIdx !== undefined) {
+      // Spostamento tra riserve per finire in questo specifico slot panchina
+      const currentIds = nonStarterPlayers.map((p) => Number(p.ID));
+      const fromIdx = currentIds.indexOf(sourceId);
+      if (fromIdx !== -1) {
+        const nextIds = [...currentIds];
+        nextIds.splice(fromIdx, 1);
+        nextIds.splice(Math.min(targetSlotIdx, nextIds.length), 0, sourceId);
+        setBenchOrderIds(nextIds);
+      }
     }
+    handleDragEnd();
+  };
+
+  // Trascina o sposta direttamente un calciatore in Tribuna
+  const handleMoveToTribuna = (playerId: number) => {
+    if (starterSlotByPlayerId.has(playerId)) {
+      setStarterIds((prev) => prev.map((id) => (id === playerId ? null : id)));
+    }
+    const currentIds = nonStarterPlayers.map((p) => Number(p.ID)).filter((id) => id !== playerId);
+    // Accoda in fondo (dalla 10a posizione in giù)
+    setBenchOrderIds([...currentIds, playerId]);
+    const p = playerById.get(playerId);
+    if (p) toast.info(`${p.Cognome} spostato in Tribuna`);
+  };
+
+  // Trascina o sposta un calciatore dalla Tribuna alla prima posizione libera in Panchina
+  const handlePromoteToBench = (playerId: number) => {
+    const currentIds = nonStarterPlayers.map((p) => Number(p.ID)).filter((id) => id !== playerId);
+    // Inserisce in cima alle riserve (slot P1)
+    setBenchOrderIds([playerId, ...currentIds]);
+    const p = playerById.get(playerId);
+    if (p) toast.success(`${p.Cognome} convocato in Panchina`);
+  };
+
+  const handleDropOnTribunaZone = (e: React.DragEvent) => {
+    e.preventDefault();
+    const sourceId = draggedPlayerId ?? Number(e.dataTransfer.getData("text/plain"));
+    if (!sourceId || Number.isNaN(sourceId)) {
+      handleDragEnd();
+      return;
+    }
+    handleMoveToTribuna(sourceId);
     handleDragEnd();
   };
 
@@ -1534,7 +1592,7 @@ const Tattica = () => {
                     <div className="text-[10px] font-bold uppercase tracking-wider">Titolari</div>
                     <div className="text-xl font-black font-mono mt-0.5">{tacticStats.count}/11</div>
                     <span className="text-[9px] font-medium">
-                      {benchPlayers.length} in panchina
+                      {benchPlayers.length}/9 panchina • {tribunaPlayers.length} tribuna
                     </span>
                   </div>
 
@@ -2016,109 +2074,242 @@ const Tattica = () => {
                   </CardContent>
                 </Card>
 
-                {/* SEZIONE 2: PANCHINARI (RESTANTI GIOCATORI DEL ROSTER) */}
+                {/* SEZIONE 2: PANCHINA UFFICIALE (9 SLOT FISSI P1..P9) */}
                 <Card
                   onDragOver={(e) => {
                     e.preventDefault();
                     setDragOverBenchZone(true);
                   }}
                   onDragLeave={() => setDragOverBenchZone(false)}
-                  onDrop={handleDropOnBenchZone}
+                  onDrop={(e) => handleDropOnBenchZone(e)}
                   className={`shadow-lg overflow-hidden transition-all ${
                     dragOverBenchZone
                       ? "ring-2 ring-amber-500 border-amber-500 bg-amber-500/5"
                       : "border-border/80"
                   }`}
                 >
-                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
+                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3 px-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <ClipboardList className="h-4 w-4 text-amber-500" />
                         <div>
-                          <CardTitle className="text-sm font-bold">
-                            Panchina & Riserve a Disposizione
+                          <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            <span>Panchina Ufficiale (9 Riserve)</span>
+                            <Badge variant="outline" className="text-[10px] font-mono text-amber-600 dark:text-amber-400 border-amber-500/30">
+                              Disponibili per il match
+                            </Badge>
                           </CardTitle>
                           <CardDescription className="text-[11px]">
-                            Trascina un panchinaro sopra un titolare per sostituirlo o usa il menù rapido
+                            9 calciatori convocati ordinati per priorità di subentro (da P1 a P9). Trascina per sostituire o usa i bottoni rapidi.
                           </CardDescription>
                         </div>
                       </div>
                       <Badge variant="secondary" className="text-xs font-mono font-bold">
-                        {benchPlayers.length} Panchinari
+                        {benchPlayers.length} / 9 Panchinari
                       </Badge>
                     </div>
                   </CardHeader>
 
                   <CardContent className="p-3">
-                    {benchPlayers.length === 0 ? (
-                      <div className="p-6 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
-                        Nessun giocatore in panchina.
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {Array.from({ length: 9 }).map((_, slotIdx) => {
+                        const player = benchPlayers[slotIdx];
+                        if (!player) {
+                          // Slot panchina vuoto
+                          return (
+                            <div
+                              key={`empty-bench-${slotIdx}`}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              onDrop={(e) => handleDropOnBenchZone(e, slotIdx)}
+                              className="p-2.5 rounded-xl border border-dashed border-border/70 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground select-none"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono font-bold text-muted-foreground w-5 text-center">
+                                  P{slotIdx + 1}
+                                </span>
+                                <span className="text-xs italic">Slot Panchina Libero</span>
+                              </div>
+                              <span className="text-[10px] font-mono opacity-60">Trascina qui</span>
+                            </div>
+                          );
+                        }
+
+                        const pId = Number(player.ID);
+                        const isDragTarget = dragOverBenchId === pId;
+
+                        return (
+                          <div
+                            key={pId}
+                            draggable
+                            onDragStart={(e) => handleDragStartPlayer(e, pId)}
+                            onDragEnd={handleDragEnd}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDragOverBenchId(pId);
+                            }}
+                            onDragLeave={() => {
+                              if (dragOverBenchId === pId) setDragOverBenchId(null);
+                            }}
+                            onDrop={(e) => handleDropOnBenchPlayer(e, pId)}
+                            className={`p-2 rounded-xl border bg-card hover:bg-muted/30 transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${
+                              isDragTarget
+                                ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10"
+                                : "border-border/60"
+                            }`}
+                          >
+                            <div
+                              onClick={() => setSelectedPlayerModal(player)}
+                              className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                            >
+                              <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 w-5 text-center shrink-0">
+                                P{slotIdx + 1}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={`text-[9px] px-1.5 py-0 h-4 shrink-0 font-bold ${getRoleColor(
+                                  player.Posiz
+                                )}`}
+                              >
+                                {player.Posiz}
+                              </Badge>
+                              <span className="font-bold text-xs text-foreground truncate">
+                                {player.Nome?.[0]}. {player.Cognome}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span
+                                className={`text-[11px] font-black font-mono mr-0.5 ${getValueColor(
+                                  player.OVR ?? 70
+                                )}`}
+                              >
+                                {player.OVR}
+                              </span>
+
+                              {/* Invia in campo nel primo slot libero */}
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => quickInsertToStarters(player)}
+                                className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                                title="Schiera negli 11 titolari"
+                              >
+                                <ArrowLeftRight className="h-3 w-3" />
+                              </Button>
+
+                              {/* Sposta in Tribuna */}
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleMoveToTribuna(pId)}
+                                className="h-6 w-6 rounded-lg hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
+                                title="Manda in Tribuna (Non convocato)"
+                              >
+                                <ArrowDownRight className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* SEZIONE 3: TRIBUNA (NON CONVOCATI / ECCEDENZE OLTRE LE 9 RISERVE) */}
+                <Card
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverTribunaZone(true);
+                  }}
+                  onDragLeave={() => setDragOverTribunaZone(false)}
+                  onDrop={handleDropOnTribunaZone}
+                  className={`shadow-md overflow-hidden transition-all ${
+                    dragOverTribunaZone
+                      ? "ring-2 ring-rose-500 border-rose-500 bg-rose-500/5"
+                      : "border-border/70 bg-card/60"
+                  }`}
+                >
+                  <CardHeader className="bg-muted/20 border-b border-border/50 py-2.5 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Armchair className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                            <span>Tribuna / Non Convocati</span>
+                            <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border">
+                              Non disponibili a partita in corso
+                            </Badge>
+                          </CardTitle>
+                          <CardDescription className="text-[10px]">
+                            Calciatori non inseriti nei 9 slot della panchina. Trascina qui per escludere o clicca Promuovi per portare nei 9 panchinari.
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[11px] font-mono text-muted-foreground">
+                        {tribunaPlayers.length} in Tribuna
+                      </Badge>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-3">
+                    {tribunaPlayers.length === 0 ? (
+                      <div className="p-3.5 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10">
+                        Nessun calciatore in tribuna. Tutta la rosa attiva è schierata tra titolari e panchina.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[340px] overflow-y-auto pr-1">
-                        {benchPlayers.map((player, bIdx) => {
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {tribunaPlayers.map((player) => {
                           const pId = Number(player.ID);
-                          const isDragTarget = dragOverBenchId === pId;
-
                           return (
                             <div
                               key={pId}
                               draggable
                               onDragStart={(e) => handleDragStartPlayer(e, pId)}
                               onDragEnd={handleDragEnd}
-                              onDragOver={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setDragOverBenchId(pId);
-                              }}
-                              onDragLeave={() => {
-                                if (dragOverBenchId === pId) setDragOverBenchId(null);
-                              }}
-                              onDrop={(e) => handleDropOnBenchPlayer(e, pId)}
-                              className={`p-2 rounded-xl border bg-card hover:bg-muted/30 transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${
-                                isDragTarget
-                                  ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10"
-                                  : "border-border/60"
-                              }`}
+                              className="p-2 rounded-xl border border-dashed border-border/70 bg-muted/30 hover:bg-muted/50 transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing"
                             >
                               <div
                                 onClick={() => setSelectedPlayerModal(player)}
                                 className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
                               >
-                                <span className="text-[10px] font-mono font-bold text-muted-foreground w-4">
-                                  P{bIdx + 1}
+                                <span className="text-[10px] font-mono font-bold text-muted-foreground/80 w-5 text-center shrink-0">
+                                  TRB
                                 </span>
                                 <Badge
                                   variant="outline"
-                                  className={`text-[9px] px-1.5 py-0 h-4 shrink-0 font-bold ${getRoleColor(
+                                  className={`text-[9px] px-1.5 py-0 h-4 shrink-0 font-bold opacity-80 ${getRoleColor(
                                     player.Posiz
                                   )}`}
                                 >
                                   {player.Posiz}
                                 </Badge>
-                                <span className="font-bold text-xs text-foreground truncate">
+                                <span className="font-semibold text-xs text-foreground/90 truncate">
                                   {player.Nome?.[0]}. {player.Cognome}
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-1 shrink-0">
                                 <span
-                                  className={`text-[11px] font-black font-mono ${getValueColor(
+                                  className={`text-[11px] font-black font-mono mr-0.5 opacity-80 ${getValueColor(
                                     player.OVR ?? 70
                                   )}`}
                                 >
                                   {player.OVR}
                                 </span>
 
-                                {/* Pulsante rapido per mandare in campo nel primo slot compatibile */}
+                                {/* Promuovi in Panchina */}
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  onClick={() => quickInsertToStarters(player)}
-                                  className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                                  title="Schiera negli 11 titolari"
+                                  onClick={() => handlePromoteToBench(pId)}
+                                  className="h-6 w-6 rounded-lg hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                                  title="Promuovi in Panchina (Slot P1)"
                                 >
-                                  <ArrowLeftRight className="h-3 w-3" />
+                                  <ArrowUpRight className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>

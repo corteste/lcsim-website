@@ -852,17 +852,20 @@ Avviso nel Foglio Commento per i commentatori.
 ---
 
 ## 📌 39. Panchina da 9 Calciatori e 1 Giocatore in Tribuna
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Panchina a 9 slot fissi P1..P9 e card Tribuna dedicata in Tattica.tsx, distinte gara a 9 riserve)
 - **Priorità**: Alta (Adeguamento al regolamento ufficiale e alle rose da 21)
-- **Moduli coinvolti**: src/pages/Tattica.tsx, src/pages/FoglioCommento.tsx, src/components/tactics/
-- **Tabelle coinvolte**: an_team_tactic, team_formation_history
+- **Moduli coinvolti**: `src/pages/Tattica.tsx`, `src/pages/FoglioCommento.tsx`, `src/services/foglioCommentoService.ts`
+- **Tabelle coinvolte**: `an_team_tactic`, `team_formation_history`
 Descrizione
-Adeguamento della distinta gara nelle pagine Tattica e Foglio Commento:
+Adeguata la distinta gara alle rose da 21 della nuova stagione (11 titolari, 9 riserve e 1 in tribuna):
 
-Nelle rose standard da 21 calciatori con 11 titolari:
-La Panchina deve ospitare esattamente 9 riserve ordinate per priorità di subentro.
-Il 21° calciatore (ed eventuali ulteriori esuberi) viene alloggiato in una sezione dedicata denominata "Tribuna" (non disponibile per le sostituzioni a partita in corso).
-Aggiornamento della logica di validazione e salvataggio in Tattica.tsx per gestire formalmente l'assegnazione alla tribuna.
+- **Panchina a 9 Slot Fissi**: la schermata Tattica espone 9 slot numerati ordinati (`P1` .. `P9`) con priorità esplicita di subentro, visualizzando gli slot vuoti o occupati.
+- **Sezione Tribuna / Non Convocati**: creata una card distinta e dedicata per i calciatori non inseriti nei 9 slot della panchina (il 21° calciatore o esuberi).
+- **Interazione Intuitiva**:
+  - Drag & drop diretto di un calciatore sulla card Tribuna per escluderlo.
+  - Tasto rapido "Manda in Tribuna" (↘) su ogni panchinaro.
+  - Tasto rapido "Promuovi in Panchina" (↗) sui giocatori in tribuna per reintegrarli nello slot `P1` libero.
+- **Foglio Commento & Calendario**: nelle viste pubbliche vengono mostrate esclusivamente le 9 riserve ufficiali a disposizione per la partita (i primi 9 di `bench_order`).
 
 
 
