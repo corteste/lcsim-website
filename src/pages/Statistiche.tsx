@@ -1072,17 +1072,28 @@ const Statistiche = () => {
         </Card>
       </main>
 
-      {/* PLAYER ADVANCED STATS MODAL */}
+      {/* PLAYER ADVANCED STATS & FULL CHARACTERISTICS MODAL */}
       {selectedPlayer && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
-          onClick={() => setSelectedPlayer(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto"
+          onClick={handleClosePlayerModal}
         >
-          <PlayerAdvancedStats
-            currentPlayer={selectedPlayer}
-            teams={teams}
-            onClose={() => setSelectedPlayer(null)}
-          />
+          {loadingFullPlayer && !fullPlayer ? (
+            <div 
+              className="p-8 rounded-2xl bg-card border border-border/80 shadow-2xl flex flex-col items-center gap-3 text-sm font-semibold text-foreground animate-scale-in"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span>Caricamento scheda completa di {selectedPlayer.Nome} {selectedPlayer.Cognome}...</span>
+            </div>
+          ) : fullPlayer ? (
+            <PlayerDetails
+              currentPlayer={fullPlayer}
+              initialStats={selectedPlayer}
+              defaultTab="stats"
+              onClose={handleClosePlayerModal}
+            />
+          ) : null}
         </div>
       )}
     </div>
