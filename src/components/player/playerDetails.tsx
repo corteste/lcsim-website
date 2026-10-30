@@ -249,6 +249,7 @@ function computeDetailedStats(matches: any[], fallbackSum: PlayerStatsSum | null
     asstP90: p90(sum_asst),
     goalContribP90: p90(goalContrib),
     minPerGol: sum_gol > 0 ? Math.round(sum_minuti / sum_gol) : null,
+    minPerAsst: sum_asst > 0 ? Math.round(sum_minuti / sum_asst) : null,
     minPerContrib: goalContrib > 0 ? Math.round(sum_minuti / goalContrib) : null,
 
     tiriIn: sum_tiri_in,
@@ -954,7 +955,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   />
                   <StatItemCard 
                     label="Miglior Partita" 
-                    value={detailedStats.bestRating ? detailedStats.bestRating.voto : "-"} 
+                    value={detailedStats.bestRating ? Number(detailedStats.bestRating.voto).toFixed(1) : "-"} 
                     subValue={detailedStats.bestRating ? `Stag. ${detailedStats.bestRating.stag} - G. ${detailedStats.bestRating.week}` : "-"}
                     icon={Sparkles} 
                     colorClass="text-amber-500" 
@@ -1023,7 +1024,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <StatItemCard 
                     label="Assist Serviti" 
                     value={detailedStats.asst} 
-                    subValue={`${detailedStats.asstP90} P90`}
+                    subValue={`${detailedStats.asstP90} P90 ${detailedStats.minPerAsst ? `• 1 ogni ${detailedStats.minPerAsst}'` : ''}`}
                     icon={TrendingUp} 
                     colorClass="text-blue-600 dark:text-blue-400" 
                   />
@@ -1043,7 +1044,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   />
                   <StatItemCard 
                     label="Miglior Partita" 
-                    value={detailedStats.bestRating ? detailedStats.bestRating.voto : "-"} 
+                    value={detailedStats.bestRating ? Number(detailedStats.bestRating.voto).toFixed(1) : "-"} 
                     subValue={detailedStats.bestRating ? `Stag. ${detailedStats.bestRating.stag} - G. ${detailedStats.bestRating.week}` : "-"}
                     icon={Sparkles} 
                     colorClass="text-amber-500" 
