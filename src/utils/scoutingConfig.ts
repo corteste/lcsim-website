@@ -18,7 +18,7 @@ export const SCOUTING_TIERS: {
       description:
         "Sblocca la stima di tutte le abilità tecniche e fisiche con decadi fisse (es. 70-79).",
       badgeClass:
-        "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
+        "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
     },
     {
       tokens: 2,
@@ -28,7 +28,7 @@ export const SCOUTING_TIERS: {
       description:
         "Affina le abilità a range di 3 (es. 70-72, 73-75, 76-79), svela l'attitudine emotiva (Emotion) e il conteggio dei tratti posseduti.",
       badgeClass:
-        "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
+        "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
     },
     {
       tokens: 3,
@@ -38,7 +38,7 @@ export const SCOUTING_TIERS: {
       description:
         "Svela i nomi di tutti i tratti (base e icona), la specializzazione tattica Role 1 e il valore esatto di Piede Debole e Mosse Abilità.",
       badgeClass:
-        "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
+        "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
     },
     {
       tokens: 5,
@@ -48,7 +48,7 @@ export const SCOUTING_TIERS: {
       description:
         "Sblocca l'Overall numerico esatto e l'Overall ricalcolato per ciascun ruolo in campo in base ai pesi del simulatore.",
       badgeClass:
-        "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+        "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
     },
   ];
 
@@ -394,14 +394,14 @@ export function getPrimaryDepartmentForRole(posiz: string): ScoutingDeptKey {
 
 export function getTierBadgeStyle(tokensSpent: number): string {
   if (tokensSpent >= 5)
-    return "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40";
-  if (tokensSpent === 3)
     return "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/40";
+  if (tokensSpent === 3)
+    return "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/40";
   if (tokensSpent === 2)
-    return "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/40";
+    return "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40";
   if (tokensSpent === 1)
-    return "bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-500/40";
-  return "bg-muted text-muted-foreground border-border";
+    return "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40";
+  return "bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40";
 }
 
 export interface TopUnlockedStat {

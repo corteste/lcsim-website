@@ -387,14 +387,12 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                             />
                             <span>{r.Nazionalità}</span>
                           </span>
-                          {tokens > 0 && (
-                            <Badge
-                              variant="outline"
-                              className={`font-mono text-[9.5px] font-extrabold px-1.5 py-0 ${getTierBadgeStyle(tokens)}`}
-                            >
-                              {tokens} {tokens === 1 ? "gettone" : "gettoni"}
-                            </Badge>
-                          )}
+                          <Badge
+                            variant="outline"
+                            className={`font-mono text-[9.5px] font-extrabold px-1.5 py-0 ${getTierBadgeStyle(tokens)}`}
+                          >
+                            {tokens > 0 ? `${tokens} ${tokens === 1 ? "gettone" : "gettoni"}` : "0 gettoni"}
+                          </Badge>
                         </div>
                       </div>
                     </div>
@@ -514,18 +512,12 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       />
                       <span>{rookie.Nazionalità}</span>
                     </span>
-                    {tokens > 0 ? (
-                      <Badge
-                        variant="outline"
-                        className={`font-mono text-[10px] font-extrabold px-1.5 py-0.5 shrink-0 ${getTierBadgeStyle(tokens)}`}
-                      >
-                        {tokens} {tokens === 1 ? "gettone" : "gettoni"}
-                      </Badge>
-                    ) : (
-                      <span className="text-[10px] italic text-muted-foreground/70 shrink-0">
-                        Non scoutato
-                      </span>
-                    )}
+                    <Badge
+                      variant="outline"
+                      className={`font-mono text-[10px] font-extrabold px-1.5 py-0.5 shrink-0 ${getTierBadgeStyle(tokens)}`}
+                    >
+                      {tokens > 0 ? `${tokens} ${tokens === 1 ? "gettone" : "gettoni"}` : "0 gettoni"}
+                    </Badge>
                   </div>
 
                   {/* TOP 5 STATISTICHE SBLOCCATE (se scoutato) */}
