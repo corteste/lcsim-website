@@ -30,6 +30,8 @@ import {
   ShieldCheck,
   UserCheck,
   Ban,
+  RefreshCw,
+  ArrowDownRight,
 } from "lucide-react";
 import {
   fetchTeamDisciplinaryStatus,
@@ -47,6 +49,11 @@ import {
   DeadlineInfo,
 } from "@/services/foglioCommentoService";
 import { EA_FC25_FORMATIONS } from "@/pages/Tattica";
+import {
+  compareFormations,
+  FormationDifferences,
+} from "@/services/formationComparisonService";
+import { FormationChangesSummary } from "@/components/formation/FormationChangesSummary";
 import {
   getRoleColor,
   getValueColor,
@@ -171,7 +178,8 @@ export const FoglioCommento: React.FC = () => {
 
       setIsLoadingFormations(true);
       try {
-        const [homeRes, awayRes, homeDisc, awayDisc] = await Promise.all([
+        const prevWeek = selectedWeek - 1;
+        const [homeRes, awayRes, homePrevRes, awayPrevRes, homeDisc, awayDisc] = await Promise.all([
           fetchTeamSheetFormation(
             currentMatch.homeTeamId,
             selectedSeason,
@@ -184,6 +192,22 @@ export const FoglioCommento: React.FC = () => {
             selectedWeek,
             currentMatch.isPlayed
           ),
+          selectedWeek > 1
+            ? fetchTeamSheetFormation(
+                currentMatch.homeTeamId,
+                selectedSeason,
+                prevWeek,
+                true
+              )
+            : Promise.resolve(null),
+          selectedWeek > 1
+            ? fetchTeamSheetFormation(
+                currentMatch.awayTeamId,
+                selectedSeason,
+                prevWeek,
+                true
+              )
+            : Promise.resolve(null),
           fetchTeamDisciplinaryStatus(
             currentMatch.homeTeamId,
             selectedSeason,
@@ -199,6 +223,8 @@ export const FoglioCommento: React.FC = () => {
         if (isCancelled) return;
         setHomeFormation(homeRes);
         setAwayFormation(awayRes);
+        setHomePrevFormation(homePrevRes);
+        setAwayPrevFormation(awayPrevRes);
         setHomeDisciplinaryMap(homeDisc);
         setAwayDisciplinaryMap(awayDisc);
       } catch (err) {
@@ -261,6 +287,15 @@ export const FoglioCommento: React.FC = () => {
       (p) => awayDisciplinaryMap[Number(p.ID)]?.isWarned
     );
   }, [awayFormation, awayDisciplinaryMap]);
+
+  // Calcolo variazioni formazioni rispetto alla settimana precedente (#37)
+  const homeDiffs = useMemo(() => {
+    return compareFormations(homeFormation, homePrevFormation, selectedWeek, selectedWeek - 1);
+  }, [homeFormation, homePrevFormation, selectedWeek]);
+
+  const awayDiffs = useMemo(() => {
+    return compareFormations(awayFormation, awayPrevFormation, selectedWeek, selectedWeek - 1);
+  }, [awayFormation, awayPrevFormation, selectedWeek]);
 
   // Risoluzione posizioni tattiche per il modulo di casa e trasferta
   const homeFormationDef = useMemo(() => {
@@ -716,6 +751,7 @@ export const FoglioCommento: React.FC = () => {
                     isHome={true}
                     onSelectPlayer={setSelectedPlayer}
                     disciplinaryMap={homeDisciplinaryMap}
+                    diffs={homeDiffs}
                   />
                 )}
 
@@ -727,6 +763,7 @@ export const FoglioCommento: React.FC = () => {
                     isHome={false}
                     onSelectPlayer={setSelectedPlayer}
                     disciplinaryMap={awayDisciplinaryMap}
+                    diffs={awayDiffs}
                   />
                 )}
               </div>
@@ -764,6 +801,7 @@ interface TeamSheetColumnProps {
   isHome: boolean;
   onSelectPlayer: (p: Player) => void;
   disciplinaryMap?: Record<number, PlayerDisciplinaryStatus>;
+  diffs?: FormationDifferences;
 }
 
 const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
@@ -772,6 +810,7 @@ const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
   isHome,
   onSelectPlayer,
   disciplinaryMap,
+  diffs,
 }) => {
   return (
     <div className="space-y-4">
@@ -794,9 +833,18 @@ const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
                 {teamFormation.teamName}
               </h2>
             </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5">
               <span>Modulo:</span>
               <strong className="text-foreground">{teamFormation.formationName}</strong>
+              {diffs?.isFormationChanged && (
+                <Badge
+                  variant="outline"
+                  className="text-[9px] font-mono px-1.5 py-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 flex items-center gap-1 font-bold"
+                  title={`Nuovo modulo rispetto a Giornata ${diffs.prevWeek} (${diffs.prevFormationId})`}
+                >
+                  <RefreshCw className="h-2.5 w-2.5" /> Nuovo Modulo (da {diffs.prevFormationId})
+                </Badge>
+              )}
             </div>
           </div>
 
@@ -805,6 +853,15 @@ const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
           </Badge>
         </div>
       </Card>
+
+      {/* Box Scelte Tattiche vs Turno Precedente (#37) */}
+      {diffs && diffs.hasPrevious && (
+        <FormationChangesSummary
+          diffs={diffs}
+          teamName={teamFormation.teamName}
+          onSelectPlayer={onSelectPlayer}
+        />
+      )}
 
       {/* Campetto Tattico 2D */}
       <Card className="border-border/80 bg-card shadow-sm overflow-hidden">
@@ -886,6 +943,24 @@ const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
                         >
                           {player.OVR}
                         </Badge>
+
+                        {/* Badge Nuovo Titolare o Cambio Ruolo (#37) */}
+                        {diffs?.hasPrevious && diffs.newStarterIds.has(Number(player.ID)) && (
+                          <Badge
+                            className="absolute -top-2 -left-2 text-[7.5px] font-black px-1 py-0 h-4 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md flex items-center gap-0.5 border-none"
+                            title="Nuovo Titolare rispetto alla settimana precedente"
+                          >
+                            <Sparkles className="h-2 w-2" /> NEW
+                          </Badge>
+                        )}
+                        {diffs?.hasPrevious && !diffs.newStarterIds.has(Number(player.ID)) && diffs.roleChangedIds.has(Number(player.ID)) && (
+                          <Badge
+                            className="absolute -top-2 -left-2 text-[7.5px] font-black px-1 py-0 h-4 bg-sky-500 hover:bg-sky-600 text-white shadow-md flex items-center gap-0.5 border-none"
+                            title="Posizione in campo variata rispetto alla settimana precedente"
+                          >
+                            <RefreshCw className="h-2 w-2" /> RUOLO
+                          </Badge>
+                        )}
                       </div>
 
                       {/* Nome e Ruolo */}
@@ -951,6 +1026,15 @@ const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
                     <span className="font-bold text-foreground truncate">
                       {player.Nome} {player.Cognome}
                     </span>
+                    {diffs?.hasPrevious && diffs.demotedToBench.some(p => Number(p.ID) === Number(player.ID)) && (
+                      <Badge
+                        variant="outline"
+                        className="text-[8px] px-1 py-0 h-3.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold shrink-0 flex items-center gap-0.5"
+                        title="Titolare la scorsa settimana, oggi in panchina"
+                      >
+                        <ArrowDownRight className="h-2 w-2 text-amber-500 shrink-0" /> Ex Titolare
+                      </Badge>
+                    )}
                     {disciplinaryMap?.[Number(player.ID)]?.isWarned && (
                       <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold shrink-0 flex items-center gap-0.5" title="Diffidato (a rischio squalifica)">
                         <AlertTriangle className="h-2 w-2 text-amber-500 shrink-0" /> Diffidato

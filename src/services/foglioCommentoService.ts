@@ -38,6 +38,7 @@ export interface SheetTeamFormation {
   formationName: string;
   starters: (Player | null)[];
   bench: Player[];
+  allRoster: Player[];
   source: "match_stats" | "history" | "active_tactic" | "roster_fallback";
 }
 
@@ -343,6 +344,7 @@ export async function fetchTeamSheetFormation(
           formationName: formDef.name,
           starters: startersAligned,
           bench: sortPlayersByRole(rawBench.filter((p): p is Player => Boolean(p))),
+          allRoster: roster,
           source: "match_stats",
         };
       }
@@ -375,6 +377,7 @@ export async function fetchTeamSheetFormation(
         formationName: formDef.name,
         starters,
         bench,
+        allRoster: roster,
         source: "history",
       };
     }
@@ -403,6 +406,7 @@ export async function fetchTeamSheetFormation(
         formationName: formDef.name,
         starters,
         bench,
+        allRoster: roster,
         source: "active_tactic",
       };
     }
@@ -422,6 +426,7 @@ export async function fetchTeamSheetFormation(
       formationName: formDef.name,
       starters,
       bench,
+      allRoster: roster,
       source: "roster_fallback",
     };
   } catch (err) {
@@ -435,6 +440,7 @@ export async function fetchTeamSheetFormation(
       formationName: formDef.name,
       starters: formDef.positions.map(() => null),
       bench: [],
+      allRoster: [],
       source: "roster_fallback",
     };
   }

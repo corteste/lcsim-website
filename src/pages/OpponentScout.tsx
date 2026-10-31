@@ -41,6 +41,8 @@ import {
 } from "@/utils/functions";
 import { getMarketStatusOption } from "@/types/marketStatus";
 import { EA_FC25_FORMATIONS } from "@/pages/Tattica";
+import { compareFormations } from "@/services/formationComparisonService";
+import { FormationChangesSummary } from "@/components/formation/FormationChangesSummary";
 import PlayerDetails from "@/components/player/playerDetails";
 
 function getPlayerCardStats(p: Player) {
@@ -146,6 +148,25 @@ export const OpponentScout: React.FC = () => {
   const rawRoster = scoutData?.roster || [];
   const formations = scoutData?.formations || [];
   const currentFormation = formations[selectedFormationIdx] || formations[formations.length - 1] || formations[0];
+
+  // Calcolo differenze rispetto alla formazione precedente (#37)
+  const formationDiffs = useMemo(() => {
+    if (!formations || formations.length === 0 || selectedFormationIdx <= 0) {
+      return null;
+    }
+    const curr = formations[selectedFormationIdx];
+    const prev = formations[selectedFormationIdx - 1];
+    if (!curr || !prev) return null;
+
+    if (curr.week !== undefined && curr.week <= 1) {
+      return null;
+    }
+
+    const currWeek = curr.week ?? (selectedFormationIdx + 1);
+    const prevWeek = prev.week ?? selectedFormationIdx;
+
+    return compareFormations(curr, prev, currWeek, prevWeek);
+  }, [formations, selectedFormationIdx]);
 
   const myTeamLogoId = (myTeamId || "").toUpperCase();
   const opponentTeamId = (
@@ -659,6 +680,22 @@ export const OpponentScout: React.FC = () => {
                       })}
                     </div>
 
+                    {/* Riassunto Cambi Tattici vs Formazione Precedente (#37) */}
+                    {formationDiffs && formationDiffs.hasPrevious && (
+                      <FormationChangesSummary
+                        diffs={formationDiffs}
+                        teamName={scoutData.team.name}
+                        customPrevLabel={
+                          formations[selectedFormationIdx - 1]?.week
+                            ? `Giornata ${formations[selectedFormationIdx - 1].week}`
+                            : formations[selectedFormationIdx - 1]?.title
+                            ? formations[selectedFormationIdx - 1].title
+                            : `Formazione #${selectedFormationIdx}`
+                        }
+                        onSelectPlayer={setSelectedPlayer}
+                      />
+                    )}
+
                     {/* Dual Column Layout: Pitch & Bench */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                       {/* Left: 2D Tactical Pitch (8 cols on lg) */}
@@ -668,10 +705,23 @@ export const OpponentScout: React.FC = () => {
                             <span className="font-black text-foreground text-sm block">
                               {currentFormation.title}
                             </span>
-                            <span className="text-muted-foreground text-xs">
-                              Modulo: <strong className="text-foreground">{currentFormation.formationName}</strong>
-                              {currentFormation.date && ` • Registrata il ${new Date(currentFormation.date).toLocaleDateString("it-IT")}`}
-                            </span>
+                            <div className="text-muted-foreground text-xs flex flex-wrap items-center gap-1.5 mt-0.5">
+                              <span>
+                                Modulo: <strong className="text-foreground">{currentFormation.formationName}</strong>
+                              </span>
+                              {formationDiffs?.isFormationChanged && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] font-mono px-1.5 py-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 flex items-center gap-1 font-bold"
+                                  title={`Nuovo modulo rispetto alla formazione precedente (${formationDiffs.prevFormationId})`}
+                                >
+                                  <RefreshCw className="h-2.5 w-2.5" /> Nuovo Modulo (da {formationDiffs.prevFormationId})
+                                </Badge>
+                              )}
+                              {currentFormation.date && (
+                                <span> • Registrata il {new Date(currentFormation.date).toLocaleDateString("it-IT")}</span>
+                              )}
+                            </div>
                           </div>
                           <Badge variant="secondary" className="font-mono text-xs font-black">
                             {currentFormation.formationId}
@@ -743,6 +793,24 @@ export const OpponentScout: React.FC = () => {
                                       >
                                         {player.OVR}
                                       </Badge>
+
+                                      {/* Badge Nuovo Titolare o Cambio Ruolo (#37) */}
+                                      {formationDiffs?.hasPrevious && formationDiffs.newStarterIds.has(Number(player.ID)) && (
+                                        <Badge
+                                          className="absolute -top-2 -left-2 text-[7.5px] font-black px-1 py-0 h-4 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md flex items-center gap-0.5 border-none"
+                                          title="Nuovo Titolare rispetto alla formazione precedente"
+                                        >
+                                          <Sparkles className="h-2 w-2" /> NEW
+                                        </Badge>
+                                      )}
+                                      {formationDiffs?.hasPrevious && !formationDiffs.newStarterIds.has(Number(player.ID)) && formationDiffs.roleChangedIds.has(Number(player.ID)) && (
+                                        <Badge
+                                          className="absolute -top-2 -left-2 text-[7.5px] font-black px-1 py-0 h-4 bg-sky-500 hover:bg-sky-600 text-white shadow-md flex items-center gap-0.5 border-none"
+                                          title="Posizione in campo variata rispetto alla formazione precedente"
+                                        >
+                                          <RefreshCw className="h-2 w-2" /> RUOLO
+                                        </Badge>
+                                      )}
                                     </div>
 
                                     {/* Player Name and Role Label */}
@@ -807,9 +875,20 @@ export const OpponentScout: React.FC = () => {
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="min-w-0">
-                                      <span className="text-xs font-bold text-foreground group-hover:text-emerald-600 block truncate">
-                                        {sub.Nome} {sub.Cognome}
-                                      </span>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-xs font-bold text-foreground group-hover:text-emerald-600 block truncate">
+                                          {sub.Nome} {sub.Cognome}
+                                        </span>
+                                        {formationDiffs?.hasPrevious && formationDiffs.demotedToBench.some(p => Number(p.ID) === Number(sub.ID)) && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[8px] px-1 py-0 h-3.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold shrink-0 flex items-center gap-0.5"
+                                            title="Titolare nella formazione precedente, ora in panchina"
+                                          >
+                                            <ArrowDownRight className="h-2 w-2 text-amber-500 shrink-0" /> Ex Titolare
+                                          </Badge>
+                                        )}
+                                      </div>
                                       <Badge
                                         variant="outline"
                                         className={`text-[9px] px-1.5 py-0 font-bold ${getRoleColor(sub.Posiz)}`}

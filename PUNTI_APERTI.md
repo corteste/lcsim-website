@@ -861,16 +861,36 @@ Identificazione visiva esplicita di tutti i calciatori di 34 anni attivi in rosa
 ---
 
 ## 📌 37. Evidenziazione Modifiche Formazione Rispetto alla Settimana Precedente
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato su branch dev
 - **Priorità**: Media-Alta (Supporto avanzato per caster, commentatori e analisi avversaria)
-- **Moduli coinvolti**: src/pages/FoglioCommento.tsx, src/components/home/OpponentScoutModal.tsx, src/pages/Tattica.tsx
-- **Tabelle coinvolte**: public.team_formation_history, public.an_team_tactic
-Descrizione
-Confronto automatico tra la formazione schierata nella settimana corrente e quella della settimana precedente:
+- **Moduli coinvolti**: `src/services/formationComparisonService.ts`, `src/components/formation/FormationChangesSummary.tsx`, `src/pages/FoglioCommento.tsx`, `src/pages/OpponentScout.tsx`
+- **Tabelle coinvolte**: `public.team_formation_history`, `public.an_team_tactic`, `public.as_player_stat`
+### Descrizione & Implementazione
+Implementato il confronto automatico e visuale delle formazioni rispetto al turno precedente con evidenziazione immediata delle novità tattiche:
 
-Nel Foglio Commento (/campionato/foglio-commento) e nel popup di Scouting Avversaria in Homepage:
-Evidenziare sul campo 2D con icone/badge cromatici le novità rispetto all'ultimo incontro (es. "Nuovo Titolare", "Sostituzione Ruolo", "Modulo Variato").
-Segnalare chi tra i titolari della settimana precedente è finito in panchina o in tribuna, fornendo una lettura immediata delle scelte tecniche dell'allenatore.
+1. **Servizio di Calcolo Differenze (`formationComparisonService.ts`)**:
+   - Confronta la formazione in analisi con quella del turno precedente rilevando:
+     - **Nuovi Titolari**: calciatori che non erano titolari la settimana scorsa.
+     - **Cambi Posizione / Ruolo**: titolari confermati che giocano in uno slot/ruolo tattico diverso.
+     - **Modulo Variato**: rilevazione cambio modulo di gioco (es. da 4-3-3 a 3-5-2).
+     - **Ex Titolari in Panchina**: titolari del turno precedente retrocessi tra le riserve.
+     - **Ex Titolari in Tribuna**: titolari del turno precedente non convocati / finiti in tribuna.
+   - **Gestione Debutto (Giornata 1)**: gestita nativamente senza confronti con stagioni o turni inesistenti (`hasPrevious: false`).
+
+2. **Box Sintetico "Scelte Tattiche" (`FormationChangesSummary.tsx`)**:
+   - Componente riutilizzabile che sintetizza le mosse del mister: nuovi innesti titolari con badge ruolo, cambi di posizione con indicazione da ruolo precedente a ruolo attuale, retrocessioni in panchina e assenze in tribuna.
+   - Tutti i badge giocatore consentono l'apertura diretta della Scheda Dettaglio Giocatore al click.
+
+3. **Foglio Commento Partita (`FoglioCommento.tsx`)**:
+   - Caricamento automatico della formazione della giornata precedente (`week - 1`) per entrambe le squadre.
+   - **Intestazione Campetto**: badge `🔄 Nuovo Modulo (da X a Y)` in caso di variazione tattica.
+   - **Campetto 2D**: badge `✨ NEW` verde sui nuovi titolari e `🔄 RUOLO` azzurro sui cambi posizione.
+   - **Panchina**: badge `↘ Ex Titolare` arancione accanto alle riserve che partivano titolari la settimana prima.
+   - **Box Riepilogo**: visualizzato in cima a ciascuna colonna di squadra.
+
+4. **Scouting Avversaria (`OpponentScout.tsx`)**:
+   - Nella scheda "Ultime Formazioni", la formazione selezionata viene automaticamente confrontata con la cronologicamente precedente.
+   - Stessi badge visivi sul campo 2D, sulla panchina e nel riassunto scelte tattiche.
 
 
 
