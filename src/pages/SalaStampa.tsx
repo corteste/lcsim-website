@@ -120,17 +120,23 @@ export default function SalaStampa() {
 
     try {
       setIsSubmittingAnswer(true);
+      const managerDisplayName =
+        user?.name ||
+        user?.username ||
+        (effectiveTeam ? availableTeams.find((t) => t.id === effectiveTeam)?.name : undefined) ||
+        "Presidente";
+
       const res = await submitPressAnswer(
         conferenceId,
         myAnswerText.trim(),
-        user?.user_metadata?.manager_name || user?.email?.split("@")[0] || "Presidente"
+        managerDisplayName
       );
 
       if (res.success) {
         toast.success("Dichiarazione ufficiale registrata! Ora è visibile nella Sala Stampa pubblica.");
         setMyAnswerText("");
         setPendingForMyTeam(null);
-        loadData();
+        await loadData();
       } else {
         toast.error(res.error || "Errore durante il salvataggio.");
       }

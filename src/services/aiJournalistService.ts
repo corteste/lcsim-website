@@ -214,6 +214,22 @@ export async function submitPressAnswer(
       return { success: false, error: 'Il commento non può essere vuoto.' };
     }
 
+    // 1. Invoca la funzione RPC sicura (SECURITY DEFINER)
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('rpc_submit_press_answer', {
+      p_conference_id: conferenceId,
+      p_answer: answer.trim(),
+      p_manager_name: managerName || null,
+    });
+
+    if (!rpcErr && rpcData) {
+      const res = rpcData as { success: boolean; error?: string };
+      if (!res.success) {
+        return { success: false, error: res.error || 'Errore durante il salvataggio della risposta.' };
+      }
+      return { success: true };
+    }
+
+    // 2. Fallback diretto con update se RPC non risponde
     const updatePayload: Record<string, any> = {
       answer: answer.trim(),
       status: 'ANSWERED',
@@ -461,6 +477,20 @@ export async function reactToRumor(
   reactionType: 'fire' | 'laugh' | 'shock' | 'doubt'
 ): Promise<{ success: boolean; reactions?: Record<string, number> }> {
   try {
+    // 1. Invoca la funzione RPC sicura (SECURITY DEFINER)
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('rpc_react_to_rumor', {
+      p_rumor_id: rumorId,
+      p_reaction_type: reactionType,
+    });
+
+    if (!rpcErr && rpcData) {
+      const res = rpcData as { success: boolean; reactions?: Record<string, number> };
+      if (res.success && res.reactions) {
+        return { success: true, reactions: res.reactions };
+      }
+    }
+
+    // 2. Fallback diretto
     const { data: current, error: readErr } = await supabase
       .from('league_market_rumors')
       .select('reactions')
