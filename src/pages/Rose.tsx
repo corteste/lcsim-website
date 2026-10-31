@@ -26,7 +26,10 @@ import {
   Volume2,
   VolumeX,
   Pause,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import {
   getRoleColor,
   getValueColor,
@@ -82,12 +85,15 @@ const Rose = () => {
     return teams.slice().sort((a, b) => a.NAME.localeCompare(b.NAME));
   }, [teams]);
 
-  // Selected Team state
-  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
-  const activeTeamId = selectedTeamId || sortedTeams[0]?.TEAM_ID || "";
+  // URL Search Params sync for Team Selection (?team=XXX)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const teamParam = searchParams.get("team");
+
+  // Selected Team: undefined if on the all-teams showcase view
   const currentTeam: Team | undefined = useMemo(() => {
-    return sortedTeams.find((t) => t.TEAM_ID === activeTeamId) || sortedTeams[0];
-  }, [sortedTeams, activeTeamId]);
+    if (!teamParam) return undefined;
+    return sortedTeams.find((t) => t.TEAM_ID.toUpperCase() === teamParam.toUpperCase());
+  }, [sortedTeams, teamParam]);
 
   // Audio Anthem Player state
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -229,106 +235,184 @@ const Rose = () => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-6 sm:py-8 space-y-6">
-        {/* BROADCAST HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border/80">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                LCSIM Ufficiale • Serie A
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {sortedTeams.length} Club Professionistici
-              </span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
-              <Users className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-              Rose Complete
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Organici ufficiali, schede tecniche e disponibilità di mercato di tutte le squadre della lega.
-            </p>
-          </div>
+        {!currentTeam ? (
+          <>
+            {/* BROADCAST HEADER - SQUADRE SERIE A */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border/80">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                    LCSIM Ufficiale • Serie A
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {sortedTeams.length} Club Professionistici
+                  </span>
+                </div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
+                  <Shield className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                  Squadre Serie A
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  I 12 club della Lega Calcio Simulato: organici ufficiali, staff tecnico e schede dettagliate dei giocatori.
+                </p>
+              </div>
 
-          <div className="flex items-center gap-3 self-start md:self-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetchTeams()}
-              disabled={loadingTeams}
-              className="h-8 px-2.5 rounded-xl text-xs gap-1.5 border-border/80 bg-card hover:bg-muted"
-              title="Ricarica le rose aggiornate dal database"
-            >
-              <RotateCcw className={`h-3.5 w-3.5 ${loadingTeams ? "animate-spin text-emerald-500" : "text-muted-foreground"}`} />
-              <span>Aggiorna Rose</span>
-            </Button>
-            <div className="px-3.5 py-1.5 rounded-xl border border-border/80 bg-card text-xs flex items-center gap-2 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-muted-foreground">Stagione Attiva:</span>
-              <span className="font-semibold text-foreground font-mono">
-                2024/25
-              </span>
+              <div className="flex items-center gap-3 self-start md:self-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchTeams()}
+                  disabled={loadingTeams}
+                  className="h-8 px-2.5 rounded-xl text-xs gap-1.5 border-border/80 bg-card hover:bg-muted"
+                  title="Ricarica le squadre aggiornate dal database"
+                >
+                  <RotateCcw className={`h-3.5 w-3.5 ${loadingTeams ? "animate-spin text-emerald-500" : "text-muted-foreground"}`} />
+                  <span>Aggiorna Dati</span>
+                </Button>
+                <div className="px-3.5 py-1.5 rounded-xl border border-border/80 bg-card text-xs flex items-center gap-2 shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-muted-foreground">Stagione Attiva:</span>
+                  <span className="font-semibold text-foreground font-mono">
+                    2024/25
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* TEAM SELECTOR SYMMETRIC GRID (2 ROWS OF 6 ON DESKTOP, 3 ROWS OF 4 ON TABLET) */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Seleziona Squadra:
-            </span>
-            <span className="text-xs text-muted-foreground font-mono">
-              {sortedTeams.length} Club in Serie A
-            </span>
-          </div>
+            {/* CLUBS SHOWCASE GRID (PREMIER LEAGUE & SERIE A INSPIRED RECTANGULAR BLOCKS) */}
+            {loadingTeams ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="h-80 bg-muted/40 animate-pulse rounded-2xl border border-border/70" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+                {sortedTeams.map((team) => {
+                  const teamAvgOvr = team.players.length > 0
+                    ? Math.round(team.players.reduce((sum, p) => sum + (p.OVR ?? 0), 0) / team.players.length)
+                    : 0;
 
-          {loadingTeams ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-1.5">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="h-9 bg-muted/40 animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-1.5">
-              {sortedTeams.map((team) => {
-                const isSelected = team.TEAM_ID === currentTeam?.TEAM_ID;
-                return (
-                  <button
-                    key={team.TEAM_ID}
-                    type="button"
-                    onClick={() => {
-                      setSelectedTeamId(team.TEAM_ID);
-                      setSearchQuery("");
-                      setRoleFilter("ALL");
-                    }}
-                    title={`${team.NAME} (${team.players.length} giocatori)`}
-                    className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs font-bold transition-all duration-200 cursor-pointer min-w-0 ${
-                      isSelected
-                        ? "bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500/30"
-                        : "bg-card border-border/80 text-foreground hover:bg-muted/60 hover:border-border"
-                    }`}
-                  >
-                    <img
-                      src={getTeamLogo(team.TEAM_ID)}
-                      alt={`${team.NAME} Logo`}
-                      className="h-5 w-5 object-contain shrink-0 group-hover:scale-110 transition-transform"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
+                  return (
+                    <div
+                      key={team.TEAM_ID}
+                      onClick={() => {
+                        setSearchParams({ team: team.TEAM_ID });
+                        setSearchQuery("");
+                        setRoleFilter("ALL");
                       }}
-                    />
-                    <span className="truncate font-extrabold tracking-tight text-left text-[11px] leading-tight">
-                      {team.NAME}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card hover:border-emerald-500/50 hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+                    >
+                      {/* Top Banner with dynamic team background */}
+                      <div className={`relative h-32 flex items-center justify-center p-4 overflow-hidden ${getTeamBackground(team.TEAM_ID)}`}>
+                        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-black/20" />
 
-        {/* TEAM HERO COMMAND CARD */}
-        {currentTeam && (
-          <Card
+                        {/* Serie A Badge & Trigram */}
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-white bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10">
+                            Serie A
+                          </span>
+                          <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-white/90 border-white/10">
+                            {team.TEAM_ID}
+                          </Badge>
+                        </div>
+
+                        {/* Palmares / Trophy pills on top-right */}
+                        <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
+                          {team.scudetto > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-amber-400/30" title={`${team.scudetto} Scudetti`}>
+                              <Trophy className="h-3 w-3 text-amber-400" />
+                              <span>{team.scudetto}</span>
+                            </span>
+                          )}
+                          {team.supercoppa > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-blue-400/30" title={`${team.supercoppa} Supercoppe`}>
+                              <ShieldCheck className="h-3 w-3 text-blue-400" />
+                              <span>{team.supercoppa}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Club Crest Logo centered */}
+                        <div className="relative z-10 flex items-center justify-center mt-3">
+                          <img
+                            src={getTeamLogo(team.TEAM_ID)}
+                            alt={`${team.NAME} Logo`}
+                            className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-xl group-hover:scale-110 transition-transform duration-300"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Card Content */}
+                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-4">
+                        <div className="text-center space-y-1.5">
+                          <h3 className="text-lg sm:text-xl font-black text-foreground group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors tracking-tight line-clamp-1">
+                            {team.NAME}
+                          </h3>
+                          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground font-medium">
+                            <User className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                            <span className="truncate">Manager: <strong className="text-foreground">{team.MANAGER || "Da Assegnare"}</strong></span>
+                          </div>
+                        </div>
+
+                        {/* Quick telemetry / squad metrics */}
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">
+                          <div className="bg-muted/40 p-2.5 rounded-xl text-center">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold block tracking-wider">Rosa</span>
+                            <span className="font-black text-foreground font-mono">{team.players.length} Giocatori</span>
+                          </div>
+                          <div className="bg-muted/40 p-2.5 rounded-xl text-center">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold block tracking-wider">OVR Medio</span>
+                            <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">{teamAvgOvr}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Bottom CTA (Premier League style "Club Info →") */}
+                      <div className="px-4 py-3 bg-muted/40 group-hover:bg-emerald-600 group-hover:text-white border-t border-border/70 flex items-center justify-between text-xs font-bold transition-all duration-200">
+                        <span className="tracking-wide uppercase text-[11px] font-black">Club Info</span>
+                        <div className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                          <span className="text-[11px] font-medium opacity-90 group-hover:opacity-100">Visualizza Rosa</span>
+                          <ChevronRight className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* BREADCRUMB / BACK NAVIGATION BAR */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/80">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSearchParams({})}
+                className="gap-2 font-bold text-xs rounded-xl border-border/80 bg-card hover:bg-muted self-start"
+              >
+                <ArrowLeft className="h-4 w-4 text-emerald-500" />
+                <span>Torna a tutte le Squadre</span>
+              </Button>
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span
+                  className="hover:text-foreground cursor-pointer transition-colors"
+                  onClick={() => setSearchParams({})}
+                >
+                  Squadre Serie A
+                </span>
+                <ChevronRight className="h-3 w-3" />
+                <span className="font-extrabold text-foreground">{currentTeam.NAME}</span>
+              </div>
+            </div>
+
+            {/* TEAM HERO COMMAND CARD */}
+            <Card
             className={`overflow-hidden border border-border/80 shadow-lg ${getTeamBackground(
               currentTeam.TEAM_ID
             )}`}
@@ -481,7 +565,6 @@ const Rose = () => {
               </div>
             </div>
           </Card>
-        )}
 
         {/* CONTROLS & FILTERS BAR */}
         <div className="space-y-3">
@@ -844,6 +927,8 @@ const Rose = () => {
               </table>
             </CardContent>
           </Card>
+        )}
+          </>
         )}
       </main>
 

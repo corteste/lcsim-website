@@ -124,9 +124,9 @@ const Navbar = () => {
   // 2. SEZIONE CALCIATORI (Richiesta utente)
   const calciatoriItems: NavGroupItem[] = [
     {
-      path: "/rose",
-      label: "Rose Serie A",
-      description: "Tutte le rose ufficiali dei 12 club",
+      path: "/squadre",
+      label: "Squadre",
+      description: "Tutti i 12 club ufficiali della Serie A",
       icon: Shield,
       colorClass: "text-indigo-500",
     },
