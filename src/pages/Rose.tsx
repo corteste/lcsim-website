@@ -388,10 +388,11 @@ const Rose = () => {
                         setSearchQuery("");
                         setRoleFilter("ALL");
                       }}
-                      className={`group relative flex flex-col justify-between rounded-2xl border border-border bg-clip-padding shadow-md hover:shadow-2xl hover:scale-[1.015] transition-all duration-300 overflow-hidden cursor-pointer ${getTeamSocialBg(team.TEAM_ID)} text-white`}
+                      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card/85 backdrop-blur-md shadow-md hover:shadow-2xl hover:scale-[1.015] hover:border-border transition-all duration-300 overflow-hidden cursor-pointer text-white"
                     >
-                      {/* Subtle dark vignette to ensure 100% text readability over solid colors */}
-                      <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+                      {/* Club Social Colors Translucent Overlay (Opzione 1) */}
+                      <div className={`absolute inset-0 opacity-25 group-hover:opacity-40 transition-opacity duration-300 pointer-events-none ${getTeamSocialBg(team.TEAM_ID)}`} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
 
                       {/* Top Palmares badges (if any) */}
                       {(team.scudetto > 0 || team.supercoppa > 0) && (
@@ -487,12 +488,11 @@ const Rose = () => {
 
             {/* TEAM HERO COMMAND CARD */}
             <div
-              className={`relative overflow-hidden rounded-2xl border border-border bg-clip-padding shadow-xl ${getTeamSocialBg(
-                currentTeam.TEAM_ID
-              )} text-white`}
+              className="relative overflow-hidden rounded-2xl border border-border/80 bg-card/85 backdrop-blur-md shadow-xl text-white"
             >
-              {/* Light soft veil for text contrast matching small cards */}
-              <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+              {/* Club Social Colors Translucent Overlay (Opzione 1) */}
+              <div className={`absolute inset-0 opacity-30 pointer-events-none ${getTeamSocialBg(currentTeam.TEAM_ID)}`} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
 
               <div className="relative z-10 p-5 sm:p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
