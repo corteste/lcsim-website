@@ -843,7 +843,7 @@ export default function AdminAutomazioni() {
                 <div className="p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs space-y-2">
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Parametri rosa post-tagli:</span>
-                    <span className="font-mono font-bold text-foreground">13-16 giocatori, max 21 asset (giocatori + pick), min. 2 portieri</span>
+                    <span className="font-mono font-bold text-foreground">13-16 giocatori, max 21 asset (con scelte compensatorie), min. 2 portieri</span>
                   </div>
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Calciatori in lista tagli:</span>

@@ -78,6 +78,7 @@ import {
   getTeamCutPlayerIds,
   togglePlayerCut,
   getTeamAvailablePicksCount,
+  getCompensatoryPicksCount,
   CUTS_MIN_ROSTER,
   CUTS_MAX_ROSTER,
   CUTS_MAX_ASSETS,
@@ -420,12 +421,16 @@ const Roster = () => {
   const minCutsNeeded = Math.max(
     0,
     currentRosterCount - CUTS_MAX_ROSTER,
-    currentRosterCount + availablePicksCount - CUTS_MAX_ASSETS
+    currentRosterCount + effectivePicksCount - CUTS_MAX_ASSETS
   );
   const maxCutsAllowed = Math.max(0, currentRosterCount - CUTS_MIN_ROSTER);
   const currentCutCount = cutPlayerIds.size;
   const postCutRoster = currentRosterCount - currentCutCount;
-  const postCutAssets = postCutRoster + availablePicksCount;
+  const compensatoryPicksCount = postCutRoster <= CUTS_MAX_ROSTER && postCutRoster >= CUTS_MIN_ROSTER
+    ? getCompensatoryPicksCount(postCutRoster)
+    : 0;
+  const effectivePicksCount = availablePicksCount + compensatoryPicksCount;
+  const postCutAssets = postCutRoster + effectivePicksCount;
   const isAssetCompliant = postCutAssets <= CUTS_MAX_ASSETS;
 
   // Calcolo salvaguardia portieri (Punto #41)
@@ -1276,9 +1281,9 @@ const Roster = () => {
                         ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
                         : "bg-destructive/10 text-destructive border-destructive/40"
                         }`}
-                      title={`Totale Asset dopo i tagli = giocatori in rosa + scelte draft non ancora utilizzate. Limite massimo: ${CUTS_MAX_ASSETS} asset, con una rosa tra ${CUTS_MIN_ROSTER} e ${CUTS_MAX_ROSTER} giocatori. Tagli minimi richiesti: ${minCutsNeeded}, massimi consentiti: ${maxCutsAllowed}.`}
+                      title={`Totale Asset dopo i tagli = giocatori in rosa + scelte draft attese (${availablePicksCount} regolari${compensatoryPicksCount > 0 ? ` + ${compensatoryPicksCount} compensatorie per rosa a ${postCutRoster}` : ""}). Limite massimo: ${CUTS_MAX_ASSETS} asset, con una rosa tra ${CUTS_MIN_ROSTER} e ${CUTS_MAX_ROSTER} giocatori. Tagli minimi richiesti: ${minCutsNeeded}, massimi consentiti: ${maxCutsAllowed}.`}
                     >
-                      Asset: {postCutAssets}/{CUTS_MAX_ASSETS} ({postCutRoster} giocatori + {availablePicksCount} pick)
+                      Asset: {postCutAssets}/{CUTS_MAX_ASSETS} ({postCutRoster} giocatori + {effectivePicksCount} pick)
                     </Badge>
                     <Badge
                       variant="outline"

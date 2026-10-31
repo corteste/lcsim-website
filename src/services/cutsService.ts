@@ -32,6 +32,20 @@ export const CUTS_MAX_ASSETS = 21;
 export const CUTS_MIN_GK = 2;
 
 /**
+ * Calcola le scelte compensatorie al Draft spettanti in base alla dimensione della rosa post-tagli (Punto #32)
+ * 16 giocatori -> 0 scelte
+ * 15 giocatori -> 1 scelta compensatoria (fine Round 4)
+ * 14 giocatori -> 2 scelte compensatorie (fine Round 3 e Round 4)
+ * 13 giocatori -> 3 scelte compensatorie (fine Round 2, Round 3 e Round 4)
+ */
+export function getCompensatoryPicksCount(postRoster: number): number {
+  if (postRoster <= CUTS_MAX_ROSTER && postRoster >= CUTS_MIN_ROSTER) {
+    return Math.max(0, CUTS_MAX_ROSTER - postRoster);
+  }
+  return 0;
+}
+
+/**
  * Conta le scelte draft possedute da una squadra e non ancora utilizzate (Punto #33)
  */
 export async function getTeamAvailablePicksCount(teamId: string): Promise<number> {

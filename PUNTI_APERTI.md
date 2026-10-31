@@ -730,17 +730,29 @@ Garantisce l'immediata compatibilità "drag & drop" con i tool e gli editor inte
 ---
 
 ## 📌 32. Logica Scelte Compensatorie al Draft
-- **Stato**: 🟡 In attesa di definizione & implementazione
-- **Priorità**: Media-Alta (Equità sportiva e gestione dei disallineamenti di lega)
-- **Moduli coinvolti**: src/pages/Draft.tsx, src/pages/admin/AdminAutomazioni.tsx
-- **Tabelle coinvolte**: public.an_draft_board, public.an_team
-Descrizione
-Integrazione e regolamentazione delle scelte compensatorie nel tabellone del Draft:
+- **Stato**: 🟢 Completato & Testato (Automazione SQL atomica in `execute_official_cuts`, bilanciamento asset in Roster e recap Admin Draft)
+- **Priorità**: Media-Alta (Equità sportiva e bilanciamento rose)
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Roster.tsx`, `src/services/cutsService.ts`, `src/pages/admin/AdminAutomazioni.tsx`
+- **Tabelle & Funzioni coinvolte**: `public.an_draft_board`, `public.execute_official_cuts`, `public.rpc_ensure_draft_board`
+- **Migrazioni**: `supabase/migrations/20261031_compensatory_draft_picks.sql` e rollback `20261031_compensatory_draft_picks_rollback.sql`
+Descrizione & Regolamento Ufficiale
+Integrazione e regolamentazione automatica delle scelte compensatorie nel tabellone del Draft in base alla dimensione finale della rosa post-tagli:
 
-Assegnazione di pick supplementari a società che abbiano subito perdite di asset non imputabili a dinamiche di mercato o criteri speciali stabiliti dal regolamento di Lega.
-Gestione della collocazione nel tabellone (es. slot di coda nei round 1, 2 o 3, oppure round compensatorio dedicato) con aggiornamento automatico della vista 60+ scelte in Draft.tsx e della funzione atomica di ripristino board.
-
-
+- **Matrice di Assegnazione Ufficiale**:
+  - **16 giocatori in rosa**: 5 scelte standard (0 compensatorie).
+  - **15 giocatori in rosa**: 5 scelte standard + **1 scelta compensatoria aggiuntiva al termine del Round 4**.
+  - **14 giocatori in rosa**: 5 scelte standard + **2 scelte compensatorie aggiuntive (una al termine del Round 3 e una del Round 4)**.
+  - **13 giocatori in rosa**: 5 scelte standard + **3 scelte compensatorie aggiuntive (una al termine del Round 2, una del Round 3 ed una del Round 4)**.
+- **Inserimento Automatico & Ordinamento nel Draft**:
+  - Le scelte compensatorie vengono create ed inserite automaticamente in `an_draft_board` al momento in cui l'Admin clicca su *"Ufficializza Tagli di Lega"* in Amministrazione (`execute_official_cuts`).
+  - L'ordine tra le squadre beneficiarie nello stesso round segue fedelmente l'ordine base del Round 1 per garantire assoluta equità.
+  - La numerazione `pick_overall` viene ricalcolata in modo atomico e sequenziale (1..60+), preservando l'avanzamento naturale del turno *"On The Clock"* e dell'Autopick.
+- **Bilanciamento Asset in Roster (`Roster.tsx`)**:
+  - Il badge degli asset post-tagli (`Asset: X/21`) bilancia dinamicamente le scelte compensatorie attese: ad esempio, per una squadra che taglia fino a 15 giocatori, il conteggio proietta `15 giocatori + 6 pick = 21/21 Asset`.
+- **Visualizzazione nella Draft Board (`Draft.tsx`)**:
+  - Nella casella della scelta compare il badge visivo dorato/ambra `⚖️ COMP` con tooltip recante la motivazione specifica.
+  - Nel tabellone generale a 60+ caselle, le scelte compensatorie vengono posizionate in una fila dedicata in calce al rispettivo Round.
+  - Aggiunto un tab dedicato *"Scelte Compensatorie"* nel modale Admin della Draft Board riservato al Super Admin per monitorare lo stato di tutte le scelte generate.
 
 ---
 

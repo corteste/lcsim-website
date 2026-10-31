@@ -183,7 +183,7 @@ const Draft = () => {
 
   // Admin dialog state
   const [adminModalOpen, setAdminModalOpen] = useState<boolean>(false);
-  const [adminTab, setAdminTab] = useState<"order" | "trades">("trades");
+  const [adminTab, setAdminTab] = useState<"order" | "trades" | "compensatory">("trades");
   const [customRound1Order, setCustomRound1Order] = useState<string[]>([]);
   const [tradeFilterRound, setTradeFilterRound] = useState<string>("1");
   const [adminSaving, setAdminSaving] = useState<boolean>(false);
