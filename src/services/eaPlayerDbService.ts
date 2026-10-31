@@ -94,17 +94,22 @@ export async function exportEADatabaseTSV(options?: {
   const shouldExportFullMaster = options?.fullMaster !== false;
   let masterContent = options?.baseTsvContent;
 
-  // Option B: Automatically fetch the static master file from public/data/DB_NEW_MASTER.txt
+  // Option B: Automatically fetch the static master file from Supabase Storage (with fallback to local)
   if (!masterContent && shouldExportFullMaster) {
+    const SUPABASE_STORAGE_URL =
+      'https://hzenyasrargpsbuaxmxl.supabase.co/storage/v1/object/public/game-templates/DB_NEW_MASTER.txt';
     try {
-      const resp = await fetch('/data/DB_NEW_MASTER.txt');
+      let resp = await fetch(SUPABASE_STORAGE_URL);
+      if (!resp.ok) {
+        resp = await fetch('/data/DB_NEW_MASTER.txt');
+      }
       if (resp.ok) {
         masterContent = await resp.text();
       } else {
-        console.warn('Impossibile caricare /data/DB_NEW_MASTER.txt (status:', resp.status, '), fallback su righe LCSIM');
+        console.warn('Impossibile caricare DB_NEW_MASTER.txt (status:', resp.status, '), fallback su righe LCSIM');
       }
     } catch (fetchErr) {
-      console.warn('Errore fetch /data/DB_NEW_MASTER.txt, fallback su righe LCSIM:', fetchErr);
+      console.warn('Errore fetch DB_NEW_MASTER.txt, fallback su righe LCSIM:', fetchErr);
     }
   }
 
