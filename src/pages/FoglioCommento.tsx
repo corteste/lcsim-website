@@ -95,6 +95,8 @@ export const FoglioCommento: React.FC = () => {
   // 4. Formazioni Casa & Trasferta
   const [homeFormation, setHomeFormation] = useState<SheetTeamFormation | null>(null);
   const [awayFormation, setAwayFormation] = useState<SheetTeamFormation | null>(null);
+  const [homePrevFormation, setHomePrevFormation] = useState<SheetTeamFormation | null>(null);
+  const [awayPrevFormation, setAwayPrevFormation] = useState<SheetTeamFormation | null>(null);
 
   // Provvedimenti Disciplinari (Squalifiche e Diffide #38)
   const [homeDisciplinaryMap, setHomeDisciplinaryMap] = useState<Record<number, PlayerDisciplinaryStatus>>({});
@@ -173,6 +175,8 @@ export const FoglioCommento: React.FC = () => {
       if (!currentMatch) {
         setHomeFormation(null);
         setAwayFormation(null);
+        setHomePrevFormation(null);
+        setAwayPrevFormation(null);
         return;
       }
 
