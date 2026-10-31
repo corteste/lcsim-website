@@ -26,6 +26,7 @@ import {
   Cpu,
   ClipboardList,
   Newspaper,
+  KeyRound,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -33,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import LoginDialog from "@/components/LoginDialog";
+import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { GlobalAnnouncementBanner } from "@/components/GlobalAnnouncementBanner";
 import { FormationCountdown } from "@/components/FormationCountdown";
@@ -64,6 +66,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const { user, logout, openLogin, isAdmin, effectiveTeam } = useAuth();
 
   const handleLogout = () => {
@@ -582,6 +585,17 @@ const Navbar = () => {
 
                   <DropdownMenuSeparator className="my-1" />
 
+                  {/* Tasto Cambia Password */}
+                  <DropdownMenuItem
+                    onClick={() => setIsChangePasswordOpen(true)}
+                    className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-bold text-foreground hover:bg-muted/60 focus:bg-muted/60 cursor-pointer"
+                  >
+                    <div className="p-1.5 rounded-md bg-primary/10 text-primary shrink-0">
+                      <KeyRound className="h-4 w-4" />
+                    </div>
+                    <span>Cambia Password</span>
+                  </DropdownMenuItem>
+
                   {/* Tasto Disconnetti integrato */}
                   <DropdownMenuItem
                     onClick={handleLogout}
@@ -784,30 +798,43 @@ const Navbar = () => {
                   {/* Footer Mobile Sheet */}
                   <div className="p-4 border-t border-border/70 bg-muted/20">
                     {user ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {user.team && (
-                            <img
-                              src={`/images/teams/${user.team}_Logo.png`}
-                              alt={user.team}
-                              className="h-5 w-5 object-contain"
-                            />
-                          )}
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold truncate">{user.name}</div>
-                            <div className="text-[10px] text-muted-foreground font-mono">{user.team || (isAdmin ? "Admin di Lega" : "")}</div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {user.team && (
+                              <img
+                                src={`/images/teams/${user.team}_Logo.png`}
+                                alt={user.team}
+                                className="h-5 w-5 object-contain"
+                              />
+                            )}
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold truncate">{user.name}</div>
+                              <div className="text-[10px] text-muted-foreground font-mono">{user.team || (isAdmin ? "Admin di Lega" : "")}</div>
+                            </div>
                           </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setIsOpen(false);
+                              handleLogout();
+                            }}
+                            className="h-8 text-xs text-rose-600 hover:bg-rose-500/10"
+                          >
+                            <LogOut className="h-3.5 w-3.5 mr-1" /> Esci
+                          </Button>
                         </div>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           onClick={() => {
                             setIsOpen(false);
-                            handleLogout();
+                            setIsChangePasswordOpen(true);
                           }}
-                          className="h-8 text-xs text-rose-600 hover:bg-rose-500/10"
+                          className="w-full h-8 text-xs font-bold border-border/80 gap-1.5"
                         >
-                          <LogOut className="h-3.5 w-3.5 mr-1" /> Esci
+                          <KeyRound className="h-3.5 w-3.5 text-primary" /> Cambia Password
                         </Button>
                       </div>
                     ) : (
@@ -831,6 +858,10 @@ const Navbar = () => {
       </div>
       <GlobalAnnouncementBanner />
       <LoginDialog />
+      <ChangePasswordModal
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+      />
     </nav>
   );
 };

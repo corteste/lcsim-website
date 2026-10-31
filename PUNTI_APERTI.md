@@ -440,16 +440,32 @@ Descrizione & Implementazione
 ---
 
 ## 📌 16. Pulsante e Modale per il Cambio Password
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato su branch dev
 - **Priorità**: Media (Sicurezza e autonomia degli account manager)
-- **Moduli coinvolti**: Navbar.tsx (menu utente/squadra), src/context/AuthContext.tsx, modale dedicato ChangePasswordModal.tsx
-- **Tabelle coinvolte**: Tabella utenti Supabase (auth.users o public.an_users / app_users)
-Descrizione
-Aggiunta di un'azione accessibile dal menu profilo/squadra nella Navbar (o in impostazioni squadra) per consentire a ciascun manager autenticato (e all'admin) di modificare in autonomia la propria password:
+- **Moduli coinvolti**: `src/context/AuthContext.tsx`, `src/components/auth/ChangePasswordModal.tsx`, `src/components/Navbar.tsx`, `supabase/migrations/20261031_change_password_rpc.sql`
+- **Tabelle coinvolte**: `public.app_user`
+### Descrizione & Implementazione
+Implementato il sistema completo per consentire a ciascun manager autenticato (e all'admin) di modificare in autonomia la propria password di accesso:
 
-Campo per password attuale (verifica di sicurezza).
-Campo per nuova password con conferma.
-Hashing/aggiornamento sicuro su Supabase e feedback visivo immediato con toast di conferma.
+1. **Funzione RPC Database Atomica (`rpc_change_password`)**:
+   - Creata con script SQL di migrazione e rollback in `supabase/migrations/20261031_change_password_rpc.sql`.
+   - Verifica la correttezza della password attuale dell'utente in `public.app_user`.
+   - Controlla la lunghezza minima della nuova password ($ge 6$ caratteri) e che sia diversa da quella precedente.
+   - Aggiorna in modo sicuro e atomico il record su Supabase.
+
+2. **Auth Context (`AuthContext.tsx`)**:
+   - Esposto il metodo `changePassword(currentPassword, newPassword)` tramite `useAuth()`.
+
+3. **Componente Modale (`ChangePasswordModal.tsx`)**:
+   - Badge profilo utente autenticato con indicazione club o ruolo Admin.
+   - Tre campi dedicati: *Password Attuale*, *Nuova Password* e *Conferma Nuova Password*.
+   - Pulsanti mostra/nascondi occhio (`Eye`/`EyeOff`) per ciascun campo.
+   - Indicatori visivi in tempo reale su lunghezza minima e corrispondenza delle password.
+   - Gestione errori inline e notifica toast di conferma al salvataggio.
+
+4. **Integrazione Navigazione (`Navbar.tsx`)**:
+   - Inserita la voce `🔑 Cambia Password` nel dropdown utente desktop ("La Mia Squadra" / "Amministrazione") subito sopra la voce *Disconnetti*.
+   - Aggiunto il pulsante dedicato nel cassetto laterale della navigazione mobile.
 
 
 

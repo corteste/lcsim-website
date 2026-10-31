@@ -14,6 +14,7 @@ interface AuthContextType {
   availableTeams: TeamOption[];
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   claimTeam: (params: { teamId: string; username: string; password: string; name?: string }) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isLoading: boolean;
   fetchFreeTeams: () => Promise<FreeTeam[]>;
@@ -177,6 +178,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!user?.username) {
+      return { success: false, error: "Nessun utente autenticato." };
+    }
+
+    try {
+      const { data, error } = await supabase.rpc("rpc_change_password", {
+        p_username: user.username,
+        p_current_password: currentPassword,
+        p_new_password: newPassword,
+      });
+
+      if (error) {
+        console.error("rpc_change_password error:", error);
+        return { success: false, error: error.message };
+      }
+
+      if (!data?.success) {
+        return {
+          success: false,
+          error: data?.error || "Impossibile aggiornare la password.",
+        };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error("changePassword exception:", err);
+      return {
+        success: false,
+        error: err?.message || "Errore imprevisto durante l'aggiornamento.",
+      };
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
@@ -225,6 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         availableTeams,
         login,
         claimTeam,
+        changePassword,
         logout,
         isLoading,
         fetchFreeTeams,
