@@ -475,6 +475,15 @@ const Scouting = () => {
   };
 
   // All scouted rookies for the Recap tab
+  // Mappa dei gettoni spesi per rookie (per la scheda Autopick)
+  const scoutingTokensByRookie = useMemo(() => {
+    const map: Record<number, number> = {};
+    Object.entries(scoutingMap).forEach(([id, rec]) => {
+      map[Number(id)] = rec.tokens_spent || 0;
+    });
+    return map;
+  }, [scoutingMap]);
+
   const scoutedRookiesList = useMemo(() => {
     return rookies
       .filter((r) => (scoutingMap[Number(r.ID)]?.tokens_spent ?? 0) > 0)
@@ -1699,13 +1708,7 @@ const Scouting = () => {
               }
               allRookies={rookies}
               favoriteRookieIds={favoriteRookieIds}
-              scoutingTokensByRookie={useMemo(() => {
-                const map: Record<number, number> = {};
-                Object.entries(scoutingMap).forEach(([id, rec]) => {
-                  map[Number(id)] = rec.tokens_spent || 0;
-                });
-                return map;
-              }, [scoutingMap])}
+              scoutingTokensByRookie={scoutingTokensByRookie}
               onInspectRookie={(rookieId) => {
                 setSelectedRookieId(rookieId);
                 handleTabChange("single");
