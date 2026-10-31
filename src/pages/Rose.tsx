@@ -200,10 +200,6 @@ const Rose = () => {
     return teams.slice().sort((a, b) => a.NAME.localeCompare(b.NAME));
   }, [teams]);
 
-  // Team Jerseys & Lightbox Dialog
-  const [selectedJersey, setSelectedJersey] = useState<TeamJersey | null>(null);
-  const currentJerseys = useMemo(() => getTeamJerseys(currentTeam?.TEAM_ID), [currentTeam?.TEAM_ID]);
-
   // URL Search Params sync for Team Selection (?team=XXX)
   const [searchParams, setSearchParams] = useSearchParams();
   const teamParam = searchParams.get("team");
@@ -213,6 +209,10 @@ const Rose = () => {
     if (!teamParam) return undefined;
     return sortedTeams.find((t) => t.TEAM_ID.toUpperCase() === teamParam.toUpperCase());
   }, [sortedTeams, teamParam]);
+
+  // Team Jerseys & Lightbox Dialog
+  const [selectedJersey, setSelectedJersey] = useState<TeamJersey | null>(null);
+  const currentJerseys = useMemo(() => getTeamJerseys(currentTeam?.TEAM_ID), [currentTeam?.TEAM_ID]);
 
   // Audio Anthem Player state
   const audioRef = useRef<HTMLAudioElement | null>(null);
