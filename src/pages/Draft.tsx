@@ -233,18 +233,30 @@ const Draft = () => {
     return [...unrankedIds, ...rankedActiveIds.reverse()];
   }, [teams, standings]);
 
+  // Effective team for the right-hand user panel and decrypted scouting data
+  const activeUserTeamId = useMemo(() => {
+    if (!user) return null;
+    return effectiveTeam || null;
+  }, [user, effectiveTeam]);
+
+  const activeUserTeam = useMemo(() => {
+    if (!activeUserTeamId) return null;
+    return teamMap.get(activeUserTeamId) ?? null;
+  }, [activeUserTeamId, teamMap]);
+
   const fetchDraftData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
+      const rookiesQuery = activeUserTeamId
+        ? supabase.rpc("rpc_get_scouted_rookies", { p_team_id: activeUserTeamId })
+        : supabase.from(ROOKIE_TABLE).select("*").order("Cognome", { ascending: true });
+
       const [boardRes, rookiesRes, freeAgentsRes, gkRes] = await Promise.all([
         supabase
           .from(DRAFT_BOARD_TABLE)
           .select("*, rookie:an_rookie(ID, Nome, Cognome, Posiz, Squadra), player:an_player(ID, Nome, Cognome, Posiz, Squadra, OVR)")
           .order("pick_overall", { ascending: true }),
-        supabase
-          .from(ROOKIE_TABLE)
-          .select("*")
-          .order("Cognome", { ascending: true }),
+        rookiesQuery,
         supabase
           .from("an_player")
           .select("*")
@@ -276,6 +288,10 @@ const Draft = () => {
       setPicks(boardRows);
       const rkList = ((rookiesRes.data ?? []) as Player[]).sort((a, b) => (a.Cognome || "").localeCompare(b.Cognome || ""));
       setRookies(rkList);
+      setInspectedRookie((prev) => {
+        if (!prev) return null;
+        return rkList.find((r) => Number(r.ID) === Number(prev.ID)) || prev;
+      });
       setFreeAgents((freeAgentsRes.data ?? []) as Player[]);
 
       const gkCounts: Record<string, number> = {};
@@ -297,7 +313,7 @@ const Draft = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [activeUserTeamId]);
 
   useEffect(() => {
     fetchDraftData();
@@ -308,16 +324,7 @@ const Draft = () => {
     return picks.find((p) => p.rookie_id === null && (!p.player_id || p.player_id === null)) ?? null;
   }, [picks]);
 
-  // Effective team for the right-hand user panel
-  const activeUserTeamId = useMemo(() => {
-    if (!user) return null;
-    return effectiveTeam || null;
-  }, [user, effectiveTeam]);
 
-  const activeUserTeam = useMemo(() => {
-    if (!activeUserTeamId) return null;
-    return teamMap.get(activeUserTeamId) ?? null;
-  }, [activeUserTeamId, teamMap]);
 
   useEffect(() => {
     if (!activeUserTeamId) {
