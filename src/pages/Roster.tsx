@@ -418,12 +418,6 @@ const Roster = () => {
   }, []);
 
   const currentRosterCount = players.length;
-  const minCutsNeeded = Math.max(
-    0,
-    currentRosterCount - CUTS_MAX_ROSTER,
-    currentRosterCount + effectivePicksCount - CUTS_MAX_ASSETS
-  );
-  const maxCutsAllowed = Math.max(0, currentRosterCount - CUTS_MIN_ROSTER);
   const currentCutCount = cutPlayerIds.size;
   const postCutRoster = currentRosterCount - currentCutCount;
   const compensatoryPicksCount = postCutRoster <= CUTS_MAX_ROSTER && postCutRoster >= CUTS_MIN_ROSTER
@@ -432,6 +426,13 @@ const Roster = () => {
   const effectivePicksCount = availablePicksCount + compensatoryPicksCount;
   const postCutAssets = postCutRoster + effectivePicksCount;
   const isAssetCompliant = postCutAssets <= CUTS_MAX_ASSETS;
+
+  const minCutsNeeded = Math.max(
+    0,
+    currentRosterCount - CUTS_MAX_ROSTER,
+    currentRosterCount + availablePicksCount - CUTS_MAX_ASSETS
+  );
+  const maxCutsAllowed = Math.max(0, currentRosterCount - CUTS_MIN_ROSTER);
 
   // Calcolo salvaguardia portieri (Punto #41)
   const totalGks = useMemo(() => players.filter((p) => p.Posiz === "POR").length, [players]);
