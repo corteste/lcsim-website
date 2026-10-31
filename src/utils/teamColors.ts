@@ -19,7 +19,7 @@ export const TEAM_COLORS: Record<string, TeamColorConfig> = {
   ACF: {
     name: "AC Fantasy",
     primary: "#10b981", // Verde Smeraldo
-    secondary: "#a855f7", // Viola / Magenta
+    secondary: "#18181b", // Nero
   },
   ALV: {
     name: "Alvisopoli FC",

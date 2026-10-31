@@ -78,34 +78,46 @@ const ROLE_GROUPS = [
 ];
 
 // Known teams with an official anthem available in public/sounds
-// Club Social Colors Solid Gradients (No site bg blend)
+// Club Social Colors Solid Gradients (Muted, elegant, and non-garish)
 const getTeamSocialBg = (team: string): string => {
   switch (team) {
     case "APD":
-      return "bg-gradient-to-br from-[#eab308] via-[#ca8a04] to-[#ec4899]"; // Giallo Oro & Rosa Shocking
+      // APD: sfumatura a 3 colori (nero, rosa e giallo) attenuata ed elegante
+      return "bg-gradient-to-br from-[#09090b] via-[#831843] to-[#854d0e]";
     case "ASK":
     case "SKA":
-      return "bg-gradient-to-br from-[#059669] via-[#047857] to-[#f8fafc]"; // Verde Primario & Bianco Secondario
+      // Sporting Karalis: Verde primario & Bianco secondario attenuato
+      return "bg-gradient-to-br from-[#064e3b] via-[#047857] to-[#cbd5e1]";
     case "ACF":
-      return "bg-gradient-to-br from-[#10b981] via-[#059669] to-[#a855f7]"; // Verde Smeraldo & Viola
+      // AC Fantasy: Verde primario & Nero secondario
+      return "bg-gradient-to-br from-[#064e3b] via-[#065f46] to-[#09090b]";
     case "PFC":
-      return "bg-gradient-to-br from-[#ec4899] via-[#db2777] to-[#18181b]"; // Rosa & Nero Antracite
+      // PFC: Rosa & Nero profondo
+      return "bg-gradient-to-br from-[#831843] via-[#4c0519] to-[#09090b]";
     case "MAR":
-      return "bg-gradient-to-br from-[#dc2626] via-[#7f1d1d] to-[#2563eb]"; // Rosso Fuoco & Blu
+      // Mar's Attack: Rosso rubino scuro & Blu navy
+      return "bg-gradient-to-br from-[#7f1d1d] via-[#450a0a] to-[#1e3a8a]";
     case "ACD":
-      return "bg-gradient-to-br from-[#ef4444] via-[#b91c1c] to-[#e2e8f0]"; // Rosso & Bianco
+      // AC Denti: Rosso granata & Bianco fumo
+      return "bg-gradient-to-br from-[#7f1d1d] via-[#991b1b] to-[#94a3b8]";
     case "ALV":
-      return "bg-gradient-to-br from-[#0ea5e9] via-[#0284c7] to-[#f97316]"; // Azzurro Primario & Arancione Secondario
+      // Alvisopoli: Azzurro temperato & Arancione terracotta
+      return "bg-gradient-to-br from-[#0369a1] via-[#075985] to-[#c2410c]";
     case "OLD":
-      return "bg-gradient-to-br from-[#3b82f6] via-[#2563eb] to-[#f43f5e]"; // Blu Royale & Rosa Fluo
+      // Old Bois: Blu zaffiro scuro & Lampone scuro
+      return "bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#9d174d]";
     case "VFC":
-      return "bg-gradient-to-br from-[#eab308] via-[#ca8a04] to-[#18181b]"; // Giallo Sole & Nero
+      // Virtus FC: Oro brunito / Ambra & Nero
+      return "bg-gradient-to-br from-[#854d0e] via-[#713f12] to-[#09090b]";
     case "RMB":
-      return "bg-gradient-to-br from-[#b91c1c] via-[#991b1b] to-[#18181b]"; // Rosso Rubino & Nero
+      // Real Madrink: Rosso scuro vellutato & Nero
+      return "bg-gradient-to-br from-[#7f1d1d] via-[#450a0a] to-[#09090b]";
     case "COS":
-      return "bg-gradient-to-br from-[#8b5cf6] via-[#6d28d9] to-[#06b6d4]"; // Viola Notte & Ciano Elettrico
+      // Cosmo FC: Viola prugna profondo & Petrolio/Ciano scuro
+      return "bg-gradient-to-br from-[#581c87] via-[#3b0764] to-[#0e7490]";
     case "EUR":
-      return "bg-gradient-to-br from-[#1d4ed8] via-[#1e40af] to-[#facc15]"; // Blu Navy & Giallo
+      // Eurosbin: Blu navy notte & Oro brunito
+      return "bg-gradient-to-br from-[#1e3a8a] via-[#172554] to-[#854d0e]";
     default:
       return "bg-gradient-to-br from-slate-800 via-slate-900 to-black";
   }
