@@ -1175,13 +1175,22 @@ Le interviste devono essere diverse per ciascun manager. Il punto #20 le dichiar
 ---
 
 ## 📌 55. Confronto Serie A: Statistiche Stagionali & Errore Portiere vs Giocatore di Movimento
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Risoluzione discrepanza POR vs Movimento con radar adattivo e nuova tab Statistiche Stagionali)
 - **Priorità**: Alta (Bug bloccante nel confronto)
-- **Moduli coinvolti**: src/pages/ConfrontoGiocatori.tsx
-- **Tabelle coinvolte**: VIEW_PLAYER_STATS, an_player
-Descrizione
-Statistiche Stagionali: aggiungere al confronto la sezione con le statistiche stagionali dei due giocatori.
-Bug Portiere vs Movimento: confrontando un giocatore di movimento con un portiere il confronto si rompe (attributi e statistiche non coincidono). Gestire il caso con set di attributi dedicati o con gestione dei campi mancanti.
+- **Moduli coinvolti**: `src/pages/ConfrontoGiocatori.tsx`, `src/components/comparison/PlayerSeasonalStatsComparison.tsx`
+- **Tabelle coinvolte**: `view_player_stats`, `as_player_stat`, `an_player`
+### Descrizione
+1. **Risoluzione Bug e Disallineamento Portiere vs Movimento (Opzione A)**:
+   - **Radar Chart Adattivo**: Riconoscimento automatico del confronto inter-ruolo. Se entrambi sono portieri o entrambi di movimento, viene mostrato il classico radar a 6 macro-aree coerenti. Se si confronta un Portiere con un Giocatore di Movimento, un banner informativo segnala la non-sovrapponibilità geometrica dei due reparti e visualizza due radar dedicati affiancati con i rispettivi 6 pilastri e valori specifici (TUF, PRE, RIN, RIF, POS, FIS per il portiere; VEL, TIR, PAS, DRI, DIF, FIS per il movimento).
+   - **Head-to-Head & Attributi**: Esclusione di attribuzioni spurie di vittorie nelle categorie non pertinenti; nel computo generale "Tutti gli attributi" il confronto inter-ruolo è calibrato sugli attributi atletici/fisici condivisi, mentre nella tab Portiere i non portieri riportano l'indicazione `N/D` senza falsare il bilancio.
+2. **Sezione Statistiche Stagionali (Tab Dedicata STATS)**:
+   - Inserita la nuova scheda **"Statistiche Stagionali"** nel blocco principale di scontro diretto con il selettore delle stagioni (Tutte le Stagioni / Carriera o singola stagione).
+   - Estrazione in tempo reale delle presenze e delle metriche di gara da `view_player_stats` / `as_player_stat`.
+   - Confronto dettagliato con barre proporzionali e badge di vantaggio:
+     - **Metriche Generali**: Presenze, Minuti disputati, Media Voto, MOTM, Gialli, Rossi, Falli.
+     - **Movimento**: Gol, Assist, Partecipazione ai Gol (G+A), Tiri (in porta / tot e % precisione), Passaggi riusciti/tot e %, Dribbling riusciti e %, Contrasti vinti e %.
+     - **Portiere**: Gol Subiti, Media Gol Subiti / partita, Parate totali e per partita, Clean Sheets (porte inviolate), Precisione Rinvii/Passaggi.
+     - **POR vs Movimento**: Metriche generali a scontro diretto e schede specializzate affiancate per fase offensiva e difesa della porta.
 
 
 

@@ -41,7 +41,10 @@ import {
   ExternalLink,
   Activity,
   UserCheck,
+  BarChart3,
+  ShieldAlert,
 } from "lucide-react";
+import { PlayerSeasonalStatsComparison } from "@/components/comparison/PlayerSeasonalStatsComparison";
 import {
   getPlayerImage,
   getNationalityFlag,
@@ -672,6 +675,12 @@ const ConfrontoGiocatori = () => {
     setSelectorTarget(null);
   };
 
+  // Rilevamento disallineamento ruolo Portiere vs Giocatore di Movimento (#55)
+  const isGkVsOutfield = useMemo(() => {
+    if (!leftPlayer || !rightPlayer) return false;
+    return (leftPlayer.Posiz === "POR") !== (rightPlayer.Posiz === "POR");
+  }, [leftPlayer, rightPlayer]);
+
   // Compute Head-to-Head win summary for the active category
   const comparisonStats = useMemo(() => {
     const category = STAT_CATEGORIES.find((c) => c.id === activeTab) || STAT_CATEGORIES[0];
@@ -685,7 +694,16 @@ const ConfrontoGiocatori = () => {
     let ties = 0;
     let hidden = 0;
 
-    for (const st of comparisonStats) {
+    // Se POR vs Movimento e siamo su "ALL", filtriamo su attributi condivisi (FIS e CPZ) per evitare falsi conteggi
+    const effectiveStats =
+      isGkVsOutfield && activeTab === "ALL"
+        ? comparisonStats.filter((st) => st.dept === "FIS" || st.dept === "CPZ")
+        : comparisonStats;
+
+    for (const st of effectiveStats) {
+      // Se tab Portiere e uno dei due non è portiere, escludi dall'head-to-head competitivo
+      if (st.dept === "POR" && isGkVsOutfield) continue;
+
       const a = getPlayerStatValue(leftPlayer, st.key, st.dept);
       const b = getPlayerStatValue(rightPlayer, st.key, st.dept);
 
@@ -700,7 +718,7 @@ const ConfrontoGiocatori = () => {
       }
     }
     return { winsLeft, winsRight, ties, hidden };
-  }, [leftPlayer, rightPlayer, comparisonStats]);
+  }, [leftPlayer, rightPlayer, comparisonStats, isGkVsOutfield, activeTab]);
 
   if (isTeamMode && !user) {
     return (
@@ -928,24 +946,38 @@ const ConfrontoGiocatori = () => {
                   </div>
 
                   {/* Scoreboard Pill */}
-                  <div className="flex items-center gap-2 bg-card border border-border px-3.5 py-1.5 rounded-xl shadow-sm text-xs font-mono font-bold">
-                    <span className="text-blue-500">
-                      {leftPlayer.Cognome}: {headToHeadSummary.winsLeft}
-                    </span>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="text-muted-foreground">
-                      Parità: {headToHeadSummary.ties}
-                    </span>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="text-emerald-500">
-                      {rightPlayer.Cognome}: {headToHeadSummary.winsRight}
-                    </span>
-                    {headToHeadSummary.hidden > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 bg-card border border-border px-3.5 py-1.5 rounded-xl shadow-sm text-xs font-mono font-bold">
+                    {activeTab === "STATS" ? (
+                      <span className="text-emerald-500 flex items-center gap-1">
+                        <BarChart3 className="h-3.5 w-3.5" />
+                        Tabellino Partite Ufficiali di Campionato
+                      </span>
+                    ) : (
                       <>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-amber-500 flex items-center gap-1">
-                          <Lock className="h-3 w-3" /> {headToHeadSummary.hidden} da svelare
+                        <span className="text-blue-500">
+                          {leftPlayer.Cognome}: {headToHeadSummary.winsLeft}
                         </span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground">
+                          Parità: {headToHeadSummary.ties}
+                        </span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-emerald-500">
+                          {rightPlayer.Cognome}: {headToHeadSummary.winsRight}
+                        </span>
+                        {headToHeadSummary.hidden > 0 && (
+                          <>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-amber-500 flex items-center gap-1">
+                              <Lock className="h-3 w-3" /> {headToHeadSummary.hidden} da svelare
+                            </span>
+                          </>
+                        )}
+                        {isGkVsOutfield && activeTab === "ALL" && (
+                          <Badge variant="outline" className="text-[9px] font-mono border-amber-500/30 text-amber-600 dark:text-amber-400">
+                            Attributi Comuni
+                          </Badge>
+                        )}
                       </>
                     )}
                   </div>
@@ -974,6 +1006,13 @@ const ConfrontoGiocatori = () => {
                       >
                         <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
                         Ruoli &amp; Tratti
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="STATS"
+                        className="h-10 data-[state=active]:bg-card data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 data-[state=active]:text-foreground text-xs font-bold px-3 transition-all rounded-none"
+                      >
+                        <BarChart3 className="h-3.5 w-3.5 mr-1.5 text-emerald-500" />
+                        Statistiche Stagionali
                       </TabsTrigger>
                     </TabsList>
                   </div>
@@ -1048,6 +1087,11 @@ const ConfrontoGiocatori = () => {
                         rightPlayer={rightPlayer}
                       />
                     </div>
+                  </TabsContent>
+
+                  {/* Seasonal Match Stats Tab Content (#55) */}
+                  <TabsContent value="STATS" className="p-4 sm:p-6 m-0 focus-visible:outline-none">
+                    <PlayerSeasonalStatsComparison leftPlayer={leftPlayer} rightPlayer={rightPlayer} />
                   </TabsContent>
                 </Tabs>
               </Card>
@@ -1576,26 +1620,47 @@ const StatComparisonRow = ({
   leftPlayer,
   rightPlayer,
 }: StatComparisonRowProps) => {
-  const left = getPlayerStatValue(leftPlayer, stat.key, stat.dept);
-  const right = getPlayerStatValue(rightPlayer, stat.key, stat.dept);
+  const isStatGk = stat.dept === "POR";
+  const leftIsGk = leftPlayer.Posiz === "POR";
+  const rightIsGk = rightPlayer.Posiz === "POR";
+  const leftNotGk = isStatGk && !leftIsGk;
+  const rightNotGk = isStatGk && !rightIsGk;
+
+  const rawLeft = getPlayerStatValue(leftPlayer, stat.key, stat.dept);
+  const rawRight = getPlayerStatValue(rightPlayer, stat.key, stat.dept);
+
+  const left = leftNotGk
+    ? { isRevealed: true, numericVal: null, displayVal: "N/D" }
+    : rawLeft;
+  const right = rightNotGk
+    ? { isRevealed: true, numericVal: null, displayVal: "N/D" }
+    : rawRight;
 
   const bothRevealed = left.isRevealed && right.isRevealed;
   const numA = left.numericVal;
   const numB = right.numericVal;
 
-  const aWins = bothRevealed && numA !== null && numB !== null && numA > numB;
-  const bWins = bothRevealed && numA !== null && numB !== null && numB > numA;
-  const isTie = bothRevealed && numA !== null && numB !== null && numA === numB;
+  // Non dichiarare vittoria se uno dei due giocatori non appartiene al ruolo della statistica
+  const isComparable = !(leftNotGk || rightNotGk);
+  const aWins = isComparable && bothRevealed && numA !== null && numB !== null && numA > numB;
+  const bWins = isComparable && bothRevealed && numA !== null && numB !== null && numB > numA;
+  const isTie = isComparable && bothRevealed && numA !== null && numB !== null && numA === numB;
 
   const diffA = aWins && numA !== null && numB !== null ? `+${numA - numB}` : null;
   const diffB = bWins && numA !== null && numB !== null ? `+${numB - numA}` : null;
 
-  // Visual Bar Percentage (proportional to values, defaulting to 50/50 if unrevealed)
+  // Visual Bar Percentage (proportional to values, defaulting to 50/50 if unrevealed or non-comparable)
   let percentA = 50;
   let percentB = 50;
-  if (bothRevealed && numA !== null && numB !== null && numA + numB > 0) {
+  if (isComparable && bothRevealed && numA !== null && numB !== null && numA + numB > 0) {
     percentA = Math.round((numA / (numA + numB)) * 100);
     percentB = 100 - percentA;
+  } else if (leftNotGk && !rightNotGk) {
+    percentA = 0;
+    percentB = 100;
+  } else if (!leftNotGk && rightNotGk) {
+    percentA = 100;
+    percentB = 0;
   }
 
   return (
@@ -1839,46 +1904,73 @@ const PlayerComparisonRadar = ({
   leftPlayer,
   rightPlayer,
 }: PlayerComparisonRadarProps) => {
+  const isLeftGk = leftPlayer.Posiz === "POR";
+  const isRightGk = rightPlayer.Posiz === "POR";
+  const isGkVsOutfield = isLeftGk !== isRightGk;
+
   const leftPillars = getMacroPillars(leftPlayer);
   const rightPillars = getMacroPillars(rightPlayer);
 
   const leftOvr = getPlayerOvr(leftPlayer);
   const rightOvr = getPlayerOvr(rightPlayer);
 
-  const radarData = leftPillars.map((lp, idx) => {
-    const rp = rightPillars[idx];
-    // Baseline 25 if unrevealed to visually indent the vertex and indicate locked state
-    const valA = lp.isRevealed ? (lp.numericVal ?? 0) : 25;
-    const valB = rp.isRevealed ? (rp.numericVal ?? 0) : 25;
-
-    let winnerText: string | null = null;
-    if (lp.isRevealed && rp.isRevealed && lp.numericVal !== null && rp.numericVal !== null) {
-      if (lp.numericVal > rp.numericVal) {
-        winnerText = `+${lp.numericVal - rp.numericVal} ${leftPlayer.Cognome}`;
-      } else if (rp.numericVal > lp.numericVal) {
-        winnerText = `+${rp.numericVal - lp.numericVal} ${rightPlayer.Cognome}`;
-      } else {
-        winnerText = "Parità perfetta";
-      }
-    } else if (!lp.isRevealed || !rp.isRevealed) {
-      winnerText = "Statistica non svelata (Richiede Scouting)";
-    }
-
-    return {
-      pillar: lp.label,
-      pillarName: lp.name,
-      valA,
-      valB,
-      displayA: lp.displayVal,
-      displayB: rp.displayVal,
-      isRevealedA: lp.isRevealed,
-      isRevealedB: rp.isRevealed,
-      winner: winnerText,
-    };
-  });
-
   const leftHiddenCount = leftPillars.filter((p) => !p.isRevealed).length;
   const rightHiddenCount = rightPillars.filter((p) => !p.isRevealed).length;
+
+  // Se entrambi sono portieri o entrambi sono di movimento: radar unico classico
+  const radarData = !isGkVsOutfield
+    ? leftPillars.map((lp, idx) => {
+        const rp = rightPillars[idx];
+        const valA = lp.isRevealed ? (lp.numericVal ?? 0) : 25;
+        const valB = rp.isRevealed ? (rp.numericVal ?? 0) : 25;
+
+        let winnerText: string | null = null;
+        if (lp.isRevealed && rp.isRevealed && lp.numericVal !== null && rp.numericVal !== null) {
+          if (lp.numericVal > rp.numericVal) {
+            winnerText = `+${lp.numericVal - rp.numericVal} ${leftPlayer.Cognome}`;
+          } else if (rp.numericVal > lp.numericVal) {
+            winnerText = `+${rp.numericVal - lp.numericVal} ${rightPlayer.Cognome}`;
+          } else {
+            winnerText = "Parità perfetta";
+          }
+        } else if (!lp.isRevealed || !rp.isRevealed) {
+          winnerText = "Statistica non svelata (Richiede Scouting)";
+        }
+
+        return {
+          pillar: lp.label,
+          pillarName: lp.name,
+          valA,
+          valB,
+          displayA: lp.displayVal,
+          displayB: rp.displayVal,
+          isRevealedA: lp.isRevealed,
+          isRevealedB: rp.isRevealed,
+          winner: winnerText,
+        };
+      })
+    : [];
+
+  // Se POR vs Movimento: prepariamo i dati separati per i 2 radar individuali
+  const leftSingleRadarData = isGkVsOutfield
+    ? leftPillars.map((p) => ({
+        pillar: p.label,
+        pillarName: p.name,
+        val: p.isRevealed ? (p.numericVal ?? 0) : 25,
+        display: p.displayVal,
+        isRevealed: p.isRevealed,
+      }))
+    : [];
+
+  const rightSingleRadarData = isGkVsOutfield
+    ? rightPillars.map((p) => ({
+        pillar: p.label,
+        pillarName: p.name,
+        val: p.isRevealed ? (p.numericVal ?? 0) : 25,
+        display: p.displayVal,
+        isRevealed: p.isRevealed,
+      }))
+    : [];
 
   return (
     <Card className="border border-border/80 bg-card shadow-lg overflow-hidden">
@@ -1889,7 +1981,9 @@ const PlayerComparisonRadar = ({
             Radar di Confronto Multi-Dimensionale
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Impronta geometrica a 6 macro-aree (scala 0–99). Visualizza a colpo d'occhio l'equilibrio tecnico e atletico.
+            {isGkVsOutfield
+              ? "Profili prestazionali a 6 macro-aree dedicati per ruolo (Portiere vs Movimento)."
+              : "Impronta geometrica a 6 macro-aree (scala 0–99). Visualizza a colpo d'occhio l'equilibrio tecnico e atletico."}
           </p>
         </div>
 
@@ -1898,230 +1992,336 @@ const PlayerComparisonRadar = ({
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 font-bold">
             <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
             <span>
-              {leftPlayer.Cognome} ({leftOvr.displayVal})
+              {leftPlayer.Cognome} ({leftPlayer.Posiz} - {leftOvr.displayVal})
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
             <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
             <span>
-              {rightPlayer.Cognome} ({rightOvr.displayVal})
+              {rightPlayer.Cognome} ({rightPlayer.Posiz} - {rightOvr.displayVal})
             </span>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        {/* Radar Graphic (Left 7 columns on desktop) */}
-        <div className="lg:col-span-7 flex flex-col items-center justify-center relative min-h-[320px] sm:min-h-[360px] w-full">
-          {(leftHiddenCount > 0 || rightHiddenCount > 0) && (
-            <div className="absolute top-0 right-0 z-10 flex flex-col items-end gap-1 pointer-events-none">
-              {leftHiddenCount > 0 && (
-                <Badge
-                  variant="outline"
-                  className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[10px] font-mono gap-1"
-                >
-                  <Lock className="h-2.5 w-2.5" />
-                  {leftPlayer.Cognome}: {6 - leftHiddenCount}/6 scoperte
-                </Badge>
-              )}
-              {rightHiddenCount > 0 && (
-                <Badge
-                  variant="outline"
-                  className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-mono gap-1"
-                >
-                  <Lock className="h-2.5 w-2.5" />
-                  {rightPlayer.Cognome}: {6 - rightHiddenCount}/6 scoperte
-                </Badge>
-              )}
+      <CardContent className="p-4 sm:p-6 space-y-6">
+        {/* Caso A: Errore Portiere vs Movimento (#55 - Opzione A) */}
+        {isGkVsOutfield ? (
+          <div className="space-y-6">
+            {/* Banner Informativo di Non Sovrapponibilità Geometrica */}
+            <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start sm:items-center gap-3">
+              <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5 sm:mt-0" />
+              <div className="text-xs space-y-0.5">
+                <span className="font-extrabold text-foreground block">
+                  Confronto Geometrico Diretto Non Applicabile (Portiere vs Movimento)
+                </span>
+                <p className="text-muted-foreground leading-relaxed">
+                  I portieri utilizzano metriche specifiche di reparto (Tuffo, Presa, Rinvio, Riflessi, Piazzamento) che non sono direttamente sovrapponibili alle macro-aree dei giocatori di movimento (Velocità, Tiro, Passaggio, Dribbling, Difesa). Di seguito sono presentate le impronte geometriche e i valori specifici di ciascun calciatore.
+                </p>
+              </div>
             </div>
-          )}
 
-          <div className="w-full h-[320px] sm:h-[360px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} outerRadius="75%">
-                <PolarGrid
-                  stroke="hsl(var(--border))"
-                  strokeOpacity={0.8}
-                  strokeDasharray="3 3"
-                />
-                <PolarAngleAxis
-                  dataKey="pillar"
-                  tick={{
-                    fill: "hsl(var(--foreground))",
-                    fontSize: 11,
-                    fontWeight: 800,
-                  }}
-                />
-                <PolarRadiusAxis
-                  angle={30}
-                  domain={[0, 99]}
-                  tick={false}
-                  axisLine={false}
-                />
-                <Radar
-                  name={leftPlayer.Cognome}
-                  dataKey="valA"
-                  stroke="#3b82f6"
-                  fill="#3b82f6"
-                  fillOpacity={0.35}
-                  strokeWidth={2.5}
-                  dot={{ r: 3.5, fill: "#3b82f6" }}
-                />
-                <Radar
-                  name={rightPlayer.Cognome}
-                  dataKey="valB"
-                  stroke="#10b981"
-                  fill="#10b981"
-                  fillOpacity={0.35}
-                  strokeWidth={2.5}
-                  dot={{ r: 3.5, fill: "#10b981" }}
-                />
-                <RechartsTooltip
-                  content={
-                    <CustomRadarTooltip
-                      leftName={leftPlayer.Cognome}
-                      rightName={rightPlayer.Cognome}
+            {/* Schede Radar Individuali Affiancate */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Giocatore Sinistro */}
+              <div className="p-4 rounded-2xl border border-blue-500/30 bg-blue-500/5 flex flex-col justify-between space-y-4">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <span className="font-extrabold text-xs text-foreground flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                    {leftPlayer.Nome} {leftPlayer.Cognome} ({leftPlayer.Posiz})
+                  </span>
+                  <Badge variant="outline" className="text-[10px] font-mono border-blue-500/40 text-blue-500 font-bold">
+                    OVR {leftOvr.displayVal}
+                  </Badge>
+                </div>
+
+                <div className="w-full h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={leftSingleRadarData} outerRadius="75%">
+                      <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.8} strokeDasharray="3 3" />
+                      <PolarAngleAxis dataKey="pillar" tick={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 800 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 99]} tick={false} axisLine={false} />
+                      <Radar
+                        name={leftPlayer.Cognome}
+                        dataKey="val"
+                        stroke="#3b82f6"
+                        fill="#3b82f6"
+                        fillOpacity={0.35}
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#3b82f6" }}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+                  {leftPillars.map((p) => (
+                    <div key={p.label} className="p-2 rounded-lg bg-card/80 border border-border/60 flex items-center justify-between text-xs">
+                      <span className="text-[11px] font-mono text-muted-foreground">{p.label} {p.name}:</span>
+                      <span className="font-black text-blue-500 font-mono">{p.displayVal}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Giocatore Destro */}
+              <div className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col justify-between space-y-4">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <span className="font-extrabold text-xs text-foreground flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    {rightPlayer.Nome} {rightPlayer.Cognome} ({rightPlayer.Posiz})
+                  </span>
+                  <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-500 font-bold">
+                    OVR {rightOvr.displayVal}
+                  </Badge>
+                </div>
+
+                <div className="w-full h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={rightSingleRadarData} outerRadius="75%">
+                      <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.8} strokeDasharray="3 3" />
+                      <PolarAngleAxis dataKey="pillar" tick={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 800 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 99]} tick={false} axisLine={false} />
+                      <Radar
+                        name={rightPlayer.Cognome}
+                        dataKey="val"
+                        stroke="#10b981"
+                        fill="#10b981"
+                        fillOpacity={0.35}
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#10b981" }}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+                  {rightPillars.map((p) => (
+                    <div key={p.label} className="p-2 rounded-lg bg-card/80 border border-border/60 flex items-center justify-between text-xs">
+                      <span className="text-[11px] font-mono text-muted-foreground">{p.label} {p.name}:</span>
+                      <span className="font-black text-emerald-500 font-mono">{p.displayVal}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Caso B: Ruoli Omogenei (Entrambi Movimento o Entrambi Portieri) */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            {/* Radar Graphic (Left 7 columns on desktop) */}
+            <div className="lg:col-span-7 flex flex-col items-center justify-center relative min-h-[320px] sm:min-h-[360px] w-full">
+              {(leftHiddenCount > 0 || rightHiddenCount > 0) && (
+                <div className="absolute top-0 right-0 z-10 flex flex-col items-end gap-1 pointer-events-none">
+                  {leftHiddenCount > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[10px] font-mono gap-1"
+                    >
+                      <Lock className="h-2.5 w-2.5" />
+                      {leftPlayer.Cognome}: {6 - leftHiddenCount}/6 scoperte
+                    </Badge>
+                  )}
+                  {rightHiddenCount > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-mono gap-1"
+                    >
+                      <Lock className="h-2.5 w-2.5" />
+                      {rightPlayer.Cognome}: {6 - rightHiddenCount}/6 scoperte
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              <div className="w-full h-[320px] sm:h-[360px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={radarData} outerRadius="75%">
+                    <PolarGrid
+                      stroke="hsl(var(--border))"
+                      strokeOpacity={0.8}
+                      strokeDasharray="3 3"
                     />
-                  }
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Macro Pillars Breakdown & Advantages (Right 5 columns on desktop) */}
-        <div className="lg:col-span-5 flex flex-col justify-between space-y-2.5">
-          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between pb-1 border-b border-border/60">
-            <span>Macro-Area</span>
-            <div className="flex items-center gap-4 text-[11px] font-mono">
-              <span className="text-blue-500 font-bold">{leftPlayer.Cognome}</span>
-              <span className="text-muted-foreground">vs</span>
-              <span className="text-emerald-500 font-bold">{rightPlayer.Cognome}</span>
+                    <PolarAngleAxis
+                      dataKey="pillar"
+                      tick={{
+                        fill: "hsl(var(--foreground))",
+                        fontSize: 11,
+                        fontWeight: 800,
+                      }}
+                    />
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[0, 99]}
+                      tick={false}
+                      axisLine={false}
+                    />
+                    <Radar
+                      name={leftPlayer.Cognome}
+                      dataKey="valA"
+                      stroke="#3b82f6"
+                      fill="#3b82f6"
+                      fillOpacity={0.35}
+                      strokeWidth={2.5}
+                      dot={{ r: 3.5, fill: "#3b82f6" }}
+                    />
+                    <Radar
+                      name={rightPlayer.Cognome}
+                      dataKey="valB"
+                      stroke="#10b981"
+                      fill="#10b981"
+                      fillOpacity={0.35}
+                      strokeWidth={2.5}
+                      dot={{ r: 3.5, fill: "#10b981" }}
+                    />
+                    <RechartsTooltip
+                      content={
+                        <CustomRadarTooltip
+                          leftName={leftPlayer.Cognome}
+                          rightName={rightPlayer.Cognome}
+                        />
+                      }
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            {radarData.map((item) => {
-              const numA = item.isRevealedA ? item.valA : null;
-              const numB = item.isRevealedB ? item.valB : null;
-              const bothRevealed = numA !== null && numB !== null;
-              const aWins = bothRevealed && numA > numB;
-              const bWins = bothRevealed && numB > numA;
-              const isTie = bothRevealed && numA === numB;
+            {/* Macro Pillars Breakdown & Advantages (Right 5 columns on desktop) */}
+            <div className="lg:col-span-5 flex flex-col justify-between space-y-2.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between pb-1 border-b border-border/60">
+                <span>Macro-Area</span>
+                <div className="flex items-center gap-4 text-[11px] font-mono">
+                  <span className="text-blue-500 font-bold">{leftPlayer.Cognome}</span>
+                  <span className="text-muted-foreground">vs</span>
+                  <span className="text-emerald-500 font-bold">{rightPlayer.Cognome}</span>
+                </div>
+              </div>
 
-              return (
-                <div
-                  key={item.pillar}
-                  className="p-2.5 rounded-xl bg-muted/20 border border-border/60 hover:border-border transition-colors flex flex-col gap-1.5"
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-extrabold text-foreground flex items-center gap-1.5">
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        {item.pillar}
-                      </span>
-                      <span>{item.pillarName}</span>
-                    </span>
+              <div className="space-y-2">
+                {radarData.map((item) => {
+                  const numA = item.isRevealedA ? item.valA : null;
+                  const numB = item.isRevealedB ? item.valB : null;
+                  const bothRevealed = numA !== null && numB !== null;
+                  const aWins = bothRevealed && numA > numB;
+                  const bWins = bothRevealed && numB > numA;
+                  const isTie = bothRevealed && numA === numB;
 
-                    <div className="flex items-center gap-2 font-mono text-xs">
-                      {/* Left Player Value */}
-                      <span
-                        className={`font-black ${
-                          item.isRevealedA
-                            ? aWins
-                              ? "text-blue-500"
-                              : "text-foreground"
-                            : "text-amber-500"
-                        }`}
-                      >
-                        {item.displayA}
-                      </span>
-
-                      {/* Delta Indicator */}
-                      <div className="w-16 text-center">
-                        {bothRevealed ? (
-                          aWins ? (
-                            <Badge
-                              variant="outline"
-                              className="text-[9px] font-mono font-bold px-1 py-0 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30"
-                            >
-                              +{numA - numB}
-                            </Badge>
-                          ) : bWins ? (
-                            <Badge
-                              variant="outline"
-                              className="text-[9px] font-mono font-bold px-1 py-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                            >
-                              +{numB - numA}
-                            </Badge>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground font-bold">=</span>
-                          )
-                        ) : (
-                          <span
-                            className="inline-flex items-center gap-0.5 text-[9px] text-amber-500 font-mono"
-                            title="Scouting parziale"
-                          >
-                            <Lock className="h-2.5 w-2.5" /> ?
+                  return (
+                    <div
+                      key={item.pillar}
+                      className="p-2.5 rounded-xl bg-muted/20 border border-border/60 hover:border-border transition-colors flex flex-col gap-1.5"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-extrabold text-foreground flex items-center gap-1.5">
+                          <span className="font-mono text-[10px] text-muted-foreground">
+                            {item.pillar}
                           </span>
-                        )}
+                          <span>{item.pillarName}</span>
+                        </span>
+
+                        <div className="flex items-center gap-2 font-mono text-xs">
+                          {/* Left Player Value */}
+                          <span
+                            className={`font-black ${
+                              item.isRevealedA
+                                ? aWins
+                                  ? "text-blue-500"
+                                  : "text-foreground"
+                                : "text-amber-500"
+                            }`}
+                          >
+                            {item.displayA}
+                          </span>
+
+                          {/* Delta Indicator */}
+                          <div className="w-16 text-center">
+                            {bothRevealed ? (
+                              aWins ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] font-mono font-bold px-1 py-0 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30"
+                                >
+                                  +{numA - numB}
+                                </Badge>
+                              ) : bWins ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] font-mono font-bold px-1 py-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                >
+                                  +{numB - numA}
+                                </Badge>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground font-bold">=</span>
+                              )
+                            ) : (
+                              <span
+                                className="inline-flex items-center gap-0.5 text-[9px] text-amber-500 font-mono"
+                                title="Scouting parziale"
+                              >
+                                <Lock className="h-2.5 w-2.5" /> ?
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Right Player Value */}
+                          <span
+                            className={`font-black ${
+                              item.isRevealedB
+                                ? bWins
+                                  ? "text-emerald-500"
+                                  : "text-foreground"
+                                : "text-amber-500"
+                            }`}
+                          >
+                            {item.displayB}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Right Player Value */}
-                      <span
-                        className={`font-black ${
-                          item.isRevealedB
-                            ? bWins
-                              ? "text-emerald-500"
-                              : "text-foreground"
-                            : "text-amber-500"
-                        }`}
-                      >
-                        {item.displayB}
-                      </span>
+                      {/* Micro duel progress bar */}
+                      <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden flex">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            item.isRevealedA
+                              ? aWins
+                                ? "bg-blue-500"
+                                : "bg-blue-400/40"
+                              : "bg-amber-500/30"
+                          }`}
+                          style={{
+                            width: `${
+                              bothRevealed && numA + numB > 0
+                                ? Math.round((numA / (numA + numB)) * 100)
+                                : 50
+                            }%`,
+                          }}
+                        />
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            item.isRevealedB
+                              ? bWins
+                                ? "bg-emerald-500"
+                                : "bg-emerald-400/40"
+                              : "bg-amber-500/30"
+                          }`}
+                          style={{
+                            width: `${
+                              bothRevealed && numA + numB > 0
+                                ? Math.round((numB / (numA + numB)) * 100)
+                                : 50
+                            }%`,
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Micro duel progress bar */}
-                  <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden flex">
-                    <div
-                      className={`h-full transition-all duration-300 ${
-                        item.isRevealedA
-                          ? aWins
-                            ? "bg-blue-500"
-                            : "bg-blue-400/40"
-                          : "bg-amber-500/30"
-                      }`}
-                      style={{
-                        width: `${
-                          bothRevealed && numA + numB > 0
-                            ? Math.round((numA / (numA + numB)) * 100)
-                            : 50
-                        }%`,
-                      }}
-                    />
-                    <div
-                      className={`h-full transition-all duration-300 ${
-                        item.isRevealedB
-                          ? bWins
-                            ? "bg-emerald-500"
-                            : "bg-emerald-400/40"
-                          : "bg-amber-500/30"
-                      }`}
-                      style={{
-                        width: `${
-                          bothRevealed && numA + numB > 0
-                            ? Math.round((numB / (numA + numB)) * 100)
-                            : 50
-                        }%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
