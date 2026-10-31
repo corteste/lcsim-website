@@ -1221,12 +1221,15 @@ Date Offseason: la tabella del calendario deve ospitare anche le date dell'offse
 ---
 
 ## 📌 54. Sala Stampa: Interviste Differenziate per Manager
-- **Stato**: 🟡 In attesa di verifica & correzione
+- **Stato**: 🟢 Completato & Verificato (Implementato nel Generatore AI & Procedurale a 12 Angolazioni)
 - **Priorità**: Media
 - **Moduli coinvolti**: src/pages/SalaStampa.tsx, src/services/aiJournalistService.ts
 - **Tabelle coinvolte**: press_conferences, an_team, an_standings, an_schedule
-Descrizione
-Le interviste devono essere diverse per ciascun manager. Il punto #20 le dichiara già differenziate per club, quindi va verificato se si tratta di un malfunzionamento (domande ripetute o simili tra squadre) o se serve una maggiore varietà nei temi e nel tono.
+### Descrizione & Esito Verifica
+Verifica completata: la differenziazione delle domande è pienamente operativa nel codice (`src/services/aiJournalistService.ts`):
+1. **Prompt Gemini AI Dinamico**: include per ciascun club posizione e punti in classifica, avversaria di turno (casa/trasferta) e il calciatore stella della rosa, con istruzione esplicita di alternare temi (tattica, pressione piazza, turnover, mercato, rivalità).
+2. **Generatore Procedurale di Riserva**: implementata la funzione `generateDifferentiatedProceduralPressQuestion()` che assegna a ciascuna delle 12 franchigie un'angolazione tematica completamente diversa (Pressione & Ambizioni, Tattica, Dipendenza dal Leader, Calciomercato, Clima & Psicologia, Scontro Diretto, Turnover, Reazione d'Orgoglio, Neutralizzazione Attacco Avversario, Cinismo vs Spettacolo, Rivalità Accesa, Progetto a Lungo Termine).
+3. **Nota sui Dati Esistenti**: i record della Giornata 1 attualmente nel DB risalivano ai test iniziali pre-implementazione; tutti i turni successivi (e qualsiasi nuova generazione) adottano automaticamente le domande differenziate.
 
 
 
