@@ -361,7 +361,7 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
           // Calcola il modulo rilevato
           const defCount = matchStarters.filter((p) => ["DC", "TD", "TS"].includes(p?.Posiz || "")).length;
           const midCount = matchStarters.filter((p) => ["CDC", "CC", "ED", "ES", "COC"].includes(p?.Posiz || "")).length;
-          const attCount = matchStarters.filter((p) => ["ATT", "AT", "AS", "AD"].includes(p?.Posiz || "")).length;
+          const attCount = matchStarters.filter((p) => ["ATT", "AS", "AD"].includes(p?.Posiz || "")).length;
           const detectedModule = `${defCount || 4}-${midCount || 4}-${attCount || 2}`;
 
           const matchedDef = EA_FC25_FORMATIONS.find((f) => f.id.startsWith(detectedModule)) || EA_FC25_FORMATIONS[0];

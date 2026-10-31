@@ -1218,5 +1218,5 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 - **Priorità**: Media
 - **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/utils/playerOvrCalculator.ts`
 - **Descrizione**:
-  - Aggiunto nella schermata di Allenamento (`/allenamenti`), sulla colonna di destra sotto la card *Riepilogo Avanzamento*, il prospetto riassuntivo che mostra in tempo reale l'Overall (OVR) calcolato del calciatore selezionato in tutte le 13 posizioni di campo (POR, DC, TD, TS, CDC, CC, COC, ED, ES, AD, AS, AT, ATT).
+  - Aggiunto nella schermata di Allenamento (`/allenamenti`), sulla colonna di destra sotto la card *Riepilogo Avanzamento*, il prospetto riassuntivo che mostra in tempo reale l'Overall (OVR) calcolato del calciatore selezionato in tutte le 12 posizioni di campo (POR, DC, TD, TS, CDC, CC, COC, ED, ES, AD, AS, ATT).
   - Il prospetto è organizzato per reparti (Portiere, Difesa, Centrocampo, Attacco) con layout tattico, badge distintivi per Ruolo Naturale (`NAT`) e Ruolo Secondario (`SEC`), e calcolo dinamico in tempo reale: mostra il valore Base (`Pre`), il nuovo valore stimato (`Post`) e il delta verde (`+X`) non appena il manager incrementa qualsiasi attributo o cambia ruolo.

@@ -365,7 +365,7 @@ export const ALL_PITCH_ROLES_BY_DEPT = [
     dept: "Attacco",
     icon: Target,
     color: "text-rose-500",
-    roles: ["AD", "AS", "AT", "ATT"],
+    roles: ["AD", "AS", "ATT"],
   },
 ];
 
@@ -627,7 +627,7 @@ const Allenamenti = () => {
     > = {};
 
     const allRoles = [
-      "POR", "DC", "TD", "TS", "CDC", "CC", "COC", "ED", "ES", "AD", "AS", "AT", "ATT"
+      "POR", "DC", "TD", "TS", "CDC", "CC", "COC", "ED", "ES", "AD", "AS", "ATT"
     ];
 
     for (const r of allRoles) {
@@ -922,7 +922,7 @@ const Allenamenti = () => {
         if (roleFilter === "POR" && p.Posiz !== "POR") return false;
         if (roleFilter === "DIF" && !["DC", "TD", "TS", "DFC", "TER"].includes(p.Posiz)) return false;
         if (roleFilter === "CEN" && !["CDC", "CC", "ED", "ES", "COC", "CEN"].includes(p.Posiz)) return false;
-        if (roleFilter === "ATT" && !["AD", "AS", "AT", "ATT"].includes(p.Posiz)) return false;
+        if (roleFilter === "ATT" && !["AD", "AS", "ATT"].includes(p.Posiz)) return false;
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -1713,7 +1713,7 @@ const Allenamenti = () => {
                         <CardTitle className="text-sm font-bold">Overall per Ruolo</CardTitle>
                       </div>
                       <Badge variant="outline" className="text-[10px] font-mono font-bold">
-                        13 Posizioni
+                        12 Posizioni
                       </Badge>
                     </div>
                     <CardDescription className="text-[11px] mt-0.5">
@@ -1746,7 +1746,7 @@ const Allenamenti = () => {
                                       ? "bg-muted/40 border-border/80"
                                       : "bg-muted/15 border-border/40"
                                   } ${
-                                    r === "POR" || r === "DC" || r === "COC" ? "col-span-2" : "col-span-1"
+                                    r === "POR" || r === "DC" || r === "COC" || r === "ATT" ? "col-span-2" : "col-span-1"
                                   }`}
                                 >
                                   <div className="flex items-center gap-1.5 min-w-0">

@@ -65,7 +65,7 @@ const ROLE_GROUPS = [
   { id: "POR", label: "Portieri", roles: ["POR"] },
   { id: "DIF", label: "Difensori", roles: ["DC", "TD", "TS"] },
   { id: "CEN", label: "Centrocampisti", roles: ["CDC", "CC", "ED", "ES", "COC"] },
-  { id: "ATT", label: "Attaccanti", roles: ["AD", "AS", "AT", "ATT"] },
+  { id: "ATT", label: "Attaccanti", roles: ["AD", "AS", "ATT"] },
 ];
 
 // Known teams with an official anthem available in public/sounds

@@ -237,7 +237,7 @@ const ROLE_GROUPS: { id: string; label: string; roles: string[] }[] = [
   { id: "POR", label: "Portieri", roles: ["POR"] },
   { id: "DIF", label: "Difesa", roles: ["DC", "TD", "TS"] },
   { id: "CEN", label: "Centrocampo", roles: ["CDC", "CC", "ED", "ES", "COC"] },
-  { id: "ATT", label: "Attacco", roles: ["AD", "AS", "AT", "ATT"] },
+  { id: "ATT", label: "Attacco", roles: ["AD", "AS", "ATT"] },
 ];
 
 // Helper to evaluate a stat for a player (handles scouting visibility for rookies)

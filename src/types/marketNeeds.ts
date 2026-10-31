@@ -134,7 +134,7 @@ export const MACRO_MARKET_CATEGORIES: MacroCategoryConfig[] = [
     id: "ATT",
     label: "Attaccanti",
     shortLabel: "ATT",
-    subRoles: ["ATT", "AT"],
+    subRoles: ["ATT"],
     subRolesLabel: "ATT • AT",
     colorClass: {
       bg: "bg-rose-500",

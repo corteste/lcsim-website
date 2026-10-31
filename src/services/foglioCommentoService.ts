@@ -326,7 +326,7 @@ export async function fetchTeamSheetFormation(
         // Determina un modulo coerente
         const defCount = rawStarters.filter((p) => ["DC", "TD", "TS"].includes(p?.Posiz || "")).length;
         const midCount = rawStarters.filter((p) => ["CDC", "CC", "ED", "ES", "COC"].includes(p?.Posiz || "")).length;
-        const attCount = rawStarters.filter((p) => ["ATT", "AT", "AS", "AD"].includes(p?.Posiz || "")).length;
+        const attCount = rawStarters.filter((p) => ["ATT", "AS", "AD"].includes(p?.Posiz || "")).length;
 
         const guessId = `${defCount}-${midCount}-${attCount}`;
         const formDef = EA_FC25_FORMATIONS.find((f) => f.id === guessId) || EA_FC25_FORMATIONS[0];

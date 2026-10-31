@@ -131,7 +131,7 @@ export const SeasonalXpReportModal: React.FC<SeasonalXpReportModalProps> = ({
           !["CDC", "CC", "ED", "ES", "COC"].includes(p.playerRole)
         )
           return false;
-        if (roleFilter === "ATT" && !["AD", "AS", "AT", "ATT"].includes(p.playerRole))
+        if (roleFilter === "ATT" && !["AD", "AS", "ATT"].includes(p.playerRole))
           return false;
       }
 

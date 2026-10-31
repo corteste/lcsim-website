@@ -61,7 +61,7 @@ const ROLE_GROUPS = [
   { id: "POR", label: "POR", roles: ["POR"] },
   { id: "DIF", label: "DIF", roles: ["DC", "TD", "TS"] },
   { id: "CEN", label: "CEN", roles: ["CDC", "CC", "ED", "ES", "COC"] },
-  { id: "ATT", label: "ATT", roles: ["AD", "AS", "AT", "ATT"] },
+  { id: "ATT", label: "ATT", roles: ["AD", "AS", "ATT"] },
 ];
 
 export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({

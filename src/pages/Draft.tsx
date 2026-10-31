@@ -130,7 +130,7 @@ const ROLE_GROUPS: { id: string; label: string; roles: string[] }[] = [
   { id: "POR", label: "POR", roles: ["POR"] },
   { id: "DIF", label: "DIF", roles: ["DC", "TD", "TS"] },
   { id: "CEN", label: "CEN", roles: ["CDC", "CC", "ED", "ES", "COC"] },
-  { id: "ATT", label: "ATT", roles: ["AD", "AS", "AT", "ATT"] },
+  { id: "ATT", label: "ATT", roles: ["AD", "AS", "ATT"] },
 ];
 
 const Draft = () => {

@@ -51,7 +51,7 @@ function computePitchCoordinates(
     ["CDC", "CC", "ED", "ES", "COC"].includes(p.Posiz)
   );
   const forwards = others.filter((p) =>
-    ["ATT", "AT", "AS", "AD"].includes(p.Posiz)
+    ["ATT", "AS", "AD"].includes(p.Posiz)
   );
 
   const remaining = others.filter(
