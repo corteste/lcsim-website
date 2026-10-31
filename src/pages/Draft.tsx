@@ -1612,17 +1612,17 @@ const Draft = () => {
                         className="h-8 pl-8 text-xs"
                       />
                     </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none flex-nowrap">
                       <button
                         type="button"
                         onClick={() => setWishlistOnly((prev) => !prev)}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${wishlistOnly
+                        className={`px-2 py-1 rounded-md text-[10.5px] font-bold transition-all flex items-center gap-1 shrink-0 ${wishlistOnly
                           ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 shadow-xs"
                           : "bg-muted/60 text-muted-foreground hover:text-foreground border border-transparent"
                           }`}
                         title="Filtra e ordina per graduatoria personale"
                       >
-                        <ListOrdered className="h-3.5 w-3.5 text-emerald-500" />
+                        <ListOrdered className="h-3 w-3 text-emerald-500 shrink-0" />
                         <span>Graduatoria ({wishlistMap.size})</span>
                       </button>
 
@@ -1631,7 +1631,7 @@ const Draft = () => {
                           key={g.id}
                           type="button"
                           onClick={() => setRoleFilter(g.id)}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${roleFilter === g.id
+                          className={`px-2 py-1 rounded-md text-[10.5px] font-bold transition-colors shrink-0 ${roleFilter === g.id
                             ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
                             : "bg-muted/60 text-muted-foreground hover:text-foreground"
                             }`}

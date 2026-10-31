@@ -462,7 +462,11 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
             return (
               <div
                 key={item.id}
-                className="p-3.5 rounded-xl border border-border/80 bg-card hover:border-emerald-500/40 transition-all flex items-center justify-between gap-3 shadow-xs"
+                className={`p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 shadow-xs ${
+                  isDrafted
+                    ? "bg-muted/30 border-border/50 opacity-60"
+                    : "border-border/80 bg-card hover:border-emerald-500/40"
+                }`}
               >
                 {/* RANK E DETTAGLI ROOKIE */}
                 <div className="flex items-center gap-3 min-w-0">
