@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/supabaseClient";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,7 @@ import {
   ShieldCheck,
   Trophy,
   User,
+  Crown,
   Shield,
   X,
   ChevronRight,
@@ -75,10 +78,70 @@ const ROLE_GROUPS = [
 ];
 
 // Known teams with an official anthem available in public/sounds
+// Club Social Colors Solid Gradients (No site bg blend)
+const getTeamSocialBg = (team: string): string => {
+  switch (team) {
+    case "APD":
+      return "bg-gradient-to-br from-[#db2777] via-[#9d174d] to-[#ca8a04]"; // Rosa / Fucsia e Giallo
+    case "ASK":
+      return "bg-gradient-to-br from-[#dc2626] via-[#991b1b] to-[#18181b]"; // Rosso e Nero
+    case "ACF":
+      return "bg-gradient-to-br from-[#16a34a] via-[#15803d] to-[#064e3b]"; // Verde Smeraldo e Foresta
+    case "PFC":
+      return "bg-gradient-to-br from-[#f472b6] via-[#db2777] to-[#18181b]"; // Rosa e Nero Palermo
+    case "MAR":
+      return "bg-gradient-to-br from-[#dc2626] via-[#7f1d1d] to-[#1d4ed8]"; // Rosso e Blu
+    case "ACD":
+      return "bg-gradient-to-br from-[#b91c1c] via-[#991b1b] to-[#7f1d1d]"; // Rosso e Granata
+    case "ALV":
+      return "bg-gradient-to-br from-[#0284c7] via-[#0369a1] to-[#1e40af]"; // Azzurro e Blu
+    case "OLD":
+      return "bg-gradient-to-br from-[#1e3a8a] via-[#2563eb] to-[#ec4899]"; // Blu Navy e Rosa
+    case "VFC":
+      return "bg-gradient-to-br from-[#eab308] via-[#ca8a04] to-[#18181b]"; // Giallo e Nero
+    case "RMB":
+      return "bg-gradient-to-br from-[#ef4444] via-[#b91c1c] to-[#09090b]"; // Rosso e Nero
+    case "COS":
+      return "bg-gradient-to-br from-[#4f46e5] via-[#312e81] to-[#06b6d4]"; // Viola Cosmo e Ciano
+    case "EUR":
+      return "bg-gradient-to-br from-[#1d4ed8] via-[#1e40af] to-[#eab308]"; // Blu Europa e Giallo Oro
+    case "SKA":
+      return "bg-gradient-to-br from-[#dc2626] via-[#831843] to-[#1d4ed8]"; // Rosso e Blu
+    default:
+      return "bg-gradient-to-br from-slate-800 via-slate-900 to-black";
+  }
+};
+
 const KNOWN_ANTHEMS = new Set(["ACD", "APD", "COS", "MAR", "PFC", "SKA", "ASK"]);
 
 const Rose = () => {
   const { teams, loading: loadingTeams, refetch: refetchTeams } = getTeams();
+
+  // Fetch claimed president names
+  const { data: teamStatusList } = useQuery({
+    queryKey: ["all_teams_status"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("rpc_get_all_teams_status");
+      return (data || []) as Array<{
+        team_id: string;
+        name: string;
+        manager: string | null;
+        is_claimed: boolean;
+        claimed_by_name: string | null;
+      }>;
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const presidentMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const item of (teamStatusList || [])) {
+      if (item.team_id && item.claimed_by_name) {
+        map[item.team_id] = item.claimed_by_name;
+      }
+    }
+    return map;
+  }, [teamStatusList]);
 
   // Sort teams alphabetically by name
   const sortedTeams = useMemo(() => {
@@ -279,15 +342,15 @@ const Rose = () => {
               </div>
             </div>
 
-            {/* CLUBS SHOWCASE GRID (COMPACT PREMIER LEAGUE STYLE) */}
+            {/* CLUBS SHOWCASE GRID (HORIZONTAL RECTANGULAR BLOCKS WITH SOCIAL COLORS) */}
             {loadingTeams ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="h-48 bg-muted/40 animate-pulse rounded-2xl border border-border/70" />
+                  <div key={i} className="h-44 bg-muted/40 animate-pulse rounded-2xl border border-border/70" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                 {sortedTeams.map((team) => {
                   return (
                     <div
@@ -297,58 +360,78 @@ const Rose = () => {
                         setSearchQuery("");
                         setRoleFilter("ALL");
                       }}
-                      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card hover:border-emerald-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
+                      className={`group relative flex flex-col justify-between rounded-2xl border border-white/20 shadow-md hover:shadow-2xl hover:scale-[1.015] transition-all duration-300 overflow-hidden cursor-pointer ${getTeamSocialBg(team.TEAM_ID)} text-white`}
                     >
-                      {/* Top Banner with dynamic team background */}
-                      <div className={`relative h-24 flex items-center justify-center p-3 overflow-hidden ${getTeamBackground(team.TEAM_ID)}`}>
-                        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-black/20" />
+                      {/* Subtle dark vignette to ensure 100% text readability over solid colors */}
+                      <div className="absolute inset-0 bg-black/25 backdrop-blur-[0.5px] pointer-events-none" />
 
-                        {/* Palmares / Trophy pills on top-right (if any) */}
-                        {(team.scudetto > 0 || team.supercoppa > 0) && (
-                          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 z-10">
-                            {team.scudetto > 0 && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-amber-400/30" title={`${team.scudetto} Scudetti`}>
-                                <Trophy className="h-3 w-3 text-amber-400" />
-                                <span>{team.scudetto}</span>
-                              </span>
-                            )}
-                            {team.supercoppa > 0 && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-blue-400/30" title={`${team.supercoppa} Supercoppe`}>
-                                <ShieldCheck className="h-3 w-3 text-blue-400" />
-                                <span>{team.supercoppa}</span>
-                              </span>
-                            )}
-                          </div>
-                        )}
+                      {/* Top Palmares badges (if any) */}
+                      {(team.scudetto > 0 || team.supercoppa > 0) && (
+                        <div className="absolute top-2.5 right-3 flex items-center gap-1 z-20 pointer-events-none">
+                          {team.scudetto > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-amber-400/30" title={`${team.scudetto} Scudetti`}>
+                              <Trophy className="h-3 w-3 text-amber-400" />
+                              <span>{team.scudetto}</span>
+                            </span>
+                          )}
+                          {team.supercoppa > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-blue-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-blue-400/30" title={`${team.supercoppa} Supercoppe`}>
+                              <ShieldCheck className="h-3 w-3 text-blue-400" />
+                              <span>{team.supercoppa}</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
 
-                        {/* Club Crest Logo centered */}
-                        <div className="relative z-10 flex items-center justify-center">
+                      {/* Main Section: Big Logo on the Left, Details on the Right */}
+                      <div className="relative z-10 p-4 sm:p-5 flex items-center gap-4 sm:gap-5">
+                        {/* Big Club Logo on the Left */}
+                        <div className="relative shrink-0 flex items-center justify-center p-2 rounded-2xl bg-black/25 backdrop-blur-md border border-white/15 shadow-inner">
                           <img
                             src={getTeamLogo(team.TEAM_ID)}
                             alt={`${team.NAME} Logo`}
-                            className="h-16 w-16 sm:h-18 sm:w-18 object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-300"
+                            className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-2xl group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
                             }}
                           />
                         </div>
-                      </div>
 
-                      {/* Card Content */}
-                      <div className="p-3.5 sm:p-4 text-center space-y-1">
-                        <h3 className="text-base sm:text-lg font-black text-foreground group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors tracking-tight line-clamp-1">
-                          {team.NAME}
-                        </h3>
-                        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground font-medium">
-                          <User className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                          <span className="truncate">Manager: <strong className="text-foreground">{team.MANAGER || "Da Assegnare"}</strong></span>
+                        {/* Right side: Team Name + Coach + President */}
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-tight drop-shadow-sm group-hover:underline">
+                              {team.NAME}
+                            </h3>
+                            <span className="font-mono text-[10px] uppercase font-bold bg-white/20 text-white px-2 py-0.5 rounded-md border border-white/30 backdrop-blur-sm shrink-0">
+                              {team.TEAM_ID}
+                            </span>
+                          </div>
+
+                          {/* Staff: Allenatore & Presidente (Separate Figures) */}
+                          <div className="space-y-1 text-xs">
+                            <div className="flex items-center gap-1.5 text-white/95">
+                              <User className="h-3.5 w-3.5 text-emerald-300 shrink-0" />
+                              <span className="truncate">
+                                <span className="text-white/75 font-medium">Allenatore:</span>{" "}
+                                <strong className="text-white font-extrabold">{team.MANAGER || "Da Assegnare"}</strong>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-white/95">
+                              <Crown className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                              <span className="truncate">
+                                <span className="text-white/75 font-medium">Presidente:</span>{" "}
+                                <strong className="text-white font-extrabold">{presidentMap[team.TEAM_ID] || "In attesa di nomina"}</strong>
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Card Bottom CTA (Premier League style "Club Info →") */}
-                      <div className="px-4 py-2.5 bg-muted/30 group-hover:bg-emerald-600 group-hover:text-white border-t border-border/70 flex items-center justify-between text-xs font-bold transition-all duration-200">
-                        <span className="tracking-wide uppercase text-[11px] font-black">Club Info</span>
-                        <div className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                      {/* Card Bottom CTA (Club Info) */}
+                      <div className="relative z-10 px-4 py-2.5 bg-black/40 group-hover:bg-black/60 border-t border-white/15 flex items-center justify-between text-xs font-bold transition-all duration-200">
+                        <span className="tracking-wide uppercase text-[11px] font-black text-white/90">Club Info</span>
+                        <div className="flex items-center gap-1 text-white group-hover:translate-x-1 transition-transform">
                           <span className="text-[11px] font-medium opacity-90 group-hover:opacity-100">Visualizza Rosa</span>
                           <ChevronRight className="h-4 w-4" />
                         </div>
@@ -411,12 +494,16 @@ const Rose = () => {
                       <Badge variant="outline" className="font-mono text-[10px]">
                         {currentTeam.TEAM_ID}
                       </Badge>
-                      {currentTeam.MANAGER && (
+                      <div className="flex items-center gap-2 flex-wrap">
                         <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border border-border/60">
                           <User className="h-3 w-3 text-emerald-500" />
-                          <span>Manager: <strong>{currentTeam.MANAGER}</strong></span>
+                          <span>Allenatore: <strong className="text-foreground">{currentTeam.MANAGER || "Da Assegnare"}</strong></span>
                         </div>
-                      )}
+                        <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border border-border/60">
+                          <Crown className="h-3 w-3 text-amber-500" />
+                          <span>Presidente: <strong className="text-foreground">{presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}</strong></span>
+                        </div>
+                      </div>
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
