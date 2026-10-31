@@ -36,7 +36,13 @@ import {
   Armchair,
   ArrowUpRight,
   ArrowDownRight,
+  Ban,
 } from "lucide-react";
+import {
+  fetchTeamDisciplinaryStatus,
+  getNextMatchWeek,
+  PlayerDisciplinaryStatus,
+} from "@/services/disciplineService";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
@@ -738,6 +744,10 @@ const Tattica = () => {
   const [activeDeadline, setActiveDeadline] = useState<LeagueDeadline | null>(null);
   const [isDeadlineClosed, setIsDeadlineClosed] = useState<boolean>(false);
 
+  // Stato disciplinare (Squalifiche e Diffide da cartellini #38)
+  const [disciplinaryMap, setDisciplinaryMap] = useState<Record<number, PlayerDisciplinaryStatus>>({});
+  const [targetMatchWeek, setTargetMatchWeek] = useState<number>(1);
+
   const handleDeadlineStatusChange = (
     isExpired: boolean,
     deadline: LeagueDeadline | null
@@ -745,6 +755,71 @@ const Tattica = () => {
     setActiveDeadline(deadline);
     setIsDeadlineClosed(isExpired || Boolean(deadline?.is_force_closed));
   };
+
+  // Risoluzione targetMatchWeek per la prossima giornata da disputare
+  useEffect(() => {
+    if (!currentTeam) return;
+    let isCancelled = false;
+    const season = activeDeadline?.stag || 11;
+
+    if (activeDeadline?.week) {
+      setTargetMatchWeek(activeDeadline.week);
+    } else {
+      getNextMatchWeek(currentTeam, season).then((w) => {
+        if (!isCancelled) setTargetMatchWeek(w);
+      });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentTeam, activeDeadline]);
+
+  // Caricamento provvedimenti disciplinari per la rosa
+  useEffect(() => {
+    if (!currentTeam || players.length === 0) return;
+    let isCancelled = false;
+    const season = activeDeadline?.stag || 11;
+    const playerIds = players.map((p) => Number(p.ID));
+
+    fetchTeamDisciplinaryStatus(currentTeam, season, targetMatchWeek, playerIds).then((map) => {
+      if (!isCancelled) {
+        setDisciplinaryMap(map);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentTeam, activeDeadline?.stag, targetMatchWeek, players]);
+
+  // Rimozione automatica dei calciatori squalificati da titolari e panchina verso la Tribuna
+  useEffect(() => {
+    if (Object.keys(disciplinaryMap).length === 0) return;
+
+    let changed = false;
+    const nextStarters = starterIds.map((id) => {
+      if (id && disciplinaryMap[id]?.isSuspended) {
+        changed = true;
+        return null;
+      }
+      return id;
+    });
+
+    const nextBench = benchOrderIds.filter((id) => {
+      if (disciplinaryMap[id]?.isSuspended) {
+        changed = true;
+        return false;
+      }
+      return true;
+    });
+
+    if (changed) {
+      setStarterIds(nextStarters);
+      setBenchOrderIds(nextBench);
+      toast.warning("Uno o più calciatori squalificati sono stati rimossi dalla distinta e confinati in Tribuna.");
+    }
+  }, [disciplinaryMap]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Modulo selezionato e 11 slot titolari (ID giocatore o null)
@@ -924,15 +999,29 @@ const Tattica = () => {
     });
   }, [orderedRoster, starterSlotByPlayerId, benchOrderIds]);
 
-  // Esattamente fino a 9 panchinari ufficiali (Slot P1..P9)
-  const benchPlayers: Player[] = useMemo(() => {
-    return nonStarterPlayers.slice(0, 9);
-  }, [nonStarterPlayers]);
+  // Esattamente fino a 9 panchinari ufficiali arruolabili (Slot P1..P9, esclusi squalificati)
+  const availableNonStarters = useMemo(() => {
+    return nonStarterPlayers.filter((p) => !disciplinaryMap[Number(p.ID)]?.isSuspended);
+  }, [nonStarterPlayers, disciplinaryMap]);
 
-  // Dal 10° in poi: Giocatori in Tribuna (es. 21° calciatore nelle rose standard)
+  const benchPlayers: Player[] = useMemo(() => {
+    return availableNonStarters.slice(0, 9);
+  }, [availableNonStarters]);
+
+  // In Tribuna: i non titolari oltre il 9° + tutti i calciatori squalificati
   const tribunaPlayers: Player[] = useMemo(() => {
-    return nonStarterPlayers.slice(9);
-  }, [nonStarterPlayers]);
+    const regularTribuna = availableNonStarters.slice(9);
+    const suspended = nonStarterPlayers.filter((p) => disciplinaryMap[Number(p.ID)]?.isSuspended);
+    return [...regularTribuna, ...suspended];
+  }, [availableNonStarters, nonStarterPlayers, disciplinaryMap]);
+
+  const suspendedPlayersCount = useMemo(() => {
+    return Object.values(disciplinaryMap).filter((d) => d.isSuspended).length;
+  }, [disciplinaryMap]);
+
+  const warnedPlayersCount = useMemo(() => {
+    return Object.values(disciplinaryMap).filter((d) => d.isWarned).length;
+  }, [disciplinaryMap]);
 
   // Roster filtrato nella colonna sinistra
   const filteredRoster = useMemo(() => {
@@ -1029,6 +1118,10 @@ const Tattica = () => {
   // Assegna un giocatore (tramite ID) a uno specifico slot titolare (0..10).
   // Se il giocatore era già in un altro slot titolare, scambia i due slot!
   const assignPlayerToSlot = (slotIndex: number, playerId: number | null) => {
+    if (playerId !== null && disciplinaryMap[playerId]?.isSuspended) {
+      toast.error("Impossibile schierare questo calciatore: è squalificato!");
+      return;
+    }
     setStarterIds((prev) => {
       const next = [...prev];
       if (playerId === null) {
@@ -1057,6 +1150,10 @@ const Tattica = () => {
   // Inserisce rapidamente un giocatore dal Roster/Panchina nel miglior slot compatibile vuoto
   const quickInsertToStarters = (player: Player) => {
     const pId = Number(player.ID);
+    if (disciplinaryMap[pId]?.isSuspended) {
+      toast.error(`${player.Nome} ${player.Cognome} è squalificato e non può essere schierato!`);
+      return;
+    }
     if (starterSlotByPlayerId.has(pId)) {
       toast.info(`${player.Nome} ${player.Cognome} è già tra gli 11 titolari.`);
       return;
@@ -1121,10 +1218,18 @@ const Tattica = () => {
       return;
     }
 
+    const currentBenchIds = benchPlayers.map((p) => Number(p.ID));
+    const suspendedInLineup = [...starterIds, ...currentBenchIds].filter(
+      (id) => id && disciplinaryMap[id]?.isSuspended
+    );
+    if (suspendedInLineup.length > 0) {
+      toast.error("Impossibile salvare la formazione: sono presenti calciatori squalificati in distinta (titolari o panchina). Spostali in Tribuna.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const nowIso = new Date().toISOString();
-      const currentBenchIds = benchPlayers.map((p) => Number(p.ID));
 
       const payload = {
         team_id: currentTeam,
@@ -1215,6 +1320,11 @@ const Tattica = () => {
       handleDragEnd();
       return;
     }
+    if (disciplinaryMap[pId]?.isSuspended) {
+      toast.error("Il calciatore è squalificato e non può essere schierato!");
+      handleDragEnd();
+      return;
+    }
 
     assignPlayerToSlot(slotIndex, pId);
     const p = playerById.get(pId);
@@ -1230,6 +1340,11 @@ const Tattica = () => {
     e.stopPropagation();
     const sourceId = draggedPlayerId ?? Number(e.dataTransfer.getData("text/plain"));
     if (!sourceId || Number.isNaN(sourceId) || sourceId === targetBenchPlayerId) {
+      handleDragEnd();
+      return;
+    }
+    if (disciplinaryMap[sourceId]?.isSuspended) {
+      toast.error("Il calciatore è squalificato e deve restare in Tribuna.");
       handleDragEnd();
       return;
     }
@@ -1262,6 +1377,11 @@ const Tattica = () => {
     e.preventDefault();
     const sourceId = draggedPlayerId ?? Number(e.dataTransfer.getData("text/plain"));
     if (!sourceId || Number.isNaN(sourceId)) {
+      handleDragEnd();
+      return;
+    }
+    if (disciplinaryMap[sourceId]?.isSuspended) {
+      toast.error("Il calciatore è squalificato e deve restare in Tribuna.");
       handleDragEnd();
       return;
     }
@@ -1298,6 +1418,10 @@ const Tattica = () => {
 
   // Trascina o sposta un calciatore dalla Tribuna alla prima posizione libera in Panchina
   const handlePromoteToBench = (playerId: number) => {
+    if (disciplinaryMap[playerId]?.isSuspended) {
+      toast.error("Il calciatore è squalificato e non può essere convocato in panchina.");
+      return;
+    }
     const currentIds = nonStarterPlayers.map((p) => Number(p.ID)).filter((id) => id !== playerId);
     // Inserisce in cima alle riserve (slot P1)
     setBenchOrderIds([playerId, ...currentIds]);
@@ -1336,6 +1460,36 @@ const Tattica = () => {
 
             {/* Countdown Scadenza Inserimento Formazione */}
             <FormationCountdown onStatusChange={handleDeadlineStatusChange} />
+
+            {/* Banner Provvedimenti Disciplinari Squalificati #38 */}
+            {suspendedPlayersCount > 0 && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <Ban className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                  <span>
+                    <strong>Provvedimento Disciplinare (Giornata {targetMatchWeek}):</strong> {suspendedPlayersCount} calciator{suspendedPlayersCount === 1 ? "e squalificato" : "i squalificati"}. Il regolamento vieta il loro schieramento tra titolari e riserve: sono stati confinati in Tribuna.
+                  </span>
+                </div>
+                <Badge variant="destructive" className="bg-rose-500 text-white font-extrabold text-[10px] uppercase shrink-0">
+                  {suspendedPlayersCount} Squalificat{suspendedPlayersCount === 1 ? "o" : "i"}
+                </Badge>
+              </div>
+            )}
+
+            {/* Banner Calciatori in Diffida #38 */}
+            {warnedPlayersCount > 0 && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>
+                    <strong>Calciatori in Diffida:</strong> {warnedPlayersCount} calciator{warnedPlayersCount === 1 ? "e è diffidato" : "i sono diffidati"} (ammoniti nell'ultimo turno disputato). Al prossimo cartellino giallo scatterà la squalifica.
+                  </span>
+                </div>
+                <Badge variant="outline" className="border-amber-500/40 text-amber-500 text-[10px] shrink-0 font-bold">
+                  {warnedPlayersCount} Diffidat{warnedPlayersCount === 1 ? "o" : "i"}
+                </Badge>
+              </div>
+            )}
 
             {/* Banner Informativo se Formazioni Chiuse */}
             {isDeadlineClosed && (
@@ -1682,12 +1836,13 @@ const Tattica = () => {
                           const isStarter = slotIdx !== undefined;
                           const assignedRole =
                             isStarter ? currentFormation.positions[slotIdx]?.label : null;
+                          const disc = disciplinaryMap[pId];
 
                           return (
                             <div
                               key={pId}
-                              draggable
-                              onDragStart={(e) => handleDragStartPlayer(e, pId)}
+                              draggable={!disc?.isSuspended}
+                              onDragStart={(e) => !disc?.isSuspended && handleDragStartPlayer(e, pId)}
                               onDragEnd={handleDragEnd}
                               className={`group p-2 rounded-xl border transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${
                                 isStarter
@@ -1729,6 +1884,15 @@ const Tattica = () => {
                                     >
                                       {player.Posiz}
                                     </Badge>
+                                    {disc?.isSuspended ? (
+                                      <Badge variant="destructive" className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold flex items-center gap-0.5" title={disc.suspensionDetails}>
+                                        <Ban className="h-2.5 w-2.5" /> SQUALIFICATO
+                                      </Badge>
+                                    ) : disc?.isWarned ? (
+                                      <Badge variant="outline" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold flex items-center gap-0.5" title={disc.warningDetails}>
+                                        <AlertTriangle className="h-2.5 w-2.5" /> DIFFIDATO
+                                      </Badge>
+                                    ) : null}
                                     {isStarter ? (
                                       <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold">
                                         TIT #{slotIdx + 1} ({assignedRole})
@@ -2261,13 +2425,18 @@ const Tattica = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
                         {tribunaPlayers.map((player) => {
                           const pId = Number(player.ID);
+                          const disc = disciplinaryMap[pId];
                           return (
                             <div
                               key={pId}
-                              draggable
-                              onDragStart={(e) => handleDragStartPlayer(e, pId)}
+                              draggable={!disc?.isSuspended}
+                              onDragStart={(e) => !disc?.isSuspended && handleDragStartPlayer(e, pId)}
                               onDragEnd={handleDragEnd}
-                              className="p-2 rounded-xl border border-dashed border-border/70 bg-muted/30 hover:bg-muted/50 transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing"
+                              className={`p-2 rounded-xl border border-dashed transition-all flex items-center justify-between gap-2 ${
+                                disc?.isSuspended
+                                  ? "border-rose-500/50 bg-rose-500/5 cursor-not-allowed"
+                                  : "border-border/70 bg-muted/30 hover:bg-muted/50 cursor-grab active:cursor-grabbing"
+                              }`}
                             >
                               <div
                                 onClick={() => setSelectedPlayerModal(player)}
@@ -2301,19 +2470,24 @@ const Tattica = () => {
                                   {player.OVR}
                                 </span>
 
-                                {/* Promuovi in Panchina */}
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handlePromoteToBench(pId);
-                                  }}
-                                  className="h-6 w-6 rounded-lg hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                                  title="Promuovi in Panchina (Slot P1)"
-                                >
-                                  <ArrowUpRight className="h-3 w-3" />
-                                </Button>
+                                {disc?.isSuspended ? (
+                                  <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4 bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40 font-bold shrink-0 flex items-center gap-0.5" title={disc.suspensionDetails}>
+                                    <Ban className="h-2.5 w-2.5" /> Squalificato
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handlePromoteToBench(pId);
+                                    }}
+                                    className="h-6 w-6 rounded-lg hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                                    title="Promuovi in Panchina (Slot P1)"
+                                  >
+                                    <ArrowUpRight className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           );

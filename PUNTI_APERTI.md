@@ -877,18 +877,25 @@ Segnalare chi tra i titolari della settimana precedente è finito in panchina o 
 ---
 
 ## 📌 38. Sistema Diffide e Squalifiche da Cartellini
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Rilasciato (Regola 2 gialli consecutivi / rosso diretto, blocco schieramento in Tattica e avvisi Foglio Commento)
 - **Priorità**: Alta (Regolarità disciplinare del campionato)
-- **Moduli coinvolti**: src/pages/Tattica.tsx, src/pages/FoglioCommento.tsx, gestione partite
-- **Tabelle coinvolte**: "AS_PLAYER_STAT", an_player, team_formation_history
-Descrizione
-Tracciamento e applicazione automatica dei provvedimenti del Giudice Sportivo:
+- **Moduli coinvolti**: `src/services/disciplineService.ts`, `src/pages/Tattica.tsx`, `src/pages/FoglioCommento.tsx`
+- **Tabelle coinvolte**: `as_player_stat`, `an_schedule`, `an_team_tactic`, `team_formation_history`, `an_player`
+### Descrizione
+Implementato il tracciamento e l'applicazione automatica dei provvedimenti disciplinari per cartellini (gialli e rossi) su base storica di squadra e di campionato:
 
-Conteggio progressivo delle ammonizioni (GIALLI) ed espulsioni dirette o per doppio giallo (ROSSI) dal tabellino partite.
-Diffida: badge visivo di avvertimento quando il calciatore è a 1 giallo dalla squalifica.
-Squalifica: al raggiungimento della soglia disciplinare (es. 4 ammonizioni) o a seguito di cartellino rosso, il calciatore viene squalificato per la giornata successiva:
-In Tattica.tsx compare un badge rosso 🚫 Squalificato con divieto assoluto di schierarlo tra gli 11 titolari o in panchina.
-Avviso nel Foglio Commento per i commentatori.
+1. **Regole Disciplinari Ufficiali**:
+   - **Squalifica da Espulsione (Rosso)**: 1 cartellino rosso (diretto o per doppio giallo) registrato in `as_player_stat.ROSSI` comporta 1 turno di squalifica nella partita immediatamente successiva della squadra.
+   - **Squalifica da Ammonizioni (Gialli)**: 2 cartellini gialli consecutivi nelle ultime presenze del giocatore comportano 1 turno di squalifica nella gara successiva. Una volta scontato il turno di assenza, la serie consecutiva si resetta.
+   - **Regime di Diffida**: un calciatore entra in diffida se ha rimediato un cartellino giallo nell'ultimo turno disputato (se prende un giallo nella partita successiva scatta la squalifica per 2 gialli consecutivi).
+2. **Schermata Gestione Tattica (`Tattica.tsx`)**:
+   - **Blocco Schieramento Titolari / Panchina**: i giocatori squalificati vengono automaticamente relegati nella sezione Tribuna / Non Convocati.
+   - **Protezione Totale**: disabilitati drag & drop, inserimento rapido e promozione in panchina per i giocatori squalificati; controllo preventivo anche in fase di salvataggio formazione.
+   - **Feedback Visivo**: badge `🚫 Squalificato` rosso e banner informativo con il riepilogo delle assenze forzate per il prossimo match.
+   - **Badge Diffidato**: badge `⚠️ Diffidato` in rosa e tribuna per identificare i giocatori a rischio.
+3. **Schermata Foglio Commento (`FoglioCommento.tsx`)**:
+   - **Box Provvedimenti Disciplinari**: box bicolore per le due squadre che elenca i calciatori squalificati con la specifica causale (Espulsione o 2 Gialli di fila) e tutti i calciatori diffidati.
+   - **Icone sul Campo e in Panchina**: icona di allerta `⚠️` visibile accanto al nome sul campetto 2D per i titolari in diffida e badge `⚠️ Diffidato` nell'elenco delle 9 riserve.
 
 
 
