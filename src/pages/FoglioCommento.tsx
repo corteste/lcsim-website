@@ -32,6 +32,7 @@ import {
   Ban,
   RefreshCw,
   ArrowDownRight,
+  Layers,
 } from "lucide-react";
 import {
   fetchTeamDisciplinaryStatus,
@@ -635,136 +636,188 @@ export const FoglioCommento: React.FC = () => {
                   />
                 )}
 
-                {/* Box Provvedimenti Disciplinari: Squalificati & Diffidati */}
+                {/* Box Unificato: Cambiamenti Tattici e Diffide */}
                 <div className="lg:col-span-2">
                   <Card className="border-border/80 bg-card shadow-sm overflow-hidden">
                     <CardHeader className="py-2.5 px-4 border-b border-border/60 bg-muted/30">
                       <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                         <span className="flex items-center gap-1.5 text-foreground font-black">
-                          <Ban className="h-4 w-4 text-rose-500" />
-                          Provvedimenti Disciplinari &amp; Squalifiche (Giornata {selectedWeek})
+                          <Layers className="h-4 w-4 text-primary" />
+                          Cambiamenti Tattici e Diffide (Giornata {selectedWeek})
                         </span>
                         <Badge variant="outline" className="text-[10px] font-mono border-border/80">
-                          Regolamento Cartellini
+                          Analisi &amp; Disciplinare
                         </Badge>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Lato Casa */}
-                      <div className="p-3.5 rounded-xl border border-border/70 bg-muted/20 space-y-3">
+                      <div className="p-3.5 rounded-xl border border-border/70 bg-muted/20 space-y-3.5">
                         <div className="flex items-center justify-between border-b border-border/60 pb-2">
                           <span className="text-xs font-black uppercase text-foreground flex items-center gap-1.5">
                             <Shield className="h-3.5 w-3.5 text-blue-500" />
                             {homeFormation?.teamName}
                           </span>
-                          <Badge variant="outline" className="text-[10px] font-mono">
-                            {homeSuspended.length} Squalificati • {homeWarned.length} Diffidati
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            {homeDiffs?.isFormationChanged && (
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] font-mono border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold"
+                              >
+                                Modulo: {homeDiffs.prevFormationId} ➔ {homeFormation?.formationId}
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-[10px] font-mono">
+                              {homeSuspended.length} Squalificati • {homeWarned.length} Diffidati
+                            </Badge>
+                          </div>
                         </div>
 
-                        {/* Squalificati Casa */}
-                        <div className="space-y-1.5">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block flex items-center gap-1">
-                            <Ban className="h-3 w-3" /> Calciatori Squalificati (Assenti):
-                          </span>
-                          {homeSuspended.length === 0 ? (
-                            <p className="text-xs text-muted-foreground italic">Nessun calciatore squalificato</p>
-                          ) : (
-                            <div className="space-y-1">
-                              {homeSuspended.map((p) => {
-                                const disc = homeDisciplinaryMap[Number(p.ID)];
-                                return (
-                                  <div key={p.ID} className="flex items-center justify-between p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <Badge variant="outline" className={`text-[9px] px-1.5 py-0 font-bold ${getRoleColor(p.Posiz)}`}>{p.Posiz}</Badge>
-                                      <span className="font-bold text-foreground truncate">{p.Nome} {p.Cognome}</span>
+                        {/* Scelte Tattiche Casa */}
+                        {homeDiffs && homeDiffs.hasPrevious ? (
+                          <FormationChangesSummary
+                            diffs={homeDiffs}
+                            onSelectPlayer={setSelectedPlayer}
+                            borderless={true}
+                          />
+                        ) : (
+                          <div className="text-xs text-muted-foreground italic py-0.5">
+                            Debutto stagionale: nessun confronto con partite precedenti.
+                          </div>
+                        )}
+
+                        {/* Sezione Disciplinare Casa */}
+                        <div className="pt-2 border-t border-border/60 space-y-2.5">
+                          {/* Squalificati Casa */}
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block flex items-center gap-1">
+                              <Ban className="h-3 w-3" /> Calciatori Squalificati (Assenti):
+                            </span>
+                            {homeSuspended.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">Nessun calciatore squalificato</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {homeSuspended.map((p) => {
+                                  const disc = homeDisciplinaryMap[Number(p.ID)];
+                                  return (
+                                    <div key={p.ID} className="flex items-center justify-between p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <Badge variant="outline" className={`text-[9px] px-1.5 py-0 font-bold ${getRoleColor(p.Posiz)}`}>{p.Posiz}</Badge>
+                                        <span className="font-bold text-foreground truncate">{p.Nome} {p.Cognome}</span>
+                                      </div>
+                                      <Badge variant="destructive" className="text-[9px] px-1.5 py-0 bg-rose-500 text-white shrink-0 font-semibold" title={disc?.suspensionDetails}>
+                                        {disc?.suspensionReason === "red_card" ? "Espulsione" : "2 Gialli di fila"}
+                                      </Badge>
                                     </div>
-                                    <Badge variant="destructive" className="text-[9px] px-1.5 py-0 bg-rose-500 text-white shrink-0 font-semibold" title={disc?.suspensionDetails}>
-                                      {disc?.suspensionReason === "red_card" ? "Espulsione" : "2 Gialli di fila"}
-                                    </Badge>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
 
-                        {/* Diffidati Casa */}
-                        <div className="space-y-1.5 pt-1 border-t border-border/50">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" /> Calciatori Diffidati (A rischio squalifica):
-                          </span>
-                          {homeWarned.length === 0 ? (
-                            <p className="text-xs text-muted-foreground italic">Nessun calciatore diffidato</p>
-                          ) : (
-                            <div className="flex flex-wrap gap-1.5">
-                              {homeWarned.map((p) => (
-                                <Badge key={p.ID} variant="outline" className="px-2 py-0.5 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 flex items-center gap-1">
-                                  <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                                  <span>{p.Cognome} ({p.Posiz})</span>
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                          {/* Diffidati Casa */}
+                          <div className="space-y-1.5 pt-1 border-t border-border/40">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" /> Calciatori Diffidati (A rischio squalifica):
+                            </span>
+                            {homeWarned.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">Nessun calciatore diffidato</p>
+                            ) : (
+                              <div className="flex flex-wrap gap-1.5">
+                                {homeWarned.map((p) => (
+                                  <Badge key={p.ID} variant="outline" className="px-2 py-0.5 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 flex items-center gap-1">
+                                    <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                                    <span>{p.Cognome} ({p.Posiz})</span>
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* Lato Trasferta */}
-                      <div className="p-3.5 rounded-xl border border-border/70 bg-muted/20 space-y-3">
+                      <div className="p-3.5 rounded-xl border border-border/70 bg-muted/20 space-y-3.5">
                         <div className="flex items-center justify-between border-b border-border/60 pb-2">
                           <span className="text-xs font-black uppercase text-foreground flex items-center gap-1.5">
                             <Shield className="h-3.5 w-3.5 text-purple-500" />
                             {awayFormation?.teamName}
                           </span>
-                          <Badge variant="outline" className="text-[10px] font-mono">
-                            {awaySuspended.length} Squalificati • {awayWarned.length} Diffidati
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            {awayDiffs?.isFormationChanged && (
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] font-mono border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold"
+                              >
+                                Modulo: {awayDiffs.prevFormationId} ➔ {awayFormation?.formationId}
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-[10px] font-mono">
+                              {awaySuspended.length} Squalificati • {awayWarned.length} Diffidati
+                            </Badge>
+                          </div>
                         </div>
 
-                        {/* Squalificati Trasferta */}
-                        <div className="space-y-1.5">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block flex items-center gap-1">
-                            <Ban className="h-3 w-3" /> Calciatori Squalificati (Assenti):
-                          </span>
-                          {awaySuspended.length === 0 ? (
-                            <p className="text-xs text-muted-foreground italic">Nessun calciatore squalificato</p>
-                          ) : (
-                            <div className="space-y-1">
-                              {awaySuspended.map((p) => {
-                                const disc = awayDisciplinaryMap[Number(p.ID)];
-                                return (
-                                  <div key={p.ID} className="flex items-center justify-between p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <Badge variant="outline" className={`text-[9px] px-1.5 py-0 font-bold ${getRoleColor(p.Posiz)}`}>{p.Posiz}</Badge>
-                                      <span className="font-bold text-foreground truncate">{p.Nome} {p.Cognome}</span>
+                        {/* Scelte Tattiche Trasferta */}
+                        {awayDiffs && awayDiffs.hasPrevious ? (
+                          <FormationChangesSummary
+                            diffs={awayDiffs}
+                            onSelectPlayer={setSelectedPlayer}
+                            borderless={true}
+                          />
+                        ) : (
+                          <div className="text-xs text-muted-foreground italic py-0.5">
+                            Debutto stagionale: nessun confronto con partite precedenti.
+                          </div>
+                        )}
+
+                        {/* Sezione Disciplinare Trasferta */}
+                        <div className="pt-2 border-t border-border/60 space-y-2.5">
+                          {/* Squalificati Trasferta */}
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block flex items-center gap-1">
+                              <Ban className="h-3 w-3" /> Calciatori Squalificati (Assenti):
+                            </span>
+                            {awaySuspended.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">Nessun calciatore squalificato</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {awaySuspended.map((p) => {
+                                  const disc = awayDisciplinaryMap[Number(p.ID)];
+                                  return (
+                                    <div key={p.ID} className="flex items-center justify-between p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <Badge variant="outline" className={`text-[9px] px-1.5 py-0 font-bold ${getRoleColor(p.Posiz)}`}>{p.Posiz}</Badge>
+                                        <span className="font-bold text-foreground truncate">{p.Nome} {p.Cognome}</span>
+                                      </div>
+                                      <Badge variant="destructive" className="text-[9px] px-1.5 py-0 bg-rose-500 text-white shrink-0 font-semibold" title={disc?.suspensionDetails}>
+                                        {disc?.suspensionReason === "red_card" ? "Espulsione" : "2 Gialli di fila"}
+                                      </Badge>
                                     </div>
-                                    <Badge variant="destructive" className="text-[9px] px-1.5 py-0 bg-rose-500 text-white shrink-0 font-semibold" title={disc?.suspensionDetails}>
-                                      {disc?.suspensionReason === "red_card" ? "Espulsione" : "2 Gialli di fila"}
-                                    </Badge>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
 
-                        {/* Diffidati Trasferta */}
-                        <div className="space-y-1.5 pt-1 border-t border-border/50">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" /> Calciatori Diffidati (A rischio squalifica):
-                          </span>
-                          {awayWarned.length === 0 ? (
-                            <p className="text-xs text-muted-foreground italic">Nessun calciatore diffidato</p>
-                          ) : (
-                            <div className="flex flex-wrap gap-1.5">
-                              {awayWarned.map((p) => (
-                                <Badge key={p.ID} variant="outline" className="px-2 py-0.5 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 flex items-center gap-1">
-                                  <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                                  <span>{p.Cognome} ({p.Posiz})</span>
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                          {/* Diffidati Trasferta */}
+                          <div className="space-y-1.5 pt-1 border-t border-border/40">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" /> Calciatori Diffidati (A rischio squalifica):
+                            </span>
+                            {awayWarned.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">Nessun calciatore diffidato</p>
+                            ) : (
+                              <div className="flex flex-wrap gap-1.5">
+                                {awayWarned.map((p) => (
+                                  <Badge key={p.ID} variant="outline" className="px-2 py-0.5 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 flex items-center gap-1">
+                                    <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                                    <span>{p.Cognome} ({p.Posiz})</span>
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -1058,15 +1111,6 @@ const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
           )}
         </CardContent>
       </Card>
-
-      {/* Box Scelte Tattiche vs Turno Precedente (#37) */}
-      {diffs && diffs.hasPrevious && (
-        <FormationChangesSummary
-          diffs={diffs}
-          teamName={teamFormation.teamName}
-          onSelectPlayer={onSelectPlayer}
-        />
-      )}
     </div>
   );
 };

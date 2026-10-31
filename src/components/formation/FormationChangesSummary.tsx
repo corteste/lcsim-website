@@ -17,6 +17,7 @@ interface FormationChangesSummaryProps {
   teamName?: string;
   customPrevLabel?: string;
   onSelectPlayer?: (player: Player) => void;
+  borderless?: boolean;
 }
 
 export const FormationChangesSummary: React.FC<FormationChangesSummaryProps> = ({
@@ -24,6 +25,7 @@ export const FormationChangesSummary: React.FC<FormationChangesSummaryProps> = (
   teamName,
   customPrevLabel,
   onSelectPlayer,
+  borderless = false,
 }) => {
   if (!diffs || !diffs.hasPrevious) return null;
 
@@ -37,7 +39,7 @@ export const FormationChangesSummary: React.FC<FormationChangesSummaryProps> = (
   const prevLabel = customPrevLabel || (diffs.prevWeek ? `Giornata ${diffs.prevWeek}` : "Turno Precedente");
 
   return (
-    <div className="p-3.5 rounded-2xl border border-border/80 bg-muted/20 space-y-2.5">
+    <div className={`space-y-2.5 ${borderless ? "" : "p-3.5 rounded-2xl border border-border/80 bg-muted/20"}`}>
       <div className="flex items-center justify-between border-b border-border/60 pb-2">
         <span className="text-xs font-black uppercase text-foreground flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5 text-primary" />
