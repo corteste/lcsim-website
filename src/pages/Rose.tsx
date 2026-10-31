@@ -279,20 +279,16 @@ const Rose = () => {
               </div>
             </div>
 
-            {/* CLUBS SHOWCASE GRID (PREMIER LEAGUE & SERIE A INSPIRED RECTANGULAR BLOCKS) */}
+            {/* CLUBS SHOWCASE GRID (COMPACT PREMIER LEAGUE STYLE) */}
             {loadingTeams ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="h-80 bg-muted/40 animate-pulse rounded-2xl border border-border/70" />
+                  <div key={i} className="h-48 bg-muted/40 animate-pulse rounded-2xl border border-border/70" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
                 {sortedTeams.map((team) => {
-                  const teamAvgOvr = team.players.length > 0
-                    ? Math.round(team.players.reduce((sum, p) => sum + (p.OVR ?? 0), 0) / team.players.length)
-                    : 0;
-
                   return (
                     <div
                       key={team.TEAM_ID}
@@ -301,44 +297,36 @@ const Rose = () => {
                         setSearchQuery("");
                         setRoleFilter("ALL");
                       }}
-                      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card hover:border-emerald-500/50 hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+                      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card hover:border-emerald-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
                     >
                       {/* Top Banner with dynamic team background */}
-                      <div className={`relative h-32 flex items-center justify-center p-4 overflow-hidden ${getTeamBackground(team.TEAM_ID)}`}>
-                        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-black/20" />
+                      <div className={`relative h-24 flex items-center justify-center p-3 overflow-hidden ${getTeamBackground(team.TEAM_ID)}`}>
+                        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-black/20" />
 
-                        {/* Serie A Badge & Trigram */}
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-white bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10">
-                            Serie A
-                          </span>
-                          <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-white/90 border-white/10">
-                            {team.TEAM_ID}
-                          </Badge>
-                        </div>
-
-                        {/* Palmares / Trophy pills on top-right */}
-                        <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
-                          {team.scudetto > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-amber-400/30" title={`${team.scudetto} Scudetti`}>
-                              <Trophy className="h-3 w-3 text-amber-400" />
-                              <span>{team.scudetto}</span>
-                            </span>
-                          )}
-                          {team.supercoppa > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-blue-400/30" title={`${team.supercoppa} Supercoppe`}>
-                              <ShieldCheck className="h-3 w-3 text-blue-400" />
-                              <span>{team.supercoppa}</span>
-                            </span>
-                          )}
-                        </div>
+                        {/* Palmares / Trophy pills on top-right (if any) */}
+                        {(team.scudetto > 0 || team.supercoppa > 0) && (
+                          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 z-10">
+                            {team.scudetto > 0 && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-amber-400/30" title={`${team.scudetto} Scudetti`}>
+                                <Trophy className="h-3 w-3 text-amber-400" />
+                                <span>{team.scudetto}</span>
+                              </span>
+                            )}
+                            {team.supercoppa > 0 && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-blue-400/30" title={`${team.supercoppa} Supercoppe`}>
+                                <ShieldCheck className="h-3 w-3 text-blue-400" />
+                                <span>{team.supercoppa}</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {/* Club Crest Logo centered */}
-                        <div className="relative z-10 flex items-center justify-center mt-3">
+                        <div className="relative z-10 flex items-center justify-center">
                           <img
                             src={getTeamLogo(team.TEAM_ID)}
                             alt={`${team.NAME} Logo`}
-                            className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-xl group-hover:scale-110 transition-transform duration-300"
+                            className="h-16 w-16 sm:h-18 sm:w-18 object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
                             }}
@@ -347,32 +335,18 @@ const Rose = () => {
                       </div>
 
                       {/* Card Content */}
-                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-4">
-                        <div className="text-center space-y-1.5">
-                          <h3 className="text-lg sm:text-xl font-black text-foreground group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors tracking-tight line-clamp-1">
-                            {team.NAME}
-                          </h3>
-                          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground font-medium">
-                            <User className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                            <span className="truncate">Manager: <strong className="text-foreground">{team.MANAGER || "Da Assegnare"}</strong></span>
-                          </div>
-                        </div>
-
-                        {/* Quick telemetry / squad metrics */}
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">
-                          <div className="bg-muted/40 p-2.5 rounded-xl text-center">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold block tracking-wider">Rosa</span>
-                            <span className="font-black text-foreground font-mono">{team.players.length} Giocatori</span>
-                          </div>
-                          <div className="bg-muted/40 p-2.5 rounded-xl text-center">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold block tracking-wider">OVR Medio</span>
-                            <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">{teamAvgOvr}</span>
-                          </div>
+                      <div className="p-3.5 sm:p-4 text-center space-y-1">
+                        <h3 className="text-base sm:text-lg font-black text-foreground group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors tracking-tight line-clamp-1">
+                          {team.NAME}
+                        </h3>
+                        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground font-medium">
+                          <User className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                          <span className="truncate">Manager: <strong className="text-foreground">{team.MANAGER || "Da Assegnare"}</strong></span>
                         </div>
                       </div>
 
                       {/* Card Bottom CTA (Premier League style "Club Info →") */}
-                      <div className="px-4 py-3 bg-muted/40 group-hover:bg-emerald-600 group-hover:text-white border-t border-border/70 flex items-center justify-between text-xs font-bold transition-all duration-200">
+                      <div className="px-4 py-2.5 bg-muted/30 group-hover:bg-emerald-600 group-hover:text-white border-t border-border/70 flex items-center justify-between text-xs font-bold transition-all duration-200">
                         <span className="tracking-wide uppercase text-[11px] font-black">Club Info</span>
                         <div className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                           <span className="text-[11px] font-medium opacity-90 group-hover:opacity-100">Visualizza Rosa</span>
