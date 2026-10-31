@@ -541,7 +541,16 @@ export async function maybeTriggerRandomRumor(): Promise<void> {
     const isOpen = await checkIsMarketOpen();
     if (!isOpen) return;
 
-    // Controlla data dell'ultimo rumor
+    // 1. Controlla se esistono trattative reali aperte nel mercato
+    const { data: realTrades } = await supabase
+      .from('market_trades')
+      .select('id, status')
+      .in('status', ['pending', 'pending_admin'])
+      .limit(5);
+
+    const hasRealTrades = Boolean(realTrades && realTrades.length > 0);
+
+    // 2. Controlla data dell'ultimo rumor
     const { data: latest } = await supabase
       .from('league_market_rumors')
       .select('created_at')
@@ -558,11 +567,21 @@ export async function maybeTriggerRandomRumor(): Promise<void> {
       const lastCreated = new Date(latest.created_at).getTime();
       const hoursDiff = (now - lastCreated) / (1000 * 60 * 60);
 
-      // Se sono passate più di 3.5 ore genera sempre; oppure se sono passati almeno 45 min con 30% di probabilità
-      if (hoursDiff >= 3.5) {
-        shouldGenerate = true;
-      } else if (hoursDiff >= 0.75 && Math.random() < 0.3) {
-        shouldGenerate = true;
+      if (hasRealTrades) {
+        // Con trattative reali: genera indiscrezioni con intervallo tra 12 e 24 ore
+        if (hoursDiff >= 24) {
+          shouldGenerate = true;
+        } else if (hoursDiff >= 12 && Math.random() < 0.4) {
+          shouldGenerate = true;
+        }
+      } else {
+        // Senza trattative reali: silenzio stampa per 24-48 ore (1 o 2 giorni).
+        // Solo superate le 48-72 ore c'è una modesta probabilità (30%) di produrre un singolo rumor di retroscena
+        if (hoursDiff >= 72) {
+          shouldGenerate = true;
+        } else if (hoursDiff >= 48 && Math.random() < 0.3) {
+          shouldGenerate = true;
+        }
       }
     }
 

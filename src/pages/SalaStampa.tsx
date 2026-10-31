@@ -37,6 +37,8 @@ import {
   Filter,
   MessageSquare,
   Zap,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -73,6 +75,16 @@ export default function SalaStampa() {
   const [pendingForMyTeam, setPendingForMyTeam] = useState<PressConference | null>(null);
   const [myAnswerText, setMyAnswerText] = useState("");
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
+
+  // Paginazione Gossip & Rumor (5 rumor per pagina)
+  const [rumorPage, setRumorPage] = useState(1);
+  const RUMORS_PER_PAGE = 5;
+
+  const totalRumorPages = Math.max(1, Math.ceil(rumors.length / RUMORS_PER_PAGE));
+  const paginatedRumors = useMemo(() => {
+    const start = (rumorPage - 1) * RUMORS_PER_PAGE;
+    return rumors.slice(start, start + RUMORS_PER_PAGE);
+  }, [rumors, rumorPage]);
 
   // Azioni Amministrazione (solo per generare le domande di inizio giornata per i club)
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
@@ -483,6 +495,81 @@ export default function SalaStampa() {
                     </CardContent>
                   </Card>
                 ))}
+
+                {/* Pager Rumor (5 alla volta) */}
+                {totalRumorPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/60">
+                    <div className="text-xs text-muted-foreground font-medium">
+                      Mostrando <strong className="text-foreground">{(rumorPage - 1) * RUMORS_PER_PAGE + 1}</strong> - <strong className="text-foreground">{Math.min(rumorPage * RUMORS_PER_PAGE, rumors.length)}</strong> di <strong className="text-foreground">{rumors.length}</strong> rumor
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setRumorPage((p) => Math.max(1, p - 1));
+                          window.scrollTo({ top: 200, behavior: "smooth" });
+                        }}
+                        disabled={rumorPage === 1}
+                        className="h-8 px-2.5 text-xs gap-1 font-semibold rounded-lg"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                        <span>Precedente</span>
+                      </Button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalRumorPages }, (_, i) => i + 1).map((p) => {
+                          if (
+                            p === 1 ||
+                            p === totalRumorPages ||
+                            (p >= rumorPage - 1 && p <= rumorPage + 1)
+                          ) {
+                            return (
+                              <Button
+                                key={p}
+                                variant={p === rumorPage ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  setRumorPage(p);
+                                  window.scrollTo({ top: 200, behavior: "smooth" });
+                                }}
+                                className={`h-8 w-8 p-0 text-xs font-mono font-bold rounded-lg ${
+                                  p === rumorPage
+                                    ? "bg-primary text-primary-foreground"
+                                    : "hover:bg-muted"
+                                }`}
+                              >
+                                {p}
+                              </Button>
+                            );
+                          } else if (p === rumorPage - 2 || p === rumorPage + 2) {
+                            return (
+                              <span key={p} className="text-xs text-muted-foreground px-0.5">
+                                …
+                              </span>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setRumorPage((p) => Math.min(totalRumorPages, p + 1));
+                          window.scrollTo({ top: 200, behavior: "smooth" });
+                        }}
+                        disabled={rumorPage === totalRumorPages}
+                        className="h-8 px-2.5 text-xs gap-1 font-semibold rounded-lg"
+                      >
+                        <span>Successivo</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
@@ -529,7 +616,7 @@ export default function SalaStampa() {
               </div>
             ) : (
               <div className="space-y-4">
-                {rumors.map((rumor) => (
+                {paginatedRumors.map((rumor) => (
                   <Card
                     key={rumor.id}
                     className="border border-border/80 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow"
