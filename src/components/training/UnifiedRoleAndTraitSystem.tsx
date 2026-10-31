@@ -149,12 +149,16 @@ export default function UnifiedRoleAndTraitSystem({
   };
 
   const handleConfirmRoleChange = () => {
-    if (!pendingNewPos || !pendingNewSubRole) {
-      toast.error("Seleziona una posizione e il primo Ruolo+");
+    if (!pendingNewPos || pendingNewPos === player.Posiz) {
+      toast.error("Seleziona una posizione diversa da quella attuale del giocatore.");
+      return;
+    }
+    if (!pendingNewSubRole) {
+      toast.error("Seleziona il primo Ruolo+ per la nuova posizione");
       return;
     }
     const isNew = pendingNewPos !== player.Posiz;
-    const isDiscounted = Boolean(roleDiscounts?.[pendingNewPos]);
+    const isDiscounted = Boolean(roleDiscounts?.[pendingNewPos]) && isNew;
     const addedCost = isNew
       ? isDiscounted
         ? TRAINING_COSTS.ROLE_CHANGE / 2
@@ -1146,8 +1150,8 @@ export default function UnifiedRoleAndTraitSystem({
             </DialogTitle>
             <DialogDescription className="text-xs">
               Il cambio del ruolo principale costa{" "}
-              <strong>{roleDiscounts?.[pendingNewPos] ? "20" : "40"} XP</strong>{" "}
-              {roleDiscounts?.[pendingNewPos] && (
+              <strong>{pendingNewPos !== player.Posiz && roleDiscounts?.[pendingNewPos] ? "20" : "40"} XP</strong>{" "}
+              {pendingNewPos !== player.Posiz && roleDiscounts?.[pendingNewPos] && (
                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold">(Sconto 50% applicato) </span>
               )}
               e include la scelta del 1° Ruolo+ della nuova posizione.
@@ -1171,11 +1175,14 @@ export default function UnifiedRoleAndTraitSystem({
                 </SelectTrigger>
                 <SelectContent>
                   {OFFICIAL_POSITIONS.map((pos) => {
-                    const isPosDiscounted = Boolean(roleDiscounts?.[pos]);
+                    const isCurrentRole = pos === player.Posiz;
+                    const isPosDiscounted = Boolean(roleDiscounts?.[pos]) && !isCurrentRole;
                     return (
-                      <SelectItem key={pos} value={pos} className="text-xs font-bold">
+                      <SelectItem key={pos} value={pos} className="text-xs font-bold" disabled={isCurrentRole}>
                         <div className="flex items-center justify-between w-full gap-2">
-                          <span>{pos}</span>
+                          <span className={isCurrentRole ? "text-muted-foreground" : ""}>
+                            {pos} {isCurrentRole && "(Attuale)"}
+                          </span>
                           {isPosDiscounted && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-normal">
                               Sconto 50%
@@ -1189,7 +1196,7 @@ export default function UnifiedRoleAndTraitSystem({
               </Select>
             </div>
 
-            {roleDiscounts?.[pendingNewPos] && (
+            {pendingNewPos !== player.Posiz && roleDiscounts?.[pendingNewPos] && (
               <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
                 <Sparkles className="h-4 w-4 shrink-0" />
                 <span>Sconto 50% applicato (costo: 20 XP)</span>
@@ -1218,7 +1225,13 @@ export default function UnifiedRoleAndTraitSystem({
 
             <div className="p-3 rounded-lg bg-muted/30 border border-border/60 text-xs text-muted-foreground">
               • Costo Totale Cambio Ruolo:{" "}
-              <strong>{roleDiscounts?.[pendingNewPos] ? "20 XP (Sconto 50% applicato)" : "40 XP"}</strong>
+              <strong>
+                {pendingNewPos === player.Posiz
+                  ? "Seleziona un nuovo ruolo"
+                  : roleDiscounts?.[pendingNewPos]
+                  ? "20 XP (Sconto 50% applicato)"
+                  : "40 XP"}
+              </strong>
               <br />
               • Un eventuale 2° Ruolo+ potrà essere aggiunto in seguito a 100 XP.
             </div>
@@ -1236,7 +1249,8 @@ export default function UnifiedRoleAndTraitSystem({
             <Button
               size="sm"
               onClick={handleConfirmRoleChange}
-              className="text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground"
+              disabled={!pendingNewPos || pendingNewPos === player.Posiz}
+              className="text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
             >
               Conferma Cambio Ruolo
             </Button>

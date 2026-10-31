@@ -402,7 +402,17 @@ export async function fetchTeamRoleDiscountEligibility(
     for (const pId of playerIds) {
       result[pId] = {};
       const counts = starterCountsByPlayer[pId] || {};
+      const p = playerById.get(pId);
+      const currentPos = p?.Posiz;
+
       for (const pos of OFFICIAL_ROLES) {
+        // Non contare come ruolo scontato quello attuale del giocatore:
+        // se il giocatore è ad es. un DC, non può ricevere lo sconto per cambiare in DC perché è già il suo ruolo attivo.
+        if (currentPos && pos === currentPos) {
+          result[pId][pos] = false;
+          continue;
+        }
+
         const stCount = counts[pos] || 0;
         // Strettamente più della metà (> threshold)
         result[pId][pos] = teamRsMatches > 0 && stCount > threshold;
