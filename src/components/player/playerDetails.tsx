@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { isRetiringSoon } from "@/utils/functions";
+import { RetiringBadge } from "@/components/player/RetiringBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ResponsiveContainer,

@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { isRetiringSoon } from "@/utils/functions";
+import { RetiringBadge } from "@/components/player/RetiringBadge";
 import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

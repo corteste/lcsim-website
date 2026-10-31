@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { isRetiringSoon } from "@/utils/functions";
+import { RetiringBadge } from "@/components/player/RetiringBadge";
 import {
   Dialog,
   DialogContent,
