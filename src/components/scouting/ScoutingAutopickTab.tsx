@@ -450,7 +450,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
             <span className="text-[11px]">Ordinati per priorità di scelta</span>
           </div>
           {wishlist.map((item, index) => {
-            const rookie = item.rookie;
+            const rookie = allRookies.find((r) => Number(r.ID) === Number(item.rookie_id)) || item.rookie;
             if (!rookie) return null;
 
             const rId = item.rookie_id;
@@ -487,49 +487,45 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                     {rookie.Posiz}
                   </Badge>
 
-                  {/* Anagrafica */}
-                  <div className="min-w-0 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-sm truncate text-foreground">
-                        {rookie.Nome} {rookie.Cognome}
+                  {/* Anagrafica in linea */}
+                  <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+                    <span className="font-extrabold text-sm truncate text-foreground">
+                      {rookie.Nome} {rookie.Cognome}
+                    </span>
+                    {isDrafted ? (
+                      <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/30 font-bold shrink-0">
+                        Draftato da {rookie.Squadra}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shrink-0">
+                        Disponibile
+                      </Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground/60">•</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{rookie.Età} anni</span>
+                    <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground shrink-0">
+                      <img
+                        src={getNationalityFlag(rookie.Nazionalità)}
+                        alt={rookie.Nazionalità}
+                        className="h-3.5 w-5 object-cover rounded-xs border border-border/80 shrink-0 inline-block shadow-2xs"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                      <span>{rookie.Nazionalità}</span>
+                    </span>
+                    {tokens > 0 ? (
+                      <Badge
+                        variant="outline"
+                        className={`font-mono text-[10px] font-extrabold px-1.5 py-0.5 shrink-0 ${getTierBadgeStyle(tokens)}`}
+                      >
+                        {tokens} {tokens === 1 ? "gettone" : "gettoni"}
+                      </Badge>
+                    ) : (
+                      <span className="text-[10px] italic text-muted-foreground/70 shrink-0">
+                        Non scoutato
                       </span>
-                      {isDrafted ? (
-                        <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/30 font-bold shrink-0">
-                          Draftato da {rookie.Squadra}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shrink-0">
-                          Disponibile
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                      <span>{rookie.Età} anni</span>
-                      <span className="flex items-center gap-1 font-mono">
-                        <img
-                          src={getNationalityFlag(rookie.Nazionalità)}
-                          alt={rookie.Nazionalità}
-                          className="h-3.5 w-5 object-cover rounded-xs border border-border/80 shrink-0 inline-block shadow-2xs"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                        <span>{rookie.Nazionalità}</span>
-                      </span>
-                      {tokens > 0 ? (
-                        <Badge
-                          variant="outline"
-                          className={`font-mono text-[10px] font-extrabold px-1.5 py-0 ${getTierBadgeStyle(tokens)}`}
-                        >
-                          {tokens} {tokens === 1 ? "gettone" : "gettoni"}
-                        </Badge>
-                      ) : (
-                        <span className="text-[10px] italic text-muted-foreground/70">
-                          Non scoutato
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
 
                   {/* TOP 5 STATISTICHE SBLOCCATE (se scoutato) */}
