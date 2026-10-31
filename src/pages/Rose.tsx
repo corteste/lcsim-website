@@ -283,13 +283,13 @@ const Rose = () => {
           </div>
 
           {loadingTeams ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-1.5">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="h-11 bg-muted/40 animate-pulse rounded-xl" />
+                <div key={i} className="h-9 bg-muted/40 animate-pulse rounded-lg" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-1.5">
               {sortedTeams.map((team) => {
                 const isSelected = team.TEAM_ID === currentTeam?.TEAM_ID;
                 return (
@@ -302,33 +302,22 @@ const Rose = () => {
                       setRoleFilter("ALL");
                     }}
                     title={`${team.NAME} (${team.players.length} giocatori)`}
-                    className={`group flex items-center justify-between gap-1.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl border text-xs font-bold transition-all duration-200 cursor-pointer min-w-0 ${
+                    className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs font-bold transition-all duration-200 cursor-pointer min-w-0 ${
                       isSelected
                         ? "bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500/30"
                         : "bg-card border-border/80 text-foreground hover:bg-muted/60 hover:border-border"
                     }`}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <img
-                        src={getTeamLogo(team.TEAM_ID)}
-                        alt={`${team.NAME} Logo`}
-                        className="h-6 w-6 sm:h-7 sm:w-7 object-contain shrink-0 group-hover:scale-110 transition-transform"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
-                        }}
-                      />
-                      <span className="truncate font-extrabold tracking-tight text-left text-[11px] sm:text-xs">
-                        {team.NAME}
-                      </span>
-                    </div>
-                    <span
-                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
-                        isSelected
-                          ? "bg-white/20 text-white"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {team.players.length}
+                    <img
+                      src={getTeamLogo(team.TEAM_ID)}
+                      alt={`${team.NAME} Logo`}
+                      className="h-5 w-5 object-contain shrink-0 group-hover:scale-110 transition-transform"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
+                      }}
+                    />
+                    <span className="truncate font-extrabold tracking-tight text-left text-[11px] leading-tight">
+                      {team.NAME}
                     </span>
                   </button>
                 );
