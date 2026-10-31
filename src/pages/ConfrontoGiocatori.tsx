@@ -198,7 +198,7 @@ const STAT_CATEGORIES: {
   },
   {
     id: "ATT",
-    label: "Attacco & Tiro",
+    label: "Attacco & Calci piazzati",
     icon: Target,
     colorClass: "text-rose-500",
     stats: [
@@ -209,14 +209,6 @@ const STAT_CATEGORIES: {
       { key: "TSTA", label: "Colpo di Testa", dept: "ATT" },
       { key: "PIAZ", label: "Piazzamento Offensivo", dept: "ATT" },
       { key: "TIRV", label: "Tiro al Volo", dept: "ATT" },
-    ],
-  },
-  {
-    id: "CPZ",
-    label: "Calci Piazzati",
-    icon: Flame,
-    colorClass: "text-orange-500",
-    stats: [
       { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
       { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
       { key: "FRED", label: "Freddezza", dept: "CPZ" },
@@ -1548,7 +1540,7 @@ const PlayerComparisonCard = ({
               className="p-1.5 rounded-lg bg-card border border-border/70 text-center shadow-xs"
               title={`${p.name}: ${p.displayVal}`}
             >
-              <span className="text-[10px] font-bold text-muted-foreground uppercase block">
+              <span className="text-[10px] font-black text-foreground uppercase block">
                 {p.label}
               </span>
               <span
@@ -1699,7 +1691,7 @@ const StatComparisonRow = ({
         </div>
 
         {/* Stat Label */}
-        <div className="w-1/3 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-wider truncate">
+        <div className="w-1/3 text-center text-xs font-black text-foreground uppercase tracking-wider truncate">
           {stat.label}
         </div>
 
@@ -1794,7 +1786,7 @@ const TraitComparisonRow = ({
 
   return (
     <div className="p-3.5 rounded-xl bg-card border border-border/80 flex flex-col justify-between gap-2">
-      <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
+      <div className="flex items-center justify-between text-xs font-black text-foreground uppercase tracking-wider">
         <span className="flex items-center gap-1.5">
           {isIcon && <Sparkles className="h-3.5 w-3.5 text-amber-500" />}
           {label}
@@ -2058,7 +2050,7 @@ const PlayerComparisonRadar = ({
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
                   {leftPillars.map((p) => (
                     <div key={p.label} className="p-2 rounded-lg bg-card/80 border border-border/60 flex items-center justify-between text-xs">
-                      <span className="text-[11px] font-mono text-muted-foreground">{p.label} {p.name}:</span>
+                      <span className="text-xs font-mono font-bold text-foreground">{p.label} {p.name}:</span>
                       <span className="font-black text-blue-500 font-mono">{p.displayVal}</span>
                     </div>
                   ))}
@@ -2099,7 +2091,7 @@ const PlayerComparisonRadar = ({
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
                   {rightPillars.map((p) => (
                     <div key={p.label} className="p-2 rounded-lg bg-card/80 border border-border/60 flex items-center justify-between text-xs">
-                      <span className="text-[11px] font-mono text-muted-foreground">{p.label} {p.name}:</span>
+                      <span className="text-xs font-mono font-bold text-foreground">{p.label} {p.name}:</span>
                       <span className="font-black text-emerald-500 font-mono">{p.displayVal}</span>
                     </div>
                   ))}
@@ -2215,10 +2207,10 @@ const PlayerComparisonRadar = ({
                     >
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-extrabold text-foreground flex items-center gap-1.5">
-                          <span className="font-mono text-[10px] text-muted-foreground">
+                          <span className="font-mono text-[10px] font-black text-foreground/80">
                             {item.pillar}
                           </span>
-                          <span>{item.pillarName}</span>
+                          <span className="font-black text-foreground">{item.pillarName}</span>
                         </span>
 
                         <div className="flex items-center gap-2 font-mono text-xs">

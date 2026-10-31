@@ -816,8 +816,8 @@ const StatRow: React.FC<StatRowProps> = ({
         </div>
 
         {/* Etichetta Metrica Centrata */}
-        <div className="w-1/3 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-wider truncate flex items-center justify-center gap-1">
-          {Icon && <Icon className="h-3 w-3 text-muted-foreground shrink-0" />}
+        <div className="w-1/3 text-center text-xs font-black text-foreground uppercase tracking-wider truncate flex items-center justify-center gap-1.5">
+          {Icon && <Icon className="h-3.5 w-3.5 text-primary shrink-0" />}
           <span className="truncate">{label}</span>
         </div>
 
