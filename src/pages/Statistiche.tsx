@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -44,6 +44,7 @@ import { Player } from "@/types/player";
 import { fetchPlayerById } from "@/services/playersService";
 import { Loader2 } from "lucide-react";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
+import { supabase } from "@/supabaseClient";
 
 const PLAYERS_PER_PAGE = 10;
 const CURRENT_SEASON = 9;
@@ -168,7 +169,11 @@ function getPlayerPrimaryStat(player: PlayerStatsSum, cat: StatCategory): number
   }
 }
 
-function getStatDisplay(player: PlayerStatsSum, cat: StatCategory): {
+function getStatDisplay(
+  player: PlayerStatsSum,
+  cat: StatCategory,
+  startersCount?: number
+): {
   value: string | number;
   label: string;
   context: string;
@@ -195,10 +200,12 @@ function getStatDisplay(player: PlayerStatsSum, cat: StatCategory): {
         player.matches_played > 0
           ? (player.sum_voto / player.matches_played).toFixed(2)
           : "N/D";
+      const total = player.matches_played || 0;
+      const starters = Math.min(startersCount ?? total, total);
       return {
         value: rating,
         label: "Media Voto",
-        context: `${player.matches_played || 0} presenze a referto`,
+        context: `${starters} da titolare su ${total}`,
       };
     case "saves":
       return {
@@ -248,6 +255,39 @@ const Statistiche = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerStatsSum | null>(null);
   const [fullPlayer, setFullPlayer] = useState<Player | null>(null);
   const [loadingFullPlayer, setLoadingFullPlayer] = useState<boolean>(false);
+  const [startersMap, setStartersMap] = useState<Map<number, number>>(new Map());
+
+  // Calcolo presenze da titolare per stagione attiva (Punto #52)
+  useEffect(() => {
+    async function loadStarters() {
+      try {
+        const { data, error } = await supabase
+          .from("as_player_stat")
+          .select("ID, MINUTI, SUB")
+          .eq("STAG", CURRENT_SEASON);
+
+        if (error) {
+          console.error("Errore caricamento partenze da titolare:", error);
+          return;
+        }
+
+        const map = new Map<number, number>();
+        (data || []).forEach((row: any) => {
+          const pId = Number(row.ID);
+          const isStarter = row.SUB === true ? false : Number(row.MINUTI || 0) >= 45;
+          if (isStarter) {
+            map.set(pId, (map.get(pId) || 0) + 1);
+          }
+        });
+
+        setStartersMap(map);
+      } catch (err) {
+        console.error("Eccezione caricamento partenze da titolare:", err);
+      }
+    }
+
+    loadStarters();
+  }, []);
 
   // Fetch full Player details when a player is selected
   const handleSelectPlayer = async (playerStat: PlayerStatsSum) => {
@@ -530,7 +570,7 @@ const Statistiche = () => {
               {/* 2ND PLACE (SILVER) - Left on Desktop */}
               {(() => {
                 const player = podiumPlayers[1];
-                const stat = getStatDisplay(player, statType);
+                const stat = getStatDisplay(player, statType, startersMap.get(Number(player.ID)));
                 return (
                   <Card
                     onClick={() => handleSelectPlayer(player)}
@@ -605,7 +645,7 @@ const Statistiche = () => {
               {/* 1ST PLACE (GOLD) - Center on Desktop */}
               {(() => {
                 const player = podiumPlayers[0];
-                const stat = getStatDisplay(player, statType);
+                const stat = getStatDisplay(player, statType, startersMap.get(Number(player.ID)));
                 return (
                   <Card
                     onClick={() => handleSelectPlayer(player)}
@@ -680,7 +720,7 @@ const Statistiche = () => {
               {/* 3RD PLACE (BRONZE) - Right on Desktop */}
               {(() => {
                 const player = podiumPlayers[2];
-                const stat = getStatDisplay(player, statType);
+                const stat = getStatDisplay(player, statType, startersMap.get(Number(player.ID)));
                 return (
                   <Card
                     onClick={() => handleSelectPlayer(player)}
@@ -877,7 +917,7 @@ const Statistiche = () => {
                 <tbody className="divide-y divide-border/60">
                   {currentPlayers.map((player, index) => {
                     const globalRank = startIndex + index + 1;
-                    const stat = getStatDisplay(player, statType);
+                    const stat = getStatDisplay(player, statType, startersMap.get(Number(player.ID)));
                     const isPodium = globalRank <= 3;
 
                     return (

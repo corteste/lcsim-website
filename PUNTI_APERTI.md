@@ -1201,13 +1201,13 @@ Tabellone Playoff: collegare il tabellone ai risultati effettivi, in modo che si
 ---
 
 ## 📌 52. Statistiche: Ridondanza Presenze/Media Voto & Dettaglio Giocatore
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Sostituita la ripetizione delle presenze in Media Voto con il conteggio delle partite da titolare sul totale)
 - **Priorità**: Media
-- **Moduli coinvolti**: src/pages/Statistiche.tsx, src/components/player/playerDetails.tsx
-- **Tabelle coinvolte**: VIEW_PLAYER_STATS, an_player
+- **Moduli coinvolti**: `src/pages/Statistiche.tsx`, `src/components/player/playerDetails.tsx`
+- **Tabelle coinvolte**: `as_player_stat`, `view_player_stats`, `an_player`
 Descrizione
-Ridondanza Presenze: nella tabella con la media voto le presenze compaiono in modo ridondante. Semplificare la tabella.
-Click sul Giocatore: valutare quali informazioni aggiuntive mostrare al click su un giocatore (es. andamento, ultime partite, grafico voti).
+Risolta la ridondanza nella categoria Media Voto della tabella Statistiche (`/statistiche`):
+- **Partenze da Titolare su Totale**: nella colonna "Dettaglio Rendimento" e nelle card del podio per la categoria Media Voto, sostituita la dicitura duplicata *"X presenze a referto"* con il conteggio delle presenze iniziate dal primo minuto nel formato `X da titolare su Y` (es. `8 da titolare su 10`), offrendo un'informazione utile e non ripetitiva rispetto alla colonna adiacente delle Presenze.
 
 
 
