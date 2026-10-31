@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { isRetiringSoon } from "@/utils/functions";
+import { getStandardTraits, getIconTraits } from "@/utils/scoutingConfig";
 import { RetiringBadge } from "@/components/player/RetiringBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -822,38 +823,69 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                 <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">Tratti & Caratteristiche</h4>
               </div>
               <CardContent className="p-5 space-y-3">
-                {[
-                  { label: "Tratto Icona 1", val: currentPlayer.IconTrait1, isIcon: true },
-                  { label: "Tratto Icona 2", val: currentPlayer.IconTrait2, isIcon: true },
-                  { label: "Tratto 1", val: currentPlayer.Trait1, isIcon: false },
-                  { label: "Tratto 2", val: currentPlayer.Trait2, isIcon: false },
-                ].map((tr, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`flex items-center justify-between p-3 rounded-xl border ${
-                      tr.val ? (tr.isIcon ? 'border-amber-500/30 bg-amber-500/5' : 'border-primary/20 bg-primary/5') : 'border-border/40 bg-muted/10 opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {tr.isIcon ? (
-                        <Award className="h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 text-primary" />
-                      )}
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tr.label}</span>
-                    </div>
-                    <span className={`text-sm font-bold ${tr.val ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {tr.val || "Nessuno"}
-                    </span>
-                  </div>
-                ))}
+                {(() => {
+                  const stdTraits = getStandardTraits(currentPlayer);
+                  const iconTraits = getIconTraits(currentPlayer);
+                  return (
+                    <>
+                      {/* Sezione Unificata Tratti Standard */}
+                      <div className="p-3.5 rounded-xl border border-border/70 bg-muted/20 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            Tratti Standard (PlayStyles)
+                          </span>
+                          <Badge variant="outline" className="text-[10px] font-mono">
+                            {stdTraits.length}
+                          </Badge>
+                        </div>
+                        {stdTraits.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {stdTraits.map((trait, idx) => (
+                              <Badge
+                                key={idx}
+                                variant="secondary"
+                                className="px-2.5 py-1 text-xs font-semibold bg-background/80 hover:bg-background border border-border/60 text-foreground shadow-xs"
+                              >
+                                {trait}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">Nessun tratto standard posseduto</p>
+                        )}
+                      </div>
 
-                {currentPlayer.Tratti && (
-                  <div className="p-3 rounded-xl border border-border/60 bg-muted/20 mt-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Altri Tratti:</span>
-                    <p className="text-xs text-foreground font-medium">{currentPlayer.Tratti}</p>
-                  </div>
-                )}
+                      {/* Sezione Unificata Tratti Icona / PlayStyles+ */}
+                      <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                            <Award className="h-4 w-4 text-amber-500" />
+                            Tratti Icona (PlayStyles+)
+                          </span>
+                          <Badge variant="outline" className="text-[10px] font-mono border-amber-500/30 text-amber-500">
+                            {iconTraits.length}
+                          </Badge>
+                        </div>
+                        {iconTraits.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {iconTraits.map((trait, idx) => (
+                              <Badge
+                                key={idx}
+                                className="px-2.5 py-1 text-xs font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 hover:bg-amber-500/30 shadow-xs flex items-center gap-1"
+                              >
+                                <Sparkles className="h-3 w-3 text-amber-500" />
+                                {trait}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">Nessun tratto icona posseduto</p>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>

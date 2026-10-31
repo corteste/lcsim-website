@@ -413,13 +413,25 @@ Creata tabella public.team_market_needs con vincolo di foreign key su an_team("T
 ---
 
 ## 📌 15. Finestra "Lista Tratti" nello Scouting & Revisione Decodifica Maschere Bit
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Completato (31/10/2026)
 - **Priorità**: Media-Alta (Usabilità e fedeltà dei PlayStyles/Traits dei rookie)
-- **Moduli coinvolti**: src/pages/Scouting.tsx, src/utils/scoutingConfig.ts, src/services/rookieImportService.ts
-- **Tabelle coinvolte**: an_rookie, ea_player_db
-Descrizione
-Finestra "Lista Tratti" (UI): Nella scheda di scouting del rookie, raggruppamento di tutti i tratti posseduti all'interno di una finestra/pannello dedicato denominato "Lista Tratti", visualizzati chiaramente incolonnati uno sotto l'altro con icona e descrizione (rispettando lo sblocco per gettoni: conteggio a 2G, elenco completo a 3G e 5G).
-Revisione Decodifica Tratti: Riesame dell'estrazione e decodifica dalle maschere bit EA FC 25 del file Master (trait1, trait2, icontrait1, icontrait2) per garantire che tutti i PlayStyles e PlayStyles+ vengano interpretati correttamente e salvati in an_rookie senza perdite o disallineamenti.
+- **Moduli coinvolti**: `src/pages/Scouting.tsx`, `src/utils/scoutingConfig.ts`, `src/components/player/playerDetails.tsx`, `src/pages/Draft.tsx`
+- **Tabelle coinvolte**: `an_rookie`, `an_player`, `ea_player_db`
+Descrizione & Implementazione
+1. **Unificazione delle Sezioni Tratti**:
+   - Eliminata la frammentazione a 4 box distinti ("Tratto 1", "Tratto 2", "Tratto Icona 1", "Tratto Icona 2") che separava artificialmente i campi `Trait1`/`Trait2` e `IconTrait1`/`IconTrait2`.
+   - Strutturato il pannello in due sezioni a piena larghezza:
+     - **Tratti Standard (PlayStyles)**: aggrega dinamicamente tutti i PlayStyles standard posseduti.
+     - **Tratti Icona / PlayStyles+**: aggrega dinamicamente tutti i PlayStyles+ dorati posseduti.
+2. **Layout a Badge / Pillole a Flusso (Opzione A)**:
+   - I tratti aggregati vengono suddivisi per virgola e renderizzati singolarmente come pillole badge eleganti e ordinate.
+   - Badge neutri/scuri con icona per i PlayStyles standard e badge dorati/ambra (`bg-amber-500/20 text-amber-500`) con stella per i PlayStyles+.
+   - Messaggi di fallback discreti (*"Nessun tratto standard presente"*, *"Nessun tratto icona presente"*) in caso di assenza di tratti.
+3. **Livelli di Sblocco Gettoni (Fascia 2G & 3G+)**:
+   - A 2G: conteggio cumulativo corretto con `getRookieTraitsCount` (che ora suddivide le stringhe e conta accuratamente i singoli tratti reali posseduti).
+   - A 3G e 5G (nonché per l'admin): sblocco integrale dei badge con i nomi esatti.
+4. **Estensione a PlayerDetails & Draft Board**:
+   - Layout a sezioni unificate esteso con coerenza grafica anche alla scheda del calciatore (`playerDetails.tsx`) e ai badge nella vista Draft board (`Draft.tsx`).
 
 
 

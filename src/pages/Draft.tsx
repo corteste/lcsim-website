@@ -65,6 +65,8 @@ import {
   getTierBadgeStyle,
   getStatDisplayByTokens,
   getRookieTraitsCount,
+  getStandardTraits,
+  getIconTraits,
   isWeakFootUnlocked,
   isSkillMovesUnlocked,
   isRole1Unlocked,
@@ -2378,13 +2380,19 @@ const Draft = () => {
                             {getRookieTraitsCount(inspectedRookie)} Tratti posseduti
                           </Badge>
                         )}
-                        {tokens >= 3 && inspectedRookie.Trait1 && (
-                          <Badge variant="outline">{inspectedRookie.Trait1}</Badge>
-                        )}
-                        {tokens >= 3 && inspectedRookie.IconTrait1 && (
-                          <Badge variant="outline" className="text-amber-500 border-amber-500/40">
-                            ★ {inspectedRookie.IconTrait1}
-                          </Badge>
+                        {tokens >= 3 && (
+                          <>
+                            {getStandardTraits(inspectedRookie).map((trait, tIdx) => (
+                              <Badge key={`std-${tIdx}`} variant="outline">
+                                {trait}
+                              </Badge>
+                            ))}
+                            {getIconTraits(inspectedRookie).map((trait, tIdx) => (
+                              <Badge key={`icon-${tIdx}`} variant="outline" className="text-amber-500 border-amber-500/40">
+                                ★ {trait}
+                              </Badge>
+                            ))}
+                          </>
                         )}
                       </div>
 

@@ -239,7 +239,45 @@ export function getOvrDisplayByTokens(
 }
 
 /**
- * Counts non-empty traits on a rookie.
+ * Splits comma-separated traits and returns an array of unique trimmed traits.
+ */
+export function parseTraitString(val?: string | null): string[] {
+  if (!val || val.trim() === "" || val === "Nessuno" || val === "-") return [];
+  return val
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s !== "Nessuno" && s !== "-");
+}
+
+/**
+ * Aggregates all standard traits (PlayStyles) from Trait1 and Trait2 (or legacy Tratti).
+ */
+export function getStandardTraits(player: {
+  Trait1?: string | null;
+  Trait2?: string | null;
+  Tratti?: string | null;
+}): string[] {
+  const t1 = parseTraitString(player.Trait1);
+  const t2 = parseTraitString(player.Trait2);
+  const combined = [...t1, ...t2];
+  if (combined.length > 0) return Array.from(new Set(combined));
+  return Array.from(new Set(parseTraitString(player.Tratti)));
+}
+
+/**
+ * Aggregates all icon traits (PlayStyles+) from IconTrait1 and IconTrait2.
+ */
+export function getIconTraits(player: {
+  IconTrait1?: string | null;
+  IconTrait2?: string | null;
+}): string[] {
+  const i1 = parseTraitString(player.IconTrait1);
+  const i2 = parseTraitString(player.IconTrait2);
+  return Array.from(new Set([...i1, ...i2]));
+}
+
+/**
+ * Counts individual unique traits on a rookie.
  */
 export function getRookieTraitsCount(rookie: {
   Trait1?: string | null;
@@ -248,13 +286,9 @@ export function getRookieTraitsCount(rookie: {
   IconTrait2?: string | null;
   Tratti?: string | null;
 }): number {
-  const traits = [rookie.Trait1, rookie.Trait2, rookie.IconTrait1, rookie.IconTrait2]
-    .filter((t): t is string => Boolean(t && t.trim() !== "" && t !== "Nessuno" && t !== "-"));
-  if (traits.length > 0) return traits.length;
-  if (rookie.Tratti && rookie.Tratti.trim() !== "" && rookie.Tratti !== "Nessuno") {
-    return rookie.Tratti.split(",").filter((t) => t.trim().length > 0).length;
-  }
-  return 0;
+  const std = getStandardTraits(rookie);
+  const icon = getIconTraits(rookie);
+  return std.length + icon.length;
 }
 
 /**

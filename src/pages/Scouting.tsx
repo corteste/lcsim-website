@@ -61,6 +61,8 @@ import {
   getTierBadgeStyle,
   getStatDisplayByTokens,
   getRookieTraitsCount,
+  getStandardTraits,
+  getIconTraits,
   isWeakFootUnlocked,
   isSkillMovesUnlocked,
   isRole1Unlocked,
@@ -1206,49 +1208,61 @@ const Scouting = () => {
                             );
                           }
 
-                          // traitVis === "exact" (3G o 5G)
+                          // traitVis === "exact" (3G o 5G) - Opzione A: Sezioni Unificate con Badges a Flusso
+                          const stdTraits = getStandardTraits(selectedRookie);
+                          const iconTraits = getIconTraits(selectedRookie);
+
                           return (
-                            <div className="grid grid-cols-2 gap-2.5">
-                              {[
-                                {
-                                  label: "Tratto 1",
-                                  val: selectedRookie.Trait1 || "Nessuno",
-                                  isIcon: false,
-                                },
-                                {
-                                  label: "Tratto 2",
-                                  val: selectedRookie.Trait2 || "Nessuno",
-                                  isIcon: false,
-                                },
-                                {
-                                  label: "Tratto Icona 1",
-                                  val: selectedRookie.IconTrait1 || "Nessuno",
-                                  isIcon: true,
-                                },
-                                {
-                                  label: "Tratto Icona 2",
-                                  val: selectedRookie.IconTrait2 || "Nessuno",
-                                  isIcon: true,
-                                },
-                              ].map((item, idx) => (
-                                <div
-                                  key={idx}
-                                  className={`p-2.5 rounded-xl border flex flex-col justify-between ${item.isIcon
-                                    ? "border-amber-500/30 bg-amber-500/5"
-                                    : "border-border/70 bg-muted/20"
-                                    }`}
-                                >
-                                  <span className="text-[10px] font-semibold uppercase text-muted-foreground flex items-center gap-1">
-                                    {item.isIcon && (
-                                      <Sparkles className="h-3 w-3 text-amber-500" />
-                                    )}
-                                    {item.label}
-                                  </span>
-                                  <span className="text-xs sm:text-sm font-bold text-foreground mt-1">
-                                    {item.val}
+                            <div className="space-y-3">
+                              {/* Sezione Unificata Tratti Standard */}
+                              <div className="p-3 rounded-xl border border-border/70 bg-muted/20 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                    Tratti Standard ({stdTraits.length})
                                   </span>
                                 </div>
-                              ))}
+                                {stdTraits.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                    {stdTraits.map((trait, idx) => (
+                                      <Badge
+                                        key={idx}
+                                        variant="secondary"
+                                        className="px-2.5 py-1 text-xs font-semibold bg-background/80 hover:bg-background border border-border/60 text-foreground shadow-xs"
+                                      >
+                                        {trait}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground italic">Nessun tratto standard presente</p>
+                                )}
+                              </div>
+
+                              {/* Sezione Unificata Tratti Icona / PlayStyles+ */}
+                              <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                                    <Award className="h-3.5 w-3.5 text-amber-500" />
+                                    Tratti Icona / PlayStyles+ ({iconTraits.length})
+                                  </span>
+                                </div>
+                                {iconTraits.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                    {iconTraits.map((trait, idx) => (
+                                      <Badge
+                                        key={idx}
+                                        className="px-2.5 py-1 text-xs font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 hover:bg-amber-500/30 shadow-xs flex items-center gap-1"
+                                      >
+                                        <Sparkles className="h-3 w-3 text-amber-500" />
+                                        {trait}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground italic">Nessun tratto icona presente</p>
+                                )}
+                              </div>
                             </div>
                           );
                         })()}
@@ -1609,21 +1623,27 @@ const Scouting = () => {
                                 {getRookieTraitsCount(r)} Tratti posseduti
                               </Badge>
                             )}
-                            {tokens >= 3 && r.Trait1 && (
-                              <Badge
-                                variant="outline"
-                                className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
-                              >
-                                {r.Trait1}
-                              </Badge>
-                            )}
-                            {tokens >= 3 && r.IconTrait1 && (
-                              <Badge
-                                variant="outline"
-                                className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                              >
-                                ★ {r.IconTrait1}
-                              </Badge>
+                            {tokens >= 3 && (
+                              <>
+                                {getStandardTraits(r).map((trait, tIdx) => (
+                                  <Badge
+                                    key={`std-${tIdx}`}
+                                    variant="outline"
+                                    className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 text-[10px]"
+                                  >
+                                    {trait}
+                                  </Badge>
+                                ))}
+                                {getIconTraits(r).map((trait, tIdx) => (
+                                  <Badge
+                                    key={`icon-${tIdx}`}
+                                    variant="outline"
+                                    className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px]"
+                                  >
+                                    ★ {trait}
+                                  </Badge>
+                                ))}
+                              </>
                             )}
                           </div>
 
