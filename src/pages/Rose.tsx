@@ -624,20 +624,20 @@ const Rose = () => {
                         </Badge>
                       </div>
 
-                      <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
+                      <div className="flex items-center gap-2 sm:gap-2.5">
                         {currentJerseys.map((j) => (
                           <button
                             key={j.type}
                             type="button"
                             onClick={() => setSelectedJersey(j)}
-                            className="group relative flex flex-col items-center p-2 rounded-2xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-lg hover:scale-105 shrink-0"
+                            className="group relative flex flex-col items-center p-2 rounded-2xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 hover:border-foreground/20 dark:hover:border-white/30 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md shrink-0"
                             title={`Visualizza ${j.fullLabel} - Clicca per ingrandire`}
                           >
-                            <div className="h-18 w-18 sm:h-20 sm:w-20 2xl:h-24 2xl:w-24 flex items-center justify-center p-1">
+                            <div className="h-18 w-18 sm:h-20 sm:w-20 2xl:h-24 2xl:w-24 flex items-center justify-center p-1 overflow-hidden">
                               <img
                                 src={j.url}
                                 alt={`${currentTeam.NAME} - ${j.label}`}
-                                className="max-h-full max-w-full object-contain drop-shadow-md group-hover:drop-shadow-xl group-hover:scale-110 transition-transform duration-200"
+                                className="max-h-full max-w-full object-contain drop-shadow-md group-hover:drop-shadow-xl group-hover:scale-105 transition-transform duration-200"
                                 loading="lazy"
                               />
                             </div>
