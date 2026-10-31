@@ -638,15 +638,37 @@ PlayerXpBreakdownModal.tsx in Dettaglio Calciatore (playerDetails.tsx): pill int
 ---
 
 ## 📌 25. Calcolo Peggioramenti Giocatori (In-Season / Prestazionali)
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Integrato in Amministrazione (`PerformanceDecayModal.tsx` in `/admin/automazioni`)
 - **Priorità**: Media-Alta
-- **Moduli coinvolti**: Gestione Rose, Allenamenti, Automazioni Admin
-- **Tabelle coinvolte**: an_player, ea_player_db, an_player_training
+- **Moduli coinvolti**: Amministrazione Automazioni (`src/pages/admin/AdminAutomazioni.tsx`, `src/components/admin/PerformanceDecayModal.tsx`, `src/services/performanceDecayService.ts`)
+- **Tabelle coinvolte**: `an_player`, `ea_player_db`, `league_automation_state`, `"AS_PLAYER_STAT"`, `an_schedule`
 Descrizione
-Meccanica di decadimento/peggioramento dinamico degli attributi nel corso dell'anno (distinta dall'invecchiamento anagrafico di fine stagione):
+Meccanica di decadimento/peggioramento prestazionale basata sulla continuità di impiego dei calciatori nel corso della stagione:
 
-Criteri di calo prestazionale legati a scarso impiego (mancate convocazioni, scarso minutaggio prolungato), infortuni o rendimento gravemente insufficiente per fasce over 30.
-Definizione della soglia minima di salvaguardia e modalità di applicazione (manuale via Admin o calcolata a milestone).
+- **Formula della Media Assenze**:
+  $\text{Media} = \frac{\sum \text{Punti Assenza}}{\text{Partite Disputate dal Club nella Stagione}}$
+  - **Numeratore**: Calcolato sequenzialmente sulle partite giocate dalla squadra (ignorando turni bye week/non disputati):
+    - $\ge 1$ minuto giocato: `0` punti (e azzera la sequenza consecutiva di assenze).
+    - 0 minuti (o assente dal referto):
+      - 1ª assenza: `+1` punto.
+      - 2ª assenza consecutiva: `+2` punti.
+      - Dalla 3ª assenza consecutiva in poi: `+3` punti (valore massimo per singola partita).
+  - **Denominatore**: Numero di partite disputate dalla squadra di appartenenza nella stagione selezionata.
+- **Effetti & Penalità**:
+  - $\text{Media} > 2.0 \implies \mathbf{-2}$ punti a tutti i 35 attributi di gioco.
+  - $1.5 < \text{Media} \le 2.0 \implies \mathbf{-1}$ punto a tutti i 35 attributi di gioco.
+  - $\text{Media} \le 1.5 \implies$ Nessuna penalità.
+  - **Soglia minima di salvaguardia**: Nessun attributo scende al di sotto del valore di `30`.
+  - **Ricalcolo OVR**: Ricalcolo automatico dell'OVR del giocatore tramite la formula pesata di ruolo (`calcOverall`).
+- **Esclusioni di Lega**:
+  - Esclusi automaticamente i calciatori attualmente senza squadra (`Squadra IS NULL` o vuota).
+  - Esclusi automaticamente i calciatori della LCSIM 2 (Serie B, con prefisso `"B - xxx"`).
+- **Privacy & Segretezza**:
+  - Logica e anteprime rigorosamente riservate all'Admin in `/admin/automazioni`, senza alcun badge o indicatore esposto ai manager nelle pagine pubbliche o nei dettagli giocatore.
+- **Implementazione Tecnica**:
+  - RPC PostgreSQL: `rpc_apply_performance_decay` (con script migrazione e rollback in `supabase/migrations/20261031_performance_decay.sql`).
+  - Fallback atomico client-side via Supabase JS se l'RPC non è ancora registrata nel pooler.
+  - Interfaccia con riepilogo KPI, filtro per franchigia e livello penalità, visualizzazione cronistoria espandibile turno per turno e dialogo di conferma pre-applicazione.
 
 
 

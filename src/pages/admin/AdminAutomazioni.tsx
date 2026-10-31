@@ -34,10 +34,11 @@ import { exportEADatabaseTSV } from "@/services/eaPlayerDbService";
 import { ImportRookieModal } from "@/components/admin/ImportRookieModal";
 import { AgingModal } from "@/components/admin/AgingModal";
 import { MatchResultsManagerModal } from "@/components/admin/MatchResultsManagerModal";
+import { PerformanceDecayModal } from "@/components/admin/PerformanceDecayModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCutsComplianceReport, executeOfficialCutsRpc } from "@/services/cutsService";
 import { generatePressQuestionsForMatchday, generateRandomMarketRumors } from "@/services/aiJournalistService";
-import { Newspaper, Mic2, Flame, Camera, Trophy } from "lucide-react";
+import { Newspaper, Mic2, Flame, Camera, Trophy, TrendingDown } from "lucide-react";
 
 interface AutomationStateItem {
   id: string;
@@ -63,6 +64,7 @@ export default function AdminAutomazioni() {
   const [rookieModalOpen, setRookieModalOpen] = useState(false);
   const [agingModalOpen, setAgingModalOpen] = useState(false);
   const [matchResultsModalOpen, setMatchResultsModalOpen] = useState(false);
+  const [decayModalOpen, setDecayModalOpen] = useState(false);
 
   // Official cuts state & query
   const queryClient = useQueryClient();
@@ -615,6 +617,68 @@ export default function AdminAutomazioni() {
             </div>
           </Card>
 
+                    {/* PEGGIORAMENTI PRESTAZIONALI IN-SEASON (#25) */}
+          <Card className="border-rose-500/30 bg-gradient-to-br from-card via-card/95 to-rose-500/5 shadow-md relative overflow-hidden flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <Badge variant="outline" className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    <TrendingDown className="h-3 w-3" />
+                    In-Season • Assenze &amp; Decadimento
+                  </Badge>
+                  <TrendingDown className="h-6 w-6 text-rose-500" />
+                </div>
+                <CardTitle className="text-xl font-black">Peggioramenti Prestazionali In-Season</CardTitle>
+                <CardDescription className="text-xs">
+                  Calcolo e applicazione penalità agli attributi (-1 o -2 punti) per i calciatori con assenze prolungate nelle gare disputate dalla squadra.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-xs text-muted-foreground space-y-2 leading-relaxed">
+                  <div className="grid grid-cols-2 gap-2 pb-1 border-b border-border/50 text-[11px]">
+                    <div>
+                      <span className="font-semibold text-foreground block">Soglia Media &gt; 2.0:</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-bold">-2 su tutti gli attributi</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-foreground block">Soglia Media &gt; 1.5:</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">-1 su tutti gli attributi</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px]">
+                    <strong>Formula progressiva:</strong> 0 min = +1 (1ª assenza), +2 (2ª consecutiva), +3 (dalla 3ª consecutiva). Minuti &ge; 1 azzerano la serie consecutiva. Escluse partite non disputate (bye week) e club Serie B. Soglia minima di sicurezza attributo fissata a 30.
+                  </p>
+                  <p className="font-semibold text-foreground flex items-center gap-1.5 pt-1 text-[11px]">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    Include simulatore dettagliato turno per turno e ricalcolo OVR in tempo reale.
+                  </p>
+                </div>
+
+                <div className="pt-1">
+                  <Button
+                    onClick={() => setDecayModalOpen(true)}
+                    className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-rose-600/20"
+                  >
+                    <TrendingDown className="h-4 w-4" />
+                    Simula &amp; Applica Peggioramenti Prestazionali
+                  </Button>
+                </div>
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-rose-500" />
+                Ultima esecuzione:
+              </span>
+              <span className="font-semibold text-foreground truncate max-w-[240px]">
+                {formatLastRun(stateMap["performance_decay"]?.last_run_at, stateMap["performance_decay"]?.last_run_by)}
+              </span>
+            </div>
+          </Card>
+
           {/* 3. START / STOP CALCIOMERCATO */}
           {(() => {
             const isMarketClosed = stateMap["market_toggle"]?.details?.status === "closed";
@@ -1140,6 +1204,16 @@ export default function AdminAutomazioni() {
           await queryClient.invalidateQueries({ queryKey: ["standings"] });
           await queryClient.invalidateQueries({ queryKey: ["teamStats"] });
           await queryClient.invalidateQueries({ queryKey: ["playerStats"] });
+        }}
+      />
+
+            {/* MODALE: PEGGIORAMENTI PRESTAZIONALI IN-SEASON (#25) */}
+      <PerformanceDecayModal
+        open={decayModalOpen}
+        onOpenChange={setDecayModalOpen}
+        onSuccess={async () => {
+          await loadAutomationStates();
+          await queryClient.invalidateQueries({ queryKey: ["players"] });
         }}
       />
 
