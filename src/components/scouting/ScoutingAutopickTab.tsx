@@ -285,53 +285,6 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
       </Card>
 
       {/* =================================================================== */}
-      {/* 2. TOOLBAR E GESTIONE GRADUATORIA                                  */}
-      {/* =================================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-4 rounded-xl border border-border/80 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <ListOrdered className="h-5 w-5 text-emerald-500 shrink-0" />
-          <div>
-            <h3 className="font-extrabold text-sm text-foreground">
-              Graduatoria Ordinata di Priorità
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              {wishlist.length === 0
-                ? "Nessun prospetto in lista. Aggiungine dalla ricerca o dalle schede scouting."
-                : `${wishlist.length} ${wishlist.length === 1 ? "rookie in graduatoria" : "rookie in graduatoria (ordinati per priorità)"}`}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {wishlist.length > 0 && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleClear}
-              className="h-8 text-xs font-bold gap-1 text-muted-foreground hover:text-destructive hover:border-destructive/40"
-              title="Svuota l'intera graduatoria"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              <span>Svuota</span>
-            </Button>
-          )}
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={loadData}
-            disabled={loading}
-            className="h-8 px-2 text-xs text-muted-foreground"
-            title="Ricarica lista dal server"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-        </div>
-      </div>
-
-      {/* =================================================================== */}
       {/* 3. RICERCA E AGGIUNTA MANUALE DI ROOKIE ALLA CODA                  */}
       {/* =================================================================== */}
       <Card className="border border-border/80 shadow-sm bg-card">
@@ -358,7 +311,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                 className="h-9 pl-9 text-xs"
               />
             </div>
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 flex-wrap sm:flex-nowrap">
               {ROLE_GROUPS.map((g) => (
                 <button
                   key={g.id}
@@ -373,6 +326,20 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                   {g.label}
                 </button>
               ))}
+
+              {wishlist.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClear}
+                  className="h-7.5 px-2.5 text-xs font-bold gap-1 text-muted-foreground hover:text-destructive hover:border-destructive/40 shrink-0 ml-auto sm:ml-1"
+                  title="Svuota l'intera graduatoria"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Svuota</span>
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -475,22 +442,27 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
         </Card>
       ) : (
         <div className="space-y-2">
+          <div className="flex items-center justify-between px-1 text-xs text-muted-foreground font-semibold">
+            <span>Rookie in graduatoria ({wishlist.length})</span>
+            <span className="text-[11px]">Ordinati per priorità di scelta</span>
+          </div>
           {wishlist.map((item, index) => {
             const rookie = item.rookie;
             if (!rookie) return null;
 
             const rId = item.rookie_id;
-            const isDrafted = Boolean(rookie.Squadra);
+            const isDrafted = Boolean(
+              rookie.Squadra &&
+              rookie.Squadra.trim() !== "" &&
+              rookie.Squadra.toUpperCase() !== "SVINCOLATI" &&
+              rookie.Squadra !== "-"
+            );
             const tokens = scoutingTokensByRookie[rId] || 0;
 
             return (
               <div
                 key={item.id}
-                className={`p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 shadow-xs ${
-                  isDrafted
-                    ? "bg-muted/30 border-border/50 opacity-60"
-                    : "bg-card border-border hover:border-emerald-500/40"
-                }`}
+                className="p-3.5 rounded-xl border border-border/80 bg-card hover:border-emerald-500/40 transition-all flex items-center justify-between gap-3 shadow-xs"
               >
                 {/* RANK E DETTAGLI ROOKIE */}
                 <div className="flex items-center gap-3 min-w-0">
