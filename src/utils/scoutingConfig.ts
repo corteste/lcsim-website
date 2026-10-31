@@ -403,3 +403,39 @@ export function getTierBadgeStyle(tokensSpent: number): string {
     return "bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-500/40";
   return "bg-muted text-muted-foreground border-border";
 }
+
+export interface TopUnlockedStat {
+  code: string;
+  label: string;
+  val: number;
+  rangeLabel: string;
+  midpoint: number;
+}
+
+/**
+ * Returns the top unlocked attributes for a rookie based on tokens invested.
+ */
+export function getTopUnlockedAttributes(
+  rookie: Player,
+  tokensSpent: number,
+  limit = 5
+): TopUnlockedStat[] {
+  if (tokensSpent < 1) return [];
+  const unlockedStats: TopUnlockedStat[] = [];
+  for (const dept of SCOUTING_DEPARTMENTS) {
+    if (rookie.Posiz !== "POR" && dept.key === "POR") continue;
+    for (const st of dept.stats) {
+      const v = Number(rookie[st.code]) || 0;
+      const display = getStatDisplayByTokens(v, tokensSpent);
+      unlockedStats.push({
+        code: String(st.code),
+        label: st.label,
+        val: v,
+        rangeLabel: display.label,
+        midpoint: display.midpoint,
+      });
+    }
+  }
+  return unlockedStats.sort((a, b) => b.val - a.val).slice(0, limit);
+}
+

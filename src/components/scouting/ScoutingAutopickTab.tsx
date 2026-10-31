@@ -42,8 +42,8 @@ import {
 import { DraftWishlistItem } from "@/types/draftWishlist";
 import { Player } from "@/types/player";
 import { getRoleColor, getValueColor, getNationalityFlag } from "@/utils/functions";
-import { renderStars } from "@/components/scouting/StarRating";
-import { getTierFromTokens, getTierBadgeStyle } from "@/utils/scoutingConfig";
+// renderStars removed to avoid confusing tokens with stars
+import { getTierFromTokens, getTierBadgeStyle, getTopUnlockedAttributes } from "@/utils/scoutingConfig";
 
 interface ScoutingAutopickTabProps {
   teamId: string;
@@ -388,9 +388,12 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                             <span>{r.Nazionalità}</span>
                           </span>
                           {tokens > 0 && (
-                            <span className="text-amber-500 font-bold flex items-center gap-0.5">
-                              {renderStars(tokens)}
-                            </span>
+                            <Badge
+                              variant="outline"
+                              className={`font-mono text-[9.5px] font-extrabold px-1.5 py-0 ${getTierBadgeStyle(tokens)}`}
+                            >
+                              {tokens} {tokens === 1 ? "gettone" : "gettoni"}
+                            </Badge>
                           )}
                         </div>
                       </div>
@@ -458,6 +461,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
               rookie.Squadra !== "-"
             );
             const tokens = scoutingTokensByRookie[rId] || 0;
+            const topStats = getTopUnlockedAttributes(rookie, tokens, 5);
 
             return (
               <div
@@ -469,7 +473,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                 }`}
               >
                 {/* RANK E DETTAGLI ROOKIE */}
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   {/* Numero di priorità (Rank) */}
                   <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-mono font-black text-sm shrink-0 shadow-xs">
                     #{index + 1}
@@ -484,7 +488,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                   </Badge>
 
                   {/* Anagrafica */}
-                  <div className="min-w-0">
+                  <div className="min-w-0 shrink-0">
                     <div className="flex items-center gap-2">
                       <span className="font-extrabold text-sm truncate text-foreground">
                         {rookie.Nome} {rookie.Cognome}
@@ -500,7 +504,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2.5 text-xs text-muted-foreground mt-0.5">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5">
                       <span>{rookie.Età} anni</span>
                       <span className="flex items-center gap-1 font-mono">
                         <img
@@ -514,9 +518,12 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                         <span>{rookie.Nazionalità}</span>
                       </span>
                       {tokens > 0 ? (
-                        <span className="text-amber-500 font-bold flex items-center gap-1">
-                          Scouting: {renderStars(tokens)}
-                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`font-mono text-[10px] font-extrabold px-1.5 py-0 ${getTierBadgeStyle(tokens)}`}
+                        >
+                          {tokens} {tokens === 1 ? "gettone" : "gettoni"}
+                        </Badge>
                       ) : (
                         <span className="text-[10px] italic text-muted-foreground/70">
                           Non scoutato
@@ -524,6 +531,30 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       )}
                     </div>
                   </div>
+
+                  {/* TOP 5 STATISTICHE SBLOCCATE (se scoutato) */}
+                  {tokens > 0 ? (
+                    <div className="hidden md:flex items-center gap-1.5 ml-auto mr-3">
+                      {topStats.map((st) => (
+                        <div
+                          key={st.code}
+                          className="px-2 py-1 rounded-md bg-muted/50 border border-border/60 flex items-center gap-1.5 shrink-0 shadow-2xs"
+                          title={`${st.label}: ${st.rangeLabel}`}
+                        >
+                          <span className="font-mono text-[10px] font-bold text-muted-foreground">
+                            {st.code}
+                          </span>
+                          <span className={`font-mono text-xs font-black ${getValueColor(st.midpoint)}`}>
+                            {st.rangeLabel}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="hidden lg:flex items-center text-[11px] text-muted-foreground/60 italic ml-auto mr-4">
+                      Nessun gettone investito
+                    </div>
+                  )}
                 </div>
 
                 {/* STATS E PULSANTI ORDINAMENTO */}
