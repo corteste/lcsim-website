@@ -278,6 +278,8 @@ export function getIconTraits(player: {
 
 /**
  * Counts individual unique traits on a rookie.
+ * Checks decoded standard & icon traits (tokens >= 3 or full data).
+ * If individual traits are hidden (tokens < 3), falls back to rookie.TraitsCount from backend.
  */
 export function getRookieTraitsCount(rookie: {
   Trait1?: string | null;
@@ -285,10 +287,16 @@ export function getRookieTraitsCount(rookie: {
   IconTrait1?: string | null;
   IconTrait2?: string | null;
   Tratti?: string | null;
+  TraitsCount?: number | null;
 }): number {
   const std = getStandardTraits(rookie);
   const icon = getIconTraits(rookie);
-  return std.length + icon.length;
+  const calculated = std.length + icon.length;
+  if (calculated > 0) return calculated;
+  if (rookie.TraitsCount != null) {
+    return Number(rookie.TraitsCount) || 0;
+  }
+  return 0;
 }
 
 /**

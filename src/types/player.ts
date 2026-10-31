@@ -75,6 +75,7 @@ export type Player = {
     Trait2: string | null;
     IconTrait1: string | null;
     IconTrait2: string | null;
+    TraitsCount?: number | null;
     Stelle?: number | null;
     NumeroMaglia?: number | null;
     JerseyStyle?: number | null;

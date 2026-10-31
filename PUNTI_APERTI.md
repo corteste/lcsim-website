@@ -428,7 +428,9 @@ Descrizione & Implementazione
    - Badge neutri/scuri con icona per i PlayStyles standard e badge dorati/ambra (`bg-amber-500/20 text-amber-500`) con stella per i PlayStyles+.
    - Messaggi di fallback discreti (*"Nessun tratto standard presente"*, *"Nessun tratto icona presente"*) in caso di assenza di tratti.
 3. **Livelli di Sblocco Gettoni (Fascia 2G & 3G+)**:
-   - A 2G: conteggio cumulativo corretto con `getRookieTraitsCount` (che ora suddivide le stringhe e conta accuratamente i singoli tratti reali posseduti).
+   - A 2G: conteggio cumulativo corretto risolto end-to-end:
+     - In PostgreSQL (`rpc_get_scouted_rookies`), implementata la funzione `internal_vault.count_comma_traits` per conteggiare i singoli tratti separati da virgola contenuti nelle maschere decodificate e restituire il valore aggregato `TraitsCount` per ciascun rookie.
+     - Sul frontend (`getRookieTraitsCount`), aggiunto il fallback su `rookie.TraitsCount` quando i tratti nominativi sono ancora protetti dalla crittografia (tokens < 3), garantendo la visualizzazione fedele del conteggio reale anziché 0.
    - A 3G e 5G (nonché per l'admin): sblocco integrale dei badge con i nomi esatti.
 4. **Estensione a PlayerDetails & Draft Board**:
    - Layout a sezioni unificate esteso con coerenza grafica anche alla scheda del calciatore (`playerDetails.tsx`) e ai badge nella vista Draft board (`Draft.tsx`).
