@@ -1172,11 +1172,18 @@ Rimuovere le opzioni vuote presenti nel menu Accessori.
 ---
 
 ## 📌 59. Verifica Colori Associati ai Ruoli
-- **Stato**: 🟡 Da Verificare
+- **Stato**: 🟢 Completato & Centralizzato
 - **Priorità**: Bassa
-- **Moduli coinvolti**: componenti condivisi (Roster, Tattica, Statistiche, Scouting)
-Descrizione
-Controllare che i colori associati ai ruoli (POR, difensori, centrocampisti, attaccanti) siano corretti e coerenti in tutto il sito, ed eventualmente centralizzarli in un'unica configurazione.
+- **Moduli coinvolti**: `src/utils/functions.ts`, `src/pages/Tattica.tsx`, `src/components/tactics/TacticsOverviewTab.tsx`, `src/pages/OpponentScout.tsx`, Roster, Scouting, Statistiche, ecc.
+- **Descrizione**:
+  - Centralizzazione completa della configurazione cromatica in `src/utils/functions.ts` con la palette classica LCSIM / EA FC:
+    - 🧤 **Portiere (POR)**: Giallo / Ambra (`bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20`)
+    - 🛡️ **Difesa (DIF, DC, TD, TS, DFC, TER, ecc.)**: Blu (`bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20`)
+    - ⚙️ **Centrocampo (CEN, CDC, CC, COC, ED, ES, MED, TRQ, ecc.)**: Verde / Smeraldo (`bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20`)
+    - 🎯 **Attacco (ATT, AT, AD, AS, PC, SP, ecc.)**: Rosso / Corallo (`bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20`)
+  - Aggiunto il pieno supporto e fallback intelligente ai macro-ruoli (`DIF`, `CEN`, `ATT`, `POR`), eliminando il fallback anonimo a `bg-muted`.
+  - Introdotte funzioni helper dedicate per ogni contesto visivo: `getRoleColor` (soft badge), `getRoleTextColor` (testo puro per campetti e sfondi scuri), `getRoleSolidColor` (badge pieni/saturi) e `getRoleDepartmentLabel`.
+  - Uniformata la colorazione dei ruoli anche sul campo tattico (in `Tattica.tsx` e `TacticsOverviewTab.tsx`) e nella schermata `OpponentScout.tsx`.
 
 
 ---

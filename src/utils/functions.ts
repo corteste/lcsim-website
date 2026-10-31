@@ -1,33 +1,146 @@
 /**
- * Funziona che ritorna il colore del badge in base al ruolo del giocatore
- * @param role ruolo del giocatore
- * @returns 
+ * Ritorna il gruppo generico di reparto della posizione (POR, DIF, CEN, ATT).
+ * Supporta sia i ruoli specifici (es. DC, TS, CDC, AD) che i macro-ruoli (es. DIF, CEN),
+ * varianti storiche (DFC, TER, MED, TRQ) e notazioni internazionali (GK, CB, CM, ST).
  */
+export const getPosGroup = (pos: string | null | undefined): "POR" | "DIF" | "CEN" | "ATT" | "-" => {
+  if (!pos) return "-";
+  const p = pos.trim().toUpperCase();
+  switch (p) {
+    case "POR":
+    case "GK":
+      return "POR";
 
-export const getRoleColor = (role: string) => {
-  switch (role) {
-    case "POR": return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
-    case "DC": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
-    case "TS": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
-    case "TD": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
-    case "CDC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-    case "CC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-    case "ED": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-    case "ES": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-    case "COC": return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
-    case "AD": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-    case "AS": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-    case "AT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-    case "ATT": return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
-    default: return "bg-muted";
+    case "DC":
+    case "DFC":
+    case "TD":
+    case "TS":
+    case "TER":
+    case "DIF":
+    case "DF":
+    case "CB":
+    case "RB":
+    case "LB":
+    case "LWB":
+    case "RWB":
+    case "LIB":
+    case "SW":
+      return "DIF";
+
+    case "CDC":
+    case "CC":
+    case "CEN":
+    case "ED":
+    case "ES":
+    case "COC":
+    case "MED":
+    case "TRQ":
+    case "MF":
+    case "CM":
+    case "CDM":
+    case "CAM":
+    case "RM":
+    case "LM":
+      return "CEN";
+
+    case "AD":
+    case "AS":
+    case "AT":
+    case "ATT":
+    case "PC":
+    case "SP":
+    case "FW":
+    case "ST":
+    case "CF":
+    case "RW":
+    case "LW":
+      return "ATT";
+
+    default:
+      return "-";
   }
 };
 
 /**
- * Funzione che ritorna il colore della statistica in base al valore
- * @param value valore della statistica
- * @returns 
+ * Funzione che ritorna il colore del badge (soft/outline) in base al ruolo o reparto del giocatore.
+ * Palette consolidata LCSIM / EA FC:
+ * - Portiere: Giallo / Ambra
+ * - Difesa: Blu
+ * - Centrocampo: Verde / Smeraldo
+ * - Attacco: Rosso / Corallo
  */
+export const getRoleColor = (role: string | null | undefined): string => {
+  const group = getPosGroup(role);
+  switch (group) {
+    case "POR":
+      return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
+    case "DIF":
+      return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
+    case "CEN":
+      return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
+    case "ATT":
+      return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
+    default:
+      return "bg-muted text-muted-foreground border-border";
+  }
+};
+
+/**
+ * Ritorna le sole classi di testo (senza sfondi o bordi), ideale per label su campetti o sfondi scuri.
+ */
+export const getRoleTextColor = (role: string | null | undefined): string => {
+  const group = getPosGroup(role);
+  switch (group) {
+    case "POR":
+      return "text-yellow-400";
+    case "DIF":
+      return "text-blue-400";
+    case "CEN":
+      return "text-emerald-400";
+    case "ATT":
+      return "text-rose-400";
+    default:
+      return "text-muted-foreground";
+  }
+};
+
+/**
+ * Ritorna le classi per badge solidi / pieni (sfondo saturo e testo bianco/nero ad alto contrasto).
+ */
+export const getRoleSolidColor = (role: string | null | undefined): string => {
+  const group = getPosGroup(role);
+  switch (group) {
+    case "POR":
+      return "bg-yellow-500 text-slate-950 font-black border-yellow-400";
+    case "DIF":
+      return "bg-blue-600 text-white font-bold border-blue-500";
+    case "CEN":
+      return "bg-emerald-600 text-white font-bold border-emerald-500";
+    case "ATT":
+      return "bg-rose-600 text-white font-bold border-rose-500";
+    default:
+      return "bg-muted text-foreground border-border";
+  }
+};
+
+/**
+ * Ritorna la denominazione in italiano del reparto di appartenenza.
+ */
+export const getRoleDepartmentLabel = (role: string | null | undefined): string => {
+  const group = getPosGroup(role);
+  switch (group) {
+    case "POR":
+      return "Portiere";
+    case "DIF":
+      return "Difesa";
+    case "CEN":
+      return "Centrocampo";
+    case "ATT":
+      return "Attacco";
+    default:
+      return "Altro";
+  }
+};
 
 export const getValueColor = (value:number) => {
   if(value < 75) return "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-red-500/20 font-semibold px-2 py-0.5 rounded-full text-xs";
@@ -40,30 +153,6 @@ export const getValueColor = (value:number) => {
 /**
  * Ritorna il gruppo generico della posizione in base alla posizione specifica
  * @param pos Posizione del giocatore
- * @returns 
- */
-export const getPosGroup = (pos: string) => {
-switch (pos) {
-    case "POR": return "POR";
-    case "DC": return "DIF";
-    case "TD": return "DIF";
-    case "TS": return "DIF";
-    case "CDC": return "CEN";
-    case "CC": return "CEN";
-    case "ED": return "CEN";
-    case "ES": return "CEN";
-    case "COC": return "CEN";
-    case "AS": return "ATT";
-    case "AD": return "ATT";
-    case "AT": return "ATT";
-    case "ATT": return "ATT";
-    default: return "-";
-  }
-}
-
-/**
- * Funzione che ritorna lo stato del contratto del giocatore
- * @param team Nome del team
  * @returns 
  */
 export const getContractStatus = (team: string) => {

@@ -35,6 +35,7 @@ import { Player } from "@/types/player";
 import {
   getRoleColor,
   getValueColor,
+  getRoleTextColor,
   getNationalityFlag,
   getPlayerImage,
 } from "@/utils/functions";
@@ -750,7 +751,7 @@ export const OpponentScout: React.FC = () => {
                                         {player.Cognome || player.Nome}
                                       </span>
                                       <span
-                                        className={`text-[8px] sm:text-[9px] font-bold block ${getRoleColor(
+                                        className={`text-[8px] sm:text-[9px] font-bold block ${getRoleTextColor(
                                           player.Posiz || pos.label
                                         )}`}
                                       >
@@ -760,7 +761,7 @@ export const OpponentScout: React.FC = () => {
                                   </div>
                                 ) : (
                                   <div className="flex flex-col items-center opacity-60">
-                                    <div className="h-10 w-10 rounded-full border border-dashed border-white/40 flex items-center justify-center text-white/50 text-[11px] font-mono">
+                                    <div className={`h-10 w-10 rounded-full border border-dashed border-white/40 flex items-center justify-center text-[11px] font-mono font-bold ${getRoleTextColor(pos.label)}`}>
                                       {pos.label}
                                     </div>
                                     <span className="text-[9px] text-white/60 font-semibold mt-0.5">

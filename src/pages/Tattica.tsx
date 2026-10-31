@@ -42,7 +42,7 @@ import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
 import { PLAYER_TABLE, TEAM_TACTIC_TABLE } from "../constants/App";
 import { Player } from "../types/player";
-import { getRoleColor, getValueColor, getPlayerImage, getPosGroup } from "@/utils/functions";
+import { getRoleColor, getValueColor, getPlayerImage, getPosGroup, getRoleTextColor } from "@/utils/functions";
 import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
@@ -2462,7 +2462,7 @@ const Tattica = () => {
 
                                   {/* Targhetta Cognome + Ruolo */}
                                   <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-950/90 backdrop-blur-sm border border-white/25 text-white shadow-md flex items-center gap-1 max-w-[110px]">
-                                    <span className="text-[9px] font-extrabold text-emerald-400 font-mono">
+                                    <span className={`text-[9px] font-extrabold font-mono shrink-0 ${getRoleTextColor(pos.label)}`}>
                                       {pos.label}
                                     </span>
                                     <span className="text-[10px] font-bold truncate">
@@ -2501,7 +2501,7 @@ const Tattica = () => {
                                     <span className="text-[9px] font-mono font-bold opacity-80">
                                       #{slotIdx + 1}
                                     </span>
-                                    <span className="text-[10px] font-extrabold">
+                                    <span className={`text-[10px] font-extrabold ${getRoleTextColor(pos.label)}`}>
                                       {pos.label}
                                     </span>
                                   </div>

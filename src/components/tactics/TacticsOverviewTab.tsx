@@ -17,6 +17,7 @@ import {
   getPlayerImage,
   getRoleColor,
   getValueColor,
+  getRoleTextColor,
 } from "@/utils/functions";
 import {
   Shield,
@@ -311,7 +312,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
 
                             {/* Targhetta 1: Posizione nel Modulo + Cognome Calciatore */}
                             <div className="mt-1 px-2.5 py-0.5 rounded-md bg-slate-950/95 backdrop-blur-md border border-white/35 text-white shadow-xl flex items-center justify-center gap-1.5 max-w-[130px] z-20">
-                              <span className="text-[10px] font-black text-emerald-400 font-mono shrink-0">
+                              <span className={`text-[10px] font-black font-mono shrink-0 ${getRoleTextColor(pos.label)}`}>
                                 {pos.label}
                               </span>
                               <span className="text-[11px] font-bold truncate tracking-tight">
@@ -342,7 +343,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                               <span className="text-[10px] font-mono font-bold opacity-80">
                                 #{slotIdx + 1}
                               </span>
-                              <span className="text-xs font-black">{pos.label}</span>
+                              <span className={`text-xs font-black ${getRoleTextColor(pos.label)}`}>{pos.label}</span>
                             </div>
                           </div>
                         )}
