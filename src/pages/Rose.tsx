@@ -23,6 +23,7 @@ import {
   User,
   Crown,
   Shield,
+  Landmark,
   X,
   ChevronRight,
   RotateCcw,
@@ -125,6 +126,22 @@ const getTeamSocialBg = (team: string): string => {
 
 const KNOWN_ANTHEMS = new Set(["ACD", "APD", "COS", "MAR", "PFC", "SKA", "ASK"]);
 
+const TEAM_STADIUMS: Record<string, string> = {
+  MAR: "Red Passion Arena",
+  APD: "Maniac ArenA",
+  VFC: "Oops Stadium",
+  PFC: "Panormus Stadium",
+  SKA: "Fortaleza dos Leoes",
+  ASK: "Fortaleza dos Leoes",
+  OLD: "RSA Arena",
+  ALV: "Alvi Stadium",
+  ACF: "Oguorz Arena",
+  ACD: "Arena Conti",
+  RMB: "Stadio Adriana Cassini",
+  COS: "Cosmo Arena",
+  EUR: "Eurosbin Stadium",
+};
+
 const Rose = () => {
   const { teams, loading: loadingTeams, refetch: refetchTeams } = getTeams();
 
@@ -153,6 +170,27 @@ const Rose = () => {
     }
     return map;
   }, [teamStatusList]);
+
+  // Fetch official stadiums from schedule with fallback
+  const { data: stadiumMap = {} } = useQuery({
+    queryKey: ['all_teams_stadiums'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('an_schedule')
+        .select('home, stadium, stag')
+        .not('stadium', 'is', null)
+        .order('stag', { ascending: false });
+
+      const map: Record<string, string> = { ...TEAM_STADIUMS };
+      (data || []).forEach((row: any) => {
+        if (row.home && row.stadium && row.stadium !== 'PhoneHub Arena' && !map[row.home]) {
+          map[row.home] = row.stadium;
+        }
+      });
+      return map;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
 
   // Sort teams alphabetically by name
   const sortedTeams = useMemo(() => {
@@ -480,163 +518,168 @@ const Rose = () => {
             </div>
 
             {/* TEAM HERO COMMAND CARD */}
-            <Card
-            className={`overflow-hidden border border-border/80 shadow-lg ${getTeamBackground(
-              currentTeam.TEAM_ID
-            )}`}
-          >
-            <div className="p-6 bg-gradient-to-r from-card/85 via-card/70 to-card/90 backdrop-blur-md">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-                {/* Team Identity */}
-                <div className="flex items-center gap-4 sm:gap-5">
-                  <img
-                    src={getTeamLogo(currentTeam.TEAM_ID)}
-                    alt={`${currentTeam.NAME} Logo`}
-                    className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-md shrink-0"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
-                    }}
-                  />
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                        Serie A
-                      </span>
-                      <Badge variant="outline" className="font-mono text-[10px]">
-                        {currentTeam.TEAM_ID}
-                      </Badge>
+            <div
+              className={`relative overflow-hidden rounded-2xl border border-border bg-clip-padding shadow-xl ${getTeamSocialBg(
+                currentTeam.TEAM_ID
+              )} text-white`}
+            >
+              {/* Light soft veil for text contrast matching small cards */}
+              <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+
+              <div className="relative z-10 p-5 sm:p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  {/* Left Identity Section: Big Logo + Details */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                    {/* Big Crest Box matching small card style */}
+                    <div className="relative shrink-0 flex items-center justify-center p-3 rounded-2xl bg-black/25 backdrop-blur-md border border-white/20 shadow-inner self-start sm:self-center">
+                      <img
+                        src={getTeamLogo(currentTeam.TEAM_ID)}
+                        alt={`${currentTeam.NAME} Logo`}
+                        className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-2xl"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* League & Abbr Badges */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border border-border/60">
-                          <User className="h-3 w-3 text-emerald-500" />
-                          <span>Allenatore: <strong className="text-foreground">{currentTeam.MANAGER || "Da Assegnare"}</strong></span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white bg-white/20 px-2 py-0.5 rounded-full border border-white/30 backdrop-blur-sm">
+                          Serie A
+                        </span>
+                        <span className="font-mono text-[10px] uppercase font-bold bg-white/20 text-white px-2 py-0.5 rounded-md border border-white/30 backdrop-blur-sm">
+                          {currentTeam.TEAM_ID}
+                        </span>
+                      </div>
+
+                      {/* Club Name */}
+                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-sm">
+                        {currentTeam.NAME}
+                      </h2>
+
+                      {/* Club Key Figures & Info: Presidente, Manager, Stadio */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                        <div className="flex items-center gap-2 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-xs">
+                          <Crown className="h-4 w-4 text-amber-300 shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                              Presidente
+                            </span>
+                            <strong className="text-white font-extrabold truncate block text-xs">
+                              {presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}
+                            </strong>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border border-border/60">
-                          <Crown className="h-3 w-3 text-amber-500" />
-                          <span>Presidente: <strong className="text-foreground">{presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}</strong></span>
+
+                        <div className="flex items-center gap-2 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-xs">
+                          <User className="h-4 w-4 text-emerald-300 shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                              Allenatore
+                            </span>
+                            <strong className="text-white font-extrabold truncate block text-xs">
+                              {currentTeam.MANAGER || "Da Assegnare"}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-xs">
+                          <Landmark className="h-4 w-4 text-sky-300 shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                              Stadio
+                            </span>
+                            <strong className="text-white font-extrabold truncate block text-xs">
+                              {stadiumMap[currentTeam.TEAM_ID] || TEAM_STADIUMS[currentTeam.TEAM_ID] || "Stadio Ufficiale"}
+                            </strong>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                      {currentTeam.NAME}
-                    </h2>
+                      {/* Palmares and Team Anthem */}
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
+                        {currentTeam.scudetto > 0 && (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-300 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-lg border border-amber-400/30">
+                            <Trophy className="h-3.5 w-3.5 text-amber-400" />
+                            {currentTeam.scudetto}{" "}
+                            {currentTeam.scudetto === 1 ? "Scudetto" : "Scudetti"}
+                          </span>
+                        )}
+                        {currentTeam.supercoppa > 0 && (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-300 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-lg border border-blue-400/30">
+                            <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
+                            {currentTeam.supercoppa}{" "}
+                            {currentTeam.supercoppa === 1 ? "Supercoppa" : "Supercoppe"}
+                          </span>
+                        )}
 
-                    {/* Palmares and Team Anthem */}
-                    <div className="flex items-center gap-2.5 pt-1 flex-wrap">
-                      {currentTeam.scudetto > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2.5 py-0.5 rounded-md border border-amber-500/30">
-                          <Trophy className="h-3.5 w-3.5" />
-                          {currentTeam.scudetto}{" "}
-                          {currentTeam.scudetto === 1 ? "Scudetto" : "Scudetti"}
-                        </span>
-                      )}
-                      {currentTeam.supercoppa > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-500/15 px-2.5 py-0.5 rounded-md border border-blue-500/30">
-                          <ShieldCheck className="h-3.5 w-3.5" />
-                          {currentTeam.supercoppa}{" "}
-                          {currentTeam.supercoppa === 1 ? "Supercoppa" : "Supercoppe"}
-                        </span>
-                      )}
-
-                      {/* Anthem Audio Button */}
-                      {hasAnthem ? (
-                        <button
-                          type="button"
-                          onClick={handleToggleAnthem}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold transition-all duration-200 border cursor-pointer select-none shadow-sm ${
-                            isPlayingAnthem
-                              ? "bg-emerald-500 text-white border-emerald-400 dark:bg-emerald-600 dark:border-emerald-500 shadow-emerald-500/20"
-                              : "bg-card/90 hover:bg-muted text-foreground border-border hover:border-emerald-500/50"
-                          }`}
-                          title={
-                            isPlayingAnthem
-                              ? `Metti in pausa l'inno di ${currentTeam.NAME}`
-                              : `Ascolta l'inno ufficiale di ${currentTeam.NAME}`
-                          }
-                          aria-label={
-                            isPlayingAnthem
-                              ? `Metti in pausa l'inno di ${currentTeam.NAME}`
-                              : `Ascolta l'inno ufficiale di ${currentTeam.NAME}`
-                          }
-                        >
-                          {isPlayingAnthem ? (
-                            <>
-                              <Pause className="h-3.5 w-3.5 shrink-0 fill-current" />
-                              <span>Inno in Riproduzione</span>
-                              <span className="flex items-center gap-0.5 ml-1">
-                                <span className="w-1 h-2.5 bg-white rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                                <span className="w-1 h-3.5 bg-white rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                                <span className="w-1 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <Volume2 className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                              <span>Inno Ufficiale</span>
-                            </>
-                          )}
-                        </button>
-                      ) : (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span
-                              tabIndex={0}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground/60 border border-border/40 cursor-not-allowed select-none"
-                            >
-                              <VolumeX className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
-                              <span>Inno non disponibile</span>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="text-xs">
-                            Inno ufficiale non ancora disponibile per questo club
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
+                        {/* Anthem Audio Button */}
+                        {hasAnthem ? (
+                          <button
+                            type="button"
+                            onClick={handleToggleAnthem}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 border cursor-pointer select-none shadow-sm ${
+                              isPlayingAnthem
+                                ? "bg-emerald-500 text-white border-emerald-400 shadow-emerald-500/20"
+                                : "bg-black/25 hover:bg-black/40 text-white border-white/20"
+                            }`}
+                            title={
+                              isPlayingAnthem
+                                ? `Metti in pausa l'inno di ${currentTeam.NAME}`
+                                : `Ascolta l'inno ufficiale di ${currentTeam.NAME}`
+                            }
+                            aria-label={
+                              isPlayingAnthem
+                                ? `Metti in pausa l'inno di ${currentTeam.NAME}`
+                                : `Ascolta l'inno ufficiale di ${currentTeam.NAME}`
+                            }
+                          >
+                            {isPlayingAnthem ? (
+                              <>
+                                <Pause className="h-3.5 w-3.5 shrink-0 fill-current" />
+                                <span>Inno in Riproduzione</span>
+                                <span className="flex items-center gap-0.5 ml-1">
+                                  <span className="w-1 h-2.5 bg-white rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                                  <span className="w-1 h-3.5 bg-white rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                                  <span className="w-1 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Volume2 className="h-3.5 w-3.5 shrink-0 text-white" />
+                                <span>Inno Ufficiale</span>
+                              </>
+                            )}
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Telemetry KPI Widgets */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
-                  <div className="px-3.5 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      Giocatori
-                    </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-                      {rawPlayers.length}
-                    </span>
-                  </div>
+                  {/* Right Telemetry KPI: OVR Medio & Età Media (Giocatori & Status Mercato REMOVED as requested) */}
+                  <div className="flex items-center sm:self-center gap-2.5 sm:gap-3 shrink-0">
+                    <div className="px-4 py-2.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center shadow-sm min-w-[90px]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/70 block">
+                        OVR Medio
+                      </span>
+                      <span className="text-xl sm:text-2xl font-black font-mono text-white">
+                        {avgOvr}
+                      </span>
+                    </div>
 
-                  <div className="px-3.5 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      OVR Medio
-                    </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                      {avgOvr}
-                    </span>
-                  </div>
-
-                  <div className="px-3.5 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      Età Media
-                    </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-                      {avgAge} <span className="text-xs font-normal text-muted-foreground">a</span>
-                    </span>
-                  </div>
-
-                  <div className="px-3.5 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      Status Mercato
-                    </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-                      {marketCounts.defined}/{rawPlayers.length}
-                    </span>
+                    <div className="px-4 py-2.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center shadow-sm min-w-[90px]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/70 block">
+                        Età Media
+                      </span>
+                      <span className="text-xl sm:text-2xl font-black font-mono text-white">
+                        {avgAge} <span className="text-xs font-normal text-white/70">a</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </Card>
 
         {/* CONTROLS & FILTERS BAR */}
         <div className="space-y-3">
