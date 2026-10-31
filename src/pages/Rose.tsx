@@ -46,7 +46,6 @@ import {
 } from "@/utils/functions";
 import { getTeams } from "@/hooks/use-teams";
 import { getTeamJerseys, TeamJersey } from "@/utils/jerseysConfig";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Player } from "@/types/player";
 import { Team } from "@/types/team";
 import PlayerDetails from "@/components/player/playerDetails";
@@ -212,6 +211,16 @@ const Rose = () => {
   // Team Jerseys & Lightbox Dialog
   const [selectedJersey, setSelectedJersey] = useState<TeamJersey | null>(null);
   const currentJerseys = useMemo(() => getTeamJerseys(currentTeam?.TEAM_ID), [currentTeam?.TEAM_ID]);
+
+  // Close jersey lightbox with Escape key
+  useEffect(() => {
+    if (!selectedJersey) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedJersey(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedJersey]);
 
   // Audio Anthem Player state
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -1030,47 +1039,60 @@ const Rose = () => {
       </main>
 
       {/* MODAL: PLAYER DETAILS INSPECTOR */}
-      {/* JERSEY LIGHTBOX MODAL */}
-      <Dialog open={!!selectedJersey} onOpenChange={(open) => !open && setSelectedJersey(null)}>
-        <DialogContent className="sm:max-w-md p-6 bg-card border-border/80 shadow-2xl">
-          {selectedJersey && currentTeam && (
-            <div className="space-y-4">
-              <DialogHeader className="text-center sm:text-left">
-                <div className="flex items-center justify-between gap-3 pb-2 border-b border-border/60">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <img
-                      src={getTeamLogo(currentTeam.TEAM_ID)}
-                      alt={currentTeam.NAME}
-                      className="h-8 w-8 object-contain shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <DialogTitle className="text-sm font-black truncate text-foreground">
-                        {currentTeam.NAME}
-                      </DialogTitle>
-                      <DialogDescription className="text-xs text-muted-foreground truncate">
-                        {selectedJersey.fullLabel} · Stagione 11
-                      </DialogDescription>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className={`font-mono text-xs font-black shrink-0 ${selectedJersey.badgeClass}`}>
-                    {selectedJersey.label}
-                  </Badge>
-                </div>
-              </DialogHeader>
+      {/* JERSEY LIGHTBOX MODAL (Zero-layout-shift clean overlay) */}
+      {selectedJersey && currentTeam && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in-0 duration-150"
+          onClick={() => setSelectedJersey(null)}
+        >
+          <div
+            className="relative w-full max-w-md p-6 bg-card border border-border/80 shadow-2xl rounded-2xl animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button X */}
+            <button
+              type="button"
+              onClick={() => setSelectedJersey(null)}
+              className="absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              title="Chiudi"
+            >
+              <X className="h-4 w-4" />
+            </button>
 
-              {/* Big High-Def Jersey Presentation */}
-              <div className="relative flex items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-muted/30 via-muted/15 to-muted/40 border border-border/60 overflow-hidden">
-                <div className={`absolute inset-0 opacity-15 pointer-events-none ${getTeamSocialBg(currentTeam.TEAM_ID)}`} />
+            {/* Header: Club Logo, Name & Badge */}
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/60">
+              <div className="flex items-center gap-2.5 min-w-0 pr-6">
                 <img
-                  src={selectedJersey.url}
-                  alt={`${currentTeam.NAME} - ${selectedJersey.fullLabel}`}
-                  className="h-56 w-56 sm:h-64 sm:w-64 object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-105"
+                  src={getTeamLogo(currentTeam.TEAM_ID)}
+                  alt={currentTeam.NAME}
+                  className="h-8 w-8 object-contain shrink-0"
                 />
+                <div className="min-w-0">
+                  <h3 className="text-sm font-black truncate text-foreground leading-tight">
+                    {currentTeam.NAME}
+                  </h3>
+                  <span className="text-xs text-muted-foreground truncate block">
+                    {selectedJersey.fullLabel} · Stagione 11
+                  </span>
+                </div>
               </div>
+              <Badge variant="outline" className={`font-mono text-xs font-black shrink-0 ${selectedJersey.badgeClass}`}>
+                {selectedJersey.label}
+              </Badge>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
+            {/* Big High-Def Jersey Presentation */}
+            <div className="mt-4 relative flex items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-muted/30 via-muted/15 to-muted/40 border border-border/60 overflow-hidden">
+              <div className={`absolute inset-0 opacity-15 pointer-events-none ${getTeamSocialBg(currentTeam.TEAM_ID)}`} />
+              <img
+                src={selectedJersey.url}
+                alt={`${currentTeam.NAME} - ${selectedJersey.fullLabel}`}
+                className="h-56 w-56 sm:h-64 sm:w-64 object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedPlayer && (
         <div
