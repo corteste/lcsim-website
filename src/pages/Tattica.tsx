@@ -2382,15 +2382,20 @@ const Tattica = () => {
                       <div className="relative w-full h-full">
                         {currentFormation.positions.map((pos, slotIdx) => {
                           const occupant = formationSlots[slotIdx];
-                          const fit = occupant
-                            ? evaluateRoleFit(occupant.Posiz, pos.label)
+                          const roleFit = occupant
+                            ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
                             : null;
+                          const dynamicOvr = occupant
+                            ? calcOverall(pos.label, occupant, occupant.OVR ?? 70)
+                            : null;
+                          const baseOvr = occupant?.OVR ?? 70;
+                          const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
                           const isHovered = dragOverSlotIndex === slotIdx;
 
                           const ringColor =
-                            fit === "natural"
+                            roleFit === "natural"
                               ? "border-emerald-400 shadow-emerald-500/30"
-                              : fit === "adaptable"
+                              : roleFit === "adaptable"
                               ? "border-amber-400 shadow-amber-500/30"
                               : "border-rose-400 shadow-rose-500/30";
 
