@@ -32,7 +32,6 @@ import {
   Pause,
   ArrowLeft,
   ArrowRight,
-  Shirt,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -613,40 +612,30 @@ const Rose = () => {
                     </div>
                   </div>
 
-                  {/* Center: Divise Ufficiali (Jerseys) positioned between Stadio & KPIs */}
+                  {/* Center: Divise (Jerseys) positioned between Stadio & KPIs */}
                   {currentJerseys.length > 0 && (
-                    <div className="flex flex-col items-center justify-center gap-2 shrink-0 py-1 self-center">
-                      <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-foreground/80 dark:text-white/80">
-                        <Shirt className="h-3.5 w-3.5 text-emerald-500" />
-                        <span>Divise Ufficiali</span>
-                        <Badge variant="outline" className="text-[10px] font-mono font-bold px-1.5 py-0 h-4 border-border/70">
-                          {currentJerseys.length} Kit
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center gap-2 sm:gap-2.5">
-                        {currentJerseys.map((j) => (
-                          <button
-                            key={j.type}
-                            type="button"
-                            onClick={() => setSelectedJersey(j)}
-                            className="group relative flex flex-col items-center p-2 rounded-2xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 hover:border-foreground/20 dark:hover:border-white/30 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md shrink-0"
-                            title={`Visualizza ${j.fullLabel} - Clicca per ingrandire`}
-                          >
-                            <div className="h-18 w-18 sm:h-20 sm:w-20 2xl:h-24 2xl:w-24 flex items-center justify-center p-1 overflow-hidden">
-                              <img
-                                src={j.url}
-                                alt={`${currentTeam.NAME} - ${j.label}`}
-                                className="max-h-full max-w-full object-contain drop-shadow-md group-hover:drop-shadow-xl group-hover:scale-105 transition-transform duration-200"
-                                loading="lazy"
-                              />
-                            </div>
-                            <span className={`mt-1.5 text-[10px] sm:text-[11px] font-mono font-black px-2 py-0.5 rounded-md border ${j.badgeClass}`}>
-                              {j.label}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 py-1 self-center">
+                      {currentJerseys.map((j) => (
+                        <button
+                          key={j.type}
+                          type="button"
+                          onClick={() => setSelectedJersey(j)}
+                          className="group relative flex flex-col items-center p-2 rounded-2xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 hover:border-foreground/20 dark:hover:border-white/30 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md shrink-0"
+                          title={`Visualizza ${j.fullLabel} - Clicca per ingrandire`}
+                        >
+                          <div className="h-18 w-18 sm:h-20 sm:w-20 2xl:h-24 2xl:w-24 flex items-center justify-center p-1 overflow-hidden">
+                            <img
+                              src={j.url}
+                              alt={`${currentTeam.NAME} - ${j.label}`}
+                              className="max-h-full max-w-full object-contain drop-shadow-md group-hover:drop-shadow-xl group-hover:scale-105 transition-transform duration-200"
+                              loading="lazy"
+                            />
+                          </div>
+                          <span className={`mt-1.5 text-[10px] sm:text-[11px] font-mono font-black px-2 py-0.5 rounded-md border ${j.badgeClass}`}>
+                            {j.label}
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   )}
 
@@ -1077,24 +1066,6 @@ const Rose = () => {
                   alt={`${currentTeam.NAME} - ${selectedJersey.fullLabel}`}
                   className="h-56 w-56 sm:h-64 sm:w-64 object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-105"
                 />
-              </div>
-
-              {/* Mini Selector to switch between the team's kits */}
-              <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
-                {currentJerseys.map((k) => (
-                  <button
-                    key={k.type}
-                    type="button"
-                    onClick={() => setSelectedJersey(k)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      selectedJersey.type === k.type
-                        ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                        : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted/70"
-                    }`}
-                  >
-                    <span>{k.label}</span>
-                  </button>
-                ))}
               </div>
             </div>
           )}
