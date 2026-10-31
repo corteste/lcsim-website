@@ -289,3 +289,141 @@ export function calculateSuggestedSeasonMultiplier(
   if (totalBaseWithYouth === 0) return 1.0;
   return Number((targetXp / totalBaseWithYouth).toFixed(3));
 }
+
+/**
+ * Normalizza la posizione in campo riportata nei tabellini EA FC / LCSIM
+ * per ricondurla ai 12 ruoli ufficiali LCSIM (es. DCS -> DC, CCD -> CC, etc.)
+ */
+export function normalizePitchPosition(pos: string | null | undefined): string | null {
+  if (!pos) return null;
+  const upper = pos.trim().toUpperCase();
+  if (upper === "POR") return "POR";
+  if (upper === "TD") return "TD";
+  if (upper === "TS") return "TS";
+  if (["DC", "DCD", "DCS"].includes(upper)) return "DC";
+  if (["CDC", "CDD", "CDS"].includes(upper)) return "CDC";
+  if (["CC", "CCD", "CCS"].includes(upper)) return "CC";
+  if (upper === "ED") return "ED";
+  if (upper === "ES") return "ES";
+  if (["COC", "COD", "COS"].includes(upper)) return "COC";
+  if (upper === "AD") return "AD";
+  if (upper === "AS") return "AS";
+  if (["ATT", "ATD", "ATS", "AT", "PUN"].includes(upper)) return "ATT";
+  return upper;
+}
+
+/**
+ * Calcola l'idoneità allo sconto del 50% sul cambio di ruolo principale (#30)
+ * per tutti i giocatori della rosa:
+ * Regola: se il calciatore è stato titolare (SUB = false) iniziando più della metà
+ * delle partite di Regular Season disputate dalla sua squadra nella stagione precedente (referenceSeason)
+ * in quella specifica posizione, il cambio ruolo per quella posizione costa 20 XP anziché 40 XP.
+ *
+ * Restituisce una mappa: { [PlayerID]: { [RUOLO]: boolean } }
+ */
+export async function fetchTeamRoleDiscountEligibility(
+  players: Player[],
+  teamId: string,
+  referenceSeason: number
+): Promise<Record<number, Record<string, boolean>>> {
+  if (!players || players.length === 0) return {};
+
+  const formatConfig = getSeasonFormatConfig(referenceSeason);
+  const playerIds = players.map((p) => Number(p.ID));
+  const result: Record<number, Record<string, boolean>> = {};
+
+  try {
+    // 1. Quante partite di Regular Season ha disputato la squadra nella stagione di riferimento
+    let teamRsMatches = 0;
+    if (teamId) {
+      const { data: schedData, error: schedErr } = await supabase
+        .from("an_schedule")
+        .select("week, standings_processed")
+        .eq("stag", referenceSeason)
+        .lte("week", formatConfig.regularSeasonWeeks)
+        .or("home.eq." + teamId + ",away.eq." + teamId);
+
+      if (!schedErr && schedData && schedData.length > 0) {
+        const processed = schedData.filter((m) => m.standings_processed);
+        teamRsMatches = processed.length > 0 ? processed.length : schedData.length;
+      }
+    }
+
+    // Se non troviamo partite a calendario (es. nuova squadra o storico non ancora caricato),
+    // fallback sulle giornate canoniche di Regular Season del formato
+    if (teamRsMatches === 0) {
+      teamRsMatches = formatConfig.regularSeasonWeeks;
+    }
+
+    // 2. Recupera le statistiche di tutte le partite di Regular Season dei calciatori per la stagione di riferimento
+    const { data: statsData, error: statsErr } = await supabase
+      .from("as_player_stat")
+      .select("ID, STAG, WEEK, POS_GIOCATA, SUB, MINUTI, VOTO")
+      .eq("STAG", referenceSeason)
+      .lte("WEEK", formatConfig.regularSeasonWeeks)
+      .in("ID", playerIds);
+
+    if (statsErr) {
+      console.error("Errore fetchTeamRoleDiscountEligibility:", statsErr);
+    }
+
+    const playerById = new Map<number, Player>();
+    players.forEach((p) => playerById.set(Number(p.ID), p));
+
+    // 3. Conteggio presenze da titolare per giocatore e per posizione normalizzata
+    const starterCountsByPlayer: Record<number, Record<string, number>> = {};
+    for (const pId of playerIds) {
+      starterCountsByPlayer[pId] = {};
+    }
+
+    if (statsData) {
+      for (const row of statsData) {
+        const pId = Number(row.ID);
+        // Titolare: SUB è false o null e ha giocato minuti o ha ricevuto voto
+        const isStarter = row.SUB === false || row.SUB === null || !row.SUB;
+        const minutes = Number(row.MINUTI) || 0;
+        if (isStarter && (minutes > 0 || row.VOTO !== null)) {
+          const p = playerById.get(pId);
+          const rawPos = row.POS_GIOCATA || p?.Posiz || null;
+          const normPos = normalizePitchPosition(rawPos);
+          if (normPos) {
+            const counts = starterCountsByPlayer[pId] || {};
+            counts[normPos] = (counts[normPos] || 0) + 1;
+            starterCountsByPlayer[pId] = counts;
+          }
+        }
+      }
+    }
+
+    // 4. Soglia: più della metà delle partite di regular season disputate dalla squadra
+    const threshold = teamRsMatches / 2;
+    const OFFICIAL_ROLES = ["POR", "DC", "TD", "TS", "CDC", "CC", "ED", "ES", "COC", "AD", "AS", "ATT"];
+
+    for (const pId of playerIds) {
+      result[pId] = {};
+      const counts = starterCountsByPlayer[pId] || {};
+      for (const pos of OFFICIAL_ROLES) {
+        const stCount = counts[pos] || 0;
+        // Strettamente più della metà (> threshold)
+        result[pId][pos] = teamRsMatches > 0 && stCount > threshold;
+      }
+    }
+
+    return result;
+  } catch (err) {
+    console.error("Errore generico fetchTeamRoleDiscountEligibility:", err);
+    return {};
+  }
+}
+
+/**
+ * Calcola l'idoneità allo sconto del 50% sul cambio di ruolo per un singolo calciatore
+ */
+export async function fetchPlayerRoleDiscountEligibility(
+  player: Player,
+  referenceSeason: number
+): Promise<Record<string, boolean>> {
+  const map = await fetchTeamRoleDiscountEligibility([player], player.Squadra || "", referenceSeason);
+  return map[Number(player.ID)] || {};
+}
+

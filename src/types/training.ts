@@ -543,7 +543,8 @@ export const checkTraitRequirements = (
 export function calculateSpecializationsCost(
   basePlayer: Player | null | undefined,
   draft: PlayerSpecializationDraft,
-  postOverall: number
+  postOverall: number,
+  isRoleChangeDiscounted: boolean = false
 ): {
   roleCost: number;
   traitCost: number;
@@ -564,8 +565,13 @@ export function calculateSpecializationsCost(
   // 1. RUOLO PRINCIPALE
   const roleChanged = draft.posiz !== baseSpec.posiz;
   if (roleChanged) {
-    roleCost += TRAINING_COSTS.ROLE_CHANGE;
-    roleBreakdown.push(`Cambio Ruolo Principale a ${draft.posiz}: +${TRAINING_COSTS.ROLE_CHANGE} XP (1° Ruolo+ incluso)`);
+    const cost = isRoleChangeDiscounted ? (TRAINING_COSTS.ROLE_CHANGE / 2) : TRAINING_COSTS.ROLE_CHANGE;
+    roleCost += cost;
+    if (isRoleChangeDiscounted) {
+      roleBreakdown.push(`Cambio Ruolo Principale a ${draft.posiz}: +${cost} XP (Sconto 50% applicato)`);
+    } else {
+      roleBreakdown.push(`Cambio Ruolo Principale a ${draft.posiz}: +${cost} XP (1° Ruolo+ incluso)`);
+    }
   }
 
   // 2. RUOLI+

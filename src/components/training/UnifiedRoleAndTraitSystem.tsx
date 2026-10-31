@@ -62,6 +62,7 @@ interface UnifiedRoleAndTraitSystemProps {
   onDraftChange: (newDraft: PlayerSpecializationDraft) => void;
   xpAvailable: number; // remaining XP from parent
   isRosterLocked?: boolean;
+  roleDiscounts?: Record<string, boolean>;
 }
 
 const CATEGORIES = [
@@ -83,6 +84,7 @@ export default function UnifiedRoleAndTraitSystem({
   onDraftChange,
   xpAvailable,
   isRosterLocked,
+  roleDiscounts,
 }: UnifiedRoleAndTraitSystemProps) {
   // Category & search filter for Trait catalog
   const [selectedCategory, setSelectedCategory] = useState<string>("Tutti");
@@ -113,9 +115,12 @@ export default function UnifiedRoleAndTraitSystem({
   const currentTraitsCount = draft.traits.length;
 
   // Cost breakdown
+  const isDraftRoleDiscounted = Boolean(
+    player && draft.posiz !== player.Posiz && roleDiscounts?.[draft.posiz]
+  );
   const costSummary = useMemo(
-    () => calculateSpecializationsCost(player, draft, postOverall),
-    [player, draft, postOverall]
+    () => calculateSpecializationsCost(player, draft, postOverall, isDraftRoleDiscounted),
+    [player, draft, postOverall, isDraftRoleDiscounted]
   );
 
   // Compatible subroles for the current draft position
@@ -149,7 +154,12 @@ export default function UnifiedRoleAndTraitSystem({
       return;
     }
     const isNew = pendingNewPos !== player.Posiz;
-    const addedCost = isNew ? TRAINING_COSTS.ROLE_CHANGE : 0;
+    const isDiscounted = Boolean(roleDiscounts?.[pendingNewPos]);
+    const addedCost = isNew
+      ? isDiscounted
+        ? TRAINING_COSTS.ROLE_CHANGE / 2
+        : TRAINING_COSTS.ROLE_CHANGE
+      : 0;
     if (xpAvailable < addedCost) {
       toast.error(`XP insufficienti! Servono ${addedCost} XP.`);
       return;
@@ -542,8 +552,17 @@ export default function UnifiedRoleAndTraitSystem({
             </div>
             <div className="flex items-center gap-2">
               {draft.posiz !== player.Posiz && (
-                <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-500 border-amber-500/30">
-                  Ruolo Modificato (+{TRAINING_COSTS.ROLE_CHANGE} XP)
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] ${
+                    isDraftRoleDiscounted
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                      : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                  }`}
+                >
+                  {isDraftRoleDiscounted
+                    ? "Ruolo Modificato (+20 XP • Sconto 50%)"
+                    : `Ruolo Modificato (+${TRAINING_COSTS.ROLE_CHANGE} XP)`}
                 </Badge>
               )}
             </div>
@@ -1126,8 +1145,12 @@ export default function UnifiedRoleAndTraitSystem({
               Cambio Ruolo Principale
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Il cambio del ruolo principale costa <strong>{TRAINING_COSTS.ROLE_CHANGE} XP</strong> e include
-              la scelta del 1° Ruolo+ della nuova posizione.
+              Il cambio del ruolo principale costa{" "}
+              <strong>{roleDiscounts?.[pendingNewPos] ? "20" : "40"} XP</strong>{" "}
+              {roleDiscounts?.[pendingNewPos] && (
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">(Sconto 50% applicato) </span>
+              )}
+              e include la scelta del 1° Ruolo+ della nuova posizione.
             </DialogDescription>
           </DialogHeader>
 
@@ -1147,14 +1170,31 @@ export default function UnifiedRoleAndTraitSystem({
                   <SelectValue placeholder="Seleziona posizione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {OFFICIAL_POSITIONS.map((pos) => (
-                    <SelectItem key={pos} value={pos} className="text-xs font-bold">
-                      {pos}
-                    </SelectItem>
-                  ))}
+                  {OFFICIAL_POSITIONS.map((pos) => {
+                    const isPosDiscounted = Boolean(roleDiscounts?.[pos]);
+                    return (
+                      <SelectItem key={pos} value={pos} className="text-xs font-bold">
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span>{pos}</span>
+                          {isPosDiscounted && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-normal">
+                              Sconto 50%
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
+
+            {roleDiscounts?.[pendingNewPos] && (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                <Sparkles className="h-4 w-4 shrink-0" />
+                <span>Sconto 50% applicato (costo: 20 XP)</span>
+              </div>
+            )}
 
             {/* Selettore 1° Ruolo+ Iniziale */}
             <div className="space-y-1.5">
@@ -1177,7 +1217,8 @@ export default function UnifiedRoleAndTraitSystem({
             </div>
 
             <div className="p-3 rounded-lg bg-muted/30 border border-border/60 text-xs text-muted-foreground">
-              • Costo Totale Cambio Ruolo: <strong>{TRAINING_COSTS.ROLE_CHANGE} XP</strong>
+              • Costo Totale Cambio Ruolo:{" "}
+              <strong>{roleDiscounts?.[pendingNewPos] ? "20 XP (Sconto 50% applicato)" : "40 XP"}</strong>
               <br />
               • Un eventuale 2° Ruolo+ potrà essere aggiunto in seguito a 100 XP.
             </div>

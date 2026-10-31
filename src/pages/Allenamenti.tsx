@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import UnifiedRoleAndTraitSystem from "@/components/training/UnifiedRoleAndTraitSystem";
 import { SeasonalXpReportModal } from "@/components/training/SeasonalXpReportModal";
 import { useAuth } from "@/context/AuthContext";
+import { useSchedule } from "@/context/ScheduleContext";
+import { fetchTeamRoleDiscountEligibility } from "@/services/playerXpService";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { supabase } from "@/supabaseClient";
@@ -458,6 +460,27 @@ const Allenamenti = () => {
   const [isRosterLocked, setIsRosterLocked] = useState<boolean>(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
 
+  // Stagione di riferimento per sconto cambio ruolo (#30): stagione precedente (es. 10 per stagione 11)
+  const { season: activeSeason } = useSchedule();
+  const currentSeason = activeSeason || 11;
+  const referenceSeason = Math.max(1, currentSeason - 1);
+  const [roleDiscountsMap, setRoleDiscountsMap] = useState<Record<number, Record<string, boolean>>>({});
+
+  useEffect(() => {
+    if (!players || players.length === 0 || !currentTeam) return;
+    let isCancelled = false;
+
+    fetchTeamRoleDiscountEligibility(players, currentTeam, referenceSeason).then((map) => {
+      if (!isCancelled) {
+        setRoleDiscountsMap(map);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [players, currentTeam, referenceSeason]);
+
   useEffect(() => {
     getRosterLockState().then((st) => setIsRosterLocked(st.isLocked));
     const unsub = subscribeToRosterLock((st) => setIsRosterLocked(st.isLocked));
@@ -655,9 +678,24 @@ const Allenamenti = () => {
   }, [increases, preStats]);
 
   // Calcolo Costo Specializzazioni (Ruoli & Tratti)
+  const selectedPlayerRoleDiscounts = useMemo(() => {
+    return player ? (roleDiscountsMap[Number(player.ID)] || {}) : {};
+  }, [player, roleDiscountsMap]);
+
+  const isSelectedRoleDiscounted = Boolean(
+    player &&
+    specializationsDraft.posiz !== player.Posiz &&
+    selectedPlayerRoleDiscounts[specializationsDraft.posiz]
+  );
+
   const specCostSummary = useMemo(() => {
-    return calculateSpecializationsCost(player, specializationsDraft, postOverall);
-  }, [player, specializationsDraft, postOverall]);
+    return calculateSpecializationsCost(
+      player,
+      specializationsDraft,
+      postOverall,
+      isSelectedRoleDiscounted
+    );
+  }, [player, specializationsDraft, postOverall, isSelectedRoleDiscounted]);
 
   // Costo Totale Complessivo
   const totalCost = attributeCost + specCostSummary.totalCost;
@@ -1065,8 +1103,17 @@ const Allenamenti = () => {
                         {specializationsDraft.posiz !== player.Posiz && (
                           <>
                             <span>•</span>
-                            <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-500 border-amber-500/30">
-                              Ex {player.Posiz}
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] px-1.5 py-0 ${
+                                isSelectedRoleDiscounted
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                  : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                              }`}
+                            >
+                              {isSelectedRoleDiscounted
+                                ? `Ex ${player.Posiz} • Sconto 50%`
+                                : `Ex ${player.Posiz}`}
                             </Badge>
                           </>
                         )}
@@ -1531,6 +1578,7 @@ const Allenamenti = () => {
                         onDraftChange={setSpecializationsDraft}
                         xpAvailable={xpRemaining}
                         isRosterLocked={isRosterLocked}
+                        roleDiscounts={selectedPlayerRoleDiscounts}
                       />
                     ) : (
                       <Card className="py-12 text-center text-muted-foreground border-dashed">

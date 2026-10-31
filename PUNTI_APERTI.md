@@ -715,15 +715,26 @@ Con la navigazione non-modale e <nav className="sticky top-0 z-50 w-full ...">, 
 ---
 
 ## 📌 30. Sconto su Cambio Ruolo per Calciatori con Presenze da Titolari
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato (31/10/2026)
 - **Priorità**: Media-Alta (Valorizzazione dell'esperienza in campo e continuità tattica)
-- **Moduli coinvolti**: src/pages/Allenamenti.tsx, src/services/playerXpService.ts, an_player_training
-- **Tabelle coinvolte**: "AS_PLAYER_STAT", an_player_training, an_player
-Descrizione
-Meccanica nella sezione Allenamenti (/mia-squadra/allenamenti) che premia la continuità di impiego dei calciatori:
+- **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/services/playerXpService.ts`, `src/types/training.ts`, `src/components/training/UnifiedRoleAndTraitSystem.tsx`
+- **Tabelle coinvolte**: `as_player_stat`, `an_schedule`, `an_player_training`, `an_player`
+Descrizione & Regole Ufficiali Implementate
+Meccanica nella sezione Centro Allenamenti (`/mia-squadra/allenamenti`) che premia la continuità di impiego sul campo:
 
-Se un calciatore ha disputato almeno $X$ partite da titolare (con minutaggio $\ge 60'$ o titolare da distinta) nel corso della stagione, il costo XP per il Cambio di Ruolo Principale (attualmente standard a 40 XP) viene ridotto o azzerato.
-Definizione della soglia minima di match (es. 5 o 7 partite) e calcolo dinamico dello sconto all'apertura della scheda di allenamento.
+1. **Stagione di Riferimento**:
+   - Poiché gli allenamenti si svolgono all'inizio della stagione corrente prima della disputa delle gare, la formula valuta le presenze nella **stagione precedente** (`referenceSeason = currentSeason - 1`, es. Stagione 10 per gli allenamenti di Stagione 11).
+2. **Filtro Rigido Regular Season**:
+   - Si conteggiano unicamente le partite disputate in Regular Season (`WEEK <= regularSeasonWeeks`, es. 11 giornate per la Lega a 12 squadre, 9 giornate per la Lega a 10), escludendo categoricamente i match di playoff o amichevoli.
+3. **Titolarità e Ruolo Specifico**:
+   - Presenza dal 1' minuto: il calciatore deve essere partito titolare (`SUB = false` o `!SUB` con minutaggio $> 0$ o voto valido).
+   - Posizione in campo: la posizione in cui ha iniziato (`POS_GIOCATA`, con normalizzazione automatica dei codici EA FC come `DCS`/`DCD` $\to$ `DC`, `CCD`/`CCS` $\to$ `CC`, etc.) deve corrispondere esattamente al nuovo ruolo richiesto.
+4. **Soglia di Titolarità**:
+   - `presenze_titolare_nel_ruolo > (totale_partite_regular_season_squadra / 2)`.
+   - Su 11 partite di RS giocate dalla squadra ne occorrono almeno 6; su 9 partite ne occorrono almeno 5.
+5. **Bonus & Esperienza Utente**:
+   - Se il calciatore soddisfa il requisito, il cambio del Ruolo Principale per quella specifica posizione costa **20 XP** anziché 40 XP (sconto del 50%, 1° Ruolo+ sempre incluso).
+   - **UI Pulita**: nel selettore delle posizioni e nella card viene mostrato un badge `[Sconto 50%]` e nel breakdown del riepilogo costi viene indicato `Cambio Ruolo Principale a [Ruolo]: +20 XP (Sconto 50% applicato)`, omettendo i dettagli matematici delle formule per la massima pulizia visiva.
 
 
 
