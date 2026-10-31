@@ -815,17 +815,23 @@ L'anteprima dell'AgingModal rimane focalizzata sui calciatori attivi e sulla ges
 ---
 
 ## 📌 36. Segnalazione Calciatori con Ritiro Annunciato (Veterani all'Ultimo Anno)
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Badge ⏳ Ultima Stagione in Dettaglio Calciatore, Rosa, Trattative, Lista e Confronto)
 - **Priorità**: Media-Alta (Trasparenza contrattuale, valutazioni di mercato e pianificazione rosa)
-- **Moduli coinvolti**: src/components/player/playerDetails.tsx, src/pages/Roster.tsx, src/pages/Trattative.tsx, liste mercato
-- **Tabelle coinvolte**: an_player
-Descrizione
-Identificazione visiva esplicita dei calciatori che disputeranno la loro ultima stagione:
+- **Moduli coinvolti**: `src/components/player/RetiringBadge.tsx`, `src/components/player/playerDetails.tsx`, `src/pages/Roster.tsx`, `src/components/trades/NewTradeModal.tsx`, `src/components/trades/TradeDetailsModal.tsx`, `src/pages/ListaGiocatori.tsx`, `src/pages/ConfrontoGiocatori.tsx`
+- **Tabelle coinvolte**: `an_player`
+Descrizione & Implementazione
+Identificazione visiva esplicita di tutti i calciatori di 34 anni attivi in rosa che disputeranno la loro ultima stagione agonistica prima del ritiro obbligatorio al compimento dei 35 anni:
 
-In base al regolamento, i calciatori al compimento dei 35 anni passano automaticamente allo status RITIRATO.
-Per tutti i calciatori di 34 anni attivi in rosa, inserire un badge di avviso distintivo (es. ⏳ Ultima Stagione • Ritiro Annunciato) nel popup giocatore, nel roster e nelle schermate di trattativa/scambio, consentendo a tutti i manager di sapere che il calciatore si ritirerà al termine del campionato in corso.
-
-
+- **Badge Distintivo (`RetiringBadge.tsx`)**:
+  - Badge in stile ambra/arancio (`bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40`) con icona clessidra e dicitura **`⏳ Ultima Stagione`**.
+  - Tooltip informativo su hover: *"34 anni: questo calciatore disputerà la sua ultima stagione e si ritirerà al termine del campionato."*
+- **Integrazione Trasversale**:
+  - **Scheda Dettaglio Calciatore (`playerDetails.tsx`)**: presente nella barra principale dei badge in testata accanto a ruolo, squadra, status mercato e XP.
+  - **Pagina Rosa (`Roster.tsx`)**:
+    - Nella vista a griglia (*Grid View*) accanto all'età anagrafica sulla card.
+    - Nella vista tabellare (*Table View*) come icona clessidra interattiva accanto agli anni.
+  - **Calciomercato & Trattative Scambi (`NewTradeModal.tsx`, `TradeDetailsModal.tsx`)**: esposto sia per i giocatori offerti sia per quelli richiesti per garantire piena trasparenza durante le negoziazioni.
+  - **Lista Giocatori (`ListaGiocatori.tsx`) & Confronto (`ConfrontoGiocatori.tsx`)**: segnalazione integrata nelle viste tabellari, schede comparative e card.
 
 ---
 

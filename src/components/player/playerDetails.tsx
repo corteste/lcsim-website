@@ -605,6 +605,9 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   {getMarketStatusDisplay(currentPlayer.MarketStatus)}
                 </Badge>
               )}
+              {isRetiringSoon(currentPlayer) && (
+                <RetiringBadge />
+              )}
               {currentPlayer.XP !== null && (
                 <button
                   type="button"

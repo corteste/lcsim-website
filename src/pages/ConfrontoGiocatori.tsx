@@ -1264,6 +1264,7 @@ const ConfrontoGiocatori = () => {
                           )}
                           <span>•</span>
                           <span>{player.Età} anni</span>
+                          {isRetiringSoon(player) && <RetiringBadge variant="compact" />}
                         </div>
                       </div>
                     </div>
@@ -1456,6 +1457,7 @@ const PlayerComparisonCard = ({
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1.5">
               <span>{player.Età} anni</span>
+                          {isRetiringSoon(player) && <RetiringBadge variant="compact" />}
               <span>•</span>
               <span>{player.Altezza ? `${player.Altezza} cm` : "—"}</span>
               <span>•</span>

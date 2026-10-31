@@ -25,7 +25,7 @@ export async function fetchTeamAssets(teamId: string): Promise<{
     // 1. Calciatori in rosa
     const { data: playersData, error: playersErr } = await supabase
       .from(PLAYER_TABLE)
-      .select('ID, Nome, Cognome, Posiz, OVR, Squadra')
+      .select('ID, Nome, Cognome, Posiz, OVR, Squadra, Età')
       .eq("Squadra", teamId)
       .order("OVR", { ascending: false });
 
@@ -54,6 +54,7 @@ export async function fetchTeamAssets(teamId: string): Promise<{
       Posiz: p.Posiz,
       OVR: p.OVR,
       Squadra: p.Squadra,
+      Età: p.Età,
       marketStatus: marketMap[p.ID] || null,
     }));
 
@@ -109,7 +110,7 @@ async function hydrateTrades(rawTrades: any[]): Promise<EnrichedTrade[]> {
   const [teamsRes, playersRes, picksRes, messagesRes] = await Promise.all([
     supabase.from(TEAM_TABLE).select("TEAM_ID, NAME").in("TEAM_ID", Array.from(allTeamIds)),
     allPlayerIds.size > 0
-      ? supabase.from(PLAYER_TABLE).select("ID, Nome, Cognome, Posiz, OVR, Squadra").in("ID", Array.from(allPlayerIds))
+      ? supabase.from(PLAYER_TABLE).select("ID, Nome, Cognome, Posiz, OVR, Squadra, Età").in("ID", Array.from(allPlayerIds))
       : Promise.resolve({ data: [] }),
     allPickNums.size > 0
       ? supabase.from(DRAFT_BOARD_TABLE).select("pick_overall, round, pick_in_round, team_id, original_team_id, rookie_id").in("pick_overall", Array.from(allPickNums))

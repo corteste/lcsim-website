@@ -900,6 +900,9 @@ const Roster = () => {
 
                           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
                             <span>{player.Età} anni</span>
+                            {isRetiringSoon(player) && (
+                              <RetiringBadge variant="compact" />
+                            )}
                             <span>•</span>
                             <span>{player.Altezza} cm</span>
                             <span>•</span>
@@ -1219,7 +1222,12 @@ const Roster = () => {
 
                           {/* Age */}
                           <td className="py-2.5 px-2 text-center font-mono text-muted-foreground">
-                            {player.Età}
+                            <div className="flex items-center justify-center gap-1">
+                              <span>{player.Età}</span>
+                              {isRetiringSoon(player) && (
+                                <RetiringBadge variant="iconOnly" />
+                              )}
+                            </div>
                           </td>
 
                           {/* Height */}

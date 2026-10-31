@@ -338,3 +338,16 @@ export const getNationalityFlag = (nationality: string) => {
       return "/images/nations/united-states.png";
   }
 } 
+
+
+/**
+ * Determina se un calciatore è al suo ultimo anno di carriera prima del ritiro obbligatorio (34 anni) (Punto #36)
+ */
+export const isRetiringSoon = (
+  player: { Età?: number | string | null; Squadra?: string | null } | null | undefined
+): boolean => {
+  if (!player) return false;
+  if (player.Squadra === "RITIRATO") return false;
+  const age = Number(player.Età);
+  return age === 34;
+};

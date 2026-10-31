@@ -279,6 +279,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
                         {p.Posiz}
                       </span>
                       <span className="font-bold">{p.Nome} {p.Cognome}</span>
+                      {isRetiringSoon(p) && <RetiringBadge variant="compact" />}
                     </div>
                     <Badge variant="outline" className="font-mono font-bold text-[11px]">
                       OVR {p.OVR}
@@ -335,6 +336,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
                         {p.Posiz}
                       </span>
                       <span className="font-bold">{p.Nome} {p.Cognome}</span>
+                      {isRetiringSoon(p) && <RetiringBadge variant="compact" />}
                     </div>
                     <Badge variant="outline" className="font-mono font-bold text-[11px]">
                       OVR {p.OVR}

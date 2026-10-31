@@ -1009,7 +1009,12 @@ const ListaGiocatori = () => {
                         <div className="w-full grid grid-cols-4 gap-1 text-center font-mono text-[11px] pt-1 border-t border-border/50">
                           <div className="p-1 rounded bg-muted/30">
                             <span className="text-[9px] text-muted-foreground block">Età</span>
-                            <span className="font-bold text-foreground">{player.Età || "—"}</span>
+                            <span className="font-bold text-foreground flex items-center justify-center gap-0.5">
+                              {player.Età || "—"}
+                              {isRetiringSoon(player) && (
+                                <span title="34 anni: ultima stagione prima del ritiro" className="text-amber-500 text-[10px]">⏳</span>
+                              )}
+                            </span>
                           </div>
                           <div className="p-1 rounded bg-muted/30">
                             <span className="text-[9px] text-muted-foreground block">Piede</span>

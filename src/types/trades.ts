@@ -40,6 +40,7 @@ export interface TradePlayerAsset {
   Posiz: string;
   OVR: number;
   Squadra: string;
+  Età?: number | null;
   marketStatus?: string | null;
 }
 
