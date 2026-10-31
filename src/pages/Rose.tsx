@@ -82,31 +82,30 @@ const ROLE_GROUPS = [
 const getTeamSocialBg = (team: string): string => {
   switch (team) {
     case "APD":
-      return "bg-gradient-to-br from-[#db2777] via-[#9d174d] to-[#ca8a04]"; // Rosa / Fucsia e Giallo
+      return "bg-gradient-to-br from-[#eab308] via-[#ca8a04] to-[#ec4899]"; // Giallo Oro & Rosa Shocking
     case "ASK":
-      return "bg-gradient-to-br from-[#dc2626] via-[#991b1b] to-[#18181b]"; // Rosso e Nero
-    case "ACF":
-      return "bg-gradient-to-br from-[#16a34a] via-[#15803d] to-[#064e3b]"; // Verde Smeraldo e Foresta
-    case "PFC":
-      return "bg-gradient-to-br from-[#f472b6] via-[#db2777] to-[#18181b]"; // Rosa e Nero Palermo
-    case "MAR":
-      return "bg-gradient-to-br from-[#dc2626] via-[#7f1d1d] to-[#1d4ed8]"; // Rosso e Blu
-    case "ACD":
-      return "bg-gradient-to-br from-[#b91c1c] via-[#991b1b] to-[#7f1d1d]"; // Rosso e Granata
-    case "ALV":
-      return "bg-gradient-to-br from-[#0284c7] via-[#0369a1] to-[#1e40af]"; // Azzurro e Blu
-    case "OLD":
-      return "bg-gradient-to-br from-[#1e3a8a] via-[#2563eb] to-[#ec4899]"; // Blu Navy e Rosa
-    case "VFC":
-      return "bg-gradient-to-br from-[#eab308] via-[#ca8a04] to-[#18181b]"; // Giallo e Nero
-    case "RMB":
-      return "bg-gradient-to-br from-[#ef4444] via-[#b91c1c] to-[#09090b]"; // Rosso e Nero
-    case "COS":
-      return "bg-gradient-to-br from-[#4f46e5] via-[#312e81] to-[#06b6d4]"; // Viola Cosmo e Ciano
-    case "EUR":
-      return "bg-gradient-to-br from-[#1d4ed8] via-[#1e40af] to-[#eab308]"; // Blu Europa e Giallo Oro
     case "SKA":
-      return "bg-gradient-to-br from-[#dc2626] via-[#831843] to-[#1d4ed8]"; // Rosso e Blu
+      return "bg-gradient-to-br from-[#059669] via-[#047857] to-[#f8fafc]"; // Verde Primario & Bianco Secondario
+    case "ACF":
+      return "bg-gradient-to-br from-[#10b981] via-[#059669] to-[#a855f7]"; // Verde Smeraldo & Viola
+    case "PFC":
+      return "bg-gradient-to-br from-[#ec4899] via-[#db2777] to-[#18181b]"; // Rosa & Nero Antracite
+    case "MAR":
+      return "bg-gradient-to-br from-[#dc2626] via-[#7f1d1d] to-[#2563eb]"; // Rosso Fuoco & Blu
+    case "ACD":
+      return "bg-gradient-to-br from-[#ef4444] via-[#b91c1c] to-[#e2e8f0]"; // Rosso & Bianco
+    case "ALV":
+      return "bg-gradient-to-br from-[#0ea5e9] via-[#0284c7] to-[#f97316]"; // Azzurro Primario & Arancione Secondario
+    case "OLD":
+      return "bg-gradient-to-br from-[#3b82f6] via-[#2563eb] to-[#f43f5e]"; // Blu Royale & Rosa Fluo
+    case "VFC":
+      return "bg-gradient-to-br from-[#eab308] via-[#ca8a04] to-[#18181b]"; // Giallo Sole & Nero
+    case "RMB":
+      return "bg-gradient-to-br from-[#b91c1c] via-[#991b1b] to-[#18181b]"; // Rosso Rubino & Nero
+    case "COS":
+      return "bg-gradient-to-br from-[#8b5cf6] via-[#6d28d9] to-[#06b6d4]"; // Viola Notte & Ciano Elettrico
+    case "EUR":
+      return "bg-gradient-to-br from-[#1d4ed8] via-[#1e40af] to-[#facc15]"; // Blu Navy & Giallo
     default:
       return "bg-gradient-to-br from-slate-800 via-slate-900 to-black";
   }
