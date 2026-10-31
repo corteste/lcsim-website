@@ -10,7 +10,7 @@ import {
   Plus, Minus, TrendingUp, Award, Save, RotateCcw,
   CheckCircle2, Clock, Sparkles, Shield, Zap, Flame,
   Dumbbell, Target, Activity, Swords, ArrowRight, Search,
-  ChevronRight, AlertCircle, RefreshCw, Star, Lock
+  ChevronRight, AlertCircle, RefreshCw, Star, Lock, Compass
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import UnifiedRoleAndTraitSystem from "@/components/training/UnifiedRoleAndTraitSystem";
@@ -341,6 +341,34 @@ export const roleWeights: Record<string, Record<StatKey, number>> = {
   },
 };
 
+
+export const ALL_PITCH_ROLES_BY_DEPT = [
+  {
+    dept: "Portiere",
+    icon: Shield,
+    color: "text-amber-500",
+    roles: ["POR"],
+  },
+  {
+    dept: "Difesa",
+    icon: Shield,
+    color: "text-blue-500",
+    roles: ["DC", "TD", "TS"],
+  },
+  {
+    dept: "Centrocampo",
+    icon: Activity,
+    color: "text-emerald-500",
+    roles: ["CDC", "CC", "COC", "ED", "ES"],
+  },
+  {
+    dept: "Attacco",
+    icon: Target,
+    color: "text-rose-500",
+    roles: ["AD", "AS", "AT", "ATT"],
+  },
+];
+
 export const calcOverall = (
   role: string | undefined | null,
   stats: Record<StatKey, number>,
@@ -570,6 +598,49 @@ const Allenamenti = () => {
     () => calcOverall(specializationsDraft.posiz || player?.Posiz, postStats, preOverall),
     [specializationsDraft.posiz, player?.Posiz, postStats, preOverall]
   );
+
+  // Lista dei ruoli secondari dichiarati del giocatore
+  const secondaryRolesList = useMemo(() => {
+    if (!player) return [];
+    const candidates = [
+      player.PreferredPosition2,
+      player.PreferredPosition3,
+      player.PreferredPosition4,
+    ];
+    return candidates
+      .filter((pos): pos is string => Boolean(pos && typeof pos === "string" && pos.trim() !== "" && pos !== "-"))
+      .map((p) => p.toUpperCase());
+  }, [player]);
+
+  // Ruolo principale attivo (bozza se modificato, altrimenti naturale)
+  const currentPrimaryRole = useMemo(
+    () => (specializationsDraft.posiz || player?.Posiz || "").toUpperCase(),
+    [specializationsDraft.posiz, player?.Posiz]
+  );
+
+  // Prospetto Overall per tutte le 13 posizioni di campo (#61)
+  const roleOveralls = useMemo(() => {
+    if (!player) return {};
+    const res: Record<
+      string,
+      { pre: number; post: number; diff: number; isPrimary: boolean; isSecondary: boolean }
+    > = {};
+
+    const allRoles = [
+      "POR", "DC", "TD", "TS", "CDC", "CC", "COC", "ED", "ES", "AD", "AS", "AT", "ATT"
+    ];
+
+    for (const r of allRoles) {
+      const pre = calcOverall(r, preStats, 70);
+      const post = calcOverall(r, postStats, pre);
+      const diff = post - pre;
+      const isPrimary = r === currentPrimaryRole;
+      const isSecondary = !isPrimary && secondaryRolesList.includes(r);
+      res[r] = { pre, post, diff, isPrimary, isSecondary };
+    }
+    return res;
+  }, [player, preStats, postStats, currentPrimaryRole, secondaryRolesList]);
+
 
   // Calcolo Costo Attributi XP (Dinamico basato su media/max e tick-by-tick)
   const attributeCost = useMemo(() => {
@@ -1632,6 +1703,117 @@ const Allenamenti = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Scheda Prospetto Overall per Ruolo (#61) */}
+                <Card className="shadow-lg border-border/80 overflow-hidden">
+                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Compass className="h-4 w-4 text-emerald-500" />
+                        <CardTitle className="text-sm font-bold">Overall per Ruolo</CardTitle>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] font-mono font-bold">
+                        13 Posizioni
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-[11px] mt-0.5">
+                      Valutazione OVR su tutte le posizioni di campo (Pre &rarr; Post Allenamento)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-3.5 space-y-3.5">
+                    {ALL_PITCH_ROLES_BY_DEPT.map((deptGroup) => {
+                      const DeptIcon = deptGroup.icon;
+                      return (
+                        <div key={deptGroup.dept} className="space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            <DeptIcon className={`h-3 w-3 ${deptGroup.color}`} />
+                            <span>{deptGroup.dept}</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {deptGroup.roles.map((r) => {
+                              const evalData = roleOveralls[r];
+                              if (!evalData) return null;
+                              const { pre, post, diff, isPrimary, isSecondary } = evalData;
+
+                              return (
+                                <div
+                                  key={r}
+                                  className={`p-1.5 px-2 rounded-xl border transition-all flex items-center justify-between gap-1 text-xs ${
+                                    isPrimary
+                                      ? "bg-primary/10 border-primary/50 ring-1 ring-primary/20 shadow-sm"
+                                      : isSecondary
+                                      ? "bg-muted/40 border-border/80"
+                                      : "bg-muted/15 border-border/40"
+                                  } ${
+                                    r === "POR" || r === "DC" || r === "COC" ? "col-span-2" : "col-span-1"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-[9px] px-1.5 py-0 h-4 font-black shrink-0 ${getRoleColor(r)}`}
+                                    >
+                                      {r}
+                                    </Badge>
+                                    {isPrimary && (
+                                      <Badge className="text-[8px] px-1 py-0 h-3.5 bg-primary text-primary-foreground font-black shrink-0">
+                                        NAT
+                                      </Badge>
+                                    )}
+                                    {isSecondary && (
+                                      <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5 text-muted-foreground font-bold shrink-0">
+                                        SEC
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-1 shrink-0 font-mono">
+                                    {diff > 0 ? (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-[11px] text-muted-foreground line-through">
+                                          {pre}
+                                        </span>
+                                        <ArrowRight className="h-2.5 w-2.5 text-emerald-500 shrink-0" />
+                                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                                          {post}
+                                        </span>
+                                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.2 rounded leading-none">
+                                          +{diff}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className={`text-xs font-bold ${isPrimary ? "text-primary font-black text-sm" : "text-foreground"}`}>
+                                        {post}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Legenda rapida */}
+                    <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <Badge className="text-[8px] px-1 py-0 h-3 bg-primary text-primary-foreground font-bold">
+                          NAT
+                        </Badge>
+                        <span>Ruolo Naturale</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3 font-semibold text-muted-foreground">
+                          SEC
+                        </Badge>
+                        <span>Secondario</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
               </div>
 
             </div>

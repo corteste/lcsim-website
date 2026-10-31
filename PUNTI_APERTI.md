@@ -1202,9 +1202,9 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 61. Prospetto Riepilogativo Overall per Ruolo/Posizione in Schermata Allenamento
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato
 - **Priorità**: Media
 - **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/utils/playerOvrCalculator.ts`
 - **Descrizione**:
-  - Aggiungere nella schermata di Allenamento (`/allenamenti`), sulla colonna di destra sotto la card *Riepilogo Avanzamento*, un prospetto riassuntivo che mostra l'Overall (OVR) calcolato del calciatore selezionato in ogni possibile posizione/ruolo del campo (POR, DC, TD, TS, CDC, CC, COC, ED, ES, AD, AS, AT, ATT).
-  - Permette al manager di valutare istantaneamente l'adattabilità e l'efficacia del giocatore nei diversi ruoli del campo prima di effettuare cambi ruolo o potenziamenti.
+  - Aggiunto nella schermata di Allenamento (`/allenamenti`), sulla colonna di destra sotto la card *Riepilogo Avanzamento*, il prospetto riassuntivo che mostra in tempo reale l'Overall (OVR) calcolato del calciatore selezionato in tutte le 13 posizioni di campo (POR, DC, TD, TS, CDC, CC, COC, ED, ES, AD, AS, AT, ATT).
+  - Il prospetto è organizzato per reparti (Portiere, Difesa, Centrocampo, Attacco) con layout tattico, badge distintivi per Ruolo Naturale (`NAT`) e Ruolo Secondario (`SEC`), e calcolo dinamico in tempo reale: mostra il valore Base (`Pre`), il nuovo valore stimato (`Post`) e il delta verde (`+X`) non appena il manager incrementa qualsiasi attributo o cambia ruolo.
