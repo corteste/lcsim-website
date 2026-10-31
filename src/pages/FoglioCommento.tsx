@@ -612,6 +612,29 @@ export const FoglioCommento: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 1. COLONNA SQUADRA CASA */}
+                {homeFormation && (
+                  <TeamSheetColumn
+                    teamFormation={homeFormation}
+                    formationDef={homeFormationDef}
+                    isHome={true}
+                    onSelectPlayer={setSelectedPlayer}
+                    disciplinaryMap={homeDisciplinaryMap}
+                    diffs={homeDiffs}
+                  />
+                )}
+
+                {/* 2. COLONNA SQUADRA TRASFERTA */}
+                {awayFormation && (
+                  <TeamSheetColumn
+                    teamFormation={awayFormation}
+                    formationDef={awayFormationDef}
+                    isHome={false}
+                    onSelectPlayer={setSelectedPlayer}
+                    disciplinaryMap={awayDisciplinaryMap}
+                    diffs={awayDiffs}
+                  />
+                )}
+
                 {/* Box Provvedimenti Disciplinari: Squalificati & Diffidati */}
                 <div className="lg:col-span-2">
                   <Card className="border-border/80 bg-card shadow-sm overflow-hidden">
@@ -747,29 +770,6 @@ export const FoglioCommento: React.FC = () => {
                     </CardContent>
                   </Card>
                 </div>
-
-                {homeFormation && (
-                  <TeamSheetColumn
-                    teamFormation={homeFormation}
-                    formationDef={homeFormationDef}
-                    isHome={true}
-                    onSelectPlayer={setSelectedPlayer}
-                    disciplinaryMap={homeDisciplinaryMap}
-                    diffs={homeDiffs}
-                  />
-                )}
-
-                {/* 2. COLONNA SQUADRA TRASFERTA */}
-                {awayFormation && (
-                  <TeamSheetColumn
-                    teamFormation={awayFormation}
-                    formationDef={awayFormationDef}
-                    isHome={false}
-                    onSelectPlayer={setSelectedPlayer}
-                    disciplinaryMap={awayDisciplinaryMap}
-                    diffs={awayDiffs}
-                  />
-                )}
               </div>
             )}
           </div>
@@ -857,15 +857,6 @@ const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
           </Badge>
         </div>
       </Card>
-
-      {/* Box Scelte Tattiche vs Turno Precedente (#37) */}
-      {diffs && diffs.hasPrevious && (
-        <FormationChangesSummary
-          diffs={diffs}
-          teamName={teamFormation.teamName}
-          onSelectPlayer={onSelectPlayer}
-        />
-      )}
 
       {/* Campetto Tattico 2D */}
       <Card className="border-border/80 bg-card shadow-sm overflow-hidden">
@@ -1067,6 +1058,15 @@ const TeamSheetColumn: React.FC<TeamSheetColumnProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Box Scelte Tattiche vs Turno Precedente (#37) */}
+      {diffs && diffs.hasPrevious && (
+        <FormationChangesSummary
+          diffs={diffs}
+          teamName={teamFormation.teamName}
+          onSelectPlayer={onSelectPlayer}
+        />
+      )}
     </div>
   );
 };
