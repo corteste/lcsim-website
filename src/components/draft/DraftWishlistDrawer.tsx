@@ -14,7 +14,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   ListOrdered,
-  Star,
   ArrowUp,
   ArrowDown,
   Trash2,
@@ -31,7 +30,6 @@ import { toast } from "sonner";
 import {
   fetchTeamWishlist,
   addToWishlist,
-  addMultipleToWishlist,
   removeFromWishlist,
   moveWishlistItem,
   clearWishlist,
@@ -48,7 +46,6 @@ interface DraftWishlistDrawerProps {
   teamId: string;
   teamFullName?: string;
   availableRookies: Player[];
-  favoriteRookieIds: Set<number>;
   onWishlistChanged?: () => void;
 }
 
@@ -58,14 +55,12 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
   teamId,
   teamFullName,
   availableRookies,
-  favoriteRookieIds,
   onWishlistChanged,
 }) => {
   const [wishlist, setWishlist] = useState<DraftWishlistItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [autopickEnabled, setAutopickEnabled] = useState<boolean>(false);
   const [searchRookieQuery, setSearchRookieQuery] = useState<string>("");
-  const [isImporting, setIsImporting] = useState<boolean>(false);
 
   // Carica la wishlist e l'impostazione autopick
   const loadData = useCallback(async () => {
@@ -139,29 +134,6 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
       toast.info("Graduatoria svuotata");
       setWishlist([]);
       onWishlistChanged?.();
-    }
-  };
-
-  // Importa dai preferiti
-  const handleImportFavorites = async () => {
-    if (favoriteRookieIds.size === 0) {
-      toast.info("Non hai ancora salvato nessun rookie tra i preferiti (⭐).");
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const ids = Array.from(favoriteRookieIds);
-      const res = await addMultipleToWishlist(teamId, ids);
-      if (res.count > 0) {
-        toast.success(`Aggiunti ${res.count} rookie dai preferiti alla tua lista!`);
-        await loadData();
-        onWishlistChanged?.();
-      } else {
-        toast.info("Tutti i rookie preferiti sono già presenti nella tua graduatoria.");
-      }
-    } finally {
-      setIsImporting(false);
     }
   };
 
@@ -270,19 +242,8 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
         {/* TOOLBAR: IMPORTA DAI PREFERITI & CERCA ROOKIE                       */}
         {/* =================================================================== */}
         <div className="p-4 border-b border-border/70 bg-card space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleImportFavorites}
-              disabled={isImporting || favoriteRookieIds.size === 0}
-              className="h-8 text-xs font-bold border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-            >
-              <Star className="h-3.5 w-3.5 mr-1.5 fill-amber-500 text-amber-500" />
-              Importa Preferiti ({favoriteRookieIds.size})
-            </Button>
-
-            {wishlist.length > 0 && (
+          {wishlist.length > 0 && (
+            <div className="flex items-center justify-end">
               <Button
                 variant="ghost"
                 size="sm"
@@ -292,8 +253,8 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
                 <Trash2 className="h-3 w-3 mr-1" />
                 Svuota Lista
               </Button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Campo di ricerca per inserire un rookie alla volta */}
           <div className="relative">
@@ -357,9 +318,7 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
               </div>
               <h4 className="text-sm font-bold text-foreground">Nessun rookie in graduatoria</h4>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Aggiungi i tuoi prospetti ideali o clicca su{" "}
-                <strong>"Importa Preferiti"</strong> per pre-caricare i rookie che hai salvato con
-                la stellina.
+                Aggiungi i tuoi prospetti ideali con il campo di ricerca qui sopra o dalle schede nello Scouting e Draft.
               </p>
               <div className="pt-2">
                 <div className="inline-flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">

@@ -80,12 +80,12 @@ import {
   DraftPickAnnouncementData,
 } from "@/components/draft/DraftPickAnnouncementModal";
 import {
-  fetchTeamFavorites,
-  toggleTeamFavorite,
+  fetchTeamWishlist,
   fetchAutopickSetting,
   fetchAllAutopickSettings,
   executeAutopick,
 } from "@/services/draftWishlistService";
+import { DraftWishlistItem } from "@/types/draftWishlist";
 
 export interface DraftPickRow {
   pick_overall: number;
@@ -106,7 +106,7 @@ export interface DraftPoolItem {
   id: number;
   type: "rookie" | "free_agent";
   player: Player;
-  isFavorite: boolean;
+  wishlistRank?: number;
 }
 
 type ViewMode = "board" | "r1" | "r2" | "r3" | "r4" | "r5";
@@ -174,9 +174,17 @@ const Draft = () => {
   }, []);
 
   // Watchlist & Autopick State (Punti 6, 7 e 40)
-  const [favoriteRookieIds, setFavoriteRookieIds] = useState<Set<number>>(new Set());
-  const [favoriteFreeAgentIds, setFavoriteFreeAgentIds] = useState<Set<number>>(new Set());
-  const [favoritesOnly, setFavoritesOnly] = useState<boolean>(false);
+  // Graduatoria personale (Punto 7 & 47)
+  const [wishlistItems, setWishlistItems] = useState<DraftWishlistItem[]>([]);
+  const [wishlistOnly, setWishlistOnly] = useState<boolean>(false);
+
+  const wishlistMap = useMemo(() => {
+    const map = new Map<number, number>();
+    wishlistItems.forEach((w) => {
+      map.set(Number(w.rookie_id), Number(w.priority_rank));
+    });
+    return map;
+  }, [wishlistItems]);
   const [isUserAutopickEnabled, setIsUserAutopickEnabled] = useState<boolean>(false);
   const [allAutopickSettings, setAllAutopickSettings] = useState<Record<string, boolean>>({});
   const [isAutopicking, setIsAutopicking] = useState<boolean>(false);
@@ -329,33 +337,27 @@ const Draft = () => {
       });
   }, [activeUserTeamId]);
 
-  // Caricamento preferiti squadra (⭐ Punto 6 e 40)
-  const loadFavorites = useCallback(async () => {
+  // Caricamento graduatoria squadra (Punto 7 & 47)
+  const loadWishlist = useCallback(async () => {
     if (!activeUserTeamId) {
-      setFavoriteRookieIds(new Set());
-      setFavoriteFreeAgentIds(new Set());
+      setWishlistItems([]);
       return;
     }
     try {
-      const [favRookies, favPlayers] = await Promise.all([
-        fetchTeamFavorites(activeUserTeamId, "rookie"),
-        fetchTeamFavorites(activeUserTeamId, "player"),
-      ]);
-      setFavoriteRookieIds(favRookies);
-      setFavoriteFreeAgentIds(favPlayers);
+      const list = await fetchTeamWishlist(activeUserTeamId);
+      setWishlistItems(list);
     } catch (err) {
-      console.error("Errore caricamento preferiti draft:", err);
+      console.error("Errore caricamento graduatoria draft:", err);
     }
   }, [activeUserTeamId]);
 
   useEffect(() => {
     if (activeUserTeamId) {
-      loadFavorites();
+      loadWishlist();
     } else {
-      setFavoriteRookieIds(new Set());
-      setFavoriteFreeAgentIds(new Set());
+      setWishlistItems([]);
     }
-  }, [activeUserTeamId, loadFavorites]);
+  }, [activeUserTeamId, loadWishlist]);
 
   // Caricamento impostazioni autopick squadra (Punto 7)
   const loadAutopickSettings = useCallback(async () => {
@@ -484,7 +486,7 @@ const Draft = () => {
 
           // Aggiorna istantaneamente la draft board e liste collegate per tutti i client
           fetchDraftData(true);
-          loadFavorites();
+          loadWishlist();
           loadAutopickSettings();
         }
       )
@@ -500,45 +502,7 @@ const Draft = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchDraftData, loadFavorites, loadAutopickSettings, triggerPickAnnouncement]);
-
-  // Toggle preferiti (⭐) sia per Rookie sia per Svincolati
-  const handleToggleFavorite = async (id: number, type: "rookie" | "free_agent") => {
-    if (!activeUserTeamId) {
-      toast.error("Accedi o seleziona una squadra per salvare i preferiti.");
-      return;
-    }
-
-    const playerType = type === "free_agent" ? "player" : "rookie";
-
-    if (type === "free_agent") {
-      setFavoriteFreeAgentIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        return next;
-      });
-    } else {
-      setFavoriteRookieIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        return next;
-      });
-    }
-
-    const res = await toggleTeamFavorite(activeUserTeamId, id, playerType);
-    if (res.error) {
-      toast.error("Errore salvataggio preferito");
-      loadFavorites();
-    } else {
-      toast.success(
-        res.isFavorite
-          ? `${type === "free_agent" ? "Calciatore" : "Rookie"} aggiunto ai preferiti (⭐)!`
-          : `${type === "free_agent" ? "Calciatore" : "Rookie"} rimosso dai preferiti`
-      );
-    }
-  };
+  }, [fetchDraftData, loadWishlist, loadAutopickSettings, triggerPickAnnouncement]);
 
   // Esecuzione Autopick (Punto 7)
   const handleTriggerAutopick = async (targetPick?: DraftPickRow | null) => {
@@ -565,7 +529,7 @@ const Draft = () => {
       // Notifica visuale gestita dalla card popup centrale al posto dei toast
 
       await fetchDraftData(true);
-      await loadFavorites();
+      await loadWishlist();
       await loadAutopickSettings();
       await triggerPickAnnouncement(
         pick.pick_overall,
@@ -663,8 +627,8 @@ const Draft = () => {
         if (draftedPlayerIds.has(id) || rk.Squadra) continue;
         // Punto #42: se c'è l'obbligo portiere, escludi i giocatori di movimento
         if (isGkDraftMandatory && rk.Posiz !== "POR") continue;
-        const isFav = favoriteRookieIds.has(id);
-        if (favoritesOnly && !isFav) continue;
+        const rank = wishlistMap.get(id);
+        if (wishlistOnly && !rank) continue;
         if (roleFilter !== "ALL") {
           const group = ROLE_GROUPS.find((g) => g.id === roleFilter);
           if (group && group.roles.length > 0 && !group.roles.includes(rk.Posiz)) continue;
@@ -674,7 +638,7 @@ const Draft = () => {
           const full = `${rk.Nome || ""} ${rk.Cognome || ""} ${rk.Posiz || ""}`.toLowerCase();
           if (!full.includes(q)) continue;
         }
-        items.push({ id, type: "rookie", player: rk, isFavorite: isFav });
+        items.push({ id, type: "rookie", player: rk, wishlistRank: rank });
       }
     }
 
@@ -685,8 +649,8 @@ const Draft = () => {
         if (draftedPlayerIds.has(id) || fa.Squadra) continue;
         // Punto #42: se c'è l'obbligo portiere, escludi i giocatori di movimento
         if (isGkDraftMandatory && fa.Posiz !== "POR") continue;
-        const isFav = favoriteFreeAgentIds.has(id);
-        if (favoritesOnly && !isFav) continue;
+        const rank = wishlistMap.get(id);
+        if (wishlistOnly && !rank) continue;
         if (roleFilter !== "ALL") {
           const group = ROLE_GROUPS.find((g) => g.id === roleFilter);
           if (group && group.roles.length > 0 && !group.roles.includes(fa.Posiz)) continue;
@@ -696,11 +660,16 @@ const Draft = () => {
           const full = `${fa.Nome || ""} ${fa.Cognome || ""} ${fa.Posiz || ""}`.toLowerCase();
           if (!full.includes(q)) continue;
         }
-        items.push({ id, type: "free_agent", player: fa, isFavorite: isFav });
+        items.push({ id, type: "free_agent", player: fa, wishlistRank: rank });
       }
     }
 
     return items.sort((a, b) => {
+      if (wishlistOnly) {
+        const rankA = a.wishlistRank ?? 9999;
+        const rankB = b.wishlistRank ?? 9999;
+        return rankA - rankB;
+      }
       const rp = (ROLE_PRIORITY[a.player.Posiz] ?? 99) - (ROLE_PRIORITY[b.player.Posiz] ?? 99);
       if (rp !== 0) return rp;
       const ovrA = Number(a.player.OVR) || 0;
@@ -714,9 +683,8 @@ const Draft = () => {
     draftedPlayerIds,
     poolTypeFilter,
     roleFilter,
-    favoritesOnly,
-    favoriteRookieIds,
-    favoriteFreeAgentIds,
+    wishlistOnly,
+    wishlistMap,
     searchQuery,
     isGkDraftMandatory,
   ]);
@@ -1647,15 +1615,15 @@ const Draft = () => {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => setFavoritesOnly((prev) => !prev)}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${favoritesOnly
-                          ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/50 ring-1 ring-amber-500/30 shadow-xs"
+                        onClick={() => setWishlistOnly((prev) => !prev)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${wishlistOnly
+                          ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/50 ring-1 ring-emerald-500/30 shadow-xs"
                           : "bg-muted/60 text-muted-foreground hover:text-foreground border border-transparent"
                           }`}
-                        title="Filtra solo i tuoi preferiti (⭐)"
+                        title="Filtra e ordina per graduatoria personale"
                       >
-                        <Star className={`h-3.5 w-3.5 ${favoritesOnly ? "fill-amber-500 text-amber-500" : ""}`} />
-                        <span>Preferiti ({favoriteRookieIds.size + favoriteFreeAgentIds.size})</span>
+                        <ListOrdered className="h-3.5 w-3.5 text-emerald-500" />
+                        <span>Graduatoria ({wishlistMap.size})</span>
                       </button>
 
                       {ROLE_GROUPS.map((g) => (
@@ -1730,32 +1698,19 @@ const Draft = () => {
                                   {item.player.Nome} {item.player.Cognome}
                                 </span>
 
-                                {item.isFavorite && (
-                                  <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500 shrink-0" />
+                                {item.wishlistRank && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-mono font-bold shrink-0"
+                                    title={`Posizione #${item.wishlistRank} nella tua graduatoria`}
+                                  >
+                                    #{item.wishlistRank}
+                                  </Badge>
                                 )}
                               </div>
 
-                              {/* Azioni rapide a destra: Preferito, Scheda, Scegli */}
+                              {/* Azioni rapide a destra: Scheda, Scegli */}
                               <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleFavorite(pId, item.type)}
-                                  className={`p-1 rounded-md transition-all ${item.isFavorite
-                                    ? "text-amber-500 hover:text-amber-600 hover:scale-110"
-                                    : "text-muted-foreground/35 hover:text-amber-500 hover:scale-110"
-                                    }`}
-                                  title={
-                                    item.isFavorite
-                                      ? "Rimuovi dai preferiti"
-                                      : "Salva tra i preferiti (⭐)"
-                                  }
-                                >
-                                  <Star
-                                    className={`h-4 w-4 ${item.isFavorite ? "fill-amber-500" : ""
-                                      }`}
-                                  />
-                                </button>
-
                                 <button
                                   type="button"
                                   title={item.type === "free_agent" ? "Apri scheda tecnica svincolato" : "Apri Report Scouting del rookie"}
@@ -1892,27 +1847,15 @@ const Draft = () => {
                                   OVR {selectedPlayerItem.player.OVR}
                                 </Badge>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => handleToggleFavorite(Number(selectedPlayerItem.id), selectedPlayerItem.type)}
-                                className="p-0.5 rounded text-muted-foreground hover:text-amber-500 transition-colors"
-                                title={
-                                  (selectedPlayerItem.type === "free_agent"
-                                    ? favoriteFreeAgentIds.has(Number(selectedPlayerItem.id))
-                                    : favoriteRookieIds.has(Number(selectedPlayerItem.id)))
-                                    ? "Rimuovi dai preferiti"
-                                    : "Aggiungi ai preferiti"
-                                }
-                              >
-                                <Star
-                                  className={`h-3.5 w-3.5 ${(selectedPlayerItem.type === "free_agent"
-                                    ? favoriteFreeAgentIds.has(Number(selectedPlayerItem.id))
-                                    : favoriteRookieIds.has(Number(selectedPlayerItem.id)))
-                                    ? "fill-amber-500 text-amber-500"
-                                    : "text-muted-foreground/40 hover:text-amber-500"
-                                    }`}
-                                />
-                              </button>
+                              {wishlistMap.has(Number(selectedPlayerItem.id)) && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-mono font-bold shrink-0"
+                                  title={`Posizione #${wishlistMap.get(Number(selectedPlayerItem.id))} in graduatoria`}
+                                >
+                                  #{wishlistMap.get(Number(selectedPlayerItem.id))}
+                                </Badge>
+                              )}
                             </span>
                           </div>
                         </div>

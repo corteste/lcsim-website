@@ -33,7 +33,6 @@ import { toast } from "sonner";
 import {
   fetchTeamWishlist,
   addToWishlist,
-  addMultipleToWishlist,
   removeFromWishlist,
   moveWishlistItem,
   clearWishlist,
@@ -50,10 +49,9 @@ interface ScoutingAutopickTabProps {
   teamId: string;
   teamFullName?: string;
   allRookies: Player[];
-  favoriteRookieIds: Set<number>;
   scoutingTokensByRookie?: Record<number, number>;
   onInspectRookie?: (rookieId: number) => void;
-  onFavoritesUpdated?: () => void;
+  onWishlistUpdated?: () => void;
 }
 
 const ROLE_GROUPS = [
@@ -68,16 +66,14 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
   teamId,
   teamFullName,
   allRookies,
-  favoriteRookieIds,
   scoutingTokensByRookie = {},
   onInspectRookie,
-  onFavoritesUpdated,
+  onWishlistUpdated,
 }) => {
   const [wishlist, setWishlist] = useState<DraftWishlistItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [autopickEnabled, setAutopickEnabled] = useState<boolean>(false);
   const [savingAutopick, setSavingAutopick] = useState<boolean>(false);
-  const [isImporting, setIsImporting] = useState<boolean>(false);
 
   // Search and manual addition state
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -135,6 +131,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
     const res = await moveWishlistItem(teamId, rookieId, direction);
     if (res.success) {
       await loadData();
+      onWishlistUpdated?.();
     } else {
       toast.error(res.error || "Errore spostamento elemento");
     }
@@ -146,6 +143,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
     if (res.success) {
       toast.info("Rookie rimosso dalla graduatoria");
       await loadData();
+      onWishlistUpdated?.();
     } else {
       toast.error(res.error || "Errore rimozione elemento");
     }
@@ -161,32 +159,9 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
     if (res.success) {
       toast.info("Graduatoria svuotata con successo");
       setWishlist([]);
+      onWishlistUpdated?.();
     } else {
       toast.error(res.error || "Errore svuotamento graduatoria");
-    }
-  };
-
-  // Importa tutti i rookie preferiti (⭐)
-  const handleImportFavorites = async () => {
-    if (favoriteRookieIds.size === 0) {
-      toast.info("Non hai ancora nessun rookie tra i preferiti (⭐). Clicca sulla stella dei rookie per aggiungerli.");
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const ids = Array.from(favoriteRookieIds);
-      const res = await addMultipleToWishlist(teamId, ids);
-      if (res.count > 0) {
-        toast.success(`Importati con successo ${res.count} rookie preferiti in fondo alla graduatoria!`);
-        await loadData();
-      } else {
-        toast.info("Tutti i rookie preferiti sono già presenti nella tua graduatoria.");
-      }
-    } catch {
-      toast.error("Errore durante l'importazione dei preferiti");
-    } finally {
-      setIsImporting(false);
     }
   };
 
@@ -197,6 +172,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
       toast.success(`${rookie.Nome} ${rookie.Cognome} aggiunto in fondo alla graduatoria!`);
       setSearchQuery("");
       await loadData();
+      onWishlistUpdated?.();
     } else {
       toast.error(res.error || "Errore aggiunta rookie");
     }
@@ -320,26 +296,13 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
             </h3>
             <p className="text-xs text-muted-foreground">
               {wishlist.length === 0
-                ? "Nessun prospetto in lista. Aggiungine o importa dai preferiti."
+                ? "Nessun prospetto in lista. Aggiungine dalla ricerca o dalle schede scouting."
                 : `${wishlist.length} ${wishlist.length === 1 ? "rookie in graduatoria" : "rookie in graduatoria (ordinati per priorità)"}`}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleImportFavorites}
-            disabled={isImporting || favoriteRookieIds.size === 0}
-            className="h-8 text-xs font-bold gap-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
-            title="Importa tutti i rookie a cui hai assegnato la stella ⭐ nello Scouting o nel Draft"
-          >
-            <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-            <span>Importa dai Preferiti ({favoriteRookieIds.size})</span>
-          </Button>
-
           {wishlist.length > 0 && (
             <Button
               type="button"
@@ -427,7 +390,6 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
               {searchResults.map((r) => {
                 const rId = Number(r.ID);
                 const tokens = scoutingTokensByRookie[rId] || 0;
-                const isFav = favoriteRookieIds.has(rId);
 
                 return (
                   <div
@@ -444,9 +406,6 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       <div className="min-w-0">
                         <div className="font-bold text-xs truncate flex items-center gap-1">
                           <span>{r.Nome} {r.Cognome}</span>
-                          {isFav && (
-                            <Star className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0 inline" />
-                          )}
                         </div>
                         <div className="text-[10px] text-muted-foreground flex items-center gap-2">
                           <span>{r.Età} anni</span>
@@ -511,19 +470,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
             <p className="text-xs text-muted-foreground leading-relaxed">
               Costruisci la tua lista di preferenza: in caso di assenza, il sistema sceglierà il primo rookie libero partendo dall'ordine che imposti qui.
             </p>
-            <div className="pt-2 flex items-center justify-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleImportFavorites}
-                disabled={favoriteRookieIds.size === 0}
-                className="text-xs font-bold gap-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/20"
-              >
-                <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                <span>Importa dai Preferiti ({favoriteRookieIds.size})</span>
-              </Button>
-            </div>
+
           </div>
         </Card>
       ) : (
@@ -535,7 +482,6 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
             const rId = item.rookie_id;
             const isDrafted = Boolean(rookie.Squadra);
             const tokens = scoutingTokensByRookie[rId] || 0;
-            const isFav = favoriteRookieIds.has(rId);
 
             return (
               <div
@@ -567,9 +513,6 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       <span className="font-extrabold text-sm truncate text-foreground">
                         {rookie.Nome} {rookie.Cognome}
                       </span>
-                      {isFav && (
-                        <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500 shrink-0" />
-                      )}
                       {isDrafted ? (
                         <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/30 font-bold shrink-0">
                           Draftato da {rookie.Squadra}

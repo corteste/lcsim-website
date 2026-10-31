@@ -1127,13 +1127,22 @@ L'attributo Freddezza (`FRED`) è ora pienamente integrato nel reparto Calci Pia
 ---
 
 ## 📌 47. Scouting: Ridondanza Graduatoria/Preferiti & Calcolo Valore per Ruolo
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Testato (Unificata la gestione rimuovendo la ridondanza dei preferiti e mantenendo unicamente la Graduatoria di priorità su Scouting e Draft)
 - **Priorità**: Media-Alta (Usabilità dello scouting e correttezza dei valori mostrati)
-- **Moduli coinvolti**: src/pages/Scouting.tsx (tab graduatoria & autopick), src/pages/Draft.tsx, src/services/draftWishlistService.ts, src/utils/scoutingConfig.ts
-- **Tabelle coinvolte**: team_player_favorites, draft_team_wishlist, an_rookie
+- **Moduli coinvolti**: `src/pages/Scouting.tsx`, `src/components/scouting/ScoutingAutopickTab.tsx`, `src/pages/Draft.tsx`, `src/components/draft/DraftWishlistDrawer.tsx`, `src/services/draftWishlistService.ts`
+- **Tabelle coinvolte**: `draft_team_wishlist`, `an_rookie`
 Descrizione
-Ridondanza Graduatoria e Preferiti: oggi la Graduatoria per il Draft e i Preferiti dello scouting si sovrappongono (vedi punti #6 e #7). Valutare l'unificazione o una distinzione più netta tra le due liste per evitare doppio lavoro al manager.
-Valore per Ruolo: in Scouting il valore per ruolo risulta calcolato sul minimo del range mostrato. Deve invece essere calcolato sul valore esatto del giocatore, mantenendo comunque la protezione del Blind Database (nessuna esposizione del valore reale al client).
+Risolta definitivamente la ridondanza tra "Preferiti" e "Graduatoria" per il Draft:
+- **Rimozione Preferiti ridondanti**: rimossa la possibilità di aggiungere ai preferiti (stellina) sia nello Scouting che nel Draft; ora esiste unicamente la **Graduatoria** (`draft_team_wishlist`).
+- **Scouting (`/scouting`)**:
+  - Sostituito il filtro `★` con `Graduatoria ({count})` che filtra e ordina i prospetti in base al rank assegnato.
+  - Sostituito il pulsante della stella nelle card, nella sidebar e nel dettaglio con l'indicatore di posizione `#Rank` (se già inserito) e l'azione rapida per aggiungere o rimuovere dalla graduatoria.
+  - Rimossa l'opzione obsoleta "Importa dai Preferiti" dalla tab Autopick.
+- **Draft (`/draft`)**:
+  - Rimossa la stellina a fianco ai nomi dei giocatori e il pulsante di toggle preferiti dalla lista pool a destra e dalla barra di selezione.
+  - Il pulsante `Preferiti` è ora `Graduatoria ({count})`: quando attivo mostra esclusivamente i rookie/svincolati presenti nella graduatoria personale, **ordinati rigorosamente per ordine di priorità (`priority_rank` 1, 2, 3...)**.
+  - Mostrato il badge `#Rank` in evidenza per ciascun giocatore presente in graduatoria.
+- **Valore per Ruolo**: calcolato sulle statistiche esatte del prospetto una volta sbloccato il Tier 4 (5G) tramite `rpc_get_scouted_rookies` e `calculatePlayerRoleOveralls`, preservando l'integrità del Blind Database.
 
 
 

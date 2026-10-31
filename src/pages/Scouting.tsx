@@ -34,6 +34,7 @@ import {
   RotateCcw,
   Bot,
   ListOrdered,
+  ListPlus,
 } from "lucide-react";
 import { supabase } from "@/supabaseClient";
 import {
@@ -76,9 +77,11 @@ import { getEmotionLabel } from "@/constants/accessories";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
 import {
-  fetchTeamFavorites,
-  toggleTeamFavorite,
+  fetchTeamWishlist,
+  addToWishlist,
+  removeFromWishlist,
 } from "@/services/draftWishlistService";
+import { DraftWishlistItem } from "@/types/draftWishlist";
 
 export interface RookieScoutingRecord {
   team_id: string;
@@ -222,9 +225,17 @@ const Scouting = () => {
   const [statusFilter, setStatusFilter] = useState<string>("ALL"); // ALL | SCOUTED | UNSCOUTED
   const [selectedRookieId, setSelectedRookieId] = useState<number | null>(null);
 
-  // Watchlist / Preferiti (Punto 6)
-  const [favoriteRookieIds, setFavoriteRookieIds] = useState<Set<number>>(new Set());
-  const [favoritesOnly, setFavoritesOnly] = useState<boolean>(false);
+  // Graduatoria Draft / Wishlist (Punto 7 & 47)
+  const [wishlistItems, setWishlistItems] = useState<DraftWishlistItem[]>([]);
+  const [wishlistOnly, setWishlistOnly] = useState<boolean>(false);
+
+  const wishlistMap = useMemo(() => {
+    const map = new Map<number, number>();
+    wishlistItems.forEach((w) => {
+      map.set(Number(w.rookie_id), Number(w.priority_rank));
+    });
+    return map;
+  }, [wishlistItems]);
 
   // Filters for "recap" tab
   const [recapTierFilter, setRecapTierFilter] = useState<string>("ALL");
@@ -277,46 +288,51 @@ const Scouting = () => {
     }
   }, [user, activeTeamId, fetchScoutingData]);
 
-  // Caricamento preferiti
-  const loadFavorites = useCallback(async () => {
-    if (!activeTeamId) return;
+  // Caricamento graduatoria draft
+  const loadWishlist = useCallback(async () => {
+    if (!activeTeamId) {
+      setWishlistItems([]);
+      return;
+    }
     try {
-      const favs = await fetchTeamFavorites(activeTeamId, "rookie");
-      setFavoriteRookieIds(favs);
+      const list = await fetchTeamWishlist(activeTeamId);
+      setWishlistItems(list);
     } catch (err) {
-      console.error("Errore caricamento preferiti:", err);
+      console.error("Errore caricamento graduatoria draft:", err);
     }
   }, [activeTeamId]);
 
   useEffect(() => {
     if (activeTeamId) {
-      loadFavorites();
+      loadWishlist();
+    } else {
+      setWishlistItems([]);
     }
-  }, [activeTeamId, loadFavorites]);
+  }, [activeTeamId, loadWishlist]);
 
-  const handleToggleFavorite = async (rookieId: number) => {
+  const handleToggleWishlist = async (rookieId: number) => {
     if (!activeTeamId) {
-      toast.error("Seleziona o accedi con una squadra per gestire i preferiti.");
+      toast.error("Seleziona o accedi con una squadra per gestire la graduatoria.");
       return;
     }
 
-    setFavoriteRookieIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(rookieId)) next.delete(rookieId);
-      else next.add(rookieId);
-      return next;
-    });
-
-    const res = await toggleTeamFavorite(activeTeamId, rookieId, "rookie");
-    if (res.error) {
-      toast.error("Errore salvataggio preferito");
-      loadFavorites();
+    const isInWishlist = wishlistMap.has(rookieId);
+    if (isInWishlist) {
+      const res = await removeFromWishlist(activeTeamId, rookieId);
+      if (res.success) {
+        toast.info("Rookie rimosso dalla graduatoria");
+        await loadWishlist();
+      } else {
+        toast.error(res.error || "Errore rimozione dalla graduatoria");
+      }
     } else {
-      toast.success(
-        res.isFavorite
-          ? "Rookie aggiunto ai preferiti (⭐) e sincronizzato con il Draft!"
-          : "Rookie rimosso dai preferiti"
-      );
+      const res = await addToWishlist(activeTeamId, rookieId);
+      if (res.success) {
+        toast.success("Rookie aggiunto in graduatoria!");
+        await loadWishlist();
+      } else {
+        toast.error(res.error || "Errore aggiunta in graduatoria");
+      }
     }
   };
 
@@ -339,7 +355,7 @@ const Scouting = () => {
   const filteredRookies = useMemo(() => {
     return rookies
       .filter((r) => {
-        if (favoritesOnly && !favoriteRookieIds.has(Number(r.ID))) return false;
+        if (wishlistOnly && !wishlistMap.has(Number(r.ID))) return false;
         const tokens = scoutingMap[Number(r.ID)]?.tokens_spent ?? 0;
         if (statusFilter === "SCOUTED" && tokens === 0) return false;
         if (statusFilter === "UNSCOUTED" && tokens > 0) return false;
@@ -357,11 +373,16 @@ const Scouting = () => {
         return true;
       })
       .sort((a, b) => {
+        if (wishlistOnly) {
+          const rankA = wishlistMap.get(Number(a.ID)) ?? 9999;
+          const rankB = wishlistMap.get(Number(b.ID)) ?? 9999;
+          return rankA - rankB;
+        }
         const starsA = Number(a.Stelle) || 0;
         const starsB = Number(b.Stelle) || 0;
         return starsB - starsA;
       });
-  }, [rookies, scoutingMap, statusFilter, roleFilter, searchQuery, favoritesOnly, favoriteRookieIds]);
+  }, [rookies, scoutingMap, statusFilter, roleFilter, searchQuery, wishlistOnly, wishlistMap]);
 
   // Currently selected rookie in the Single Rookie Inspector
   const selectedRookie = useMemo(() => {
@@ -671,15 +692,15 @@ const Scouting = () => {
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => setFavoritesOnly((prev) => !prev)}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors flex items-center gap-1 ${favoritesOnly
-                          ? "bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/50 shadow-xs"
+                        onClick={() => setWishlistOnly((prev) => !prev)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors flex items-center gap-1 ${wishlistOnly
+                          ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/50 shadow-xs"
                           : "bg-muted text-muted-foreground hover:text-foreground"
                           }`}
-                        title="Filtra solo rookie contrassegnati con la stella"
+                        title="Filtra solo rookie presenti nella tua graduatoria draft"
                       >
-                        <Star className={`h-2.5 w-2.5 ${favoritesOnly ? "fill-amber-500 text-amber-500" : ""}`} />
-                        <span>★ ({favoriteRookieIds.size})</span>
+                        <ListOrdered className={`h-2.5 w-2.5 ${wishlistOnly ? "text-emerald-500" : ""}`} />
+                        <span>Graduatoria ({wishlistMap.size})</span>
                       </button>
                       {(
                         [
@@ -740,7 +761,6 @@ const Scouting = () => {
                       const rId = Number(r.ID);
                       const isSelected = Number(selectedRookie?.ID) === rId;
                       const tokens = scoutingMap[rId]?.tokens_spent ?? 0;
-                      const isFav = favoriteRookieIds.has(rId);
 
                       return (
                         <div
@@ -777,21 +797,32 @@ const Scouting = () => {
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">
-                            {/* BOTTONE STELLA PREFERITI */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleFavorite(rId);
-                              }}
-                              className={`p-1.5 rounded-lg border transition-all ${isFav
-                                ? "bg-amber-500/20 text-amber-500 border-amber-500/40 shadow-xs"
-                                : "text-muted-foreground/40 border-transparent hover:border-border hover:bg-muted hover:text-amber-500"
-                                }`}
-                              title={isFav ? "Rimuovi dai preferiti" : "Salva tra i preferiti (⭐)"}
-                            >
-                              <Star className={`h-4 w-4 ${isFav ? "fill-amber-500 text-amber-500" : ""}`} />
-                            </button>
+                            {/* BADGE / BOTTONE GRADUATORIA */}
+                            {wishlistMap.has(rId) ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleWishlist(rId);
+                                }}
+                                className="px-1.5 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[11px] hover:bg-destructive/15 hover:text-destructive hover:border-destructive/30 transition-all shadow-xs"
+                                title={`Posizione #${wishlistMap.get(rId)} in Graduatoria. Clicca per rimuovere.`}
+                              >
+                                #{wishlistMap.get(rId)}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleWishlist(rId);
+                                }}
+                                className="p-1.5 rounded-lg border border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+                                title="Aggiungi alla Graduatoria di priorità"
+                              >
+                                <ListPlus className="h-4 w-4" />
+                              </button>
+                            )}
 
                             <Badge
                               variant="outline"
@@ -864,28 +895,28 @@ const Scouting = () => {
                                 {selectedRookie.Nome} {selectedRookie.Cognome}
                               </h2>
 
-                              {/* PULSANTE PREFERITO BEN VISIBILE */}
+                              {/* PULSANTE GRADUATORIA BEN VISIBILE */}
                               <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleToggleFavorite(Number(selectedRookie.ID))}
-                                className={`h-8 px-3 text-xs font-bold gap-1.5 rounded-xl transition-all shadow-xs ${favoriteRookieIds.has(Number(selectedRookie.ID))
-                                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/50 hover:bg-amber-500/30 ring-1 ring-amber-500/30"
-                                  : "border-border/80 text-muted-foreground hover:text-amber-500 hover:border-amber-500/40 hover:bg-amber-500/10"
+                                onClick={() => handleToggleWishlist(Number(selectedRookie.ID))}
+                                className={`h-8 px-3 text-xs font-bold gap-1.5 rounded-xl transition-all shadow-xs ${wishlistMap.has(Number(selectedRookie.ID))
+                                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/50 hover:bg-destructive/15 hover:text-destructive hover:border-destructive/30 ring-1 ring-emerald-500/30"
+                                  : "border-border/80 text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-500/10"
                                   }`}
                               >
-                                <Star
-                                  className={`h-4 w-4 ${favoriteRookieIds.has(Number(selectedRookie.ID))
-                                    ? "fill-amber-500 text-amber-500"
-                                    : ""
-                                    }`}
-                                />
-                                <span>
-                                  {favoriteRookieIds.has(Number(selectedRookie.ID))
-                                    ? "Salvato nei Preferiti"
-                                    : "Aggiungi ai Preferiti"}
-                                </span>
+                                {wishlistMap.has(Number(selectedRookie.ID)) ? (
+                                  <>
+                                    <ListOrdered className="h-4 w-4 text-emerald-500" />
+                                    <span>In Graduatoria (#{wishlistMap.get(Number(selectedRookie.ID))})</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ListPlus className="h-4 w-4" />
+                                    <span>Aggiungi alla Graduatoria</span>
+                                  </>
+                                )}
                               </Button>
                               {selectedRookie.Nazionalità && (
                                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted border border-border/60 text-xs font-semibold">
@@ -1540,14 +1571,25 @@ const Scouting = () => {
                               <h3 className="font-extrabold text-base truncate">
                                 {r.Nome} {r.Cognome}
                               </h3>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleFavorite(rId)}
-                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-amber-500 transition-colors"
-                                title={favoriteRookieIds.has(rId) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
-                              >
-                                <Star className={`h-4 w-4 ${favoriteRookieIds.has(rId) ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30 hover:text-amber-500"}`} />
-                              </button>
+                              {wishlistMap.has(rId) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleWishlist(rId)}
+                                  className="px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] hover:bg-destructive/15 hover:text-destructive hover:border-destructive/30 transition-all"
+                                  title={`Posizione #${wishlistMap.get(rId)} in Graduatoria. Clicca per rimuovere.`}
+                                >
+                                  #{wishlistMap.get(rId)}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleWishlist(rId)}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                  title="Aggiungi alla Graduatoria di priorità"
+                                >
+                                  <ListPlus className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                               <span>{r.Età} anni</span>
@@ -1727,13 +1769,12 @@ const Scouting = () => {
                   : user?.teamFullName
               }
               allRookies={rookies}
-              favoriteRookieIds={favoriteRookieIds}
               scoutingTokensByRookie={scoutingTokensByRookie}
               onInspectRookie={(rookieId) => {
                 setSelectedRookieId(rookieId);
                 handleTabChange("single");
               }}
-              onFavoritesUpdated={loadFavorites}
+              onWishlistUpdated={loadWishlist}
             />
           </TabsContent>
         </Tabs>
