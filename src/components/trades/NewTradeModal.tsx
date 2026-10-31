@@ -40,6 +40,7 @@ import {
 import { TradePlayerAsset, TradePickAsset, EnrichedTrade } from "@/types/trades";
 import { MARKET_STATUS_OPTIONS } from "@/types/marketStatus";
 import { toast } from "sonner";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface NewTradeModalProps {
   open: boolean;

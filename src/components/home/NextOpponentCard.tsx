@@ -1,3 +1,4 @@
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";

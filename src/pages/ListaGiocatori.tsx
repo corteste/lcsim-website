@@ -46,6 +46,7 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchTeamFavorites, toggleTeamFavorite } from "@/services/draftWishlistService";
 import { toast } from "sonner";
 import PlayerDetails from "@/components/player/playerDetails";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 // Helper per estrarre il codice dello stato mercato
 export const extractMarketStatusCode = (market: any): string | null => {

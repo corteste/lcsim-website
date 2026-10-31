@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth, FreeTeam } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { LogIn, Shield, Sparkles, Loader2, User, KeyRound, CheckCircle2, AlertCircle } from "lucide-react";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface LoginDialogProps {
   open?: boolean;

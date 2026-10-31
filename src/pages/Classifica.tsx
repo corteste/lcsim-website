@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getStandings } from "@/hooks/use-standings";
 import { Trophy, ShieldCheck, Flame, Info } from "lucide-react";
 import PlayoffBracket from "@/components/PlayoffBracket";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 const Classifica = () => {
   const { standings, loading } = getStandings();

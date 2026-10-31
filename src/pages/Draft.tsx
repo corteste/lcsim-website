@@ -51,7 +51,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/supabaseClient";
-import { DRAFT_BOARD_TABLE, ROOKIE_TABLE, ROOKIE_SCOUTING_TABLE } from "@/constants/App";
+import { DRAFT_BOARD_TABLE, ROOKIE_TABLE, ROOKIE_SCOUTING_TABLE, SUPABASE_STORAGE_URL } from "@/constants/App";
 import { useAuth } from "@/context/AuthContext";
 import { getTeams } from "@/hooks/use-teams";
 import { getStandings } from "@/hooks/use-standings";

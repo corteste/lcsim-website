@@ -1,3 +1,4 @@
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Trophy,

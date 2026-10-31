@@ -43,6 +43,7 @@ import PlayerDetails from "@/components/player/playerDetails";
 import { Player } from "@/types/player";
 import { fetchPlayerById } from "@/services/playersService";
 import { Loader2 } from "lucide-react";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 const PLAYERS_PER_PAGE = 10;
 const CURRENT_SEASON = 9;

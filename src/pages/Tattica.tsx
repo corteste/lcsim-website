@@ -70,6 +70,7 @@ import {
 import { SlidersHorizontal } from "lucide-react";
 import { LeagueDeadline } from "@/types/deadlines";
 import { saveLineupSnapshot } from "@/services/deadlineService";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 // ============================================================================
 // ORDINAMENTO RUOLI UFFICIALE DEL PROGETTO (da Rose.tsx)

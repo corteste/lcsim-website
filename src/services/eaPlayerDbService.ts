@@ -1,5 +1,5 @@
 import { supabase } from '@/supabaseClient';
-import { EA_PLAYER_DB_TABLE } from '@/constants/App';
+import { EA_PLAYER_DB_TABLE, SUPABASE_STORAGE_URL } from "@/constants/App";
 
 /**
  * Exact 137-column header order of the EA FC 25 master database file (DB_NEW- Sheet217.txt).

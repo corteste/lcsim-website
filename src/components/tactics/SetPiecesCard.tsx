@@ -14,6 +14,7 @@ import { Player } from "@/types/player";
 import { SetPiecesSettings, SET_PIECES_DEFINITIONS } from "@/types/tactics";
 import { getPlayerImage, getRoleColor } from "@/utils/functions";
 import { Crown, Target, Flag, ShieldAlert, Sparkles, Check } from "lucide-react";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface SetPiecesCardProps {
   setPieces: SetPiecesSettings;

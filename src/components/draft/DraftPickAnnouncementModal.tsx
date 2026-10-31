@@ -3,6 +3,7 @@ import { X, Sparkles, Ruler, Weight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPlayerImage, getRoleColor, getValueColor } from "@/utils/functions";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 export interface DraftPickAnnouncementData {
   pickOverall: number;

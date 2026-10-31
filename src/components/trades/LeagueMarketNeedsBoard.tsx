@@ -27,6 +27,7 @@ import {
 import { fetchAllTeamMarketNeeds } from "@/services/marketNeedsService";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/supabaseClient";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface LeagueMarketNeedsBoardProps {
   onOpenTradeWithTeam?: (teamId: string) => void;

@@ -57,12 +57,10 @@ import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { Player } from "@/types/player";
 import { supabase } from "@/supabaseClient";
-import {
-  PLAYER_TABLE,
+import { PLAYER_TABLE,
   TEAM_TABLE,
   ROOKIE_TABLE,
-  ROOKIE_SCOUTING_TABLE,
-} from "@/constants/App";
+  ROOKIE_SCOUTING_TABLE, SUPABASE_STORAGE_URL } from "@/constants/App";
 import { renderStars } from "@/components/scouting/StarRating";
 import {
   isDepartmentUnlocked,

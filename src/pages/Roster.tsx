@@ -68,7 +68,7 @@ import PlayerDetails from "@/components/player/playerDetails";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { supabase } from "@/supabaseClient";
-import { PLAYER_TABLE, PLAYER_MARKET_TABLE } from "@/constants/App";
+import { PLAYER_TABLE, PLAYER_MARKET_TABLE, SUPABASE_STORAGE_URL } from "@/constants/App";
 import {
   MARKET_STATUS_OPTIONS,
   getMarketStatusCode,

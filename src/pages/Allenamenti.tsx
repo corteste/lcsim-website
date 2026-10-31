@@ -21,7 +21,7 @@ import { fetchTeamRoleDiscountEligibility } from "@/services/playerXpService";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { supabase } from "@/supabaseClient";
-import { PLAYER_TABLE, PLAYER_TABLE_TRAINING } from "@/constants/App";
+import { PLAYER_TABLE, PLAYER_TABLE_TRAINING, SUPABASE_STORAGE_URL } from "@/constants/App";
 import { useQueryClient } from "@tanstack/react-query";
 import { getRoleColor, getValueColor, getPlayerImage, getNationalityFlag } from "@/utils/functions";
 import { getRosterLockState, subscribeToRosterLock } from "@/services/rosterLockService";

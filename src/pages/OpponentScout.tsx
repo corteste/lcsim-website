@@ -44,6 +44,7 @@ import { EA_FC25_FORMATIONS } from "@/pages/Tattica";
 import { compareFormations } from "@/services/formationComparisonService";
 import { FormationChangesSummary } from "@/components/formation/FormationChangesSummary";
 import PlayerDetails from "@/components/player/playerDetails";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 function getPlayerCardStats(p: Player) {
   const isGK = p.Posiz === "POR";

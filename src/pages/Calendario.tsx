@@ -38,6 +38,7 @@ import {
 import { useSchedule } from "@/context/ScheduleContext";
 import { useTheme } from "next-themes";
 import { getMatchStatsColors } from "@/utils/teamColors";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 // Function to compute pitch coordinates for 11 starters
 function computePitchCoordinates(

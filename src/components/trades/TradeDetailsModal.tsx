@@ -39,6 +39,7 @@ import {
 } from "@/services/tradesService";
 import { EnrichedTrade, TRADE_STATUS_CONFIG } from "@/types/trades";
 import { toast } from "sonner";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface TradeDetailsModalProps {
   open: boolean;

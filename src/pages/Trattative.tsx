@@ -38,6 +38,7 @@ import { TradeDetailsModal } from "@/components/trades/TradeDetailsModal";
 import { Link, useSearchParams } from "react-router-dom";
 import { TeamMarketNeedsCard } from "@/components/trades/TeamMarketNeedsCard";
 import { toast } from "sonner";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 export default function Trattative() {
   const { user, isAdmin, effectiveTeam, effectiveTeamFullName, openLogin } = useAuth();

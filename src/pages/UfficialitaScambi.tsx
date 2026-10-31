@@ -34,6 +34,7 @@ import { useAuth } from "@/context/AuthContext";
 import { TradeDetailsModal } from "@/components/trades/TradeDetailsModal";
 import { LeagueMarketNeedsBoard } from "@/components/trades/LeagueMarketNeedsBoard";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 export default function UfficialitaScambi() {
   const { availableTeams, user } = useAuth();

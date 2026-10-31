@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { X, Target, Timer, Award, TrendingUp, Shield, Footprints } from "lucide-react";
 import { getPlayerImage, getRoleColor, getTeamBackground } from "@/utils/functions";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface PlayerStatsProps {
   currentPlayer: PlayerStatsSum;

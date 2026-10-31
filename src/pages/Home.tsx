@@ -9,6 +9,7 @@ import { getRoleColor } from "@/utils/functions";
 import { useState } from "react";
 import { NextOpponentCard } from "@/components/home/NextOpponentCard";
 import { PressAndRumorsHomeCard } from "@/components/home/PressAndRumorsHomeCard";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 const CURRENT_SEASON = 9;
 

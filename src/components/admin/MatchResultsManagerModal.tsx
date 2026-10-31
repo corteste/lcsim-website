@@ -48,6 +48,7 @@ import {
 } from "@/services/matchStatsImportService";
 import { useSchedule } from "@/context/ScheduleContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface MatchResultsManagerModalProps {
   open: boolean;

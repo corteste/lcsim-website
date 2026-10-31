@@ -34,6 +34,7 @@ import { PlayerXpBreakdownModal } from "@/components/player/PlayerXpBreakdownMod
 import { Button } from "@/components/ui/button";
 import { fetchPlayerSumBySeason } from "@/services/playerStatsService";
 import { PlayerStatsSum } from "@/types/playerStats";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface PlayerDetailsProps {
   currentPlayer: Player;
