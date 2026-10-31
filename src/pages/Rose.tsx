@@ -440,7 +440,7 @@ const Rose = () => {
                       </div>
 
                       {/* Card Bottom CTA (Club Info) */}
-                      <div className="relative z-10 px-4 py-2.5 bg-black/40 group-hover:bg-black/60 border-t border-white/15 flex items-center justify-between text-xs font-bold transition-all duration-200">
+                      <div className="relative z-10 px-4 py-2.5 bg-black/10 group-hover:bg-black/20 border-t border-white/15 flex items-center justify-between text-xs font-bold transition-all duration-200">
                         <span className="tracking-wide uppercase text-[11px] font-black text-white/90">Club Info</span>
                         <div className="flex items-center gap-1 text-white group-hover:translate-x-1 transition-transform">
                           <span className="text-[11px] font-medium opacity-90 group-hover:opacity-100">Visualizza Rosa</span>
