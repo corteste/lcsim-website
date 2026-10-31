@@ -225,7 +225,7 @@ export async function fetchSeasonMatchStats(
 ): Promise<MatchStatRaw[]> {
   try {
     let query = supabase
-      .from("VIEW_PLAYER_STATS")
+      .from("view_player_stats")
       .select("STAG, WEEK, ID, VOTO, MINUTI")
       .eq("STAG", season)
       .not("STAG", "is", null)

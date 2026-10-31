@@ -793,7 +793,7 @@ export function MatchResultsManagerModal({
                 <TabsList className="grid grid-cols-3 w-full max-w-2xl">
                   <TabsTrigger value="team" className="text-xs font-bold gap-1.5">
                     <BarChart3 className="h-3.5 w-3.5" />
-                    Statistiche Squadra (AS_TEAM_STAT)
+                    Statistiche Squadra (as_team_stat)
                   </TabsTrigger>
                   <TabsTrigger value="home_players" className="text-xs font-bold gap-1.5">
                     <Users className="h-3.5 w-3.5" />

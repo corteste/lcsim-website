@@ -28,7 +28,7 @@ export async function fetchScheduleGeneral(stag: number, week?: number): Promise
 export async function fetchSchedule(stag: number, week: number): Promise<MatchStats[]> {
   const [teamStatsRes, playerStatsRes] = await Promise.all([
     supabase.from('view_team_stats').select('*').eq('stag', stag).eq('week', week),
-    supabase.from('VIEW_PLAYER_STATS').select('*').eq('STAG', stag).eq('WEEK', week)
+    supabase.from('view_player_stats').select('*').eq('STAG', stag).eq('WEEK', week)
   ]);
 
   if (teamStatsRes.error) {
@@ -69,7 +69,7 @@ export async function fetchSeasonSchedule(stag: number): Promise<Schedule[]> {
   const [scheduleGenRes, teamStatsRes, playerStatsRes] = await Promise.all([
     supabase.from('an_schedule').select('*').eq('stag', stag).order('week', { ascending: true }),
     supabase.from('view_team_stats').select('*').eq('stag', stag).order('week', { ascending: true }),
-    supabase.from('VIEW_PLAYER_STATS').select('*').eq('STAG', stag)
+    supabase.from('view_player_stats').select('*').eq('STAG', stag)
   ]);
 
   if (teamStatsRes.error) {

@@ -340,13 +340,13 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
       }
     }
 
-    // C) Fallback sulle formazioni scese in campo nelle ultime partite di campionato (VIEW_PLAYER_STATS)
+    // C) Fallback sulle formazioni scese in campo nelle ultime partite di campionato (view_player_stats)
     if (formations.length < 3 && recentMatches.length > 0) {
       for (const m of recentMatches) {
         if (formations.length >= 3) break;
 
         const { data: matchPlayerStats } = await supabase
-          .from("VIEW_PLAYER_STATS")
+          .from("view_player_stats")
           .select("ID, Nome, Cognome, Posiz, OVR, MINUTI, NumeroMaglia")
           .eq("STAG", m.stag)
           .eq("WEEK", m.week)

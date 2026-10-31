@@ -308,10 +308,10 @@ export async function fetchTeamSheetFormation(
     const playerMap = new Map<number, Player>();
     roster.forEach((p) => playerMap.set(Number(p.ID), p));
 
-    // A) Se la partita è già stata giocata: estrai i calciatori scesi in campo da VIEW_PLAYER_STATS
+    // A) Se la partita è già stata giocata: estrai i calciatori scesi in campo da view_player_stats
     if (isPlayed) {
       const { data: matchStats } = await supabase
-        .from("VIEW_PLAYER_STATS")
+        .from("view_player_stats")
         .select("ID, Nome, Cognome, Posiz, OVR, MINUTI, NumeroMaglia, VOTO")
         .eq("STAG", stag)
         .eq("WEEK", week)

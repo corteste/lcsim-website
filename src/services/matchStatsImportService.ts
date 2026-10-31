@@ -235,7 +235,7 @@ export async function fetchAdminSeasonSchedule(stag: number): Promise<AdminSched
       .order("week", { ascending: true }),
     supabase.from("an_team").select("TEAM_ID, NAME, MANAGER"),
     supabase
-      .from("AS_TEAM_STAT")
+      .from("as_team_stat")
       .select("STAG, WEEK, ID, GOL")
       .eq("STAG", stag),
   ]);
@@ -296,7 +296,7 @@ export async function fetchAdminMatchReport(
 ): Promise<AdminMatchFullReport> {
   const [teamStatsRes, rosterPlayersRes, matchPlayerStatsRes] = await Promise.all([
     supabase
-      .from("AS_TEAM_STAT")
+      .from("as_team_stat")
       .select("*")
       .eq("STAG", match.stag)
       .eq("WEEK", match.week)
@@ -307,7 +307,7 @@ export async function fetchAdminMatchReport(
       .in("Squadra", [match.home, match.away])
       .order("OVR", { ascending: false }),
     supabase
-      .from("AS_PLAYER_STAT")
+      .from("as_player_stat")
       .select("*")
       .eq("STAG", match.stag)
       .eq("WEEK", match.week),
@@ -1389,7 +1389,7 @@ export function exportMatchReportToCSV(report: AdminMatchFullReport): string {
   );
   lines.push("");
 
-  // Sezione 2: Statistiche Squadra (AS_TEAM_STAT)
+  // Sezione 2: Statistiche Squadra (as_team_stat)
   lines.push("# TEAM_STATS");
   const teamCols: (keyof AdminTeamStatDraft)[] = [
     "STAG", "WEEK", "ID", "ALLENATORE", "VOTO", "MINUTI", "GOL", "AGOL", "ASST",
@@ -1407,7 +1407,7 @@ export function exportMatchReportToCSV(report: AdminMatchFullReport): string {
   }
   lines.push("");
 
-  // Sezione 3: Statistiche Calciatori (AS_PLAYER_STAT)
+  // Sezione 3: Statistiche Calciatori (as_player_stat)
   lines.push("# PLAYER_STATS");
   const playerCols: (keyof AdminPlayerStatDraft)[] = [
     "ID", "TEAM_ID", "Nome", "Cognome", "Posiz", "POS_GIOCATA", "SUB", "MOTM",

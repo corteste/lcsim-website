@@ -387,7 +387,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
       try {
         // Rileva l'ultima stagione in cui il calciatore ha disputato partite (rispettando l'embargo)
         const { data: maxStagRow } = await supabase
-          .from("VIEW_PLAYER_STATS")
+          .from("view_player_stats")
           .select("STAG")
           .eq("ID", currentPlayer.ID)
           .not("STAG", "is", null)
@@ -417,7 +417,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
   }, [currentPlayer?.ID, currentPlayer?.Età]);
 
 
-  // Caricamento statistiche aggregate stagionali (AS_PLAYER_STAT) se non fornite
+  // Caricamento statistiche aggregate stagionali (as_player_stat) se non fornite
   useEffect(() => {
     if (initialStats) {
       setSeasonStats(initialStats);
@@ -457,7 +457,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
     async function loadAllPlayerMatches() {
       try {
         const { data, error } = await supabase
-          .from("VIEW_PLAYER_STATS")
+          .from("view_player_stats")
           .select("*")
           .eq("ID", Number(currentPlayer.ID))
           .not("STAG", "is", null)
