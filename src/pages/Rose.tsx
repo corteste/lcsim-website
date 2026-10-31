@@ -32,6 +32,7 @@ import {
   Pause,
   ArrowLeft,
   ArrowRight,
+  Shirt,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -45,6 +46,8 @@ import {
   LCSIM_LOGO_SMALL,
 } from "@/utils/functions";
 import { getTeams } from "@/hooks/use-teams";
+import { getTeamJerseys, TeamJersey } from "@/utils/jerseysConfig";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Player } from "@/types/player";
 import { Team } from "@/types/team";
 import PlayerDetails from "@/components/player/playerDetails";
@@ -196,6 +199,10 @@ const Rose = () => {
   const sortedTeams = useMemo(() => {
     return teams.slice().sort((a, b) => a.NAME.localeCompare(b.NAME));
   }, [teams]);
+
+  // Team Jerseys & Lightbox Dialog
+  const [selectedJersey, setSelectedJersey] = useState<TeamJersey | null>(null);
+  const currentJerseys = useMemo(() => getTeamJerseys(currentTeam?.TEAM_ID), [currentTeam?.TEAM_ID]);
 
   // URL Search Params sync for Team Selection (?team=XXX)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -627,6 +634,54 @@ const Rose = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Divise Ufficiali Strip (Opzione 1) */}
+                {currentJerseys.length > 0 && (
+                  <div className="mt-5 pt-4 border-t border-border/60 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                        <Shirt className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black uppercase tracking-wider text-foreground">
+                            Divise Ufficiali
+                          </span>
+                          <Badge variant="outline" className="text-[10px] font-mono font-bold">
+                            {currentJerseys.length} Kit
+                          </Badge>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground block">
+                          Stagione 11 · Clicca su una divisa per ingrandire
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pb-1 md:pb-0">
+                      {currentJerseys.map((j) => (
+                        <button
+                          key={j.type}
+                          type="button"
+                          onClick={() => setSelectedJersey(j)}
+                          className="group relative flex flex-col items-center p-2 rounded-xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 transition-all duration-200 cursor-pointer shadow-2xs hover:shadow-md hover:scale-105 shrink-0"
+                          title={`Visualizza ${j.fullLabel}`}
+                        >
+                          <div className="h-14 w-14 sm:h-16 sm:w-16 flex items-center justify-center p-1">
+                            <img
+                              src={j.url}
+                              alt={`${currentTeam.NAME} - ${j.label}`}
+                              className="max-h-full max-w-full object-contain drop-shadow-md group-hover:drop-shadow-xl group-hover:scale-110 transition-transform duration-200"
+                              loading="lazy"
+                            />
+                          </div>
+                          <span className={`mt-1 text-[9.5px] font-mono font-black px-1.5 py-0.2 rounded border ${j.badgeClass}`}>
+                            {j.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -997,6 +1052,66 @@ const Rose = () => {
       </main>
 
       {/* MODAL: PLAYER DETAILS INSPECTOR */}
+      {/* JERSEY LIGHTBOX MODAL */}
+      <Dialog open={!!selectedJersey} onOpenChange={(open) => !open && setSelectedJersey(null)}>
+        <DialogContent className="sm:max-w-md p-6 bg-card border-border/80 shadow-2xl">
+          {selectedJersey && currentTeam && (
+            <div className="space-y-4">
+              <DialogHeader className="text-center sm:text-left">
+                <div className="flex items-center justify-between gap-3 pb-2 border-b border-border/60">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <img
+                      src={getTeamLogo(currentTeam.TEAM_ID)}
+                      alt={currentTeam.NAME}
+                      className="h-8 w-8 object-contain shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <DialogTitle className="text-sm font-black truncate text-foreground">
+                        {currentTeam.NAME}
+                      </DialogTitle>
+                      <DialogDescription className="text-xs text-muted-foreground truncate">
+                        {selectedJersey.fullLabel} · Stagione 11
+                      </DialogDescription>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={`font-mono text-xs font-black shrink-0 ${selectedJersey.badgeClass}`}>
+                    {selectedJersey.label}
+                  </Badge>
+                </div>
+              </DialogHeader>
+
+              {/* Big High-Def Jersey Presentation */}
+              <div className="relative flex items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-muted/30 via-muted/15 to-muted/40 border border-border/60 overflow-hidden">
+                <div className={`absolute inset-0 opacity-15 pointer-events-none ${getTeamSocialBg(currentTeam.TEAM_ID)}`} />
+                <img
+                  src={selectedJersey.url}
+                  alt={`${currentTeam.NAME} - ${selectedJersey.fullLabel}`}
+                  className="h-56 w-56 sm:h-64 sm:w-64 object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-105"
+                />
+              </div>
+
+              {/* Mini Selector to switch between the team's kits */}
+              <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                {currentJerseys.map((k) => (
+                  <button
+                    key={k.type}
+                    type="button"
+                    onClick={() => setSelectedJersey(k)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      selectedJersey.type === k.type
+                        ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                        : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted/70"
+                    }`}
+                  >
+                    <span>{k.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {selectedPlayer && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4"
