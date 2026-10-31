@@ -242,8 +242,8 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                     const fit = occupant
                       ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
                       : null;
-                    const dynamicOvr = occupant ? calcOverall(pos.label, occupant, occupant.OVR ?? 70) : null;
                     const baseOvr = occupant?.OVR ?? 70;
+                    const dynamicOvr = occupant ? (fit === "natural" ? baseOvr : calcOverall(pos.label, occupant, baseOvr)) : null;
                     const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
 
                     const ringColor =
@@ -306,20 +306,18 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                               {/* Pillola OVR Grande e Nitida */}
                               <span
                                 className={`absolute -top-1.5 -right-2 text-xs font-black font-mono px-1.5 py-0.5 rounded-full shadow-lg z-10 border transition-all ${
-                                  ovrDiff < 0
-                                    ? "bg-rose-950 text-rose-300 border-rose-500/80 ring-1 ring-rose-500/40"
-                                    : ovrDiff > 0
-                                    ? "bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40"
-                                    : fit === "natural"
+                                  fit === "natural"
                                     ? "bg-slate-950 text-white border-white/60"
-                                    : "bg-amber-950 text-amber-300 border-amber-500/80"
+                                    : ovrDiff < 0
+                                    ? (fit === "adaptable" ? "bg-amber-950 text-amber-300 border-amber-500/80" : "bg-rose-950 text-rose-300 border-rose-500/80 ring-1 ring-rose-500/40")
+                                    : "bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40"
                                 }`}
                                 title={
-                                  ovrDiff < 0
-                                    ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (${ovrDiff} rispetto a ${baseOvr} per adattamento fuori ruolo)`
-                                    : ovrDiff > 0
-                                    ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (+${ovrDiff} rispetto a ${baseOvr})`
-                                    : `OVR nel ruolo: ${dynamicOvr} (Ruolo Naturale)`
+                                  fit === "natural"
+                                    ? `OVR: ${baseOvr} (Ruolo Naturale: ${pos.label})`
+                                    : ovrDiff < 0
+                                    ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (${ovrDiff} per ${fit === "adaptable" ? "ruolo adattato" : "fuori ruolo"}, OVR naturale: ${baseOvr})`
+                                    : `OVR nel ruolo ${pos.label}: ${dynamicOvr} (+${ovrDiff} rispetto a OVR naturale ${baseOvr})`
                                 }
                               >
                                 {dynamicOvr}

@@ -169,8 +169,9 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                     />
                   </div>
                   {(() => {
-                    const dynOvr = calcOverall(slotRole, occupant, occupant.OVR ?? 70);
                     const baseOvr = occupant.OVR ?? 70;
+                    const fit = evaluateRoleFit(occupant.Posiz, slotRole, occupant);
+                    const dynOvr = fit === "natural" ? baseOvr : calcOverall(slotRole, occupant, baseOvr);
                     const diff = dynOvr - baseOvr;
                     return (
                       <span

@@ -1820,8 +1820,8 @@ const Tattica = () => {
                       const roleFit = occupant
                         ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
                         : null;
-                      const dynamicOvr = occupant ? calcOverall(pos.label, occupant, occupant.OVR ?? 70) : null;
                       const baseOvr = occupant?.OVR ?? 70;
+                      const dynamicOvr = occupant ? (roleFit === "natural" ? baseOvr : calcOverall(pos.label, occupant, baseOvr)) : null;
                       const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
                       const isDragOver = dragOverSlotIndex === slotIndex;
 
@@ -1996,11 +1996,11 @@ const Tattica = () => {
                                         dynOvr
                                       )}`}
                                       title={
-                                        diff < 0
-                                          ? `OVR nel ruolo ${pos.label}: ${dynOvr} (${diff} per adattamento fuori ruolo, Base naturale: ${baseOvr})`
-                                          : diff > 0
-                                          ? `OVR nel ruolo ${pos.label}: ${dynOvr} (+${diff} rispetto a ${baseOvr} base)`
-                                          : `OVR nel ruolo: ${dynOvr} (Ruolo Naturale)`
+                                        roleFit === "natural"
+                                          ? `OVR: ${baseOvr} (Ruolo Naturale: ${pos.label})`
+                                          : diff < 0
+                                          ? `OVR nel ruolo ${pos.label}: ${dynOvr} (${diff} per ${roleFit === "adaptable" ? "ruolo adattato" : "fuori ruolo"}, Base: ${baseOvr})`
+                                          : `OVR nel ruolo ${pos.label}: ${dynOvr} (+${diff} rispetto a ${baseOvr})`
                                       }
                                     >
                                       {dynOvr}
@@ -2385,10 +2385,10 @@ const Tattica = () => {
                           const roleFit = occupant
                             ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
                             : null;
-                          const dynamicOvr = occupant
-                            ? calcOverall(pos.label, occupant, occupant.OVR ?? 70)
-                            : null;
                           const baseOvr = occupant?.OVR ?? 70;
+                          const dynamicOvr = occupant
+                            ? (roleFit === "natural" ? baseOvr : calcOverall(pos.label, occupant, baseOvr))
+                            : null;
                           const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
                           const isHovered = dragOverSlotIndex === slotIdx;
 
@@ -2442,20 +2442,18 @@ const Tattica = () => {
                                     {/* Pillola OVR in alto a destra */}
                                     <span
                                       className={`absolute -top-1 -right-2 text-[10px] font-black font-mono px-1.5 py-0 rounded-full shadow border transition-all ${
-                                        ovrDiff < 0
-                                          ? "bg-rose-950 text-rose-300 border-rose-500/80 ring-1 ring-rose-500/40"
-                                          : ovrDiff > 0
-                                          ? "bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40"
-                                          : roleFit === "natural"
+                                        roleFit === "natural"
                                           ? "bg-slate-950 text-white border-white/40"
-                                          : "bg-amber-950 text-amber-300 border-amber-500/80"
+                                          : ovrDiff < 0
+                                          ? (roleFit === "adaptable" ? "bg-amber-950 text-amber-300 border-amber-500/80" : "bg-rose-950 text-rose-300 border-rose-500/80 ring-1 ring-rose-500/40")
+                                          : "bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40"
                                       }`}
                                       title={
-                                        ovrDiff < 0
-                                          ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (${ovrDiff} rispetto a ${baseOvr} per adattamento fuori ruolo)`
-                                          : ovrDiff > 0
-                                          ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (+${ovrDiff} rispetto a ${baseOvr})`
-                                          : `OVR nel ruolo: ${dynamicOvr} (Ruolo Naturale)`
+                                        roleFit === "natural"
+                                          ? `OVR: ${baseOvr} (Ruolo Naturale: ${pos.label})`
+                                          : ovrDiff < 0
+                                          ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (${ovrDiff} per ${roleFit === "adaptable" ? "ruolo adattato" : "fuori ruolo"}, OVR naturale: ${baseOvr})`
+                                          : `OVR nel ruolo ${pos.label}: ${dynamicOvr} (+${ovrDiff} rispetto a OVR naturale ${baseOvr})`
                                       }
                                     >
                                       {dynamicOvr}
