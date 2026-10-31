@@ -53,7 +53,7 @@ export const TEAM_COLORS: Record<string, TeamColorConfig> = {
   },
   PFC: {
     name: "Panormus FC",
-    primary: "#ec4899", // Rosa
+    primary: "#f97316", // Arancione
     secondary: "#334155", // Nero antracite / Grigio scuro
   },
   RMB: {

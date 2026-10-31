@@ -213,7 +213,7 @@ export const getTeamBackground = (team: string) => {
     case "ACF":
       return "relative bg-gradient-to-r from-green-500/20 via-green-500/10 to-black-500/10 p-6";
     case "PFC":
-      return "relative bg-gradient-to-r from-pink-500/20 via-pink-500/10 to-black-500/10 p-6";
+      return "relative bg-gradient-to-r from-orange-500/20 via-orange-500/10 to-black-500/10 p-6";
     case "MAR":
       return "relative bg-gradient-to-r from-red-500/20 via-red-500/10 to-blue-500/10 p-6";
     case "ACD":

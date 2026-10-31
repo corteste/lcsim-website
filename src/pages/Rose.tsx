@@ -93,8 +93,8 @@ const getTeamSocialBg = (team: string): string => {
       // AC Fantasy: Verde primario & Nero secondario
       return "bg-gradient-to-br from-[#149e6e] via-[#0d7a55] to-[#27272a]";
     case "PFC":
-      // PFC: Rosa & Nero
-      return "bg-gradient-to-br from-[#d9468f] via-[#b82d73] to-[#27272a]";
+      // PFC: Arancione & Nero
+      return "bg-gradient-to-br from-[#ea580c] via-[#c2410c] to-[#27272a]";
     case "MAR":
       // Mar's Attack: Rosso & Blu
       return "bg-gradient-to-br from-[#cf3434] via-[#9e2a3b] to-[#2b59c3]";
@@ -448,30 +448,19 @@ const Rose = () => {
 
                         {/* Right side: Team Name + Coach + President */}
                         <div className="flex-1 min-w-0 space-y-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-tight drop-shadow-sm group-hover:underline">
-                              {team.NAME}
-                            </h3>
-                            <span className="font-mono text-[10px] uppercase font-bold bg-white/20 text-white px-2 py-0.5 rounded-md border border-white/30 backdrop-blur-sm shrink-0">
-                              {team.TEAM_ID}
-                            </span>
-                          </div>
+                          <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-tight drop-shadow-sm group-hover:underline">
+                            {team.NAME}
+                          </h3>
 
-                          {/* Staff: Allenatore & Presidente (Separate Figures) */}
+                          {/* Staff: Allenatore & Presidente (Separate Figures without icons) */}
                           <div className="space-y-1 text-xs">
-                            <div className="flex items-center gap-1.5 text-white/95">
-                              <User className="h-3.5 w-3.5 text-emerald-300 shrink-0" />
-                              <span className="truncate">
-                                <span className="text-white/75 font-medium">Allenatore:</span>{" "}
-                                <strong className="text-white font-extrabold">{team.MANAGER || "Da Assegnare"}</strong>
-                              </span>
+                            <div className="text-white/95 truncate">
+                              <span className="text-white/75 font-medium">Allenatore:</span>{" "}
+                              <strong className="text-white font-extrabold">{team.MANAGER || "Da Assegnare"}</strong>
                             </div>
-                            <div className="flex items-center gap-1.5 text-white/95">
-                              <Crown className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-                              <span className="truncate">
-                                <span className="text-white/75 font-medium">Presidente:</span>{" "}
-                                <strong className="text-white font-extrabold">{presidentMap[team.TEAM_ID] || "In attesa di nomina"}</strong>
-                              </span>
+                            <div className="text-white/95 truncate">
+                              <span className="text-white/75 font-medium">Presidente:</span>{" "}
+                              <strong className="text-white font-extrabold">{presidentMap[team.TEAM_ID] || "In attesa di nomina"}</strong>
                             </div>
                           </div>
                         </div>
@@ -542,17 +531,7 @@ const Rose = () => {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      {/* League & Abbr Badges */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-white bg-white/20 px-2 py-0.5 rounded-full border border-white/30 backdrop-blur-sm">
-                          Serie A
-                        </span>
-                        <span className="font-mono text-[10px] uppercase font-bold bg-white/20 text-white px-2 py-0.5 rounded-md border border-white/30 backdrop-blur-sm">
-                          {currentTeam.TEAM_ID}
-                        </span>
-                      </div>
-
+                    <div className="space-y-2.5">
                       {/* Club Name */}
                       <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-sm">
                         {currentTeam.NAME}
@@ -560,40 +539,31 @@ const Rose = () => {
 
                       {/* Club Key Figures & Info: Presidente, Manager, Stadio */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                        <div className="flex items-center gap-2 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-xs">
-                          <Crown className="h-4 w-4 text-amber-300 shrink-0" />
-                          <div className="min-w-0">
-                            <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
-                              Presidente
-                            </span>
-                            <strong className="text-white font-extrabold truncate block text-xs">
-                              {presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}
-                            </strong>
-                          </div>
+                        <div className="bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs">
+                          <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                            Presidente
+                          </span>
+                          <strong className="text-white font-extrabold truncate block text-xs">
+                            {presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}
+                          </strong>
                         </div>
 
-                        <div className="flex items-center gap-2 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-xs">
-                          <User className="h-4 w-4 text-emerald-300 shrink-0" />
-                          <div className="min-w-0">
-                            <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
-                              Allenatore
-                            </span>
-                            <strong className="text-white font-extrabold truncate block text-xs">
-                              {currentTeam.MANAGER || "Da Assegnare"}
-                            </strong>
-                          </div>
+                        <div className="bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs">
+                          <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                            Allenatore
+                          </span>
+                          <strong className="text-white font-extrabold truncate block text-xs">
+                            {currentTeam.MANAGER || "Da Assegnare"}
+                          </strong>
                         </div>
 
-                        <div className="flex items-center gap-2 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-xs">
-                          <Landmark className="h-4 w-4 text-sky-300 shrink-0" />
-                          <div className="min-w-0">
-                            <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
-                              Stadio
-                            </span>
-                            <strong className="text-white font-extrabold truncate block text-xs">
-                              {stadiumMap[currentTeam.TEAM_ID] || TEAM_STADIUMS[currentTeam.TEAM_ID] || "Stadio Ufficiale"}
-                            </strong>
-                          </div>
+                        <div className="bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs">
+                          <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                            Stadio
+                          </span>
+                          <strong className="text-white font-extrabold truncate block text-xs">
+                            {stadiumMap[currentTeam.TEAM_ID] || TEAM_STADIUMS[currentTeam.TEAM_ID] || "Stadio Ufficiale"}
+                          </strong>
                         </div>
                       </div>
 
