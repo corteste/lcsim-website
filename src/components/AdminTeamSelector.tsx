@@ -49,11 +49,11 @@ export default function AdminTeamSelector() {
                 <SelectItem key={team.team_id} value={team.team_id}>
                   <div className="flex items-center gap-2">
                     <img
-                      src={`/images/teams/${team.team_id}_Logo.png`}
+                      src={`${SUPABASE_STORAGE_URL}/images/teams/${team.team_id}_Logo.png`}
                       alt={team.name_abbr}
                       className="h-4 w-4 object-contain shrink-0"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                        (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                       }}
                     />
                     <span className="font-medium truncate">{team.name}</span>

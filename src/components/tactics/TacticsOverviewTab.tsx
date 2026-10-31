@@ -298,7 +298,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                                   className="w-full h-full object-cover object-top block pointer-events-none"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src =
-                                      "/images/players/MConti.png";
+                                      `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                                   }}
                                 />
                               </div>
@@ -472,7 +472,7 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                             className="w-6 h-6 rounded-full object-cover object-top border border-border shrink-0 shadow-xs"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src =
-                                "/images/players/MConti.png";
+                                `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                             }}
                           />
                           <span className="font-mono text-xs text-primary font-black">

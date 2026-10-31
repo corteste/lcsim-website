@@ -964,11 +964,11 @@ const Draft = () => {
           <div className="flex flex-col items-end">
             <div className="flex items-center gap-1.5">
               <img
-                src={`/images/teams/${pick.team_id}_Logo.png`}
+                src={`${SUPABASE_STORAGE_URL}/images/teams/${pick.team_id}_Logo.png`}
                 alt={pick.team_id}
                 className="h-5 w-5 object-contain shrink-0"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                  (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                 }}
               />
               <span
@@ -1013,7 +1013,7 @@ const Draft = () => {
                     src={getPlayerImage(Number(pick.player_id || pick.rookie_id || dp.ID))}
                     alt={`${dp.Nome} ${dp.Cognome}`}
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
+                      (e.currentTarget as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                     }}
                     className="h-full w-full object-cover object-top"
                   />
@@ -1146,11 +1146,11 @@ const Draft = () => {
 
                 <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-card border border-border shadow-sm">
                   <img
-                    src={`/images/teams/${currentOnTheClockPick.team_id}_Logo.png`}
+                    src={`${SUPABASE_STORAGE_URL}/images/teams/${currentOnTheClockPick.team_id}_Logo.png`}
                     alt={currentOnTheClockPick.team_id}
                     className="h-6 w-6 object-contain"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                      (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                     }}
                   />
                   <span className="font-bold text-sm">
@@ -1209,11 +1209,11 @@ const Draft = () => {
                         <span className="text-muted-foreground">#{q.pick_overall}</span>
                         <span className="font-bold text-foreground">{q.team_id}</span>
                         <img
-                          src={`/images/teams/${q.team_id}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${q.team_id}_Logo.png`}
                           alt={q.team_id}
                           className="h-6 w-6 object-contain shrink-0"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                            (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                           }}
                         />
                       </span>
@@ -1452,11 +1452,11 @@ const Draft = () => {
                     <div className="flex items-center gap-3">
                       {activeUserTeamId && (
                         <img
-                          src={`/images/teams/${activeUserTeamId}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${activeUserTeamId}_Logo.png`}
                           alt={activeUserTeamId}
                           className="h-11 w-11 object-contain filter drop-shadow"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                            (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                           }}
                         />
                       )}
@@ -1712,7 +1712,7 @@ const Draft = () => {
                                     alt={item.player.Nome || ""}
                                     className="h-full w-full object-cover object-top"
                                     onError={(e) => {
-                                      (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
+                                      (e.currentTarget as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                                     }}
                                   />
                                 </div>
@@ -2022,7 +2022,7 @@ const Draft = () => {
                                   src={getPlayerImage(Number(pick.player_id || pick.rookie_id || drafted.ID))}
                                   alt={`${drafted.Nome} ${drafted.Cognome}`}
                                   onError={(e) => {
-                                    (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
+                                    (e.currentTarget as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                                   }}
                                   className="h-full w-full object-cover object-top"
                                 />
@@ -2216,11 +2216,11 @@ const Draft = () => {
                           #{idx + 1}
                         </span>
                         <img
-                          src={`/images/teams/${teamId}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${teamId}_Logo.png`}
                           alt={teamId}
                           className="h-6 w-6 object-contain"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                            (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                           }}
                         />
                         <span className="text-xs font-bold">{t?.NAME || teamId}</span>

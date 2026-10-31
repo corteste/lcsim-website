@@ -102,7 +102,7 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
         <div className="px-5 pt-4 pb-2 flex items-center justify-center gap-3">
           <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-muted/60 border border-border shadow-sm">
             <img
-              src={`/images/teams/${teamId}_Logo.png`}
+              src={`${SUPABASE_STORAGE_URL}/images/teams/${teamId}_Logo.png`}
               alt={displayAbbr}
               className="h-7 w-7 object-contain drop-shadow"
               onError={(e) => {
@@ -123,7 +123,7 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
                 src={getPlayerImage(rookie.ID)}
                 alt={`${rookie.Nome} ${rookie.Cognome}`}
                 onError={(e) => {
-                  e.currentTarget.src = "/images/players/MConti.png";
+                  e.currentTarget.src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                 }}
                 className="h-full w-full object-cover object-top"
               />

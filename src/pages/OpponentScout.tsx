@@ -289,11 +289,11 @@ export const OpponentScout: React.FC = () => {
                   {/* Left: My Team */}
                   <div className="flex items-center gap-4 md:justify-start">
                     <img
-                      src={`/images/teams/${myTeamLogoId}_Logo.png`}
+                      src={`${SUPABASE_STORAGE_URL}/images/teams/${myTeamLogoId}_Logo.png`}
                       alt={myTeamLogoId}
                       className="h-16 w-16 sm:h-20 sm:w-20 object-contain filter drop-shadow shrink-0"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                        (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                       }}
                     />
                     <div className="min-w-0">
@@ -340,11 +340,11 @@ export const OpponentScout: React.FC = () => {
                       </span>
                     </div>
                     <img
-                      src={`/images/teams/${opponentTeamId}_Logo.png`}
+                      src={`${SUPABASE_STORAGE_URL}/images/teams/${opponentTeamId}_Logo.png`}
                       alt={opponentTeam?.name || opponentTeamId}
                       className="h-16 w-16 sm:h-20 sm:w-20 object-contain filter drop-shadow shrink-0 order-1 md:order-2"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                        (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                       }}
                     />
                   </div>
@@ -959,11 +959,11 @@ export const OpponentScout: React.FC = () => {
                           {/* Opponent club team */}
                           <div className="flex items-center gap-2.5 min-w-0">
                             <img
-                              src={`/images/teams/${opponentTeamId}_Logo.png`}
+                              src={`${SUPABASE_STORAGE_URL}/images/teams/${opponentTeamId}_Logo.png`}
                               alt={opponentTeam?.name || opponentTeamId}
                               className="h-9 w-9 object-contain filter drop-shadow shrink-0"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                                (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                               }}
                             />
                             <span className="font-bold text-sm text-foreground truncate">
@@ -982,11 +982,11 @@ export const OpponentScout: React.FC = () => {
                               {m.opponentVsName || m.opponentVsId}
                             </span>
                             <img
-                              src={`/images/teams/${m.opponentVsId}_Logo.png`}
+                              src={`${SUPABASE_STORAGE_URL}/images/teams/${m.opponentVsId}_Logo.png`}
                               alt={m.opponentVsId}
                               className="h-9 w-9 object-contain filter drop-shadow shrink-0"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                                (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                               }}
                             />
                           </div>

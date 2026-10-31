@@ -1,3 +1,19 @@
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
+
+export const LCSIM_LOGO = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo.png`;
+export const LCSIM_LOGO_SMALL = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
+export const PLAYER_FALLBACK_IMAGE = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
+
+export const getTeamLogo = (teamId: string | null | undefined) => {
+  if (!teamId) return LCSIM_LOGO_SMALL;
+  return `${SUPABASE_STORAGE_URL}/images/teams/${teamId}_Logo.png`;
+};
+
+export const getAnthemUrl = (teamId: string | null | undefined) => {
+  if (!teamId) return "";
+  return `${SUPABASE_STORAGE_URL}/sounds/${teamId}.mp3`;
+};
+
 /**
  * Ritorna il gruppo generico di reparto della posizione (POR, DIF, CEN, ATT).
  * Supporta sia i ruoli specifici (es. DC, TS, CDC, AD) che i macro-ruoli (es. DIF, CEN),
@@ -187,7 +203,7 @@ export const getWeatherIcon = (weather: string) => {
  */
 
 export const getPlayerImage = (id: number) => {
-  return `/images/players/p${id}.png`;
+  return `${SUPABASE_STORAGE_URL}/images/players/p${id}.png`;
 }
 
 export const getTeamBackground = (team: string) => {
@@ -217,127 +233,73 @@ export const getTeamBackground = (team: string) => {
   }
 }
 
+const NATION_FLAG_MAP: Record<string, string> = {
+  ALG: "algeria.png",
+  ARG: "argentina.png",
+  AUT: "austria.png",
+  BAR: "barbados.png",
+  BEL: "belgium.png",
+  BRA: "brazil.png",
+  CAM: "cameroon.png",
+  CAN: "canada.png",
+  CHI: "chile.png",
+  CIN: "china.png",
+  CIV: "ivory-coast.png",
+  COL: "colombia.png",
+  CRO: "croatia.png",
+  DEN: "denmark.png",
+  ECU: "ecuador.png",
+  EGY: "egypt.png",
+  ENG: "england.png",
+  ESP: "spain.png",
+  EST: "estonia.png",
+  FIN: "finland.png",
+  FRA: "france.png",
+  GEO: "georgia.png",
+  GER: "germany.png",
+  GRE: "greece.png",
+  HUN: "hungary.png",
+  IRL: "ireland.png",
+  ITA: "italy.png",
+  JPN: "japan.png",
+  KOR: "south-korea.png",
+  LET: "latvia.png",
+  LIE: "liechtenstein.png",
+  LIT: "lithuania.png",
+  MEX: "mexico.png",
+  MOR: "morocco.png",
+  NED: "netherlands.png",
+  NGA: "nigeria.png",
+  NOR: "norway.png",
+  NZL: "new-zealand.png",
+  POL: "poland.png",
+  POR: "portugal.png",
+  RSA: "south-africa.png",
+  RSM: "san-marino.png",
+  SCO: "scotland.png",
+  SEN: "senegal.png",
+  SRB: "serbia.png",
+  SVN: "slovenia.png",
+  SWE: "sweden.png",
+  SWI: "switzerland.png",
+  TUR: "turkey.png",
+  URU: "uruguay.png",
+  USA: "united-states.png",
+  "FRA/BEL": "frabel.png",
+  "ITA/GER": "itager.png",
+  "ITA/RSM": "itarsm.png",
+  "ARG/ESP": "argspain.png",
+};
+
 /**
  * Funzione che ritorna lo stato del contratto del giocatore
  * @param team Nome del team
  * @returns 
  */
 export const getNationalityFlag = (nationality: string) => {
-  switch (nationality) {
-    case "ALG":
-      return "/images/nations/algeria.png";
-    case "ARG":
-      return "/images/nations/argentina.png";
-    case "AUT":
-      return "/images/nations/austria.png";
-    case "BAR":
-      return "/images/nations/barbados.png";
-    case "BEL":
-      return "/images/nations/belgium.png";
-    case "BRA":
-      return "/images/nations/brazil.png";
-    case "CAM":
-      return "/images/nations/cameroon.png";
-    case "CAN":
-      return "/images/nations/canada.png";
-    case "CHI":
-      return "/images/nations/chile.png";
-    case "CIN":
-      return "/images/nations/china.png";
-    case "CIV":
-      return "/images/nations/ivory-coast.png";
-    case "COL":
-      return "/images/nations/colombia.png";
-    case "CRO":
-      return "/images/nations/croatia.png";
-    case "DEN":
-      return "/images/nations/denmark.png";
-    case "ECU":
-      return "/images/nations/ecuador.png";
-    case "EGY":
-      return "/images/nations/egypt.png";
-    case "ENG":
-      return "/images/nations/england.png";
-    case "ESP":
-      return "/images/nations/spain.png";
-    case "EST":
-      return "/images/nations/estonia.png";
-    case "FIN":
-      return "/images/nations/finland.png";
-    case "FRA":
-      return "/images/nations/france.png";
-    case "GEO":
-      return "/images/nations/georgia.png";
-    case "GER":
-      return "/images/nations/germany.png";
-    case "GRE":
-      return "/images/nations/greece.png";
-    case "HUN":
-      return "/images/nations/hungary.png";
-    case "IRL":
-      return "/images/nations/ireland.png";
-    case "ITA":
-      return "/images/nations/italy.png";
-    case "JPN":
-      return "/images/nations/japan.png";
-    case "KOR":
-      return "/images/nations/south-korea.png";
-    case "LET":
-      return "/images/nations/latvia.png";
-    case "LIE":
-      return "/images/nations/liechtenstein.png";
-    case "LIT":
-      return "/images/nations/lithuania.png";
-    case "MEX":
-      return "/images/nations/mexico.png";
-    case "MOR":
-      return "/images/nations/morocco.png";
-    case "NED":
-      return "/images/nations/netherlands.png";
-    case "NGA":
-      return "/images/nations/nigeria.png";
-    case "NOR":
-      return "/images/nations/norway.png";
-    case "NZL":
-      return "/images/nations/new-zealand.png";
-    case "POL":
-      return "/images/nations/poland.png";
-    case "POR":
-      return "/images/nations/portugal.png";
-    case "RSA":
-      return "/images/nations/south-africa.png";
-    case "RSM":
-      return "/images/nations/san-marino.png";
-    case "SCO":
-      return "/images/nations/scotland.png";
-    case "SEN":
-      return "/images/nations/senegal.png";
-    case "SRB":
-      return "/images/nations/serbia.png";
-    case "SVN":
-      return "/images/nations/slovenia.png";
-    case "SWE":
-      return "/images/nations/sweden.png";
-    case "SWI":
-      return "/images/nations/switzerland.png";
-    case "TUR":
-      return "/images/nations/turkey.png";
-    case "URU":
-      return "/images/nations/uruguay.png";
-    case "USA":
-      return "/images/nations/united-states.png";
-    case "FRA/BEL":
-      return "/images/nations/frabel.png";
-    case "ITA/GER":
-      return "/images/nations/itager.png";
-    case "ITA/RSM":
-      return "/images/nations/itarsm.png";
-    case "ARG/ESP":
-      return "/images/nations/argspain.png";
-    default:
-      return "/images/nations/united-states.png";
-  }
-} 
+  const file = NATION_FLAG_MAP[nationality] || "united-states.png";
+  return `${SUPABASE_STORAGE_URL}/images/nations/${file}`;
+}; 
 
 
 /**

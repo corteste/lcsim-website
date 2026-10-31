@@ -84,7 +84,7 @@ export const SetPiecesCard: React.FC<SetPiecesCardProps> = ({
                     alt={assignedPlayer.Cognome}
                     className="w-5 h-5 rounded-full object-cover object-top border border-border shrink-0"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/players/MConti.png";
+                      (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                     }}
                   />
                   <span className="font-bold truncate text-foreground">

@@ -215,7 +215,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <img
-                  src={`/images/teams/${trade.sender_team}_Logo.png`}
+                  src={`${SUPABASE_STORAGE_URL}/images/teams/${trade.sender_team}_Logo.png`}
                   alt={trade.sender_team}
                   className="h-8 w-8 object-contain"
                 />
@@ -228,7 +228,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
 
               <div className="flex items-center gap-2">
                 <img
-                  src={`/images/teams/${trade.receiver_team}_Logo.png`}
+                  src={`${SUPABASE_STORAGE_URL}/images/teams/${trade.receiver_team}_Logo.png`}
                   alt={trade.receiver_team}
                   className="h-8 w-8 object-contain"
                 />

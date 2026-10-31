@@ -304,7 +304,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                     <SelectItem key={t.team_id} value={t.team_id} className="text-xs font-semibold">
                       <div className="flex items-center gap-2">
                         <img
-                          src={`/images/teams/${t.team_id}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${t.team_id}_Logo.png`}
                           alt={t.team_id}
                           className="h-4 w-4 object-contain"
                           onError={(e) => ((e.target as HTMLElement).style.display = "none")}
@@ -364,7 +364,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
               <div className="flex items-center gap-2">
                 {currentTeam && (
                   <img
-                    src={`/images/teams/${currentTeam}_Logo.png`}
+                    src={`${SUPABASE_STORAGE_URL}/images/teams/${currentTeam}_Logo.png`}
                     alt={currentTeam}
                     className="h-5 w-5 object-contain"
                   />
@@ -509,7 +509,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                 {targetTeam ? (
                   <>
                     <img
-                      src={`/images/teams/${targetTeam}_Logo.png`}
+                      src={`${SUPABASE_STORAGE_URL}/images/teams/${targetTeam}_Logo.png`}
                       alt={targetTeam}
                       className="h-5 w-5 object-contain"
                     />

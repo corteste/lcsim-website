@@ -88,7 +88,7 @@ const PlayerAdvancedStats = ({ currentPlayer, teams, onClose }: PlayerStatsProps
                           <div className="h-24 w-24 rounded-xl overflow-hidden border-2 border-primary/20 shadow-lg">
                             <img 
                               src={getPlayerImage(currentPlayer.ID)} 
-                              onError={(e) => e.currentTarget.src = "/images/players/MConti.png"} 
+                              onError={(e) => e.currentTarget.src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`} 
                               alt="Player" 
                               className="h-full w-full object-cover"
                             />

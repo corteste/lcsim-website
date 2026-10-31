@@ -248,11 +248,11 @@ export const LeagueMarketNeedsBoard: React.FC<LeagueMarketNeedsBoardProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <img
-                        src={`/images/teams/${team.team_id}_Logo.png`}
+                        src={`${SUPABASE_STORAGE_URL}/images/teams/${team.team_id}_Logo.png`}
                         alt={team.team_name}
                         className="h-8 w-8 object-contain shrink-0"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                          (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                         }}
                       />
                       <div className="min-w-0">

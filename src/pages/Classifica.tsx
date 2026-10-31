@@ -104,7 +104,7 @@ const Classifica = () => {
                       </TableCell>
                       <TableCell className="text-center py-2.5">
                         <img
-                          src={`/images/teams/${team.team.TEAM_ID}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${team.team.TEAM_ID}_Logo.png`}
                           alt={`${team.team.TEAM_ID} Logo`}
                           className="h-8 w-8 object-contain mx-auto filter drop-shadow-sm"
                           onError={(e) => (e.currentTarget.style.display = 'none')}

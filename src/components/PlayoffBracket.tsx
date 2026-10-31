@@ -120,7 +120,7 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
 
           {/* Logo */}
           <img
-            src={`/images/teams/${team?.team.TEAM_ID}_Logo.png`}
+            src={`${SUPABASE_STORAGE_URL}/images/teams/${team?.team.TEAM_ID}_Logo.png`}
             alt={team?.team.NAME || ""}
             className="h-6 w-6 object-contain flex-shrink-0 filter drop-shadow-sm"
             onError={(e) => (e.currentTarget.style.display = 'none')}
@@ -310,7 +310,7 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
                 >
                   <span className="font-mono text-[10px] font-bold opacity-70">#{pos}</span>
                   <img
-                    src={`/images/teams/${t.team.TEAM_ID}_Logo.png`}
+                    src={`${SUPABASE_STORAGE_URL}/images/teams/${t.team.TEAM_ID}_Logo.png`}
                     alt=""
                     className="h-4 w-4 object-contain"
                     onError={(e) => (e.currentTarget.style.display = 'none')}

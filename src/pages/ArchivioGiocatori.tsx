@@ -7,7 +7,7 @@ import { Archive, Trophy, Star, Award, Target, Users } from "lucide-react";
 import { useState } from "react";
 import { getPlayers } from "@/hooks/use-players";
 import { getTeams } from "@/hooks/use-teams";
-import { getRoleColor } from "@/utils/functions";
+import { getRoleColor, getPlayerImage } from "@/utils/functions";
 
 // Mock data per statistiche carriera - in futuro da DB
 const getCareerStats = (playerId: number) => ({
@@ -181,7 +181,7 @@ const ArchivioGiocatori = () => {
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <img
-                        src={`/images/players/p${selectedPlayer.ID}.png`}
+                        src={getPlayerImage(selectedPlayer.ID)}
                         alt={`${selectedPlayer.Nome} ${selectedPlayer.Cognome}`}
                         className="h-28 w-28 rounded-xl object-cover border-4 border-primary/30 shadow-lg"
                         onError={(e) => {

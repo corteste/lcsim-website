@@ -147,7 +147,7 @@ const Home = () => {
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-3">
                             <img
-                              src={`/images/teams/${team.team.TEAM_ID}_Logo.png`}
+                              src={`${SUPABASE_STORAGE_URL}/images/teams/${team.team.TEAM_ID}_Logo.png`}
                               alt=""
                               className="h-6 w-6 object-contain"
                               onError={(e) => (e.currentTarget.style.display = 'none')}

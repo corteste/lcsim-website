@@ -675,11 +675,11 @@ const Roster = () => {
               <div className="flex items-center gap-4">
                 {currentTeam && (
                   <img
-                    src={`/images/teams/${currentTeam}_Logo.png`}
+                    src={`${SUPABASE_STORAGE_URL}/images/teams/${currentTeam}_Logo.png`}
                     alt={`${currentTeam} Logo`}
                     className="h-16 w-16 object-contain drop-shadow-md"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                      (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                     }}
                   />
                 )}

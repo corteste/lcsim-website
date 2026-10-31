@@ -554,12 +554,12 @@ const Statistiche = () => {
                           </AvatarFallback>
                         </Avatar>
                         <img
-                          src={`/images/teams/${player.Squadra}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                           alt={player.Squadra}
                           className="absolute -bottom-1 -right-1 h-6 w-6 object-contain drop-shadow"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
-                              "/images/LCSIM_Logo_SMALL.png";
+                              `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                           }}
                         />
                       </div>
@@ -629,12 +629,12 @@ const Statistiche = () => {
                           </AvatarFallback>
                         </Avatar>
                         <img
-                          src={`/images/teams/${player.Squadra}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                           alt={player.Squadra}
                           className="absolute -bottom-1 -right-1 h-7 w-7 object-contain drop-shadow"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
-                              "/images/LCSIM_Logo_SMALL.png";
+                              `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                           }}
                         />
                       </div>
@@ -704,12 +704,12 @@ const Statistiche = () => {
                           </AvatarFallback>
                         </Avatar>
                         <img
-                          src={`/images/teams/${player.Squadra}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                           alt={player.Squadra}
                           className="absolute -bottom-1 -right-1 h-6 w-6 object-contain drop-shadow"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
-                              "/images/LCSIM_Logo_SMALL.png";
+                              `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                           }}
                         />
                       </div>
@@ -945,12 +945,12 @@ const Statistiche = () => {
                         <td className="py-2.5 px-3">
                           <div className="flex items-center gap-2">
                             <img
-                              src={`/images/teams/${player.Squadra}_Logo.png`}
+                              src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                               alt={player.Squadra}
                               className="h-5 w-5 object-contain shrink-0"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src =
-                                  "/images/LCSIM_Logo_SMALL.png";
+                                  `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                               }}
                             />
                             <span className="text-muted-foreground font-medium text-xs">

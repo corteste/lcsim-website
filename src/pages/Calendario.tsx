@@ -478,12 +478,12 @@ const Calendario = () => {
                             )}
                           </div>
                           <img
-                            src={`/images/teams/${match.home}_Logo.png`}
+                            src={`${SUPABASE_STORAGE_URL}/images/teams/${match.home}_Logo.png`}
                             alt={`${match.home} Logo`}
                             className="h-10 w-10 sm:h-12 sm:w-12 object-contain shrink-0 drop-shadow-md group-hover:scale-105 transition-transform"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src =
-                                "/images/LCSIM_Logo_SMALL.png";
+                                `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                             }}
                           />
                         </div>
@@ -535,12 +535,12 @@ const Calendario = () => {
                         {/* AWAY TEAM */}
                         <div className="flex items-center gap-3 sm:gap-4 justify-start text-left min-w-0">
                           <img
-                            src={`/images/teams/${match.away}_Logo.png`}
+                            src={`${SUPABASE_STORAGE_URL}/images/teams/${match.away}_Logo.png`}
                             alt={`${match.away} Logo`}
                             className="h-10 w-10 sm:h-12 sm:w-12 object-contain shrink-0 drop-shadow-md group-hover:scale-105 transition-transform"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src =
-                                "/images/LCSIM_Logo_SMALL.png";
+                                `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                             }}
                           />
                           <div className="min-w-0">
@@ -653,12 +653,12 @@ const Calendario = () => {
                   {/* Home Team */}
                   <div className="flex flex-col items-center text-center gap-2 min-w-0">
                     <img
-                      src={`/images/teams/${selected.match.home}_Logo.png`}
+                      src={`${SUPABASE_STORAGE_URL}/images/teams/${selected.match.home}_Logo.png`}
                       alt={selected.match.home_team}
                       className="h-16 w-16 sm:h-20 sm:w-20 object-contain drop-shadow-md"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
-                          "/images/LCSIM_Logo_SMALL.png";
+                          `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                       }}
                     />
                     <div className="min-w-0">
@@ -704,12 +704,12 @@ const Calendario = () => {
                   {/* Away Team */}
                   <div className="flex flex-col items-center text-center gap-2 min-w-0">
                     <img
-                      src={`/images/teams/${selected.match.away}_Logo.png`}
+                      src={`${SUPABASE_STORAGE_URL}/images/teams/${selected.match.away}_Logo.png`}
                       alt={selected.match.away_team}
                       className="h-16 w-16 sm:h-20 sm:w-20 object-contain drop-shadow-md"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
-                          "/images/LCSIM_Logo_SMALL.png";
+                          `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                       }}
                     />
                     <div className="min-w-0">
@@ -792,7 +792,7 @@ const Calendario = () => {
                         }`}
                       >
                         <img
-                          src={`/images/teams/${selected.match.home}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${selected.match.home}_Logo.png`}
                           alt=""
                           className="h-4 w-4 object-contain"
                         />
@@ -809,7 +809,7 @@ const Calendario = () => {
                         }`}
                       >
                         <img
-                          src={`/images/teams/${selected.match.away}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${selected.match.away}_Logo.png`}
                           alt=""
                           className="h-4 w-4 object-contain"
                         />
@@ -877,7 +877,7 @@ const Calendario = () => {
                           {/* Team watermark in pitch center */}
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-15 pointer-events-none">
                             <img
-                              src={`/images/teams/${activeTeamAbbr}_Logo.png`}
+                              src={`${SUPABASE_STORAGE_URL}/images/teams/${activeTeamAbbr}_Logo.png`}
                               alt=""
                               className="h-32 w-32 object-contain"
                             />
@@ -1210,7 +1210,7 @@ const Calendario = () => {
                       >
                         <div className="p-3 bg-muted/30 border-b border-border/80 flex items-center gap-2.5">
                           <img
-                            src={`/images/teams/${side.teamAbbr}_Logo.png`}
+                            src={`${SUPABASE_STORAGE_URL}/images/teams/${side.teamAbbr}_Logo.png`}
                             alt=""
                             className="h-6 w-6 object-contain"
                           />

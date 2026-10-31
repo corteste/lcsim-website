@@ -33,6 +33,9 @@ import {
   getNationalityFlag,
   getTeamBackground,
   getPlayerImage,
+  getTeamLogo,
+  getAnthemUrl,
+  LCSIM_LOGO_SMALL,
 } from "@/utils/functions";
 import { getTeams } from "@/hooks/use-teams";
 import { Player } from "@/types/player";
@@ -126,9 +129,9 @@ const Rose = () => {
     }
 
     const audio = audioRef.current;
-    const anthemPath = `/sounds/${currentTeam.TEAM_ID}.mp3`;
+    const anthemPath = getAnthemUrl(currentTeam.TEAM_ID);
 
-    if (!audio.src.endsWith(anthemPath)) {
+    if (audio.src !== anthemPath) {
       audio.src = anthemPath;
     }
 
@@ -307,11 +310,11 @@ const Rose = () => {
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <img
-                        src={`/images/teams/${team.TEAM_ID}_Logo.png`}
+                        src={getTeamLogo(team.TEAM_ID)}
                         alt={`${team.NAME} Logo`}
                         className="h-6 w-6 sm:h-7 sm:w-7 object-contain shrink-0 group-hover:scale-110 transition-transform"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                          (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
                         }}
                       />
                       <span className="truncate font-extrabold tracking-tight text-left text-[11px] sm:text-xs">
@@ -346,11 +349,11 @@ const Rose = () => {
                 {/* Team Identity */}
                 <div className="flex items-center gap-4 sm:gap-5">
                   <img
-                    src={`/images/teams/${currentTeam.TEAM_ID}_Logo.png`}
+                    src={getTeamLogo(currentTeam.TEAM_ID)}
                     alt={`${currentTeam.NAME} Logo`}
                     className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-md shrink-0"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                      (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
                     }}
                   />
                   <div className="space-y-1.5">

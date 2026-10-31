@@ -128,11 +128,11 @@ export const NextOpponentCard: React.FC = () => {
             {/* My Team */}
             <div className="flex items-center gap-2.5">
               <img
-                src={`/images/teams/${teamId}_Logo.png`}
+                src={`${SUPABASE_STORAGE_URL}/images/teams/${teamId}_Logo.png`}
                 alt={teamId}
                 className="h-10 w-10 object-contain filter drop-shadow shrink-0"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                  (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                 }}
               />
               <div className="text-left hidden sm:block">
@@ -170,11 +170,11 @@ export const NextOpponentCard: React.FC = () => {
                 </span>
               </div>
               <img
-                src={`/images/teams/${matchInfo.opponentTeamId}_Logo.png`}
+                src={`${SUPABASE_STORAGE_URL}/images/teams/${matchInfo.opponentTeamId}_Logo.png`}
                 alt={matchInfo.opponentTeamName}
                 className="h-10 w-10 object-contain filter drop-shadow shrink-0"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                  (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                 }}
               />
             </div>

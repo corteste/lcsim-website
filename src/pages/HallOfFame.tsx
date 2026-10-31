@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star } from "lucide-react";
+import { getPlayerImage } from "@/utils/functions";
 
 // Mock data per la Hall of Fame - in futuro da DB
 const hallOfFamePlayers = [
@@ -37,7 +38,7 @@ const PlayerCard = ({ player }: { player: typeof hallOfFamePlayers[0] }) => {
         <div className="relative mb-3">
           <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-xl opacity-60 blur-sm group-hover:opacity-80 transition-opacity" />
           <img
-            src={`/images/players/p${player.id}.png`}
+            src={getPlayerImage(player.id)}
             alt={`${player.nome} ${player.cognome}`}
             className="relative h-32 w-32 rounded-xl object-cover border-2 border-yellow-500/50"
             onError={(e) => {

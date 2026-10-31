@@ -1664,11 +1664,11 @@ const Tattica = () => {
                   <div className="flex items-center gap-3">
                     {currentTeam && (
                       <img
-                        src={`/images/teams/${currentTeam}_Logo.png`}
+                        src={`${SUPABASE_STORAGE_URL}/images/teams/${currentTeam}_Logo.png`}
                         alt={currentTeam}
                         className="h-12 w-12 object-contain drop-shadow shrink-0"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                          (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                         }}
                       />
                     )}
@@ -1863,7 +1863,7 @@ const Tattica = () => {
                                     className="w-full h-full object-cover object-top"
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).src =
-                                        "/images/players/MConti.png";
+                                        `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                                     }}
                                   />
                                 </div>
@@ -2062,7 +2062,7 @@ const Tattica = () => {
                                       className="h-5 w-5 rounded-full object-cover object-top border border-border shrink-0"
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).src =
-                                          "/images/players/MConti.png";
+                                          `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                                       }}
                                     />
                                     <span className="font-bold text-foreground truncate">
@@ -2608,7 +2608,7 @@ const Tattica = () => {
                                         className="w-full h-full object-cover object-top"
                                         onError={(e) => {
                                           (e.target as HTMLImageElement).src =
-                                            "/images/players/MConti.png";
+                                            `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                                         }}
                                       />
                                     </div>

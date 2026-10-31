@@ -324,11 +324,11 @@ export default function LoginDialog({ open: propOpen, onOpenChange: propOnOpenCh
                           <SelectItem key={team.team_id} value={team.team_id}>
                             <div className="flex items-center gap-2.5">
                               <img
-                                src={`/images/teams/${team.team_id}_Logo.png`}
+                                src={`${SUPABASE_STORAGE_URL}/images/teams/${team.team_id}_Logo.png`}
                                 alt={team.name_abbr}
                                 className="h-5 w-5 object-contain shrink-0"
                                 onError={(e) => {
-                                  (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                                  (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                                 }}
                               />
                               <span className="font-semibold">{team.name}</span>
@@ -346,11 +346,11 @@ export default function LoginDialog({ open: propOpen, onOpenChange: propOnOpenCh
                   {selectedTeamDetails && (
                     <div className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-muted/40">
                       <img
-                        src={`/images/teams/${selectedTeamDetails.team_id}_Logo.png`}
+                        src={`${SUPABASE_STORAGE_URL}/images/teams/${selectedTeamDetails.team_id}_Logo.png`}
                         alt={selectedTeamDetails.name}
                         className="h-10 w-10 object-contain drop-shadow"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                          (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                         }}
                       />
                       <div className="flex-1 min-w-0">

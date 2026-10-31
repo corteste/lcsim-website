@@ -798,7 +798,7 @@ const ListaGiocatori = () => {
                                   alt={`${player.Nome} ${player.Cognome}`}
                                   className="h-10 w-10 object-cover object-top rounded-xl border border-border/80 bg-muted/30 shadow-xs"
                                   onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/images/players/MConti.png";
+                                    (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                                   }}
                                 />
                               </div>
@@ -851,11 +851,11 @@ const ListaGiocatori = () => {
                             ) : (
                               <div className="flex items-center gap-2">
                                 <img
-                                  src={`/images/teams/${player.Squadra}_Logo.png`}
+                                  src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                                   alt={player.Squadra || ""}
                                   className="h-5 w-5 object-contain shrink-0"
                                   onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                                    (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                                   }}
                                 />
                                 <span className="font-medium text-foreground truncate max-w-[130px]" title={teamName || player.Squadra}>
@@ -951,11 +951,11 @@ const ListaGiocatori = () => {
                         {!isSvincolato && player.Squadra ? (
                           <div className="flex items-center gap-1.5" title={teamName || player.Squadra}>
                             <img
-                              src={`/images/teams/${player.Squadra}_Logo.png`}
+                              src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                               alt={player.Squadra}
                               className="h-6 w-6 object-contain"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                                (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                               }}
                             />
                             <span className="font-bold font-mono text-xs text-muted-foreground">
@@ -979,7 +979,7 @@ const ListaGiocatori = () => {
                               alt={`${player.Nome} ${player.Cognome}`}
                               className="w-full h-full object-cover object-top"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/images/players/MConti.png";
+                                (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                               }}
                             />
                           </div>

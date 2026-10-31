@@ -164,7 +164,7 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                       alt={occupant.Cognome}
                       className="w-full h-full object-cover object-top"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/players/MConti.png";
+                        (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                       }}
                     />
                   </div>

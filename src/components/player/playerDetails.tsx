@@ -564,7 +564,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
             <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl overflow-hidden border-2 border-border/80 shadow-xl bg-card/60 backdrop-blur-sm relative group">
               <img 
                 src={getPlayerImage(currentPlayer.ID)} 
-                onError={(e) => (e.currentTarget.src = "/images/players/MConti.png")} 
+                onError={(e) => (e.currentTarget.src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`)} 
                 alt={`${currentPlayer.Nome} ${currentPlayer.Cognome}`} 
                 className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
               />

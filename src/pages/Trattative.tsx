@@ -177,7 +177,7 @@ export default function Trattative() {
               ) : currentTeam ? (
                 <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-muted/60 border border-border flex items-center justify-center p-2 shadow-inner">
                   <img
-                    src={`/images/teams/${currentTeam}_Logo.png`}
+                    src={`${SUPABASE_STORAGE_URL}/images/teams/${currentTeam}_Logo.png`}
                     alt={currentTeam}
                     className="max-h-full max-w-full object-contain drop-shadow"
                     onError={(e) => ((e.target as HTMLElement).style.display = "none")}
@@ -684,7 +684,7 @@ const TradeCard: React.FC<TradeCardProps> = ({
             {isAdminView ? (
               <div className="flex items-center gap-2">
                 <img
-                  src={`/images/teams/${trade.sender_team}_Logo.png`}
+                  src={`${SUPABASE_STORAGE_URL}/images/teams/${trade.sender_team}_Logo.png`}
                   alt={trade.sender_team}
                   className="h-5 w-5 object-contain"
                   onError={(e) => ((e.target as HTMLElement).style.display = "none")}
@@ -692,7 +692,7 @@ const TradeCard: React.FC<TradeCardProps> = ({
                 <span className="font-black text-xs">{trade.sender_team}</span>
                 <ArrowLeftRight className="h-3 w-3 text-muted-foreground" />
                 <img
-                  src={`/images/teams/${trade.receiver_team}_Logo.png`}
+                  src={`${SUPABASE_STORAGE_URL}/images/teams/${trade.receiver_team}_Logo.png`}
                   alt={trade.receiver_team}
                   className="h-5 w-5 object-contain"
                   onError={(e) => ((e.target as HTMLElement).style.display = "none")}
@@ -702,7 +702,7 @@ const TradeCard: React.FC<TradeCardProps> = ({
             ) : (
               <>
                 <img
-                  src={`/images/teams/${partnerTeam}_Logo.png`}
+                  src={`${SUPABASE_STORAGE_URL}/images/teams/${partnerTeam}_Logo.png`}
                   alt={partnerTeam}
                   className="h-6 w-6 object-contain"
                   onError={(e) => ((e.target as HTMLElement).style.display = "none")}

@@ -373,7 +373,7 @@ export const SeasonalXpReportModal: React.FC<SeasonalXpReportModalProps> = ({
                           alt={p.playerName}
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src =
-                              "/images/players/MConti.png";
+                              `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                           }}
                           className="h-full w-full object-cover object-top"
                         />

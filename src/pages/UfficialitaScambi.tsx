@@ -280,7 +280,7 @@ export default function UfficialitaScambi() {
                           <div className="p-4 rounded-2xl bg-muted/30 border border-border/60 space-y-3">
                             <div className="flex items-center gap-2.5">
                               <img
-                                src={`/images/teams/${trade.sender_team}_Logo.png`}
+                                src={`${SUPABASE_STORAGE_URL}/images/teams/${trade.sender_team}_Logo.png`}
                                 alt={trade.sender_team}
                                 className="h-8 w-8 object-contain shrink-0"
                                 onError={(e) => ((e.target as HTMLElement).style.display = "none")}
@@ -338,7 +338,7 @@ export default function UfficialitaScambi() {
                           <div className="p-4 rounded-2xl bg-muted/30 border border-border/60 space-y-3">
                             <div className="flex items-center gap-2.5">
                               <img
-                                src={`/images/teams/${trade.receiver_team}_Logo.png`}
+                                src={`${SUPABASE_STORAGE_URL}/images/teams/${trade.receiver_team}_Logo.png`}
                                 alt={trade.receiver_team}
                                 className="h-8 w-8 object-contain shrink-0"
                                 onError={(e) => ((e.target as HTMLElement).style.display = "none")}

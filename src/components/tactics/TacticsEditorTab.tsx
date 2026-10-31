@@ -183,7 +183,7 @@ export const TacticsEditorTab: React.FC<TacticsEditorTabProps> = ({
                         alt={occupant.Cognome}
                         className="w-8 h-8 rounded-full object-cover object-top border border-border shrink-0 shadow-sm"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/players/MConti.png";
+                          (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                         }}
                       />
                       <div className="truncate">

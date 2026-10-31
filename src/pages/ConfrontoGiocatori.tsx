@@ -742,11 +742,11 @@ const ConfrontoGiocatori = () => {
                   <div className="flex items-center gap-4">
                     {currentTeam && (
                       <img
-                        src={`/images/teams/${currentTeam}_Logo.png`}
+                        src={`${SUPABASE_STORAGE_URL}/images/teams/${currentTeam}_Logo.png`}
                         alt={`${currentTeam} Logo`}
                         className="h-16 w-16 object-contain drop-shadow-md"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                          (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                         }}
                       />
                     )}
@@ -1288,7 +1288,7 @@ const ConfrontoGiocatori = () => {
                             <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                               {player.Squadra && (
                                 <img
-                                  src={`/images/teams/${player.Squadra}_Logo.png`}
+                                  src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                                   alt={player.Squadra}
                                   className="h-3.5 w-3.5 object-contain"
                                   onError={(e) => {
@@ -1415,7 +1415,7 @@ const PlayerComparisonCard = ({
             >
               {player.Squadra && (
                 <img
-                  src={`/images/teams/${player.Squadra}_Logo.png`}
+                  src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                   alt={player.Squadra}
                   className="h-3.5 w-3.5 object-contain"
                   onError={(e) => {

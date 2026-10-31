@@ -78,7 +78,7 @@ export const PlayerXpBreakdownModal: React.FC<PlayerXpBreakdownModalProps> = ({
                   src={getPlayerImage(Number(player.ID))}
                   alt={`${player.Nome} ${player.Cognome}`}
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/images/players/MConti.png";
+                    (e.currentTarget as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
                   }}
                   className="h-full w-full object-cover object-top"
                 />

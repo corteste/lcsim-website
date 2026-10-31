@@ -249,7 +249,7 @@ const Navbar = () => {
             className="flex items-center gap-2.5 hover:opacity-90 transition-opacity shrink-0"
           >
             <img
-              src="/images/LCSIM_Logo_SMALL.png"
+              src={`${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`}
               alt="LCSIM Logo"
               className="h-8 w-8 object-contain filter drop-shadow-xs"
             />
@@ -482,11 +482,11 @@ const Navbar = () => {
                   >
                     {effectiveTeam ? (
                       <img
-                        src={`/images/teams/${effectiveTeam}_Logo.png`}
+                        src={`${SUPABASE_STORAGE_URL}/images/teams/${effectiveTeam}_Logo.png`}
                         alt={effectiveTeam}
                         className="h-4 w-4 object-contain shrink-0"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                          (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                         }}
                       />
                     ) : isAdmin ? (
@@ -509,11 +509,11 @@ const Navbar = () => {
                       {effectiveTeam ? (
                         <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono font-bold flex items-center gap-1">
                           <img
-                            src={`/images/teams/${effectiveTeam}_Logo.png`}
+                            src={`${SUPABASE_STORAGE_URL}/images/teams/${effectiveTeam}_Logo.png`}
                             alt={effectiveTeam}
                             className="h-3 w-3 object-contain shrink-0"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                              (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                             }}
                           />
                           {effectiveTeam}
@@ -638,7 +638,7 @@ const Navbar = () => {
                     <SheetHeader className="text-left pb-3 border-b border-border/70">
                       <SheetTitle className="flex items-center gap-2 text-base font-black">
                         <img
-                          src="/images/LCSIM_Logo_SMALL.png"
+                          src={`${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`}
                           alt="LCSIM Logo"
                           className="h-6 w-6 object-contain"
                         />
@@ -747,11 +747,11 @@ const Navbar = () => {
                         <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 px-2 py-1 flex items-center gap-1.5 font-mono">
                           {effectiveTeam ? (
                             <img
-                              src={`/images/teams/${effectiveTeam}_Logo.png`}
+                              src={`${SUPABASE_STORAGE_URL}/images/teams/${effectiveTeam}_Logo.png`}
                               alt={effectiveTeam}
                               className="h-3.5 w-3.5 object-contain shrink-0"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png";
+                                (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
                               }}
                             />
                           ) : isAdmin ? (
@@ -803,7 +803,7 @@ const Navbar = () => {
                           <div className="flex items-center gap-2 min-w-0">
                             {user.team && (
                               <img
-                                src={`/images/teams/${user.team}_Logo.png`}
+                                src={`${SUPABASE_STORAGE_URL}/images/teams/${user.team}_Logo.png`}
                                 alt={user.team}
                                 className="h-5 w-5 object-contain"
                               />

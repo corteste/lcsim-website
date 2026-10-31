@@ -1,19 +1,20 @@
 -- ==============================================================================
 -- LCSIM - Creazione Bucket Supabase Storage: game-templates
--- Utilizzato per archiviare file master e template pesanti (es. DB_NEW_MASTER.txt,
--- inni di squadra) liberando spazio dal deployment storage di Vercel.
+-- Utilizzato per archiviare file master, template e file multimediali
+-- (DB_NEW_MASTER.txt, inni di squadra, foto giocatori, loghi squadre, bandiere)
+-- liberando oltre 45 MB per ogni build dal deployment storage di Vercel.
 -- ==============================================================================
 
--- 1. Inserimento del bucket pubblico se non esiste
+-- 1. Inserimento del bucket pubblico se non esiste (allowed_mime_types NULL = supporta tutti i media)
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
     'game-templates',
     'game-templates',
     true,
     52428800, -- Limite 50 MB per file
-    ARRAY['text/plain', 'text/tab-separated-values', 'audio/mpeg', 'audio/mp3', 'application/octet-stream']
+    NULL
 )
-ON CONFLICT (id) DO UPDATE SET public = true;
+ON CONFLICT (id) DO UPDATE SET public = true, allowed_mime_types = NULL;
 
 -- 2. Policy di lettura pubblica (anon e authenticated possono scaricare i template)
 DROP POLICY IF EXISTS "Public Read game-templates" ON storage.objects;

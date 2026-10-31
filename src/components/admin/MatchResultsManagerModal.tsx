@@ -469,10 +469,10 @@ export function MatchResultsManagerModal({
                     <div className="flex items-center justify-between font-black text-sm">
                       <div className="flex items-center gap-1.5 truncate">
                         <img
-                          src={`/images/teams/${m.home}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${m.home}_Logo.png`}
                           alt={m.home}
                           className="h-5 w-5 object-contain shrink-0"
-                          onError={(e) => ((e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png")}
+                          onError={(e) => ((e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`)}
                         />
                         <span>{m.home}</span>
                       </div>
@@ -482,10 +482,10 @@ export function MatchResultsManagerModal({
                       <div className="flex items-center gap-1.5 truncate">
                         <span>{m.away}</span>
                         <img
-                          src={`/images/teams/${m.away}_Logo.png`}
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${m.away}_Logo.png`}
                           alt={m.away}
                           className="h-5 w-5 object-contain shrink-0"
-                          onError={(e) => ((e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png")}
+                          onError={(e) => ((e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`)}
                         />
                       </div>
                     </div>
@@ -739,10 +739,10 @@ export function MatchResultsManagerModal({
               <div className="p-4 rounded-2xl bg-gradient-to-r from-card via-muted/40 to-card border border-border/80 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <img
-                    src={`/images/teams/${report.schedule.home}_Logo.png`}
+                    src={`${SUPABASE_STORAGE_URL}/images/teams/${report.schedule.home}_Logo.png`}
                     alt={report.schedule.home}
                     className="h-12 w-12 object-contain"
-                    onError={(e) => ((e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png")}
+                    onError={(e) => ((e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`)}
                   />
                   <div>
                     <div className="text-lg font-black">{report.schedule.home_name}</div>
@@ -780,10 +780,10 @@ export function MatchResultsManagerModal({
                     </div>
                   </div>
                   <img
-                    src={`/images/teams/${report.schedule.away}_Logo.png`}
+                    src={`${SUPABASE_STORAGE_URL}/images/teams/${report.schedule.away}_Logo.png`}
                     alt={report.schedule.away}
                     className="h-12 w-12 object-contain"
-                    onError={(e) => ((e.target as HTMLImageElement).src = "/images/LCSIM_Logo_SMALL.png")}
+                    onError={(e) => ((e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`)}
                   />
                 </div>
               </div>
