@@ -43,7 +43,7 @@ import { DraftWishlistItem } from "@/types/draftWishlist";
 import { Player } from "@/types/player";
 import { getRoleColor, getValueColor, getNationalityFlag } from "@/utils/functions";
 // renderStars removed to avoid confusing tokens with stars
-import { getTierFromTokens, getTierBadgeStyle, getTopUnlockedAttributes } from "@/utils/scoutingConfig";
+import { getTierFromTokens, getTierBadgeStyle, getTopUnlockedAttributes, getOvrDisplayByTokens } from "@/utils/scoutingConfig";
 
 interface ScoutingAutopickTabProps {
   teamId: string;
@@ -356,7 +356,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
               {searchResults.map((r) => {
                 const rId = Number(r.ID);
-                const tokens = scoutingTokensByRookie[rId] || 0;
+                const tokens = scoutingTokensByRookie[rId] ?? (r as any)?.tokens_spent ?? 0;
 
                 return (
                   <div
@@ -402,7 +402,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                         variant="outline"
                         className={`font-mono text-xs font-black ${getValueColor(Number(r.OVR) || 0)}`}
                       >
-                        {r.OVR}
+                        {getOvrDisplayByTokens(r.OVR, tokens, r.Stelle).label}
                       </Badge>
                       <Button
                         type="button"
@@ -458,7 +458,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
               rookie.Squadra.toUpperCase() !== "SVINCOLATI" &&
               rookie.Squadra !== "-"
             );
-            const tokens = scoutingTokensByRookie[rId] || 0;
+            const tokens = scoutingTokensByRookie[rId] ?? (rookie as any)?.tokens_spent ?? 0;
             const topStats = getTopUnlockedAttributes(rookie, tokens, 5);
 
             return (
@@ -551,7 +551,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                   <div className="text-right hidden sm:block mr-2">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground">OVR</div>
                     <div className={`font-mono font-black text-sm ${getValueColor(Number(rookie.OVR) || 0)}`}>
-                      {rookie.OVR}
+                      {getOvrDisplayByTokens(rookie.OVR, tokens, rookie.Stelle).label}
                     </div>
                   </div>
 

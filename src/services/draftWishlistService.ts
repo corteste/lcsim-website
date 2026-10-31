@@ -121,9 +121,9 @@ export async function fetchTeamWishlist(teamId: string): Promise<DraftWishlistIt
 
     const rookieIds = wishlistRows.map((r: any) => Number(r.rookie_id));
 
-    // Carica i dettagli sia da an_rookie che da an_player (per svincolati in wishlist)
+    // Carica i dettagli decifrati da rpc_get_scouted_rookies per la squadra e da an_player (per svincolati)
     const [rookiesRes, playersRes] = await Promise.all([
-      supabase.from(ROOKIE_TABLE).select("*").in("ID", rookieIds),
+      supabase.rpc("rpc_get_scouted_rookies", { p_team_id: teamId }),
       supabase.from("an_player").select("*").in("ID", rookieIds),
     ]);
 
@@ -131,9 +131,20 @@ export async function fetchTeamWishlist(teamId: string): Promise<DraftWishlistIt
     (playersRes.data || []).forEach((p: any) => {
       playersMap.set(Number(p.ID), p as Player);
     });
-    (rookiesRes.data || []).forEach((rk: any) => {
-      playersMap.set(Number(rk.ID), rk as Player);
-    });
+
+    if (rookiesRes.data && Array.isArray(rookiesRes.data)) {
+      rookiesRes.data.forEach((rk: any) => {
+        if (rookieIds.includes(Number(rk.ID))) {
+          playersMap.set(Number(rk.ID), rk as Player);
+        }
+      });
+    } else {
+      // Fallback su query diretta se la RPC non restituisce array
+      const { data: rawRookies } = await supabase.from(ROOKIE_TABLE).select("*").in("ID", rookieIds);
+      (rawRookies || []).forEach((rk: any) => {
+        playersMap.set(Number(rk.ID), rk as Player);
+      });
+    }
 
     return wishlistRows.map((row: any) => ({
       id: row.id,

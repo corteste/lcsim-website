@@ -388,24 +388,24 @@ const Rose = () => {
                         setSearchQuery("");
                         setRoleFilter("ALL");
                       }}
-                      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card/85 backdrop-blur-md shadow-md hover:shadow-2xl hover:scale-[1.015] hover:border-border transition-all duration-300 overflow-hidden cursor-pointer text-white"
+                      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card/85 backdrop-blur-md shadow-md hover:shadow-2xl hover:scale-[1.015] hover:border-border transition-all duration-300 overflow-hidden cursor-pointer text-foreground"
                     >
                       {/* Club Social Colors Translucent Overlay (Opzione 1) */}
-                      <div className={`absolute inset-0 opacity-25 group-hover:opacity-40 transition-opacity duration-300 pointer-events-none ${getTeamSocialBg(team.TEAM_ID)}`} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                      <div className={`absolute inset-0 opacity-20 dark:opacity-25 group-hover:opacity-35 dark:group-hover:opacity-40 transition-opacity duration-300 pointer-events-none ${getTeamSocialBg(team.TEAM_ID)}`} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/30 dark:from-black/40 via-transparent to-transparent pointer-events-none" />
 
                       {/* Top Palmares badges (if any) */}
                       {(team.scudetto > 0 || team.supercoppa > 0) && (
                         <div className="absolute top-2.5 right-3 flex items-center gap-1 z-20 pointer-events-none">
                           {team.scudetto > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-amber-400/30" title={`${team.scudetto} Scudetti`}>
-                              <Trophy className="h-3 w-3 text-amber-400" />
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-600 dark:text-amber-300 bg-background/80 dark:bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-amber-500/30 dark:border-amber-400/30 shadow-2xs" title={`${team.scudetto} Scudetti`}>
+                              <Trophy className="h-3 w-3 text-amber-500 dark:text-amber-400" />
                               <span>{team.scudetto}</span>
                             </span>
                           )}
                           {team.supercoppa > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-blue-300 bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-blue-400/30" title={`${team.supercoppa} Supercoppe`}>
-                              <ShieldCheck className="h-3 w-3 text-blue-400" />
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-blue-600 dark:text-blue-300 bg-background/80 dark:bg-black/50 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-blue-500/30 dark:border-blue-400/30 shadow-2xs" title={`${team.supercoppa} Supercoppe`}>
+                              <ShieldCheck className="h-3 w-3 text-blue-500 dark:text-blue-400" />
                               <span>{team.supercoppa}</span>
                             </span>
                           )}
@@ -415,7 +415,7 @@ const Rose = () => {
                       {/* Main Section: Big Logo on the Left, Details on the Right */}
                       <div className="relative z-10 p-4 sm:p-5 flex items-center gap-4 sm:gap-5">
                         {/* Big Club Logo on the Left */}
-                        <div className="relative shrink-0 flex items-center justify-center p-2 rounded-2xl bg-black/25 backdrop-blur-md border border-white/15 shadow-inner">
+                        <div className="relative shrink-0 flex items-center justify-center p-2 rounded-2xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/15 shadow-inner">
                           <img
                             src={getTeamLogo(team.TEAM_ID)}
                             alt={`${team.NAME} Logo`}
@@ -428,28 +428,28 @@ const Rose = () => {
 
                         {/* Right side: Team Name + Coach + President */}
                         <div className="flex-1 min-w-0 space-y-2">
-                          <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-tight drop-shadow-sm group-hover:underline">
+                          <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight leading-tight drop-shadow-xs group-hover:underline">
                             {team.NAME}
                           </h3>
 
-                          {/* Staff: Allenatore & Presidente (Separate Figures without icons) */}
+                          {/* Staff: Allenatore & Presidente */}
                           <div className="space-y-1 text-xs">
-                            <div className="text-white/95 truncate">
-                              <span className="text-white/75 font-medium">Allenatore:</span>{" "}
-                              <strong className="text-white font-extrabold">{team.MANAGER || "Da Assegnare"}</strong>
+                            <div className="text-foreground/90 truncate">
+                              <span className="text-muted-foreground font-medium">Allenatore:</span>{" "}
+                              <strong className="text-foreground font-extrabold">{team.MANAGER || "Da Assegnare"}</strong>
                             </div>
-                            <div className="text-white/95 truncate">
-                              <span className="text-white/75 font-medium">Presidente:</span>{" "}
-                              <strong className="text-white font-extrabold">{presidentMap[team.TEAM_ID] || "In attesa di nomina"}</strong>
+                            <div className="text-foreground/90 truncate">
+                              <span className="text-muted-foreground font-medium">Presidente:</span>{" "}
+                              <strong className="text-foreground font-extrabold">{presidentMap[team.TEAM_ID] || "In attesa di nomina"}</strong>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Card Bottom CTA (Club Info) */}
-                      <div className="relative z-10 px-4 py-2.5 bg-black/10 group-hover:bg-black/20 border-t border-white/15 flex items-center justify-between text-xs font-bold transition-all duration-200">
-                        <span className="tracking-wide uppercase text-[11px] font-black text-white/90">Club Info</span>
-                        <div className="flex items-center gap-1 text-white group-hover:translate-x-1 transition-transform">
+                      <div className="relative z-10 px-4 py-2.5 bg-muted/40 dark:bg-black/10 group-hover:bg-muted/70 dark:group-hover:bg-black/20 border-t border-border/60 dark:border-white/15 flex items-center justify-between text-xs font-bold transition-all duration-200">
+                        <span className="tracking-wide uppercase text-[11px] font-black text-foreground/90">Club Info</span>
+                        <div className="flex items-center gap-1 text-foreground group-hover:translate-x-1 transition-transform">
                           <span className="text-[11px] font-medium opacity-90 group-hover:opacity-100">Visualizza Rosa</span>
                           <ChevronRight className="h-4 w-4" />
                         </div>
@@ -488,18 +488,18 @@ const Rose = () => {
 
             {/* TEAM HERO COMMAND CARD */}
             <div
-              className="relative overflow-hidden rounded-2xl border border-border/80 bg-card/85 backdrop-blur-md shadow-xl text-white"
+              className="relative overflow-hidden rounded-2xl border border-border/80 bg-card/85 backdrop-blur-md shadow-xl text-foreground"
             >
               {/* Club Social Colors Translucent Overlay (Opzione 1) */}
-              <div className={`absolute inset-0 opacity-30 pointer-events-none ${getTeamSocialBg(currentTeam.TEAM_ID)}`} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+              <div className={`absolute inset-0 opacity-20 dark:opacity-30 pointer-events-none ${getTeamSocialBg(currentTeam.TEAM_ID)}`} />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/30 dark:from-black/40 via-transparent to-transparent pointer-events-none" />
 
               <div className="relative z-10 p-5 sm:p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                   {/* Left Identity Section: Big Logo + Details */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                     {/* Big Crest Box matching small card style */}
-                    <div className="relative shrink-0 flex items-center justify-center p-3 rounded-2xl bg-black/25 backdrop-blur-md border border-white/20 shadow-inner self-start sm:self-center">
+                    <div className="relative shrink-0 flex items-center justify-center p-3 rounded-2xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 shadow-inner self-start sm:self-center">
                       <img
                         src={getTeamLogo(currentTeam.TEAM_ID)}
                         alt={`${currentTeam.NAME} Logo`}
@@ -512,35 +512,35 @@ const Rose = () => {
 
                     <div className="space-y-2.5">
                       {/* Club Name */}
-                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-sm">
+                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight drop-shadow-xs">
                         {currentTeam.NAME}
                       </h2>
 
                       {/* Club Key Figures & Info: Presidente, Manager, Stadio */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                        <div className="bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs">
-                          <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                        <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-border/60 dark:border-white/15 text-xs">
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
                             Presidente
                           </span>
-                          <strong className="text-white font-extrabold truncate block text-xs">
+                          <strong className="text-foreground font-extrabold truncate block text-xs">
                             {presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}
                           </strong>
                         </div>
 
-                        <div className="bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs">
-                          <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                        <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-border/60 dark:border-white/15 text-xs">
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
                             Allenatore
                           </span>
-                          <strong className="text-white font-extrabold truncate block text-xs">
+                          <strong className="text-foreground font-extrabold truncate block text-xs">
                             {currentTeam.MANAGER || "Da Assegnare"}
                           </strong>
                         </div>
 
-                        <div className="bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs">
-                          <span className="text-[10px] uppercase tracking-wider text-white/70 font-semibold block leading-tight">
+                        <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-border/60 dark:border-white/15 text-xs">
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
                             Stadio
                           </span>
-                          <strong className="text-white font-extrabold truncate block text-xs">
+                          <strong className="text-foreground font-extrabold truncate block text-xs">
                             {stadiumMap[currentTeam.TEAM_ID] || TEAM_STADIUMS[currentTeam.TEAM_ID] || "Stadio Ufficiale"}
                           </strong>
                         </div>
@@ -549,15 +549,15 @@ const Rose = () => {
                       {/* Palmares and Team Anthem */}
                       <div className="flex items-center gap-2 pt-1 flex-wrap">
                         {currentTeam.scudetto > 0 && (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-300 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-lg border border-amber-400/30">
-                            <Trophy className="h-3.5 w-3.5 text-amber-400" />
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-300 bg-background/80 dark:bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-lg border border-amber-500/30 dark:border-amber-400/30 shadow-2xs">
+                            <Trophy className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />
                             {currentTeam.scudetto}{" "}
                             {currentTeam.scudetto === 1 ? "Scudetto" : "Scudetti"}
                           </span>
                         )}
                         {currentTeam.supercoppa > 0 && (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-300 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-lg border border-blue-400/30">
-                            <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-300 bg-background/80 dark:bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-lg border border-blue-500/30 dark:border-blue-400/30 shadow-2xs">
+                            <ShieldCheck className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
                             {currentTeam.supercoppa}{" "}
                             {currentTeam.supercoppa === 1 ? "Supercoppa" : "Supercoppe"}
                           </span>
@@ -571,7 +571,7 @@ const Rose = () => {
                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 border cursor-pointer select-none shadow-sm ${
                               isPlayingAnthem
                                 ? "bg-emerald-500 text-white border-emerald-400 shadow-emerald-500/20"
-                                : "bg-black/25 hover:bg-black/40 text-white border-white/20"
+                                : "bg-muted/50 dark:bg-black/25 hover:bg-muted/80 dark:hover:bg-black/40 text-foreground dark:text-white border-border/70 dark:border-white/20"
                             }`}
                             title={
                               isPlayingAnthem
@@ -596,7 +596,7 @@ const Rose = () => {
                               </>
                             ) : (
                               <>
-                                <Volume2 className="h-3.5 w-3.5 shrink-0 text-white" />
+                                <Volume2 className="h-3.5 w-3.5 shrink-0 text-foreground dark:text-white" />
                                 <span>Inno Ufficiale</span>
                               </>
                             )}
@@ -606,23 +606,23 @@ const Rose = () => {
                     </div>
                   </div>
 
-                  {/* Right Telemetry KPI: OVR Medio & Età Media (Giocatori & Status Mercato REMOVED as requested) */}
+                  {/* Right Telemetry KPI: OVR Medio & Età Media */}
                   <div className="flex items-center sm:self-center gap-2.5 sm:gap-3 shrink-0">
-                    <div className="px-4 py-2.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center shadow-sm min-w-[90px]">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/70 block">
+                    <div className="px-4 py-2.5 rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[90px]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
                         OVR Medio
                       </span>
-                      <span className="text-xl sm:text-2xl font-black font-mono text-white">
+                      <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
                         {avgOvr}
                       </span>
                     </div>
 
-                    <div className="px-4 py-2.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center shadow-sm min-w-[90px]">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/70 block">
+                    <div className="px-4 py-2.5 rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[90px]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
                         Età Media
                       </span>
-                      <span className="text-xl sm:text-2xl font-black font-mono text-white">
-                        {avgAge} <span className="text-xs font-normal text-white/70">a</span>
+                      <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                        {avgAge} <span className="text-xs font-normal text-muted-foreground dark:text-white/70">a</span>
                       </span>
                     </div>
                   </div>

@@ -39,6 +39,7 @@ import {
 import { DraftWishlistItem } from "@/types/draftWishlist";
 import { Player } from "@/types/player";
 import { getRoleColor, getValueColor } from "@/utils/functions";
+import { getOvrDisplayByTokens } from "@/utils/scoutingConfig";
 
 interface DraftWishlistDrawerProps {
   open: boolean;
@@ -377,7 +378,7 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                           <span>
                             OVR:{" "}
-                            <strong className={getValueColor(r.OVR ?? 0)}>{r.OVR ?? "?"}</strong>
+                            <strong className={getValueColor(r.OVR ?? 0)}>{getOvrDisplayByTokens(r.OVR, (r as any)?.tokens_spent ?? 0, r.Stelle).label}</strong>
                           </span>
                           <span>• Età: {r.Età || "?"}</span>
                           <span>• {r.Nazionalità || ""}</span>

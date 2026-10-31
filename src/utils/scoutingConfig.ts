@@ -178,7 +178,7 @@ export interface StatDisplayResult {
   label: string;
   isUnlocked: boolean;
   midpoint: number;
-  rangeType: "none" | "10" | "3";
+  rangeType: "none" | "10" | "3" | "exact";
 }
 
 /**
@@ -194,6 +194,14 @@ export function getStatDisplayByTokens(
   const num = Math.max(0, Math.min(99, Number(value) || 0));
   if (tokensSpent < 1) {
     return { label: "??", isUnlocked: false, midpoint: 0, rangeType: "none" };
+  }
+  if (tokensSpent >= 5) {
+    return {
+      label: String(num),
+      isUnlocked: true,
+      midpoint: num,
+      rangeType: "exact",
+    };
   }
   if (tokensSpent === 1) {
     const decade = Math.floor(num / 10) * 10;
