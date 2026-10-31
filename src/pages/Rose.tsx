@@ -78,48 +78,48 @@ const ROLE_GROUPS = [
 ];
 
 // Known teams with an official anthem available in public/sounds
-// Club Social Colors Solid Gradients (Muted, elegant, and non-garish)
+// Club Social Colors Solid Gradients (Balanced middle-ground: slightly desaturated, vibrant yet soft)
 const getTeamSocialBg = (team: string): string => {
   switch (team) {
     case "APD":
-      // APD: sfumatura a 3 colori (nero, rosa e giallo) attenuata ed elegante
-      return "bg-gradient-to-br from-[#09090b] via-[#831843] to-[#854d0e]";
+      // APD: sfumatura a 3 colori (nero, rosa e giallo) bilanciata
+      return "bg-gradient-to-br from-[#27272a] via-[#c93b7b] to-[#d9a316]";
     case "ASK":
     case "SKA":
-      // Sporting Karalis: Verde primario & Bianco secondario attenuato
-      return "bg-gradient-to-br from-[#064e3b] via-[#047857] to-[#cbd5e1]";
+      // Sporting Karalis: Verde primario & Bianco secondario
+      return "bg-gradient-to-br from-[#109868] via-[#0d8259] to-[#e2e8f0]";
     case "ACF":
       // AC Fantasy: Verde primario & Nero secondario
-      return "bg-gradient-to-br from-[#064e3b] via-[#065f46] to-[#09090b]";
+      return "bg-gradient-to-br from-[#149e6e] via-[#0d7a55] to-[#27272a]";
     case "PFC":
-      // PFC: Rosa & Nero profondo
-      return "bg-gradient-to-br from-[#831843] via-[#4c0519] to-[#09090b]";
+      // PFC: Rosa & Nero
+      return "bg-gradient-to-br from-[#d9468f] via-[#b82d73] to-[#27272a]";
     case "MAR":
-      // Mar's Attack: Rosso rubino scuro & Blu navy
-      return "bg-gradient-to-br from-[#7f1d1d] via-[#450a0a] to-[#1e3a8a]";
+      // Mar's Attack: Rosso & Blu
+      return "bg-gradient-to-br from-[#cf3434] via-[#9e2a3b] to-[#2b59c3]";
     case "ACD":
-      // AC Denti: Rosso granata & Bianco fumo
-      return "bg-gradient-to-br from-[#7f1d1d] via-[#991b1b] to-[#94a3b8]";
+      // AC Denti: Rosso & Bianco
+      return "bg-gradient-to-br from-[#d93838] via-[#b82828] to-[#e2e8f0]";
     case "ALV":
-      // Alvisopoli: Azzurro temperato & Arancione terracotta
-      return "bg-gradient-to-br from-[#0369a1] via-[#075985] to-[#c2410c]";
+      // Alvisopoli: Azzurro primario & Arancione secondario
+      return "bg-gradient-to-br from-[#1992d4] via-[#1778b5] to-[#e87524]";
     case "OLD":
-      // Old Bois: Blu zaffiro scuro & Lampone scuro
-      return "bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#9d174d]";
+      // Old Bois: Blu & Rosa
+      return "bg-gradient-to-br from-[#356de0] via-[#2b56b8] to-[#db3e6b]";
     case "VFC":
-      // Virtus FC: Oro brunito / Ambra & Nero
-      return "bg-gradient-to-br from-[#854d0e] via-[#713f12] to-[#09090b]";
+      // Virtus FC: Giallo & Nero
+      return "bg-gradient-to-br from-[#d9a316] via-[#b8860b] to-[#27272a]";
     case "RMB":
-      // Real Madrink: Rosso scuro vellutato & Nero
-      return "bg-gradient-to-br from-[#7f1d1d] via-[#450a0a] to-[#09090b]";
+      // Real Madrink: Rosso & Nero
+      return "bg-gradient-to-br from-[#cc2929] via-[#991f1f] to-[#27272a]";
     case "COS":
-      // Cosmo FC: Viola prugna profondo & Petrolio/Ciano scuro
-      return "bg-gradient-to-br from-[#581c87] via-[#3b0764] to-[#0e7490]";
+      // Cosmo FC: Viola & Ciano
+      return "bg-gradient-to-br from-[#7c4dff] via-[#5e35b1] to-[#12a4bd]";
     case "EUR":
-      // Eurosbin: Blu navy notte & Oro brunito
-      return "bg-gradient-to-br from-[#1e3a8a] via-[#172554] to-[#854d0e]";
+      // Eurosbin: Blu & Giallo
+      return "bg-gradient-to-br from-[#234dc9] via-[#1e40a3] to-[#e0b422]";
     default:
-      return "bg-gradient-to-br from-slate-800 via-slate-900 to-black";
+      return "bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900";
   }
 };
 
@@ -371,10 +371,10 @@ const Rose = () => {
                         setSearchQuery("");
                         setRoleFilter("ALL");
                       }}
-                      className={`group relative flex flex-col justify-between rounded-2xl border border-white/20 shadow-md hover:shadow-2xl hover:scale-[1.015] transition-all duration-300 overflow-hidden cursor-pointer ${getTeamSocialBg(team.TEAM_ID)} text-white`}
+                      className={`group relative flex flex-col justify-between rounded-2xl border border-border bg-clip-padding shadow-md hover:shadow-2xl hover:scale-[1.015] transition-all duration-300 overflow-hidden cursor-pointer ${getTeamSocialBg(team.TEAM_ID)} text-white`}
                     >
                       {/* Subtle dark vignette to ensure 100% text readability over solid colors */}
-                      <div className="absolute inset-0 bg-black/25 backdrop-blur-[0.5px] pointer-events-none" />
+                      <div className="absolute inset-0 bg-black/10 pointer-events-none" />
 
                       {/* Top Palmares badges (if any) */}
                       {(team.scudetto > 0 || team.supercoppa > 0) && (
