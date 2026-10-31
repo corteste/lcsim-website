@@ -718,33 +718,66 @@ export function sanitizeTacticalSettings(
 // ============================================================================
 export type RoleFit = "natural" | "adaptable" | "out";
 
-export function evaluateRoleFit(playerPos: string | undefined, slotRole: string): RoleFit {
+export function evaluateRoleFit(
+  playerPos: string | undefined,
+  slotRole: string,
+  player?: {
+    PreferredPosition2?: string | null;
+    PreferredPosition3?: string | null;
+    PreferredPosition4?: string | null;
+  } | null
+): RoleFit {
   if (!playerPos) return "out";
   const p = playerPos.toUpperCase().trim();
   const s = slotRole.toUpperCase().trim();
 
+  // 1. Ruolo Naturale Diretto
   if (p === s) return "natural";
   if ((p === "AT" && s === "ATT") || (p === "ATT" && s === "AT")) return "natural";
 
-  // Portiere può fare solo il portiere
+  // 2. Ruoli Secondari Dichiarati (se definiti nel profilo del calciatore): sono considerati naturali
+  if (player) {
+    const secRoles = [
+      player.PreferredPosition2,
+      player.PreferredPosition3,
+      player.PreferredPosition4,
+    ]
+      .filter((r): r is string => Boolean(r && typeof r === "string" && r.trim() !== "" && r !== "-"))
+      .map((r) => r.toUpperCase().trim());
+
+    if (secRoles.includes(s)) return "natural";
+    if (s === "ATT" && secRoles.includes("AT")) return "natural";
+    if (s === "AT" && secRoles.includes("ATT")) return "natural";
+  }
+
+  // Portiere può fare SOLO il portiere
   if (p === "POR" || s === "POR") return "out";
 
-  // Compatibilità affine tra ruoli vicini
+  // 3. Compatibilità Affine tra Ruoli Vicini
   const adaptableMap: Record<string, string[]> = {
-    DC: ["CDC", "TD", "TS"],
-    TD: ["ED", "TS", "DC"],
-    TS: ["ES", "TD", "DC"],
-    CDC: ["CC", "DC"],
-    CC: ["CDC", "COC", "ED", "ES"],
-    COC: ["CC", "AT", "AD", "AS", "ED", "ES", "ATT"],
+    DC: ["CDC", "TD", "TS", "DFC"],
+    TD: ["ED", "TS", "DC", "TER"],
+    TS: ["ES", "TD", "DC", "TER"],
+    CDC: ["CC", "DC", "MED"],
+    CC: ["CDC", "COC", "ED", "ES", "CEN"],
+    COC: ["CC", "AT", "AD", "AS", "ED", "ES", "ATT", "TRQ"],
     ED: ["AD", "TD", "ES", "CC", "COC"],
     ES: ["AS", "TS", "ED", "CC", "COC"],
-    AD: ["ED", "AS", "ATT", "COC"],
-    AS: ["ES", "AD", "ATT", "COC"],
+    AD: ["ED", "AS", "ATT", "COC", "AT"],
+    AS: ["ES", "AD", "ATT", "COC", "AT"],
     AT: ["ATT", "COC", "AD", "AS"],
     ATT: ["AT", "AD", "AS", "COC"],
   };
 
   if (adaptableMap[s]?.includes(p)) return "adaptable";
+
+  // Stesso macro-reparto (es. difensori centrali/terzini, centrocampisti centrali/esterni)
+  const isSameDept =
+    (["DC", "TD", "TS", "DFC", "TER"].includes(p) && ["DC", "TD", "TS", "DFC", "TER"].includes(s)) ||
+    (["CDC", "CC", "ED", "ES", "COC", "CEN", "MED", "TRQ"].includes(p) && ["CDC", "CC", "ED", "ES", "COC", "CEN", "MED", "TRQ"].includes(s)) ||
+    (["AD", "AS", "AT", "ATT"].includes(p) && ["AD", "AS", "AT", "ATT"].includes(s));
+
+  if (isSameDept) return "adaptable";
+
   return "out";
 }

@@ -13,6 +13,7 @@ import {
   SET_PIECES_DEFINITIONS,
   evaluateRoleFit,
 } from "@/types/tactics";
+import { calcOverall } from "@/utils/playerOvrCalculator";
 import {
   getPlayerImage,
   getRoleColor,
@@ -239,8 +240,11 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                   {formation.positions.map((pos, slotIdx) => {
                     const occupant = formationSlots[slotIdx];
                     const fit = occupant
-                      ? evaluateRoleFit(occupant.Posiz, pos.label)
+                      ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
                       : null;
+                    const dynamicOvr = occupant ? calcOverall(pos.label, occupant, occupant.OVR ?? 70) : null;
+                    const baseOvr = occupant?.OVR ?? 70;
+                    const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
 
                     const ringColor =
                       fit === "natural"
@@ -300,8 +304,25 @@ export const TacticsOverviewTab: React.FC<TacticsOverviewTabProps> = ({
                               </div>
 
                               {/* Pillola OVR Grande e Nitida */}
-                              <span className="absolute -top-1.5 -right-2 bg-slate-950 text-white border border-white/60 text-xs font-black font-mono px-1.5 py-0.5 rounded-full shadow-lg z-10">
-                                {occupant.OVR}
+                              <span
+                                className={`absolute -top-1.5 -right-2 text-xs font-black font-mono px-1.5 py-0.5 rounded-full shadow-lg z-10 border transition-all ${
+                                  ovrDiff < 0
+                                    ? "bg-rose-950 text-rose-300 border-rose-500/80 ring-1 ring-rose-500/40"
+                                    : ovrDiff > 0
+                                    ? "bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40"
+                                    : fit === "natural"
+                                    ? "bg-slate-950 text-white border-white/60"
+                                    : "bg-amber-950 text-amber-300 border-amber-500/80"
+                                }`}
+                                title={
+                                  ovrDiff < 0
+                                    ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (${ovrDiff} rispetto a ${baseOvr} per adattamento fuori ruolo)`
+                                    : ovrDiff > 0
+                                    ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (+${ovrDiff} rispetto a ${baseOvr})`
+                                    : `OVR nel ruolo: ${dynamicOvr} (Ruolo Naturale)`
+                                }
+                              >
+                                {dynamicOvr}
                               </span>
 
                               {/* Numero Maglia */}

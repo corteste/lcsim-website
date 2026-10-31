@@ -1052,15 +1052,20 @@ Riorganizzata la gestione dell'assetto difensivo nella pagina Tattica (`/mia-squ
 ---
 
 ## 📌 49. Tattica: Descrizioni Istruzioni, Info di Gioco, Adattamenti Posizioni & Valore sul Campetto
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Integrato (Testi Ufficiali FC IQ, Ruoli Secondari Naturali & OVR Dinamico sul Campetto)
 - **Priorità**: Media-Alta (Chiarezza e fedeltà con EA Sports FC 25)
-- **Moduli coinvolti**: src/pages/Tattica.tsx, src/components/tactics/
-- **Tabelle coinvolte**: an_team_tactic, an_player
+- **Moduli coinvolti**: `src/pages/Tattica.tsx`, `src/types/tactics.ts`, `src/components/tactics/TacticsOverviewTab.tsx`, `src/components/tactics/PlayerInstructionsModal.tsx`, `src/utils/playerOvrCalculator.ts`
+- **Tabelle coinvolte**: `an_team_tactic`, `an_player`
 Descrizione
-Descrizione Istruzioni Ruoli: mostrare una descrizione per ogni istruzione/ruolo.
-Testi dal Gioco: per PlayStyle e compiti, usare le descrizioni ufficiali del gioco.
-Adattamenti delle Posizioni: da verificare con quale criterio sono stati definiti gli adattamenti di posizione (giocatore fuori ruolo) e documentarne la logica.
-Valore sul Campetto: mostrare sul campo 2D il valore del giocatore nella posizione effettivamente assegnata.
+- **Valore Dinamico sul Campetto 2D**: l'indicatore OVR sulla pedina del giocatore mostra ora in tempo reale l'Overall ricalcolato in base alla posizione effettivamente assegnata (`pos.label`) tramite `calcOverall`. Se il calciatore è fuori ruolo e subisce una perdita di efficacia, il badge OVR si evidenzia in allerta (ambra/rosso) con tooltip esplicativo completo (es. *OVR nel ruolo ATT: 74 (-8 Fuori Ruolo, Base: 82)*).
+- **Adattamento Fuori Ruolo & Ruoli Secondari**:
+  - `evaluateRoleFit` aggiornato per riconoscere a pieno titolo come **Naturali** (anello verde) tutti i ruoli secondari dichiarati della scheda (`PreferredPosition2, 3, 4`).
+  - Ruoli affini limitrofi (es. DC $\to$ TD/TS/CDC, CC $\to$ CDC/COC/ED/ES) contrassegnati come **Adattati** (anello ambra).
+  - Posizioni incompatibili o reparti opposti contrassegnati come **Fuori Ruolo** (anello rosso).
+  - La media OVR di reparto (Difesa, Centrocampo, Attacco) nelle statistiche della formazione calcola i valori dinamici effettivi delle posizioni occupate anziché i valori statici di base.
+- **Testi & Compiti Ufficiali FC IQ (EA FC 25)**:
+  - Integrata la copertura completa del ruolo **AT** (Seconda Punta, Falso 9, Attaccante Ombra) con i relativi focus tattici in `FC25_ROLES_BY_POSITION`.
+  - Descrizioni dettagliate di ciascun ruolo e compito/focus nel modale istruzioni e nelle schede tattiche.
 
 
 

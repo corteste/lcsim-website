@@ -43,6 +43,7 @@ import { supabase } from "@/supabaseClient";
 import { PLAYER_TABLE, TEAM_TACTIC_TABLE } from "../constants/App";
 import { Player } from "../types/player";
 import { getRoleColor, getValueColor, getPlayerImage, getPosGroup, getRoleTextColor } from "@/utils/functions";
+import { calcOverall } from "@/utils/playerOvrCalculator";
 import { useAuth } from "@/context/AuthContext";
 import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
@@ -57,6 +58,8 @@ import {
   getDefaultTacticalSettings,
   sanitizeTacticalSettings,
   FC25_ROLES_BY_POSITION,
+  evaluateRoleFit,
+  RoleFit,
 } from "@/types/tactics";
 import { SlidersHorizontal } from "lucide-react";
 import { LeagueDeadline } from "@/types/deadlines";
@@ -654,42 +657,7 @@ export const EA_FC25_FORMATIONS: FormationDef[] = [
   },
 ];
 
-// ============================================================================
-// VALUTAZIONE COMPATIBILITÀ RUOLO (Stile EA FC IQ)
-// ============================================================================
-export type RoleFit = "natural" | "adaptable" | "out";
-
-export function evaluateRoleFit(playerPos: string | undefined, slotRole: string): RoleFit {
-  if (!playerPos) return "out";
-  const p = playerPos.toUpperCase();
-  const s = slotRole.toUpperCase();
-
-  if (p === s) return "natural";
-  if ((p === "AT" && s === "ATT") || (p === "ATT" && s === "AT")) return "natural";
-
-  // Portiere può fare solo il portiere
-  if (p === "POR" || s === "POR") return "out";
-
-  // Compatibilità affine tra ruoli vicini
-  const adaptableMap: Record<string, string[]> = {
-    DC: ["CDC", "TD", "TS"],
-    TD: ["ED", "TS", "DC"],
-    TS: ["ES", "TD", "DC"],
-    CDC: ["CC", "DC"],
-    CC: ["CDC", "COC", "ED", "ES"],
-    COC: ["CC", "AT", "AD", "AS", "ED", "ES", "ATT"],
-    ED: ["AD", "TD", "ES", "CC", "COC"],
-    ES: ["AS", "TS", "ED", "CC", "COC"],
-    AD: ["ED", "AS", "ATT", "COC"],
-    AS: ["ES", "AD", "ATT", "COC"],
-    AT: ["ATT", "COC", "AD", "AS"],
-    ATT: ["AT", "AD", "AS", "COC"],
-  };
-
-  if (adaptableMap[s]?.includes(p)) return "adaptable";
-  if (getPosGroup(p) === getPosGroup(s)) return "adaptable";
-  return "out";
-}
+// evaluateRoleFit e RoleFit importati centralmente da @/types/tactics
 
 // ============================================================================
 // ALGORITMO DI AUTO-SCHIERAMENTO MIGLIOR 11 PER IL MODULO SCELTO
@@ -1005,20 +973,23 @@ const Tattica = () => {
     formationSlots.forEach((p, idx) => {
       if (!p) return;
       const slotRole = currentFormation.positions[idx]?.label || "CC";
-      const fit = evaluateRoleFit(p.Posiz, slotRole);
+      const fit = evaluateRoleFit(p.Posiz, slotRole, p);
       if (fit === "natural") naturalCount++;
       else if (fit === "adaptable") adaptableCount++;
       else outCount++;
 
       const slotGroup = getPosGroup(slotRole);
       if (slotGroup === "DIF" || slotGroup === "POR") {
-        difSum += p.OVR ?? 0;
+        const dynOvr = calcOverall(slotRole, p, p.OVR ?? 70);
+        difSum += dynOvr;
         difCnt++;
       } else if (slotGroup === "CEN") {
-        cenSum += p.OVR ?? 0;
+        const dynOvr = calcOverall(slotRole, p, p.OVR ?? 70);
+        cenSum += dynOvr;
         cenCnt++;
       } else if (slotGroup === "ATT") {
-        attSum += p.OVR ?? 0;
+        const dynOvr = calcOverall(slotRole, p, p.OVR ?? 70);
+        attSum += dynOvr;
         attCnt++;
       }
     });
@@ -1847,8 +1818,11 @@ const Tattica = () => {
                     {currentFormation.positions.map((pos, slotIndex) => {
                       const occupant = formationSlots[slotIndex];
                       const roleFit = occupant
-                        ? evaluateRoleFit(occupant.Posiz, pos.label)
+                        ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
                         : null;
+                      const dynamicOvr = occupant ? calcOverall(pos.label, occupant, occupant.OVR ?? 70) : null;
+                      const baseOvr = occupant?.OVR ?? 70;
+                      const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
                       const isDragOver = dragOverSlotIndex === slotIndex;
 
                       // Opzioni per il menù a tendina di questo slot:
@@ -2012,13 +1986,27 @@ const Tattica = () => {
                                   />
                                 )}
 
-                                <span
-                                  className={`text-xs font-black font-mono w-7 text-center shrink-0 ${getValueColor(
-                                    occupant.OVR ?? 70
-                                  )}`}
-                                >
-                                  {occupant.OVR}
-                                </span>
+                                {(() => {
+                                  const dynOvr = calcOverall(pos.label, occupant, occupant.OVR ?? 70);
+                                  const baseOvr = occupant.OVR ?? 70;
+                                  const diff = dynOvr - baseOvr;
+                                  return (
+                                    <span
+                                      className={`text-xs font-black font-mono w-7 text-center shrink-0 ${getValueColor(
+                                        dynOvr
+                                      )}`}
+                                      title={
+                                        diff < 0
+                                          ? `OVR nel ruolo ${pos.label}: ${dynOvr} (${diff} per adattamento fuori ruolo, Base naturale: ${baseOvr})`
+                                          : diff > 0
+                                          ? `OVR nel ruolo ${pos.label}: ${dynOvr} (+${diff} rispetto a ${baseOvr} base)`
+                                          : `OVR nel ruolo: ${dynOvr} (Ruolo Naturale)`
+                                      }
+                                    >
+                                      {dynOvr}
+                                    </span>
+                                  );
+                                })()}
 
                                 {/* Bottone Istruzioni FC IQ */}
                                 <Button
@@ -2447,8 +2435,25 @@ const Tattica = () => {
                                     </div>
 
                                     {/* Pillola OVR in alto a destra */}
-                                    <span className="absolute -top-1 -right-2 bg-slate-950 text-white border border-white/40 text-[10px] font-black font-mono px-1.5 py-0 rounded-full shadow">
-                                      {occupant.OVR}
+                                    <span
+                                      className={`absolute -top-1 -right-2 text-[10px] font-black font-mono px-1.5 py-0 rounded-full shadow border transition-all ${
+                                        ovrDiff < 0
+                                          ? "bg-rose-950 text-rose-300 border-rose-500/80 ring-1 ring-rose-500/40"
+                                          : ovrDiff > 0
+                                          ? "bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40"
+                                          : roleFit === "natural"
+                                          ? "bg-slate-950 text-white border-white/40"
+                                          : "bg-amber-950 text-amber-300 border-amber-500/80"
+                                      }`}
+                                      title={
+                                        ovrDiff < 0
+                                          ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (${ovrDiff} rispetto a ${baseOvr} per adattamento fuori ruolo)`
+                                          : ovrDiff > 0
+                                          ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (+${ovrDiff} rispetto a ${baseOvr})`
+                                          : `OVR nel ruolo: ${dynamicOvr} (Ruolo Naturale)`
+                                      }
+                                    >
+                                      {dynamicOvr}
                                     </span>
 
                                     {/* Numero maglia giocatore in basso a sinistra */}

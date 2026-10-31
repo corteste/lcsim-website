@@ -10,6 +10,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Player } from "@/types/player";
+import { calcOverall } from "@/utils/playerOvrCalculator";
+import { evaluateRoleFit } from "@/types/tactics";
 import {
   TacticalSettings,
   getRolesForPosition,
@@ -166,9 +168,29 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                       }}
                     />
                   </div>
-                  <span className="absolute -top-1 -right-1 bg-slate-950 text-white border border-white/30 text-[10px] font-black font-mono px-1 rounded-full">
-                    {occupant.OVR}
-                  </span>
+                  {(() => {
+                    const dynOvr = calcOverall(slotRole, occupant, occupant.OVR ?? 70);
+                    const baseOvr = occupant.OVR ?? 70;
+                    const diff = dynOvr - baseOvr;
+                    return (
+                      <span
+                        className={`absolute -top-1 -right-1 text-[10px] font-black font-mono px-1.5 py-0.2 rounded-full border shadow ${
+                          diff < 0
+                            ? "bg-rose-950 text-rose-300 border-rose-500/80"
+                            : diff > 0
+                            ? "bg-emerald-950 text-emerald-300 border-emerald-500/80"
+                            : "bg-slate-950 text-white border-white/40"
+                        }`}
+                        title={
+                          diff < 0
+                            ? `OVR nel ruolo ${slotRole}: ${dynOvr} (${diff} per adattamento fuori ruolo, Base: ${baseOvr})`
+                            : `OVR nel ruolo: ${dynOvr}`
+                        }
+                      >
+                        {dynOvr}
+                      </span>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="w-14 h-14 rounded-full border-2 border-dashed border-border bg-muted/30 flex items-center justify-center text-muted-foreground text-xs font-bold">
@@ -196,11 +218,31 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                   <Badge variant="outline" className="text-[10px] py-0 px-1 font-mono font-bold">
                     {slotRole}
                   </Badge>
-                  {occupant && (
-                    <span className="text-[11px] text-muted-foreground">
-                      (Ruolo naturale: <b>{occupant.Posiz}</b>)
-                    </span>
-                  )}
+                  {occupant && (() => {
+                    const fit = evaluateRoleFit(occupant.Posiz, slotRole, occupant);
+                    const dynOvr = calcOverall(slotRole, occupant, occupant.OVR ?? 70);
+                    const diff = dynOvr - (occupant.OVR ?? 70);
+                    return (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-muted-foreground">
+                          Ruolo naturale: <b>{occupant.Posiz}</b>
+                        </span>
+                        {fit === "natural" ? (
+                          <Badge className="text-[9px] px-1 py-0 h-3.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                            Naturale (OVR {dynOvr})
+                          </Badge>
+                        ) : fit === "adaptable" ? (
+                          <Badge className="text-[9px] px-1 py-0 h-3.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                            Adattato (OVR {dynOvr}{diff < 0 ? ` ${diff}` : ""})
+                          </Badge>
+                        ) : (
+                          <Badge className="text-[9px] px-1 py-0 h-3.5 bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30">
+                            Fuori Ruolo (OVR {dynOvr} {diff})
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </DialogDescription>
               </div>
             </div>
