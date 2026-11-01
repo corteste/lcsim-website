@@ -34,6 +34,7 @@ import {
   Pause,
   ArrowLeft,
   ArrowRight,
+Pencil,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -146,6 +147,8 @@ const TEAM_STADIUMS: Record<string, string> = {
 };
 
 const Rose = () => {
+  const { user, isAdmin } = useAuth();
+  const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const { teams, loading: loadingTeams, refetch: refetchTeams } = getTeams();
 
   // Fetch claimed president names
@@ -1118,6 +1121,17 @@ const Rose = () => {
             onClose={() => setSelectedPlayer(null)}
           />
         </div>
+      )}
+      {currentTeam && (
+        <EditCoachModal
+          open={isEditCoachOpen}
+          onOpenChange={(open) => {
+            setIsEditCoachOpen(open);
+            if (!open) refetchTeams();
+          }}
+          teamId={currentTeam.TEAM_ID}
+          teamName={currentTeam.NAME}
+        />
       )}
     </div>
   );
