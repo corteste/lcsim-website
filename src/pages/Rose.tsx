@@ -657,9 +657,7 @@ const Rose = () => {
                               loading="lazy"
                             />
                           </div>
-                          <span className={`mt-1.5 text-[10px] sm:text-[11px] font-mono font-black px-2 py-0.5 rounded-md border ${j.badgeClass}`}>
-                            {j.label}
-                          </span>
+                          
                         </button>
                       ))}
                     </div>
