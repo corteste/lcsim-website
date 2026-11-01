@@ -754,6 +754,8 @@ const Allenamenti = () => {
     return increasesChanged || specChanged;
   }, [player, increases, specializationsDraft, currentTrainingRecord]);
 
+  const isPhysicalGroup = (groupKey: string, category: string) => category === "FIS" || groupKey === "PORF";
+
   // Gestione incremento/decremento singolo gruppo attributi
   const setIncrease = (key: string, value: number) => {
     const clamped = Math.max(0, Math.min(25, value));
@@ -764,6 +766,16 @@ const Allenamenti = () => {
     if (!group) return;
 
     if (clamped > currentVal) {
+      // Blocco anagrafico per veterani (>= 31 anni) sui gruppi fisici e fisico portiere
+      if ((player?.Età ?? 0) >= 31 && isPhysicalGroup(group.key, group.category)) {
+        toast({
+          title: "Limite Anagrafico Veterani",
+          description: `I miglioramenti fisici sono bloccati per calciatori dai 31 anni compiuti (${player?.Nome} ha ${player?.Età} anni).`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const allMaxed = group.subs.every((s) => (preStats[s] ?? 0) + currentVal >= 99);
       if (allMaxed) {
         toast({
@@ -812,6 +824,19 @@ const Allenamenti = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    if ((player.Età ?? 0) >= 31) {
+      for (const row of groupRows) {
+        if (isPhysicalGroup(row.key, row.category) && (increases[row.key] ?? 0) > 0) {
+          toast({
+            title: "Limite Anagrafico Veterani",
+            description: `I miglioramenti fisici non sono consentiti per ${player.Nome} (${player.Età} anni). Rimuovi gli aumenti sui gruppi fisici prima di salvare.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
     }
 
     setIsSaving(true);
@@ -1410,9 +1435,11 @@ const Allenamenti = () => {
                           const refVal = getGroupReferenceValue(g, preStats, inc);
                           const isPOR = g.category === "POR";
                           const isCALC = g.key === "CALC";
+                          const isPhysical = isPhysicalGroup(g.key, g.category);
+                          const isAgeBlocked = (player?.Età ?? 0) >= 31 && isPhysical;
                           const allMaxed = g.subs.every((s) => (preStats[s] ?? 0) + inc >= 99);
                           const hasChange = inc > 0;
-                          const canIncrement = inc < 25 && !allMaxed && xpRemaining >= nextTickCost;
+                          const canIncrement = inc < 25 && !allMaxed && !isAgeBlocked && xpRemaining >= nextTickCost;
                           const IconComp = g.icon;
 
                           return (
@@ -1435,6 +1462,11 @@ const Allenamenti = () => {
                                       {hasChange && (
                                         <Badge className="bg-emerald-500 text-white font-mono text-[10px] px-1.5 py-0">
                                           +{inc}
+                                        </Badge>
+                                      )}
+                                      {isAgeBlocked && (
+                                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-500/40 text-amber-500 bg-amber-500/10 font-semibold">
+                                          Blocco Fisico (≥31 anni)
                                         </Badge>
                                       )}
                                     </div>
@@ -1487,11 +1519,13 @@ const Allenamenti = () => {
                                     onClick={() => setIncrease(g.key, inc + 1)}
                                     disabled={!canIncrement}
                                     title={
-                                      allMaxed
-                                        ? "Tutti gli attributi del gruppo hanno raggiunto 99"
-                                        : xpRemaining < nextTickCost
-                                          ? `Servono ${nextTickCost} XP disponibili (ne hai ${xpRemaining})`
-                                          : `Aumenta di 1 livello (costo: ${nextTickCost} XP)`
+                                      isAgeBlocked
+                                        ? `Miglioramenti fisici non consentiti per calciatori dai 31 anni compiuti (${player?.Età} anni)`
+                                        : allMaxed
+                                          ? "Tutti gli attributi del gruppo hanno raggiunto 99"
+                                          : xpRemaining < nextTickCost
+                                            ? `Servono ${nextTickCost} XP disponibili (ne hai ${xpRemaining})`
+                                            : `Aumenta di 1 livello (costo: ${nextTickCost} XP)`
                                     }
                                   >
                                     <Plus className="h-3 w-3" />

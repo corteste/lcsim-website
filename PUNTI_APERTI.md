@@ -1369,7 +1369,7 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 62. Allenamenti: Vincoli Tratti Dorati, Ruolo++ Automatico, Regole Cambio Ruolo & Limiti Fisici Veterani
-- **Stato**: 🔴 Da Sviluppare
+- **Stato**: 🟢 Completato & Testato (Tratto Oro permanente non eliminabile, 1° Ruolo++ gratuito su cambio posizione, esclusione ruolo attuale da cambio e sconti, blocco incrementi fisici per veterani ≥ 31 anni)
 - **Priorità**: Alta (Regolamento e bilanciamento del sistema di crescita)
 - **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/utils/playerGrowth.ts`, `src/utils/playerRoleDiscount.ts`
 - **Specifiche & Requisiti**:

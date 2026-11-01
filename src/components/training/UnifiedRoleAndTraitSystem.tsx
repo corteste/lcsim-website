@@ -142,9 +142,10 @@ export default function UnifiedRoleAndTraitSystem({
       toast.error("Rose congelate dalla Lega");
       return;
     }
-    setPendingNewPos(draft.posiz);
-    const firstSub = OFFICIAL_SUBROLES.find((sr) => sr.position === draft.posiz);
-    setPendingNewSubRole(firstSub ? `${firstSub.name} +` : "");
+    const initialPos = OFFICIAL_POSITIONS.find((p) => p !== player.Posiz) || "CC";
+    setPendingNewPos(initialPos);
+    const firstSub = OFFICIAL_SUBROLES.find((sr) => sr.position === initialPos);
+    setPendingNewSubRole(firstSub ? `${firstSub.name} ++` : "");
     setRoleChangeDialogOpen(true);
   };
 
@@ -154,7 +155,7 @@ export default function UnifiedRoleAndTraitSystem({
       return;
     }
     if (!pendingNewSubRole) {
-      toast.error("Seleziona il primo Ruolo+ per la nuova posizione");
+      toast.error("Seleziona il primo Ruolo++ per la nuova posizione");
       return;
     }
     const isNew = pendingNewPos !== player.Posiz;
@@ -391,18 +392,20 @@ export default function UnifiedRoleAndTraitSystem({
     }
   };
 
-  const handleDemoteGoldToSilver = (traitId: string) => {
-    if (isRosterLocked) return;
-    const nextTraits = draft.traits.map((t) => {
-      if (t.id === traitId) return { ...t, tier: "silver" as const };
-      return t;
-    });
-    onDraftChange({ ...draft, traits: nextTraits });
-    toast.info("Tratto reimpostato ad Argento.");
+  const handleDemoteGoldToSilver = (_traitId: string) => {
+    toast.warning("I tratti Oro (Playmaker+) sono permanenti e non possono essere retrocessi.");
   };
 
   const handleInitiateRemoveTrait = (traitId: string) => {
     if (isRosterLocked) return;
+
+    // Controllo se il tratto è ORO: i tratti dorati sono permanenti e non possono essere eliminati
+    const traitObj = draft.traits.find((t) => t.id === traitId);
+    if (traitObj?.tier === "gold") {
+      toast.error("I tratti Oro (Playmaker+) sono permanenti e non possono essere eliminati.");
+      return;
+    }
+
     // Check if trait is from base player
     const baseSpec = player;
     const isFromBase =
@@ -861,15 +864,10 @@ export default function UnifiedRoleAndTraitSystem({
                       {/* Bottoni Azione sul tratto posseduto */}
                       <div className="flex items-center gap-1.5 pt-2 border-t border-border/40">
                         {isGold ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDemoteGoldToSilver(t.id)}
-                            disabled={isRosterLocked}
-                            className="h-6 text-[10px] font-semibold text-muted-foreground hover:text-foreground flex-1"
-                          >
-                            Reimposta ad Argento
-                          </Button>
+                          <div className="flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-bold flex-1">
+                            <Star className="h-3 w-3 fill-amber-500" />
+                            Tratto Oro Permanente
+                          </div>
                         ) : (
                           <Button
                             size="sm"
@@ -896,16 +894,18 @@ export default function UnifiedRoleAndTraitSystem({
                           </Button>
                         )}
 
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleInitiateRemoveTrait(t.id)}
-                          disabled={isRosterLocked}
-                          className="h-6 w-6 text-muted-foreground hover:text-rose-500"
-                          title="Elimina questo tratto"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {!isGold && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleInitiateRemoveTrait(t.id)}
+                            disabled={isRosterLocked}
+                            className="h-6 w-6 text-muted-foreground hover:text-rose-500"
+                            title="Elimina questo tratto"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );
@@ -1154,7 +1154,7 @@ export default function UnifiedRoleAndTraitSystem({
               {pendingNewPos !== player.Posiz && roleDiscounts?.[pendingNewPos] && (
                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold">(Sconto 50% applicato) </span>
               )}
-              e include la scelta del 1° Ruolo+ della nuova posizione.
+              ed assegna automaticamente la maestria massima <strong>Ruolo++</strong> (+2) gratuita nella nuova posizione.
             </DialogDescription>
           </DialogHeader>
 
@@ -1167,22 +1167,19 @@ export default function UnifiedRoleAndTraitSystem({
                 onValueChange={(val) => {
                   setPendingNewPos(val);
                   const firstSub = OFFICIAL_SUBROLES.find((sr) => sr.position === val);
-                  setPendingNewSubRole(firstSub ? `${firstSub.name} +` : "");
+                  setPendingNewSubRole(firstSub ? `${firstSub.name} ++` : "");
                 }}
               >
                 <SelectTrigger className="h-9 text-xs">
                   <SelectValue placeholder="Seleziona posizione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {OFFICIAL_POSITIONS.map((pos) => {
-                    const isCurrentRole = pos === player.Posiz;
-                    const isPosDiscounted = Boolean(roleDiscounts?.[pos]) && !isCurrentRole;
+                  {OFFICIAL_POSITIONS.filter((pos) => pos !== player.Posiz).map((pos) => {
+                    const isPosDiscounted = Boolean(roleDiscounts?.[pos]);
                     return (
-                      <SelectItem key={pos} value={pos} className="text-xs font-bold" disabled={isCurrentRole}>
+                      <SelectItem key={pos} value={pos} className="text-xs font-bold">
                         <div className="flex items-center justify-between w-full gap-2">
-                          <span className={isCurrentRole ? "text-muted-foreground" : ""}>
-                            {pos} {isCurrentRole && "(Attuale)"}
-                          </span>
+                          <span>{pos}</span>
                           {isPosDiscounted && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-normal">
                               Sconto 50%
@@ -1203,20 +1200,20 @@ export default function UnifiedRoleAndTraitSystem({
               </div>
             )}
 
-            {/* Selettore 1° Ruolo+ Iniziale */}
+            {/* Selettore 1° Ruolo++ Iniziale */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Primo Ruolo+ (Incluso Gratis):</label>
+              <label className="text-xs font-bold text-foreground">Primo Ruolo++ (Incluso Gratuito):</label>
               <Select
                 value={pendingNewSubRole}
                 onValueChange={(val) => setPendingNewSubRole(val)}
               >
                 <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Seleziona Ruolo+" />
+                  <SelectValue placeholder="Seleziona Ruolo++" />
                 </SelectTrigger>
                 <SelectContent>
                   {pendingCompatibleSubRoles.map((sr) => (
-                    <SelectItem key={sr.id} value={`${sr.name} +`} className="text-xs">
-                      {sr.name} +
+                    <SelectItem key={sr.id} value={`${sr.name} ++`} className="text-xs font-semibold">
+                      {sr.name} ++
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1232,6 +1229,8 @@ export default function UnifiedRoleAndTraitSystem({
                   ? "20 XP (Sconto 50% applicato)"
                   : "40 XP"}
               </strong>
+              <br />
+              • Il 1° Ruolo viene automaticamente potenziato a <strong>Ruolo++</strong> senza costi aggiuntivi.
               <br />
               • Un eventuale 2° Ruolo+ potrà essere aggiunto in seguito a 100 XP.
             </div>
