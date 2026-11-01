@@ -46,6 +46,7 @@ export default function Trattative() {
 
   const [trades, setTrades] = useState<EnrichedTrade[]>([]);
   const [adminPendingTrades, setAdminPendingTrades] = useState<EnrichedTrade[]>([]);
+  const [adminAllTrades, setAdminAllTrades] = useState<EnrichedTrade[]>([]);
   const [completedTradesList, setCompletedTradesList] = useState<EnrichedTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -73,14 +74,16 @@ export default function Trattative() {
       return;
     }
     setLoading(true);
-    const [teamTrades, pendingAdmin, completed, marketState] = await Promise.all([
+    const [teamTrades, pendingAdmin, adminAll, completed, marketState] = await Promise.all([
       user.team ? fetchTeamTrades(user.team) : Promise.resolve([]),
       isAdmin ? fetchAdminPendingTrades() : Promise.resolve([]),
+      isAdmin ? fetchAllTradesForAdmin() : Promise.resolve([]),
       fetchCompletedTrades(),
       getMarketState(),
     ]);
     setTrades(teamTrades);
     setAdminPendingTrades(pendingAdmin);
+    setAdminAllTrades(adminAll);
     setCompletedTradesList(completed);
     setIsMarketOpen(marketState.isOpen);
     setLoading(false);
@@ -90,10 +93,12 @@ export default function Trattative() {
     loadData();
   }, [user, isAdmin]);
 
-  // Categorize trades for current user
+  const CLOSED_STATUSES = ["completed", "rejected", "admin_rejected", "cancelled"];
+
+  // Categorize trades for current user: only active proposals
   const receivedTrades = useMemo(() => {
     if (!user?.team) return [];
-    return trades.filter((t) => t.receiver_team === user.team && t.status !== "completed");
+    return trades.filter((t) => t.receiver_team === user.team && !CLOSED_STATUSES.includes(t.status));
   }, [trades, user]);
 
   const pendingReceivedCount = useMemo(() => {
@@ -102,15 +107,19 @@ export default function Trattative() {
 
   const sentTrades = useMemo(() => {
     if (!user?.team) return [];
-    return trades.filter((t) => t.sender_team === user.team && t.status !== "completed");
+    return trades.filter((t) => t.sender_team === user.team && !CLOSED_STATUSES.includes(t.status));
   }, [trades, user]);
 
-  const myCompletedTrades = useMemo(() => {
-    if (!user?.team) return completedTradesList;
-    return completedTradesList.filter(
-      (t) => t.sender_team === user.team || t.receiver_team === user.team
+  // Closed trades history (completed, rejected, admin_rejected, cancelled)
+  const historyTrades = useMemo(() => {
+    if (isAdmin) {
+      return adminAllTrades.filter((t) => CLOSED_STATUSES.includes(t.status));
+    }
+    if (!user?.team) return [];
+    return trades.filter(
+      (t) => (t.sender_team === user.team || t.receiver_team === user.team) && CLOSED_STATUSES.includes(t.status)
     );
-  }, [completedTradesList, user]);
+  }, [isAdmin, adminAllTrades, trades, user]);
 
   const handleOpenDetails = (trade: EnrichedTrade) => {
     setSelectedTrade(trade);
@@ -296,10 +305,10 @@ export default function Trattative() {
 
                   <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
-                      Scambi Ufficiali Eseguiti
+                      Storico Trattative
                     </span>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-2xl font-black text-emerald-500">{completedTradesList.length}</span>
+                      <span className="text-2xl font-black text-emerald-500">{historyTrades.length}</span>
                       <Link
                         to="/mercato/scambi"
                         className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-bold"
@@ -370,10 +379,10 @@ export default function Trattative() {
 
                   <div className="p-3 rounded-xl bg-card/60 border border-border/60 flex flex-col">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
-                      I Miei Scambi Conclusi
+                      Storico Trattative
                     </span>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xl font-black text-emerald-500">{myCompletedTrades.length}</span>
+                      <span className="text-xl font-black text-emerald-500">{historyTrades.length}</span>
                       <Link
                         to="/mercato/scambi"
                         className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-bold"
@@ -483,7 +492,7 @@ export default function Trattative() {
                 className="text-xs font-bold py-2 px-4 rounded-lg data-[state=active]:bg-background"
               >
                 <History className="h-3.5 w-3.5 mr-1.5" />
-                Storico Conclusi ({isAdmin ? completedTradesList.length : myCompletedTrades.length})
+                Storico Trattative ({historyTrades.length})
               </TabsTrigger>
             </TabsList>
 
@@ -596,23 +605,24 @@ export default function Trattative() {
               </TabsContent>
             )}
 
-            {/* TAB STORICO */}
+            {/* TAB STORICO TRATTATIVE */}
             <TabsContent value="completed" className="space-y-4">
-              {(isAdmin ? completedTradesList : myCompletedTrades).length === 0 ? (
+              {historyTrades.length === 0 ? (
                 <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/40">
                   <History className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                  <div className="text-sm font-bold">Nessuno scambio concluso</div>
+                  <div className="text-sm font-bold">Nessuna trattativa nello storico</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Le trattative accettate ed eseguite ufficialmente compariranno qui.
+                    Le trattative concluse, rifiutate o respinte dalla Lega compariranno qui.
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(isAdmin ? completedTradesList : myCompletedTrades).map((trade) => (
+                  {historyTrades.map((trade) => (
                     <TradeCard
                       key={trade.id}
                       trade={trade}
                       currentTeam={currentTeam}
+                      isAdminView={isAdmin}
                       onOpenDetails={() => handleOpenDetails(trade)}
                     />
                   ))}
