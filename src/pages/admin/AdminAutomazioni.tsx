@@ -26,7 +26,14 @@ import {
   CheckCircle2,
   Scissors,
   Loader2,
-  Users
+  Users,
+  FlaskConical,
+  Bug,
+  Check,
+  RotateCcw,
+  ExternalLink,
+  RefreshCw,
+  MessageSquare
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/supabaseClient";
@@ -41,6 +48,8 @@ import { generatePressQuestionsForMatchday, generateRandomMarketRumors } from "@
 import { Newspaper, Mic2, Flame, Camera, Trophy, TrendingDown, UserCheck, Pencil } from "lucide-react";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
+import { getTestModeState, setTestModeState, TestModeState } from "@/services/testModeService";
+import { fetchBugReports, updateBugReportStatus, BugReport, BUG_CATEGORIES } from "@/services/bugReportService";
 
 interface AutomationStateItem {
   id: string;
@@ -145,6 +154,15 @@ export default function AdminAutomazioni() {
     detailsToRecord?: Record<string, any>;
   } | null>(null);
 
+  // Test Mode State
+  const [testModeState, setTestModeStateData] = useState<TestModeState | null>(null);
+  const [isTogglingTestMode, setIsTogglingTestMode] = useState(false);
+
+  // Bug Reports State
+  const [bugReports, setBugReports] = useState<BugReport[]>([]);
+  const [isLoadingBugReports, setIsLoadingBugReports] = useState(false);
+  const [bugReportFilter, setBugReportFilter] = useState<"all" | "open" | "resolved">("open");
+
   // Fetch automation states
   const loadAutomationStates = async () => {
     try {
@@ -171,9 +189,124 @@ export default function AdminAutomazioni() {
     }
   };
 
+  const loadTestModeAndBugs = async () => {
+    try {
+      const tm = await getTestModeState();
+      setTestModeStateData(tm);
+    } catch (e) {
+      console.warn("Error loading test mode:", e);
+    }
+
+    try {
+      setIsLoadingBugReports(true);
+      const reports = await fetchBugReports("all");
+      setBugReports(reports);
+    } catch (e) {
+      console.warn("Error loading bug reports:", e);
+    } finally {
+      setIsLoadingBugReports(false);
+    }
+  };
+
   useEffect(() => {
     loadAutomationStates();
+    loadTestModeAndBugs();
+
+    const handleTestModeUpdate = () => {
+      getTestModeState().then(setTestModeStateData);
+    };
+    const handleBugReportsUpdate = () => {
+      fetchBugReports("all").then(setBugReports);
+    };
+
+    window.addEventListener("lcsim-test-mode-updated", handleTestModeUpdate);
+    window.addEventListener("lcsim-bug-report-created", handleBugReportsUpdate);
+    window.addEventListener("lcsim-bug-report-updated", handleBugReportsUpdate);
+
+    const channel = supabase
+      .channel("admin-automazioni-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "league_automation_state" },
+        () => {
+          loadAutomationStates();
+          getTestModeState().then(setTestModeStateData);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "league_bug_reports" },
+        () => {
+          fetchBugReports("all").then(setBugReports);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("lcsim-test-mode-updated", handleTestModeUpdate);
+      window.removeEventListener("lcsim-bug-report-created", handleBugReportsUpdate);
+      window.removeEventListener("lcsim-bug-report-updated", handleBugReportsUpdate);
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  const handleToggleTestMode = async () => {
+    const nextState = !testModeState?.isActive;
+    setIsTogglingTestMode(true);
+    try {
+      const author = user?.name || user?.team || "Super Admin";
+      const res = await setTestModeState(nextState, author);
+      if (!res.success) {
+        throw new Error(res.error || "Errore aggiornamento modalità test");
+      }
+      if (res.state) {
+        setTestModeStateData(res.state);
+      }
+      if (nextState) {
+        toast.warning(
+          "Modalità Test ATTIVATA: la conferma scelte e l'autopick nel Draft sono ora bloccati per consentire il dry run.",
+          { icon: "🧪", duration: 5000 }
+        );
+      } else {
+        toast.success(
+          "Modalità Test DISATTIVATA: il Draft è tornato alla normale operatività ufficiale.",
+          { icon: "✅", duration: 5000 }
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Errore durante il cambio della modalità test");
+    } finally {
+      setIsTogglingTestMode(false);
+    }
+  };
+
+  const handleToggleBugStatus = async (report: BugReport) => {
+    const nextStatus = report.status === "open" ? "resolved" : "open";
+    try {
+      const author = user?.name || user?.team || "Super Admin";
+      const res = await updateBugReportStatus(report.id, nextStatus, undefined, author);
+      if (!res.success) throw new Error(res.error);
+      setBugReports((prev) =>
+        prev.map((r) =>
+          r.id === report.id
+            ? {
+                ...r,
+                status: nextStatus,
+                resolved_at: nextStatus === "resolved" ? new Date().toISOString() : null,
+                resolved_by: nextStatus === "resolved" ? author : null,
+              }
+            : r
+        )
+      );
+      toast.success(
+        nextStatus === "resolved"
+          ? "Segnalazione contrassegnata come RISOLTA"
+          : "Segnalazione riaperta"
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Errore aggiornamento segnalazione");
+    }
+  };
 
   // Update and record an automation execution
   const recordAutomationRun = async (id: string, details: Record<string, any> = {}) => {
@@ -399,6 +532,101 @@ export default function AdminAutomazioni() {
 
         {/* Griglia Funzionalità Automazioni */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* CARD MODALITÀ TEST (DRY RUN) */}
+          <Card className={`border shadow-lg relative overflow-hidden flex flex-col justify-between transition-all md:col-span-2 ${
+            testModeState?.isActive
+              ? "border-amber-500/60 bg-gradient-to-br from-card via-card/95 to-amber-500/15 shadow-amber-500/10"
+              : "border-border/80 bg-gradient-to-br from-card via-card/95 to-muted/20"
+          }`}>
+            <div className={`absolute top-0 right-0 w-44 h-44 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none ${
+              testModeState?.isActive ? "bg-amber-500/20" : "bg-muted/10"
+            }`} />
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={testModeState?.isActive ? "default" : "outline"}
+                      className={
+                        testModeState?.isActive
+                          ? "bg-amber-500 text-amber-950 font-black uppercase tracking-wider text-[10px] flex items-center gap-1 shadow-sm"
+                          : "text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
+                      }
+                    >
+                      <FlaskConical className="h-3 w-3" />
+                      {testModeState?.isActive ? "Modalità Test ATTIVA (Dry Run)" : "Modalità Test DISATTIVA (Ufficiale)"}
+                    </Badge>
+                  </div>
+                  <FlaskConical className={`h-6 w-6 ${testModeState?.isActive ? "text-amber-500 animate-pulse" : "text-muted-foreground"}`} />
+                </div>
+                <CardTitle className="text-xl font-black flex items-center gap-2">
+                  Modalità Test (Dry Run Produzione)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Attiva o disattiva la modalità di simulazione per testare il flusso del Draft in ambiente di produzione: quando attiva, disabilita il pulsante di conferma scelta e l'autopick per tutti i club, consentendo liberamente ogni altra interazione (board, scouting, graduatorie e filtri).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Conferma Scelta Draft:</span>
+                    <span className={`font-mono font-bold ${testModeState?.isActive ? "text-amber-500 font-black" : "text-emerald-500"}`}>
+                      {testModeState?.isActive ? "🔒 DISABILITATA (Dry Run)" : "✅ ABILITATA (Scelte Reali)"}
+                    </span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Interazioni Consentite:</span>
+                    <span className="font-mono font-bold text-foreground">Board, Scouting, Graduatoria, Filtri</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Tasto Floating Feedback:</span>
+                    <span className="font-mono font-bold text-rose-500">Sempre Attivo su Tutto il Sito</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                  <Button
+                    onClick={handleToggleTestMode}
+                    disabled={isTogglingTestMode}
+                    className={`w-full font-bold gap-2 text-xs py-2.5 transition-all shadow-sm ${
+                      testModeState?.isActive
+                        ? "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20"
+                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
+                    }`}
+                  >
+                    {isTogglingTestMode ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Aggiornamento in corso...
+                      </>
+                    ) : testModeState?.isActive ? (
+                      <>
+                        <FlaskConical className="h-4 w-4" />
+                        Disattiva Modalità Test (Ritorna a Ufficiale)
+                      </>
+                    ) : (
+                      <>
+                        <FlaskConical className="h-4 w-4" />
+                        Attiva Modalità Test (Dry Run Draft)
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-amber-500" />
+                Ultima modifica stato:
+              </span>
+              <span className="font-semibold text-foreground truncate max-w-[320px]">
+                {formatLastRun(testModeState?.lastRunAt, testModeState?.lastRunBy)}
+              </span>
+            </div>
+          </Card>
 
           {/* 0. CARICAMENTO RISULTATI, TABELLINI & SCREENSHOT PARTITE (#1 & #27) */}
           <Card className="border-indigo-500/40 bg-gradient-to-br from-card via-card/95 to-indigo-500/10 shadow-lg relative overflow-hidden flex flex-col justify-between md:col-span-2">
@@ -1203,6 +1431,207 @@ export default function AdminAutomazioni() {
               </span>
               <span className="font-semibold text-foreground">
                 12 Club di Serie A
+              </span>
+            </div>
+          </Card>
+
+          {/* CARD REGISTRO SEGNALAZIONI BUG & FEEDBACK */}
+          <Card className="border-rose-500/40 bg-gradient-to-br from-card via-card/95 to-rose-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between md:col-span-2">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className="bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <Bug className="h-3 w-3" /> Canale Feedback &amp; Bug Report
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] font-mono font-bold">
+                      {bugReports.filter((b) => b.status === "open").length} Aperti / {bugReports.length} Totali
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-muted/80 p-0.5 rounded-lg border border-border/60 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setBugReportFilter("open")}
+                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                          bugReportFilter === "open"
+                            ? "bg-card text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Aperti ({bugReports.filter((b) => b.status === "open").length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBugReportFilter("all")}
+                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                          bugReportFilter === "all"
+                            ? "bg-card text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Tutti ({bugReports.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBugReportFilter("resolved")}
+                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                          bugReportFilter === "resolved"
+                            ? "bg-card text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Risolti ({bugReports.filter((b) => b.status === "resolved").length})
+                      </button>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setIsLoadingBugReports(true);
+                        fetchBugReports("all").then((res) => {
+                          setBugReports(res);
+                          setIsLoadingBugReports(false);
+                          toast.success("Segnalazioni aggiornate");
+                        });
+                      }}
+                      disabled={isLoadingBugReports}
+                      className="h-8 px-2 text-xs gap-1 border-border/70"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${isLoadingBugReports ? "animate-spin" : ""}`} />
+                    </Button>
+                  </div>
+                </div>
+                <CardTitle className="text-xl font-black">Registro Segnalazioni Bug &amp; Feedback Utenti</CardTitle>
+                <CardDescription className="text-xs">
+                  Tutte le segnalazioni e note inviate dai manager e dagli utenti tramite il tasto rapido in sovraimpressione. I nuovi report generano automaticamente una notifica nel campanello dell'Admin.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {(() => {
+                  const filtered = bugReports.filter((r) => {
+                    if (bugReportFilter === "open") return r.status === "open";
+                    if (bugReportFilter === "resolved") return r.status === "resolved";
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="p-8 text-center rounded-xl bg-muted/40 border border-border/60 text-muted-foreground text-xs space-y-1">
+                        <CheckCircle2 className="h-6 w-6 mx-auto text-emerald-500 mb-2 opacity-80" />
+                        <p className="font-semibold text-foreground">Nessuna segnalazione trovata in questa vista</p>
+                        <p className="text-[11px]">Non ci sono segnalazioni {bugReportFilter === "open" ? "aperte" : bugReportFilter === "resolved" ? "risolte" : "registrate"}.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                      {filtered.map((report) => {
+                        const catMeta = BUG_CATEGORIES[report.category] || BUG_CATEGORIES.bug;
+                        const isOpen = report.status === "open";
+                        return (
+                          <div
+                            key={report.id}
+                            className={`p-3.5 rounded-xl border transition-all text-xs space-y-2 ${
+                              isOpen
+                                ? "bg-card border-border/80 hover:border-border shadow-sm"
+                                : "bg-muted/30 border-border/40 opacity-75"
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="outline" className={`text-[10px] font-bold ${catMeta.badgeClass}`}>
+                                  {catMeta.icon} {catMeta.label}
+                                </Badge>
+                                <span className="font-bold text-foreground text-sm">{report.title}</span>
+                                {isOpen ? (
+                                  <Badge className="bg-rose-500/20 text-rose-500 border border-rose-500/40 text-[9px] font-bold uppercase tracking-wider">
+                                    Aperto
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-emerald-500/20 text-emerald-500 border border-emerald-500/40 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                    <Check className="h-2.5 w-2.5" /> Risolto
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant={isOpen ? "outline" : "ghost"}
+                                  onClick={() => handleToggleBugStatus(report)}
+                                  className={`h-7 px-2.5 text-[11px] font-bold gap-1.5 ${
+                                    isOpen
+                                      ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  }`}
+                                >
+                                  {isOpen ? (
+                                    <>
+                                      <Check className="h-3 w-3" />
+                                      Segna Risolto
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RotateCcw className="h-3 w-3" />
+                                      Riapri
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+
+                            <p className="text-muted-foreground text-xs whitespace-pre-wrap leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/50">
+                              {report.description}
+                            </p>
+
+                            <div className="flex flex-wrap items-center justify-between text-[11px] text-muted-foreground gap-2 pt-0.5">
+                              <div className="flex items-center gap-2">
+                                <span>
+                                  Inviato da: <strong className="text-foreground">{report.sender_username || "Utente"}</strong>
+                                  {report.sender_team && <span> ({report.sender_team})</span>}
+                                </span>
+                                <span>•</span>
+                                <span>{new Date(report.created_at).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                              </div>
+                              {report.page_url && (
+                                <div className="flex items-center gap-1 font-mono text-[10px] bg-muted px-2 py-0.5 rounded border border-border/60">
+                                  <span>Pagina:</span>
+                                  <a
+                                    href={report.page_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-primary hover:underline flex items-center gap-0.5"
+                                  >
+                                    {report.page_url}
+                                    <ExternalLink className="h-2.5 w-2.5" />
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            {report.resolved_at && report.resolved_by && (
+                              <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium italic">
+                                Risolto il {new Date(report.resolved_at).toLocaleString("it-IT")} da {report.resolved_by}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-rose-500" />
+                Aggiornamento live:
+              </span>
+              <span className="font-semibold text-foreground">
+                Sincronizzato Realtime
               </span>
             </div>
           </Card>

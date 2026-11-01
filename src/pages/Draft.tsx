@@ -73,6 +73,7 @@ import {
   isEmotionUnlocked,
 } from "@/utils/scoutingConfig";
 import { getEmotionLabel } from "@/constants/accessories";
+import { getTestModeState } from "@/services/testModeService";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
 import {
@@ -183,6 +184,7 @@ const Draft = () => {
   // Graduatoria personale (Punto 7 & 47)
   const [wishlistItems, setWishlistItems] = useState<DraftWishlistItem[]>([]);
   const [wishlistOnly, setWishlistOnly] = useState<boolean>(false);
+  const [isTestMode, setIsTestMode] = useState<boolean>(false);
 
   const wishlistMap = useMemo(() => {
     const map = new Map<number, number>();
@@ -509,6 +511,15 @@ const Draft = () => {
 
   // Supabase Realtime: aggiornamento automatico della Draft Board per tutti gli utenti connessi
   useEffect(() => {
+    // Caricamento iniziale stato Modalità Test (Dry Run)
+    getTestModeState().then((s) => setIsTestMode(s.isActive));
+
+    const handleTestModeSync = (e: any) => {
+      if (e?.detail) setIsTestMode(Boolean(e.detail.isActive));
+      else getTestModeState().then((s) => setIsTestMode(s.isActive));
+    };
+    window.addEventListener("lcsim-test-mode-updated", handleTestModeSync);
+
     const channel = supabase
       .channel("lcsim-draft-board-realtime")
       .on(
@@ -544,15 +555,31 @@ const Draft = () => {
           fetchDraftData(true);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "league_automation_state", filter: "id=eq.test_mode" },
+        (payload: any) => {
+          const nextActive = Boolean(payload?.new?.details?.is_active);
+          setIsTestMode(nextActive);
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener("lcsim-test-mode-updated", handleTestModeSync);
     };
   }, [fetchDraftData, loadWishlist, loadAutopickSettings, triggerPickAnnouncement]);
 
   // Esecuzione Autopick (Punto 7)
   const handleTriggerAutopick = async (targetPick?: DraftPickRow | null) => {
+    if (isTestMode) {
+      toast.warning("Modalità Test (Dry Run) attiva: l'autopick è disabilitato per dry run.", {
+        icon: "🔒",
+      });
+      return;
+    }
+
     const pick = targetPick || currentOnTheClockPick;
     if (!user) return;
     if (!pick || pick.rookie_id !== null || (pick.player_id !== undefined && pick.player_id !== null)) {
@@ -744,6 +771,13 @@ const Draft = () => {
   // Confirm Draft Pick handler (supporta sia Rookie sia Svincolati)
   const handleConfirmPick = async () => {
     if (!user) return;
+    if (isTestMode) {
+      toast.warning("Modalità Test (Dry Run) attiva: la scelta al Draft è bloccata. Puoi comunque navigare, consultare lo scouting e impostare la graduatoria.", {
+        icon: "🔒",
+        duration: 5000,
+      });
+      return;
+    }
     if (!targetPickForConfirmation) {
       toast.error("Non è ancora il turno della tua squadra!");
       return;
@@ -1101,6 +1135,28 @@ const Draft = () => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* BANNER MODALITÀ TEST (DRY RUN) */}
+        {isTestMode && (
+          <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md animate-in fade-in duration-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 shrink-0">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-sm">Modalità Test (Dry Run) Attiva</span>
+                  <Badge className="bg-amber-500 text-slate-950 font-black text-[9px] uppercase px-1.5 py-0">
+                    Simulazione
+                  </Badge>
+                </div>
+                <p className="text-xs text-amber-800/90 dark:text-amber-300/90 mt-0.5">
+                  Il Draft è in modalità test per il dry-run: puoi esplorare liberamente la Board, consultare lo Scouting e impostare la Graduatoria, ma l'assegnazione definitiva dei calciatori è bloccata.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TOP TELEMETRY & ON-THE-CLOCK BROADCAST HUD */}
         <div className="rounded-2xl border border-border/80 bg-card shadow-lg overflow-hidden">
           <div className="p-5 md:p-6 bg-gradient-to-r from-emerald-500/10 via-card to-blue-500/5 border-b border-border/70">
@@ -2012,8 +2068,13 @@ const Draft = () => {
                     )}
 
                     <Button
-                      className="w-full font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className={`w-full font-bold gap-2 ${
+                        isTestMode
+                          ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 hover:bg-amber-500/30 cursor-not-allowed"
+                          : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      }`}
                       disabled={
+                        isTestMode ||
                         !selectedPlayerItem ||
                         !isUserTeamOnTheClock ||
                         !targetPickForConfirmation ||
@@ -2021,7 +2082,12 @@ const Draft = () => {
                       }
                       onClick={handleConfirmPick}
                     >
-                      {!isUserTeamOnTheClock ? (
+                      {isTestMode ? (
+                        <>
+                          <Lock className="h-4 w-4 text-amber-500" />
+                          Scelta Bloccata (Modalità Test / Dry Run)
+                        </>
+                      ) : !isUserTeamOnTheClock ? (
                         <>
                           <Lock className="h-4 w-4" />
                           In attesa del turno di {user?.team || "Squadra"}
@@ -2036,6 +2102,11 @@ const Draft = () => {
                         "Draft Completato"
                       )}
                     </Button>
+                    {isTestMode && (
+                      <div className="text-[11px] text-amber-600 dark:text-amber-400 text-center font-medium mt-1">
+                        🔒 La conferma delle scelte è disattivata dall'Admin per il dry-run.
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

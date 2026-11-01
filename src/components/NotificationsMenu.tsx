@@ -95,6 +95,18 @@ export const NotificationsMenu: React.FC = () => {
           loadNotifications();
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "league_bug_reports" },
+        (payload: any) => {
+          loadNotifications();
+          if (isAdmin && payload.eventType === "INSERT") {
+            toast.error(`🐞 Nuova segnalazione bug ricevuta: "${payload?.new?.title || 'Bug'}"`, {
+              duration: 6000,
+            });
+          }
+        }
+      )
       .subscribe();
 
     const handleSync = () => loadNotifications();

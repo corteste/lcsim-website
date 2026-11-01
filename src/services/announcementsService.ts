@@ -332,8 +332,34 @@ export async function fetchUnifiedNotifications(params: {
       });
     });
 
-    // 2. Notifiche Admin: Scambi in attesa di convalida Lega
+    // 2. Notifiche Admin: Segnalazioni Bug & Scambi in attesa di convalida Lega
     if (isAdmin) {
+      // 2a. Segnalazioni Bug ricevute dagli utenti
+      const { data: openBugs } = await supabase
+        .from("league_bug_reports")
+        .select("*")
+        .eq("status", "open")
+        .order("created_at", { ascending: false })
+        .limit(15);
+
+      (openBugs || []).forEach((b: any) => {
+        const notifId = `bug_${b.id}`;
+        if (isDeleted(notifId)) return;
+
+        const senderStr = b.sender_team ? `${b.sender_username} (${b.sender_team})` : b.sender_username || "Utente";
+        notifications.push({
+          id: notifId,
+          type: "admin_approval",
+          title: `🐞 Segnalazione Bug da ${senderStr}: ${b.title}`,
+          description: `${b.description.length > 90 ? b.description.slice(0, 90) + "..." : b.description} [Pagina: ${b.page_url || "N/D"}]`,
+          timestamp: b.created_at,
+          link: "/admin/automazioni",
+          isUnread: !isRead(notifId),
+          priority: "urgent",
+        });
+      });
+
+      // 2b. Scambi in attesa di convalida Lega
       const { data: adminTrades } = await supabase
         .from("market_trades")
         .select("*")
