@@ -29,6 +29,7 @@ export interface SubRoleDef {
 
 export const TRAINING_COSTS = {
   ROLE_CHANGE: 40,            // Cambio Ruolo Principale (include scelta 1° Ruolo+)
+  SECOND_POSITION_PACKAGE: 150, // Seconda Posizione (include 1° Ruolo+ per la nuova posizione)
   ROLE_PLUS_FIRST: 0,         // 1° Ruolo+ gratis
   ROLE_PLUS_SECOND: 100,      // 2° Ruolo+ 100 XP
   ROLE_PLUS_SWAP: 60,         // Swap Ruolo+ 60 XP
@@ -39,8 +40,10 @@ export const TRAINING_COSTS = {
   OVR_THRESHOLD: 84,          // Soglia OVR per 1° Oro gratis e Ruolo++
   MAX_TRAITS: 5,              // Massimo 5 tratti totali
   MAX_GOLD_TRAITS: 1,         // Massimo 1 tratto oro
-  MAX_ROLE_PLUS: 2,           // Massimo 2 Ruoli+
-  MAX_ROLE_PLUSPLUS: 1,       // Massimo 1 Ruolo++
+  MAX_ROLE_PLUS: 2,           // Massimo 2 Ruoli+ sul ruolo primario
+  MAX_ROLE_PLUSPLUS: 1,       // Massimo 1 Ruolo++ per giocatore
+  MAX_POSITIONS: 2,           // Massimo 2 posizioni (Primaria + Secondaria)
+  MAX_TOTAL_ROLES: 3,         // Massimo 3 Ruoli+ complessivi (2 primari + 1 secondario)
 } as const;
 
 /** Ruoli principali ufficiali supportati */
@@ -412,8 +415,10 @@ export const OFFICIAL_TRAITS: TraitDef[] = [
 
 export interface PlayerSpecializationDraft {
   posiz: string;
+  preferredPosition2?: string | null;
   role1: string | null;
   role2: string | null;
+  role3?: string | null;
   traits: Array<{
     id: string;
     tier: "silver" | "gold";
@@ -442,8 +447,10 @@ export const parsePlayerSpecializations = (player: Player | null | undefined): P
   if (!player) {
     return {
       posiz: "CC",
+      preferredPosition2: null,
       role1: null,
       role2: null,
+      role3: null,
       traits: [],
       removedBaseTraits: [],
     };
@@ -457,9 +464,23 @@ export const parsePlayerSpecializations = (player: Player | null | undefined): P
   if (posiz === "TRQ") posiz = "COC";
   if (["AC", "PC", "SP"].includes(posiz)) posiz = "ATT";
 
+  // Seconda posizione
+  let preferredPosition2: string | null = null;
+  const rawPos2 = player.PreferredPosition2 ? player.PreferredPosition2.trim().toUpperCase() : null;
+  if (rawPos2 && rawPos2 !== "-" && rawPos2 !== "NONE" && rawPos2 !== "") {
+    let p2 = rawPos2;
+    if (p2 === "DFC") p2 = "DC";
+    if (p2 === "TER" || p2 === "DFD") p2 = "TD";
+    if (p2 === "DFS") p2 = "TS";
+    if (p2 === "TRQ") p2 = "COC";
+    if (["AC", "PC", "SP"].includes(p2)) p2 = "ATT";
+    preferredPosition2 = p2;
+  }
+
   // Ruoli+
   const role1 = player.Role1 ? player.Role1.trim() : null;
   const role2 = player.Role2 ? player.Role2.trim() : null;
+  const role3 = player.Role3 ? player.Role3.trim() : null;
 
   // Tratti
   const traitsMap = new Map<string, "silver" | "gold">();
@@ -485,8 +506,10 @@ export const parsePlayerSpecializations = (player: Player | null | undefined): P
 
   return {
     posiz,
+    preferredPosition2,
     role1,
     role2,
+    role3,
     traits,
     removedBaseTraits: [],
   };
@@ -649,7 +672,44 @@ export function calculateSpecializationsCost(
     }
   }
 
-  // 3. TRATTI
+  // 3. SECONDA POSIZIONE & RUOLO+ DEDICATO (150 XP)
+  const basePos2 = baseSpec.preferredPosition2;
+  const draftPos2 = draft.preferredPosition2;
+  const baseR3 = baseSpec.role3;
+  const draftR3 = draft.role3;
+
+  if (draftPos2 !== basePos2) {
+    if (draftPos2) {
+      roleCost += TRAINING_COSTS.SECOND_POSITION_PACKAGE; // 150 XP
+      const subRoleLabel = draftR3 ? ` con Ruolo+ (${draftR3})` : "";
+      roleBreakdown.push(
+        `Seconda Posizione ${draftPos2}${subRoleLabel}: +${TRAINING_COSTS.SECOND_POSITION_PACKAGE} XP`
+      );
+      if (draftR3?.endsWith("++") && !baseHadPlusPlus) {
+        roleCost += TRAINING_COSTS.ROLE_PLUSPLUS;
+        roleBreakdown.push(`Upgrade Ruolo+ Seconda Posizione a ++: +${TRAINING_COSTS.ROLE_PLUSPLUS} XP`);
+      }
+    } else {
+      roleBreakdown.push(`Seconda Posizione rimossa`);
+    }
+  } else if (draftPos2 && basePos2) {
+    const baseR3Clean = baseR3 ? baseR3.replace(/\+\+$/, "").replace(/\+$/, "").trim() : null;
+    const draftR3Clean = draftR3 ? draftR3.replace(/\+\+$/, "").replace(/\+$/, "").trim() : null;
+
+    if (!baseR3 && draftR3) {
+      roleBreakdown.push(`Ruolo+ Seconda Posizione (${draftR3}): Incluso`);
+    } else if (baseR3 && draftR3 && baseR3Clean !== draftR3Clean) {
+      roleCost += TRAINING_COSTS.ROLE_PLUS_SWAP;
+      roleBreakdown.push(`Cambio Ruolo+ Seconda Posizione (${baseR3} → ${draftR3}): +${TRAINING_COSTS.ROLE_PLUS_SWAP} XP`);
+    }
+
+    if (draftR3?.endsWith("++") && !baseR3?.endsWith("++") && !baseHadPlusPlus) {
+      roleCost += TRAINING_COSTS.ROLE_PLUSPLUS;
+      roleBreakdown.push(`Upgrade Ruolo+ Seconda Posizione a ++: +${TRAINING_COSTS.ROLE_PLUSPLUS} XP`);
+    }
+  }
+
+  // 4. TRATTI
   const baseTraitIds = new Set(baseSpec.traits.map((t) => t.id));
   const baseGoldTrait = baseSpec.traits.find((t) => t.tier === "gold");
   const draftGoldTrait = draft.traits.find((t) => t.tier === "gold");
@@ -709,8 +769,10 @@ export function serializeSpecializationsForDb(draft: PlayerSpecializationDraft) 
 
   return {
     posiz: draft.posiz,
+    preferred_position_2: draft.preferredPosition2 || null,
     role1: draft.role1 || null,
     role2: draft.role2 || null,
+    role3: draft.role3 || null,
     silver_traits: silverTraits.length > 0 ? silverTraits.join(", ") : null,
     gold_traits: goldTraits.length > 0 ? goldTraits.join(", ") : null,
     traits_list: draft.traits,

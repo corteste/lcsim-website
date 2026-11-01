@@ -658,7 +658,10 @@ const Allenamenti = () => {
       const post = calcOverall(r, postStats, pre);
       const diff = post - pre;
       const isPrimary = r === currentPrimaryRole;
-      const isSecondary = !isPrimary && secondaryRolesList.includes(r);
+      const isSecondary =
+        !isPrimary &&
+        (secondaryRolesList.includes(r) ||
+          r === (specializationsDraft.preferredPosition2 || "").toUpperCase());
       res[r] = { pre, post, diff, isPrimary, isSecondary };
     }
     return res;
@@ -710,8 +713,10 @@ const Allenamenti = () => {
     if (!player) return false;
     const base = parsePlayerSpecializations(player);
     if (specializationsDraft.posiz !== base.posiz) return true;
+    if (specializationsDraft.preferredPosition2 !== base.preferredPosition2) return true;
     if (specializationsDraft.role1 !== base.role1) return true;
     if (specializationsDraft.role2 !== base.role2) return true;
+    if (specializationsDraft.role3 !== base.role3) return true;
     if ((specializationsDraft.removedBaseTraits || []).length > 0) return true;
     const baseTraitKeys = base.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
     const draftTraitKeys = specializationsDraft.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
@@ -734,8 +739,10 @@ const Allenamenti = () => {
     if (savedSpec) {
       savedDraftSpec = {
         posiz: savedSpec.posiz || player.Posiz || "CC",
+        preferredPosition2: savedSpec.preferred_position_2 !== undefined ? savedSpec.preferred_position_2 : player.PreferredPosition2 || null,
         role1: savedSpec.role1 !== undefined ? savedSpec.role1 : player.Role1 || null,
         role2: savedSpec.role2 !== undefined ? savedSpec.role2 : player.Role2 || null,
+        role3: savedSpec.role3 !== undefined ? savedSpec.role3 : player.Role3 || null,
         traits: Array.isArray(savedSpec.traits_list) ? savedSpec.traits_list : parsePlayerSpecializations(player).traits,
         removedBaseTraits: Array.isArray(savedSpec.removed_base_traits) ? savedSpec.removed_base_traits : [],
       };
@@ -745,8 +752,10 @@ const Allenamenti = () => {
 
     const specChanged =
       specializationsDraft.posiz !== savedDraftSpec.posiz ||
+      specializationsDraft.preferredPosition2 !== savedDraftSpec.preferredPosition2 ||
       specializationsDraft.role1 !== savedDraftSpec.role1 ||
       specializationsDraft.role2 !== savedDraftSpec.role2 ||
+      specializationsDraft.role3 !== savedDraftSpec.role3 ||
       (specializationsDraft.removedBaseTraits || []).join(",") !== (savedDraftSpec.removedBaseTraits || []).join(",") ||
       specializationsDraft.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",") !==
       savedDraftSpec.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
@@ -1608,6 +1617,7 @@ const Allenamenti = () => {
                         player={player}
                         postStats={postStats}
                         postOverall={postOverall}
+                        roleOveralls={roleOveralls}
                         draft={specializationsDraft}
                         onDraftChange={setSpecializationsDraft}
                         xpAvailable={xpRemaining}

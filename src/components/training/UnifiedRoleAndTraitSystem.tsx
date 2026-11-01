@@ -58,6 +58,7 @@ interface UnifiedRoleAndTraitSystemProps {
   player: Player;
   postStats: Record<StatKey, number>;
   postOverall: number;
+  roleOveralls?: Record<string, { pre: number; post: number; diff: number; isPrimary: boolean; isSecondary: boolean }>;
   draft: PlayerSpecializationDraft;
   onDraftChange: (newDraft: PlayerSpecializationDraft) => void;
   xpAvailable: number; // remaining XP from parent
@@ -80,6 +81,7 @@ export default function UnifiedRoleAndTraitSystem({
   player,
   postStats,
   postOverall,
+  roleOveralls,
   draft,
   onDraftChange,
   xpAvailable,
@@ -95,16 +97,23 @@ export default function UnifiedRoleAndTraitSystem({
   const [pendingNewPos, setPendingNewPos] = useState<string>(draft.posiz);
   const [pendingNewSubRole, setPendingNewSubRole] = useState<string>("");
 
-  // Dialog state for Swap / Select SubRole
+  // Dialog state for Swap / Select SubRole (Slot 1, 2, 3)
   const [subRoleDialogOpen, setSubRoleDialogOpen] = useState(false);
-  const [targetSlot, setTargetSlot] = useState<1 | 2>(1);
+  const [targetSlot, setTargetSlot] = useState<1 | 2 | 3>(1);
   const [pendingSubRoleId, setPendingSubRoleId] = useState<number | null>(null);
+
+  // Dialog state for Second Position (PreferredPosition2)
+  const [secondPosDialogOpen, setSecondPosDialogOpen] = useState(false);
+  const [pendingSecondPos, setPendingSecondPos] = useState<string>("");
 
   // Dialog state for Remove Base Trait confirmation (costs 40 XP)
   const [traitToRemove, setTraitToRemove] = useState<string | null>(null);
 
   // Active sub-roles array for requirement checkers
-  const activeSubRoles = useMemo(() => [draft.role1, draft.role2], [draft.role1, draft.role2]);
+  const activeSubRoles = useMemo(
+    () => [draft.role1, draft.role2, draft.role3].filter(Boolean) as string[],
+    [draft.role1, draft.role2, draft.role3]
+  );
 
   // Is player eligible for Elite tier (OVR >= 84)
   const isEliteEligible = postOverall >= TRAINING_COSTS.OVR_THRESHOLD;
@@ -123,7 +132,15 @@ export default function UnifiedRoleAndTraitSystem({
     [player, draft, postOverall, isDraftRoleDiscounted]
   );
 
-  // Compatible subroles for the current draft position
+  // Subroles helper for any of the 3 slots
+  const getSubRolesForSlot = (slot: 1 | 2 | 3) => {
+    if (slot === 3) {
+      return OFFICIAL_SUBROLES.filter((sr) => sr.position === draft.preferredPosition2);
+    }
+    return OFFICIAL_SUBROLES.filter((sr) => sr.position === draft.posiz);
+  };
+
+  // Compatible subroles for the current draft primary position
   const compatibleSubRoles = useMemo(() => {
     return OFFICIAL_SUBROLES.filter((sr) => sr.position === draft.posiz);
   }, [draft.posiz]);
@@ -133,11 +150,19 @@ export default function UnifiedRoleAndTraitSystem({
     return OFFICIAL_SUBROLES.filter((sr) => sr.position === pendingNewPos);
   }, [pendingNewPos]);
 
+  // Eligible positions for second position (all except POR for outfielders, and except primary role)
+  const eligibleSecondPositions = useMemo(() => {
+    if (draft.posiz === "POR") return [];
+    return OFFICIAL_POSITIONS.filter((p) => p !== "POR" && p !== draft.posiz);
+  }, [draft.posiz]);
+
   // -------------------------------------------------------------
-  // ACTIONS: MAIN ROLE & SUB-ROLES
+  // ACTIONS: MAIN ROLE, SECOND POSITION & SUB-ROLES
   // -------------------------------------------------------------
 
-  const baseHadPlusPlus = Boolean(player.Role1?.endsWith("++") || player.Role2?.endsWith("++"));
+  const baseHadPlusPlus = Boolean(
+    player.Role1?.endsWith("++") || player.Role2?.endsWith("++") || player.Role3?.endsWith("++")
+  );
 
   const handleOpenRoleChangeDialog = () => {
     if (isRosterLocked) {
@@ -173,11 +198,17 @@ export default function UnifiedRoleAndTraitSystem({
       return;
     }
 
+    // If second position was equal to the newly selected main role, clear second position
+    const nextSecondPos = draft.preferredPosition2 === pendingNewPos ? null : draft.preferredPosition2;
+    const nextRole3 = nextSecondPos ? draft.role3 : null;
+
     onDraftChange({
       ...draft,
       posiz: pendingNewPos,
+      preferredPosition2: nextSecondPos,
       role1: pendingNewSubRole,
       role2: null, // Reset 2nd role on main role switch
+      role3: nextRole3,
     });
     setRoleChangeDialogOpen(false);
     toast.success(`Ruolo impostato a ${pendingNewPos} (${pendingNewSubRole})`);
@@ -193,16 +224,84 @@ export default function UnifiedRoleAndTraitSystem({
     toast.info("Ruolo principale ripristinato a quello di base.");
   };
 
-  const handleOpenSubRoleDialog = (slot: 1 | 2) => {
+  // -------------------------------------------------------------
+  // ACTIONS: SECOND POSITION (150 XP)
+  // -------------------------------------------------------------
+
+  const handleOpenSecondPosDialog = () => {
+    if (isRosterLocked) {
+      toast.error("Rose congelate dalla Lega");
+      return;
+    }
+    if (draft.posiz === "POR") {
+      toast.error("I portieri non possono selezionare una seconda posizione di movimento.");
+      return;
+    }
+    const initialPos = draft.preferredPosition2 || eligibleSecondPositions[0] || "CC";
+    setPendingSecondPos(initialPos);
+    setSecondPosDialogOpen(true);
+  };
+
+  const handleConfirmSecondPos = () => {
+    if (!pendingSecondPos || pendingSecondPos === draft.posiz) {
+      toast.error("Seleziona una seconda posizione valida e diversa dal ruolo principale.");
+      return;
+    }
+
+    const subRolesForPos = OFFICIAL_SUBROLES.filter((sr) => sr.position === pendingSecondPos);
+    const currentR3Clean = draft.role3 ? draft.role3.replace(/\+\+$/, "").replace(/\+$/, "").trim() : "";
+    const isExistingCompatible = subRolesForPos.some(
+      (sr) => sr.name.toLowerCase() === currentR3Clean.toLowerCase()
+    );
+
+    let nextRole3 = draft.role3;
+    if (!isExistingCompatible && subRolesForPos.length > 0) {
+      nextRole3 = `${subRolesForPos[0].name} +`;
+    }
+
+    onDraftChange({
+      ...draft,
+      preferredPosition2: pendingSecondPos,
+      role3: nextRole3,
+    });
+    setSecondPosDialogOpen(false);
+    toast.success(`Seconda Posizione impostata: ${pendingSecondPos}${nextRole3 ? ` (${nextRole3})` : ""}`);
+  };
+
+  const handleRemoveSecondPosition = () => {
+    if (isRosterLocked) return;
+    onDraftChange({
+      ...draft,
+      preferredPosition2: null,
+      role3: null,
+    });
+    toast.info("Seconda Posizione rimossa.");
+  };
+
+  const handleRevertSecondPosition = () => {
+    onDraftChange({
+      ...draft,
+      preferredPosition2: player.PreferredPosition2 || null,
+      role3: player.Role3 || null,
+    });
+    toast.info("Seconda posizione ripristinata a quella di base.");
+  };
+
+  // -------------------------------------------------------------
+  // ACTIONS: SUB-ROLES (SLOT 1, 2, 3)
+  // -------------------------------------------------------------
+
+  const handleOpenSubRoleDialog = (slot: 1 | 2 | 3) => {
     if (isRosterLocked) {
       toast.error("Rose congelate dalla Lega");
       return;
     }
     setTargetSlot(slot);
-    const existing = slot === 1 ? draft.role1 : draft.role2;
+    const existing = slot === 1 ? draft.role1 : slot === 2 ? draft.role2 : draft.role3;
+    const subRoles = getSubRolesForSlot(slot);
     if (existing) {
       const clean = existing.replace(/\+\+$/, "").replace(/\+$/, "").trim();
-      const found = compatibleSubRoles.find((sr) => sr.name.toLowerCase() === clean.toLowerCase());
+      const found = subRoles.find((sr) => sr.name.toLowerCase() === clean.toLowerCase());
       setPendingSubRoleId(found ? found.id : null);
     } else {
       setPendingSubRoleId(null);
@@ -215,62 +314,76 @@ export default function UnifiedRoleAndTraitSystem({
       toast.error("Seleziona un Ruolo+");
       return;
     }
-    const chosen = compatibleSubRoles.find((sr) => sr.id === pendingSubRoleId);
+    const chosen = getSubRolesForSlot(targetSlot).find((sr) => sr.id === pendingSubRoleId);
     if (!chosen) return;
 
     const roleName = `${chosen.name} +`;
 
-    // Prevent duplicate subroles
-    if (targetSlot === 1 && draft.role2 && draft.role2.includes(chosen.name)) {
-      toast.error("Questo Ruolo+ è già assegnato al 2° slot!");
+    // Prevent duplicate subroles across any of the 3 slots
+    if (
+      targetSlot === 1 &&
+      ((draft.role2 && draft.role2.includes(chosen.name)) ||
+        (draft.role3 && draft.role3.includes(chosen.name)))
+    ) {
+      toast.error("Questo Ruolo+ è già assegnato a un altro slot!");
       return;
     }
-    if (targetSlot === 2 && draft.role1 && draft.role1.includes(chosen.name)) {
-      toast.error("Questo Ruolo+ è già assegnato al 1° slot!");
+    if (
+      targetSlot === 2 &&
+      ((draft.role1 && draft.role1.includes(chosen.name)) ||
+        (draft.role3 && draft.role3.includes(chosen.name)))
+    ) {
+      toast.error("Questo Ruolo+ è già assegnato a un altro slot!");
+      return;
+    }
+    if (
+      targetSlot === 3 &&
+      ((draft.role1 && draft.role1.includes(chosen.name)) ||
+        (draft.role2 && draft.role2.includes(chosen.name)))
+    ) {
+      toast.error("Questo Ruolo+ è già assegnato a un altro slot!");
       return;
     }
 
     if (targetSlot === 1) {
-      onDraftChange({
-        ...draft,
-        role1: roleName,
-      });
+      onDraftChange({ ...draft, role1: roleName });
+    } else if (targetSlot === 2) {
+      onDraftChange({ ...draft, role2: roleName });
     } else {
-      onDraftChange({
-        ...draft,
-        role2: roleName,
-      });
+      onDraftChange({ ...draft, role3: roleName });
     }
 
     setSubRoleDialogOpen(false);
     toast.success(`Ruolo+ aggiornato: ${roleName}`);
   };
 
-  const handleToggleUpgradePlusPlus = (slot: 1 | 2) => {
+  const handleToggleUpgradePlusPlus = (slot: 1 | 2 | 3) => {
     if (isRosterLocked) return;
     if (!isEliteEligible) {
       toast.error(`Upgrade a ++ riservato a giocatori con OVR ≥ ${TRAINING_COSTS.OVR_THRESHOLD}!`);
       return;
     }
 
-    const current = slot === 1 ? draft.role1 : draft.role2;
+    const current = slot === 1 ? draft.role1 : slot === 2 ? draft.role2 : draft.role3;
     if (!current) return;
 
     const isCurrentlyPlusPlus = current.endsWith("++");
 
     if (isCurrentlyPlusPlus) {
-      // Downgrade to +
       const downgraded = current.replace(/\+\+$/, "+");
-      if (slot === 1) {
-        onDraftChange({ ...draft, role1: downgraded });
-      } else {
-        onDraftChange({ ...draft, role2: downgraded });
-      }
+      if (slot === 1) onDraftChange({ ...draft, role1: downgraded });
+      else if (slot === 2) onDraftChange({ ...draft, role2: downgraded });
+      else onDraftChange({ ...draft, role3: downgraded });
       toast.info(`Ruolo impostato a ${downgraded}`);
     } else {
-      // Check if player already has a ++ in the other slot
-      const otherSlot = slot === 1 ? draft.role2 : draft.role1;
-      if (otherSlot && otherSlot.endsWith("++")) {
+      // Check if any other slot has ++
+      const otherSlotsHavePlusPlus = [
+        slot !== 1 && draft.role1,
+        slot !== 2 && draft.role2,
+        slot !== 3 && draft.role3,
+      ].some((r) => r && typeof r === "string" && r.endsWith("++"));
+
+      if (otherSlotsHavePlusPlus) {
         toast.error("È consentito al massimo 1 Ruolo++ per giocatore!");
         return;
       }
@@ -281,11 +394,9 @@ export default function UnifiedRoleAndTraitSystem({
       }
 
       const upgraded = current.replace(/\+$/, "++");
-      if (slot === 1) {
-        onDraftChange({ ...draft, role1: upgraded });
-      } else {
-        onDraftChange({ ...draft, role2: upgraded });
-      }
+      if (slot === 1) onDraftChange({ ...draft, role1: upgraded });
+      else if (slot === 2) onDraftChange({ ...draft, role2: upgraded });
+      else onDraftChange({ ...draft, role3: upgraded });
       toast.success(`Ruolo promosso a ${upgraded}! (+${TRAINING_COSTS.ROLE_PLUSPLUS} XP)`);
     }
   };
@@ -782,6 +893,179 @@ export default function UnifiedRoleAndTraitSystem({
               </div>
             </div>
           </div>
+
+          {/* ========================================================================= */}
+          {/* SECONDA POSIZIONE & RUOLO+ DEDICATO (150 XP)                              */}
+          {/* ========================================================================= */}
+          <div className="pt-2 border-t border-border/60">
+            <div className="p-4 rounded-xl border border-border/80 bg-gradient-to-br from-card via-card/95 to-muted/20 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Target className="h-3 w-3" />
+                    Seconda Posizione (PreferredPosition2)
+                  </Badge>
+                  <span className="text-[11px] text-muted-foreground font-mono">
+                    Max 2 Posizioni &amp; 3 Ruoli+
+                  </span>
+                </div>
+                {draft.preferredPosition2 !== (player.PreferredPosition2 || null) && (
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px]"
+                  >
+                    {draft.preferredPosition2
+                      ? `Seconda Posizione Aggiunta (+${TRAINING_COSTS.SECOND_POSITION_PACKAGE} XP • Include Ruolo+)`
+                      : "Seconda Posizione Rimossa"}
+                  </Badge>
+                )}
+              </div>
+
+              {draft.preferredPosition2 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  {/* Box Seconda Posizione */}
+                  <div className="p-3.5 rounded-xl border border-border/70 bg-card/60 flex flex-col justify-between gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 font-mono">
+                          2ª POSIZIONE
+                        </Badge>
+                        Ruolo Secondario Ufficiale
+                      </span>
+                      {roleOveralls?.[draft.preferredPosition2] && (
+                        <span className="text-[11px] font-mono font-bold text-foreground">
+                          OVR Stimato: <strong className="text-emerald-500">{roleOveralls[draft.preferredPosition2].post}</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl flex items-center justify-center font-black font-mono text-base border shadow-inner bg-background shrink-0">
+                        <span className={getRoleColor(draft.preferredPosition2)}>{draft.preferredPosition2}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-extrabold text-foreground truncate">
+                          {draft.preferredPosition2}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-tight">
+                          Il giocatore può essere schierato in questa posizione sul campetto 2D senza penalità di Fuori Ruolo.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/40">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleOpenSecondPosDialog}
+                        disabled={isRosterLocked}
+                        className="h-8 text-xs flex-1"
+                      >
+                        <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+                        Cambia Posizione
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={handleRemoveSecondPosition}
+                        disabled={isRosterLocked}
+                        className="h-8 w-8 text-muted-foreground hover:text-rose-500 shrink-0"
+                        title="Rimuovi Seconda Posizione"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Box Slot 3 (Ruolo+ per la Seconda Posizione) */}
+                  <div className="p-3.5 rounded-xl border border-border/70 bg-card/60 flex flex-col justify-between gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 font-mono">
+                          SLOT 3
+                        </Badge>
+                        Ruolo+ 2ª Posizione
+                      </span>
+                      {draft.role3?.endsWith("++") && (
+                        <Badge className="bg-amber-500 text-black text-[9px] font-black px-1.5 py-0">
+                          RUOLO++ (ELITE)
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="text-sm font-extrabold text-foreground">
+                        {draft.role3 || "Nessun Ruolo+ assegnato"}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {draft.role3
+                          ? OFFICIAL_SUBROLES.find((sr) => draft.role3?.includes(sr.name))?.description ||
+                            `Compito tattico per la posizione ${draft.preferredPosition2}.`
+                          : `Assegna il Ruolo+ compatibile con ${draft.preferredPosition2}.`}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/40 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenSubRoleDialog(3)}
+                        disabled={isRosterLocked}
+                        className="h-8 text-xs flex-1 min-w-[125px] whitespace-nowrap"
+                      >
+                        <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                        {draft.role3 ? "Cambia (60 XP)" : "Assegna Ruolo+ (Incluso)"}
+                      </Button>
+
+                      {draft.role3 && (
+                        <Button
+                          size="sm"
+                          variant={draft.role3.endsWith("++") ? "secondary" : "outline"}
+                          onClick={() => handleToggleUpgradePlusPlus(3)}
+                          disabled={isRosterLocked || (!isEliteEligible && !draft.role3.endsWith("++"))}
+                          title={
+                            !isEliteEligible
+                              ? "Richiede OVR ≥ 84"
+                              : draft.role3.endsWith("++")
+                              ? "Ripristina a Ruolo+"
+                              : "Promuovi a Ruolo++ (+100 XP)"
+                          }
+                          className={`h-8 text-xs font-bold px-3 shrink-0 whitespace-nowrap min-w-fit ${
+                            draft.role3.endsWith("++")
+                              ? "bg-amber-500/20 text-amber-500 border-amber-500/40"
+                              : "hover:border-amber-500/50 hover:text-amber-500"
+                          }`}
+                        >
+                          <Crown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                          {draft.role3.endsWith("++") ? "Downgrade a +" : "Upgrade ++ (100 XP)"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border border-dashed border-border/80 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                  <div>
+                    <span className="text-xs font-bold text-foreground block">
+                      Nessuna Seconda Posizione configurata
+                    </span>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xl">
+                      Aggiungi una seconda posizione per consentire al calciatore di giocare in un altro ruolo senza malus di Fuori Ruolo. Il pacchetto costa 150 XP e include la scelta del 1° Ruolo+ per la nuova posizione.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleOpenSecondPosDialog}
+                    disabled={isRosterLocked || draft.posiz === "POR"}
+                    className="h-8 text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white shrink-0 gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Aggiungi 2ª Posizione (150 XP)
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -1274,6 +1558,77 @@ export default function UnifiedRoleAndTraitSystem({
       </Dialog>
 
       {/* ========================================================================= */}
+      {/* DIALOG: SCEGLI SECONDA POSIZIONE (150 XP)                                 */}
+      {/* ========================================================================= */}
+      <Dialog open={secondPosDialogOpen} onOpenChange={setSecondPosDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-extrabold">
+              <Target className="h-5 w-5 text-cyan-500" />
+              Scegli Seconda Posizione
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Seleziona la seconda posizione per <strong className="text-foreground">{player.Nome} {player.Cognome}</strong>.
+              Il pacchetto da 150 XP include l'abilitazione tattica e la scelta di un Ruolo+ dedicato per la nuova posizione.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-3">
+            <span className="text-xs font-bold text-muted-foreground block">
+              Posizioni Disponibili (escluso Ruolo Primario {draft.posiz}):
+            </span>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {eligibleSecondPositions.map((pos) => {
+                const isSelected = pendingSecondPos === pos;
+                const ovrPreview = roleOveralls?.[pos]?.post;
+                return (
+                  <button
+                    key={pos}
+                    type="button"
+                    onClick={() => setPendingSecondPos(pos)}
+                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center justify-between gap-1 outline-hidden ${
+                      isSelected
+                        ? "border-cyan-500 bg-cyan-500/15 shadow-sm ring-1 ring-cyan-500"
+                        : "border-border/70 bg-card hover:bg-muted/60"
+                    }`}
+                  >
+                    <span className={`text-xs font-black font-mono ${getRoleColor(pos)}`}>
+                      {pos}
+                    </span>
+                    {ovrPreview !== undefined && (
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        OVR: <strong className="text-foreground">{ovrPreview}</strong>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSecondPosDialogOpen(false)}
+              className="text-xs"
+            >
+              Annulla
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleConfirmSecondPos}
+              disabled={!pendingSecondPos || pendingSecondPos === draft.posiz}
+              className="text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white gap-1.5"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Conferma Posizione
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================================================= */}
       {/* DIALOG: ASSEGNA / CAMBIA RUOLO+ (SWAP)                                    */}
       {/* ========================================================================= */}
       <Dialog open={subRoleDialogOpen} onOpenChange={setSubRoleDialogOpen}>
@@ -1281,15 +1636,20 @@ export default function UnifiedRoleAndTraitSystem({
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2">
               <Shield className="h-4 w-4 text-emerald-500" />
-              {targetSlot === 1 ? "Ruolo+ Slot 1" : "Ruolo+ Slot 2"}
+              {targetSlot === 1
+                ? "Ruolo+ Slot 1"
+                : targetSlot === 2
+                ? "Ruolo+ Slot 2"
+                : `Ruolo+ Slot 3 (2ª Posizione: ${draft.preferredPosition2})`}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Seleziona uno dei compiti tattici compatibili con la posizione <strong>{draft.posiz}</strong>.
+              Seleziona uno dei compiti tattici compatibili con la posizione{" "}
+              <strong>{targetSlot === 3 ? draft.preferredPosition2 : draft.posiz}</strong>.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2 max-h-[350px] overflow-y-auto pr-1">
-            {compatibleSubRoles.map((sr) => {
+            {getSubRolesForSlot(targetSlot).map((sr) => {
               const isSelected = pendingSubRoleId === sr.id;
               return (
                 <div
