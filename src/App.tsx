@@ -26,6 +26,7 @@ import OpponentScout from "./pages/OpponentScout";
 import FoglioCommento from "./pages/FoglioCommento";
 import AdminAutomazioni from "./pages/admin/AdminAutomazioni";
 import SalaStampa from "./pages/SalaStampa";
+import StatisticheSquadre from "./pages/StatisticheSquadre";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
 import { queryClient } from "@/queryClient";
@@ -45,6 +46,8 @@ const App = () => (
                 <Route path="/classifica" element={<Classifica />} />
                 <Route path="/squadre" element={<Rose />} />
                 <Route path="/rose" element={<Rose />} />
+                <Route path="/statistiche-squadre" element={<StatisticheSquadre />} />
+                <Route path="/squadre/statistiche" element={<StatisticheSquadre />} />
                 <Route path="/statistiche" element={<Statistiche />} />
                 <Route path="/comunicati" element={<Comunicati />} />
                 <Route path="/sala-stampa" element={<SalaStampa />} />

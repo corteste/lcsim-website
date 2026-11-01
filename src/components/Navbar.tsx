@@ -101,38 +101,28 @@ const Navbar = () => {
       icon: ClipboardList,
       colorClass: "text-purple-500",
     },
-    {
-      path: "/statistiche",
-      label: "Statistiche",
-      description: "Marcatori, assist, rating e rendimento club",
-      icon: BarChart3,
-      colorClass: "text-emerald-500",
-    },
-    {
-      path: "/comunicati",
-      label: "Comunicati Ufficiali",
-      description: "Avvisi della Commissione, regolamento e giudice sportivo",
-      icon: Megaphone,
-      colorClass: "text-rose-500",
-    },
-    {
-      path: "/sala-stampa",
-      label: "Sala Stampa & Rumor",
-      description: "Dichiarazioni dei presidenti e scoop del Giornalista AI",
-      icon: Newspaper,
-      colorClass: "text-amber-500",
-    },
   ];
 
-  // 2. SEZIONE CALCIATORI (Richiesta utente)
-  const calciatoriItems: NavGroupItem[] = [
+  // 2. SEZIONE SQUADRE
+  const squadreItems: NavGroupItem[] = [
     {
       path: "/squadre",
-      label: "Squadre",
+      label: "I 12 Club",
       description: "Tutti i 12 club ufficiali della Serie A",
       icon: Shield,
       colorClass: "text-indigo-500",
     },
+    {
+      path: "/statistiche-squadre",
+      label: "Statistiche Squadre",
+      description: "Rendimento, gol, possesso e telemetrie collettive",
+      icon: BarChart3,
+      colorClass: "text-emerald-500",
+    },
+  ];
+
+  // 3. SEZIONE CALCIATORI
+  const calciatoriItems: NavGroupItem[] = [
     {
       path: "/giocatori/lista-giocatori",
       label: "Lista Calciatori",
@@ -141,15 +131,29 @@ const Navbar = () => {
       colorClass: "text-cyan-500",
     },
     {
+      path: "/statistiche",
+      label: "Statistiche Calciatori",
+      description: "Marcatori, assist, rating e telemetrie EA FC",
+      icon: BarChart3,
+      colorClass: "text-emerald-500",
+    },
+    {
       path: "/giocatori/confronto-giocatori",
       label: "Confronto Serie A",
       description: "Testa a testa tra calciatori del campionato",
       icon: Swords,
       colorClass: "text-rose-500",
     },
+    {
+      path: "/archivio/hall-of-fame",
+      label: "Hall of Fame",
+      description: "Le leggende e i campioni storici di Lega",
+      icon: Crown,
+      colorClass: "text-yellow-500",
+    },
   ];
 
-  // 3. SEZIONE DRAFT & MERCATO
+  // 4. SEZIONE DRAFT & MERCATO
   const draftItems: NavGroupItem[] = [
     {
       path: "/draft",
@@ -167,25 +171,36 @@ const Navbar = () => {
     },
   ];
 
-  // 4. SEZIONE ARCHIVIO
+  // 5. SEZIONE MEDIA & NEWS
+  const mediaItems: NavGroupItem[] = [
+    {
+      path: "/sala-stampa",
+      label: "Sala Stampa & Rumor",
+      description: "Dichiarazioni dei presidenti e scoop del Giornalista AI",
+      icon: Newspaper,
+      colorClass: "text-amber-500",
+    },
+    {
+      path: "/comunicati",
+      label: "Comunicati Ufficiali",
+      description: "Avvisi della Commissione, regolamento e giudice sportivo",
+      icon: Megaphone,
+      colorClass: "text-rose-500",
+    },
+  ];
+
+  // 6. SEZIONE ARCHIVIO
   const archivioItems: NavGroupItem[] = [
     {
       path: "/archivio/giocatori",
-      label: "Archivio Storico",
+      label: "Archivio Calciatori",
       description: "Statistiche e giocatori delle stagioni passate",
       icon: History,
       colorClass: "text-purple-500",
     },
-    {
-      path: "/archivio/hall-of-fame",
-      label: "Hall of Fame",
-      description: "Palmarès, scudetti e leggende di lega",
-      icon: Crown,
-      colorClass: "text-yellow-500",
-    },
   ];
 
-  // 5. SEZIONE LA MIA SQUADRA (Per il manager autenticato)
+  // 7. SEZIONE LA MIA SQUADRA (Per il manager autenticato)
   const miaSquadraItems: NavGroupItem[] = [
     {
       path: "/mia-squadra/roster",
@@ -232,13 +247,32 @@ const Navbar = () => {
   ];
 
   // Verifica stati attivi
-  const isCampionatoActive = campionatoItems.some((i) => location.pathname === i.path);
+  const isCampionatoActive =
+    campionatoItems.some((i) => location.pathname === i.path) ||
+    location.pathname.startsWith("/campionato");
+  const isSquadreActive =
+    squadreItems.some((i) => location.pathname === i.path) ||
+    location.pathname.startsWith("/squadre") ||
+    location.pathname === "/rose" ||
+    location.pathname === "/statistiche-squadre";
   const isCalciatoriActive =
     calciatoriItems.some((i) => location.pathname === i.path) ||
-    location.pathname.startsWith("/giocatori");
-  const isDraftActive = location.pathname.startsWith("/draft");
-  const isArchivioActive = location.pathname.startsWith("/archivio");
-  const isMiaSquadraActive = location.pathname.startsWith("/mia-squadra") || location.pathname.startsWith("/admin") || location.pathname.startsWith("/amministrazione");
+    location.pathname.startsWith("/giocatori") ||
+    location.pathname === "/statistiche" ||
+    location.pathname === "/archivio/hall-of-fame";
+  const isDraftActive =
+    location.pathname.startsWith("/draft") ||
+    location.pathname.startsWith("/mercato");
+  const isMediaActive =
+    location.pathname.startsWith("/sala-stampa") ||
+    location.pathname.startsWith("/comunicati");
+  const isArchivioActive =
+    location.pathname === "/archivio/giocatori" ||
+    (location.pathname.startsWith("/archivio") && location.pathname !== "/archivio/hall-of-fame");
+  const isMiaSquadraActive =
+    location.pathname.startsWith("/mia-squadra") ||
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/amministrazione");
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-card/90 backdrop-blur-md shadow-xs transition-colors">
@@ -275,12 +309,12 @@ const Navbar = () => {
           {/* ================================================================= */}
           {/* DESKTOP NAVIGATION (MACRO-AREE PROFESSIONALI RAGGRUPPATE)         */}
           {/* ================================================================= */}
-          <div className="hidden md:flex items-center gap-1.5 lg:gap-2">
+          <div className="hidden lg:flex items-center gap-1 xl:gap-2">
             
             {/* 1. DROPDOWN: CAMPIONATO */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
                   isCampionatoActive
                     ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
                     : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
@@ -318,10 +352,51 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 2. DROPDOWN: CALCIATORI */}
+            {/* 2. DROPDOWN: SQUADRE */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
+                  isSquadreActive
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                <Shield className="h-4 w-4 text-indigo-500" />
+                <span>Squadre</span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
+                <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                  I 12 Club &amp; Performance
+                </div>
+                {squadreItems.map((item) => {
+                  const Icon = item.icon;
+                  const isCurrent = location.pathname === item.path;
+                  return (
+                    <DropdownMenuItem key={item.path} asChild>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
+                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className="text-sm font-bold text-foreground leading-tight">
+                          {item.label}
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* 3. DROPDOWN: CALCIATORI */}
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
                   isCalciatoriActive
                     ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
                     : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
@@ -333,7 +408,7 @@ const Navbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                  Database &amp; Squadre
+                  Database &amp; Performance Individuali
                 </div>
                 {calciatoriItems.map((item) => {
                   const Icon = item.icon;
@@ -359,10 +434,10 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 3. DROPDOWN / LINK: DRAFT & MERCATO */}
+            {/* 4. DROPDOWN: DRAFT & MERCATO */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
                   isDraftActive
                     ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
                     : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
@@ -400,10 +475,51 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 4. DROPDOWN: ARCHIVIO */}
+            {/* 5. DROPDOWN: MEDIA & NEWS */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
+                  isMediaActive
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                <Newspaper className="h-4 w-4 text-amber-500" />
+                <span>Media &amp; News</span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
+                <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                  Comunicazione &amp; Stampa
+                </div>
+                {mediaItems.map((item) => {
+                  const Icon = item.icon;
+                  const isCurrent = location.pathname === item.path;
+                  return (
+                    <DropdownMenuItem key={item.path} asChild>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
+                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className="text-sm font-bold text-foreground leading-tight">
+                          {item.label}
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* 6. DROPDOWN: ARCHIVIO */}
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
                   isArchivioActive
                     ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
                     : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
@@ -415,7 +531,7 @@ const Navbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                  Storia &amp; Albo d'Oro
+                  Memoria Storica di Lega
                 </div>
                 {archivioItems.map((item) => {
                   const Icon = item.icon;
@@ -639,7 +755,7 @@ const Navbar = () => {
             {/* ================================================================= */}
             {/* MOBILE HAMBURGER MENU (SHEET CASSETTO)                            */}
             {/* ================================================================= */}
-            <div className="flex md:hidden">
+            <div className="flex lg:hidden">
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetTrigger asChild>
                   <Button
@@ -692,6 +808,28 @@ const Navbar = () => {
                       ))}
                     </div>
 
+                    {/* Gruppo: Squadre */}
+                    <div className="space-y-1 pt-2 border-t border-border/60">
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
+                        <Shield className="h-3 w-3 text-indigo-500" /> Squadre
+                      </div>
+                      {squadreItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
+                            location.pathname === item.path
+                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                              : "text-foreground hover:bg-muted/50"
+                          }`}
+                        >
+                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
+                          <span>{item.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+
                     {/* Gruppo: Calciatori */}
                     <div className="space-y-1 pt-2 border-t border-border/60">
                       <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
@@ -720,6 +858,28 @@ const Navbar = () => {
                         <Sparkles className="h-3 w-3 text-amber-500" /> Draft &amp; Mercato
                       </div>
                       {draftItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
+                            location.pathname === item.path
+                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                              : "text-foreground hover:bg-muted/50"
+                          }`}
+                        >
+                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
+                          <span>{item.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+
+                    {/* Gruppo: Media & News */}
+                    <div className="space-y-1 pt-2 border-t border-border/60">
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
+                        <Newspaper className="h-3 w-3 text-amber-500" /> Media &amp; News
+                      </div>
+                      {mediaItems.map((item) => (
                         <Link
                           key={item.path}
                           to={item.path}
