@@ -107,8 +107,8 @@ const Navbar = () => {
   const squadreItems: NavGroupItem[] = [
     {
       path: "/squadre",
-      label: "I 12 Club",
-      description: "Tutti i 12 club ufficiali della Serie A",
+      label: "Club",
+      description: "I club ufficiali della Serie A",
       icon: Shield,
       colorClass: "text-indigo-500",
     },
@@ -367,7 +367,7 @@ const Navbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-60 p-1.5 bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl z-50">
                 <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                  I 12 Club &amp; Performance
+                  Club &amp; Performance
                 </div>
                 {squadreItems.map((item) => {
                   const Icon = item.icon;

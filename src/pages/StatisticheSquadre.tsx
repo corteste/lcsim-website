@@ -60,7 +60,7 @@ export default function StatisticheSquadre() {
             <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-2">
               <Link to="/squadre">
                 <Shield className="h-4 w-4" />
-                Vedi i 12 Club
+                Vedi i Club
               </Link>
             </Button>
           </div>
