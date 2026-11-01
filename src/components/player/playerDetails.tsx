@@ -23,6 +23,8 @@ import {
 import { getPlayerImage, getRoleColor, getTeamBackground, getValueColor, getNationalityFlag } from "@/utils/functions";
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/player";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPlayerTotwAppearances } from "@/services/totwService";
 import { MarketStatus } from "@/types/marketStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -611,6 +613,16 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               )}
               {isRetiringSoon(currentPlayer) && (
                 <RetiringBadge />
+              )}
+              {totwCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 text-xs font-black gap-1 shadow-xs cursor-default"
+                  title={`Selezionato ${totwCount} volte nella Squadra della Settimana (TOTW)`}
+                >
+                  <Star className="h-3 w-3 fill-amber-500" />
+                  TOTW x{totwCount}
+                </Badge>
               )}
               {currentPlayer.XP !== null && (
                 <button

@@ -45,6 +45,8 @@ import { fetchPlayerById } from "@/services/playersService";
 import { Loader2 } from "lucide-react";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import { supabase } from "@/supabaseClient";
+import { useSearchParams } from "react-router-dom";
+import { TotwPitch } from "@/components/stats/TotwPitch";
 
 const PLAYERS_PER_PAGE = 10;
 const CURRENT_SEASON = 9;
@@ -334,6 +336,24 @@ const Statistiche = () => {
     }
   };
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") === "totw" ? "totw" : "stats";
+
+  const handleSelectPlayerById = async (playerId: number) => {
+    setSelectedPlayer(null);
+    setLoadingFullPlayer(true);
+    try {
+      const full = await fetchPlayerById(playerId);
+      if (full) {
+        setFullPlayer(full);
+      }
+    } catch (err) {
+      console.error("Errore fetch dettagli calciatore:", err);
+    } finally {
+      setLoadingFullPlayer(false);
+    }
+  };
+
   const handleClosePlayerModal = () => {
     setSelectedPlayer(null);
     setFullPlayer(null);
@@ -476,6 +496,39 @@ const Statistiche = () => {
           </div>
         </div>
 
+        {/* TABS SWITCHER: STATS LEADERBOARD VS TOTW */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-border/80 pb-3">
+          <Button
+            variant={currentTab === "stats" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSearchParams({})}
+            className={`gap-2 font-bold text-xs sm:text-sm ${
+              currentTab === "stats" ? "shadow-sm" : ""
+            }`}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Classifiche Statistiche
+          </Button>
+
+          <Button
+            variant={currentTab === "totw" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSearchParams({ tab: "totw" })}
+            className={`gap-2 font-bold text-xs sm:text-sm ${
+              currentTab === "totw"
+                ? "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-sm"
+                : "text-amber-500 hover:text-amber-600 border-amber-500/30"
+            }`}
+          >
+            <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+            Top 11 di Giornata (TOTW)
+          </Button>
+        </div>
+
+        {currentTab === "totw" ? (
+          <TotwPitch onSelectPlayer={handleSelectPlayerById} />
+        ) : (
+          <>
         {/* TELEMETRY KPI SUMMARY WIDGETS */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
           <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
@@ -1111,10 +1164,12 @@ const Statistiche = () => {
             </div>
           )}
         </Card>
+          </>
+        )}
       </main>
 
       {/* PLAYER ADVANCED STATS & FULL CHARACTERISTICS MODAL */}
-      {selectedPlayer && (
+      {(selectedPlayer || fullPlayer || loadingFullPlayer) && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto"
           onClick={handleClosePlayerModal}
@@ -1125,13 +1180,14 @@ const Statistiche = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span>Caricamento scheda completa di {selectedPlayer.Nome} {selectedPlayer.Cognome}...</span>
+              <span>Caricamento scheda calciatore...</span>
             </div>
           ) : fullPlayer ? (
             <PlayerDetails
               currentPlayer={fullPlayer}
-              initialStats={selectedPlayer}
-              defaultTab="stats"
+              initialStats={selectedPlayer || undefined}
+              defaultTab={selectedPlayer ? "stats" : "overview"}
+
               onClose={handleClosePlayerModal}
             />
           ) : null}

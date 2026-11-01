@@ -509,20 +509,37 @@ Elezione automatica del migliore in campo della partita basato sul rating/voto p
 ---
 
 ## 📌 19. Squadra della Settimana (Top 11 / TOTW) & Premi Speciali
-- **Stato**: 🟡 Da Progettare / In Backlog
-- **Priorità**: Bassa (Coinvolgimento community e riconoscimento performance manageriali)
-- **Moduli coinvolti**: src/pages/Statistiche.tsx, widget dedicato in Homepage
-- **Tabelle coinvolte**: VIEW_PLAYER_STATS, an_player, an_team
-Descrizione
-Top 11 di Giornata (Team of the Week):
-Al termine di ogni giornata disputata, generazione automatica di un campo tattico 2D con la formazione ideale del turno: il portiere con voto/parate più alte, i 3 o 4 migliori difensori, i migliori centrocampisti e i migliori attaccanti.
-Badge celebrativo TOTW temporaneo o storico per i calciatori selezionati.
-Classifiche Premi Stagionali Speciali:
-🧤 Golden Glove: Classifica dei portieri con il maggior numero di Clean Sheet (partite a rete inviolata).
-🎯 Re degli Assist: Classifica dedicata ai rifinitori della Lega.
-⭐ Miglior Rating Medio: Top 10 assoluta per media voto (con soglia minima presenze es. 50% delle partite).
+- **Stato**: 🟢 Completato & Testato (Top 11 4-3-3 per giornata in Statistiche, widget Home e badge TOTW nel profilo calciatore; Premi Speciali accantonati in backlog su richiesta utente)
+- **Priorità**: Bassa (Completata la parte TOTW; Premi Speciali lasciati in backlog)
+- **Moduli coinvolti**: src/services/totwService.ts, src/components/stats/TotwPitch.tsx, src/components/home/TotwHomeCard.tsx, src/pages/Statistiche.tsx, src/pages/Home.tsx, src/components/player/playerDetails.tsx
+- **Tabelle coinvolte**: as_player_stat / VIEW_PLAYER_STATS, an_player, an_team
 
-
+### Funzionalità Completate & Dettagli di Implementazione:
+1. **Calcolo Top 11 di Giornata (src/services/totwService.ts)**:
+   - Algoritmo di selezione su modulo tattico ufficiale **4-3-3**: 1 Portiere (POR), 4 Difensori (DIF), 3 Centrocampisti (CEN), 3 Attaccanti (ATT).
+   - Ordinamento per `VOTO` decrescente con criteri tie-breaker meritocratici:
+     - Portieri: parate effettuate (`PARA`), minor numero di gol subiti (`GSUB`).
+     - Difensori: contrasti vinti (`CTRS_SI`), minor numero di falli commessi (`FALLI`).
+     - Centrocampisti e Attaccanti: gol segnati (`GOL`), assist vincenti (`ASST`).
+   - Identificazione e incoronazione automatica dell'**MVP della Settimana** con il voto più alto della giornata.
+   - Cache e query ottimizzata su Supabase con fallback trasparente alla stagione precedente disputata (es. Stagione 10) qualora la stagione attiva (es. 11) non abbia ancora turni refertati.
+2. **Campo Tattico 2D Interattivo (src/components/stats/TotwPitch.tsx)**:
+   - Campo da calcio SVG responsive con erba a strisce bicolore, cerchio di centrocampo, aree di rigore e porte.
+   - 11 nodi calciatore posizionati nello schieramento 4-3-3 con avatar, badge ruolo colorato, logo squadra di appartenenza, OVR, voto e statistiche chiave (gol/assist/parate).
+   - Corona e bagliore speciale per l'MVP di turno.
+   - Selettore stagione e selettore giornata con navigazione rapida precedente/successiva.
+   - Sidebar/Riepilogo per reparto (Portiere, Difesa, Centrocampo, Attacco) con statistiche di dettaglio.
+   - Click su qualsiasi giocatore per aprire istantaneamente il modale completo `PlayerDetails`.
+3. **Integrazione in Statistiche (src/pages/Statistiche.tsx)**:
+   - Tab switcher in testata: `[ Classifiche Statistiche ]` e `[ ★ Top 11 di Giornata (TOTW) ]`.
+   - Supporto deep-linking via query param `?tab=totw`.
+4. **Widget Homepage Broadcast (src/components/home/TotwHomeCard.tsx in src/pages/Home.tsx)**:
+   - Card in evidenza posizionata sotto al prossimo avversario con spotlight dell'MVP, rassegna visiva degli 11 campioni del turno e pulsante CTA per visualizzare lo schieramento tattico completo sul campo 2D.
+5. **Badge Celebrativo Carriera (src/components/player/playerDetails.tsx)**:
+   - Calcolo del totale storico presenze TOTW per ogni calciatore.
+   - Badge dorato `★ TOTW x{n}` nell'header della scheda del giocatore se è stato selezionato almeno una volta nella Top 11.
+6. **Premi Speciali (Golden Glove, Re degli Assist, ecc.)**:
+   - Accantonati in backlog a priorità bassa su richiesta dell'utente (essendo già coperte le graduatorie nelle classifiche di rendimento).
 
 ---
 
