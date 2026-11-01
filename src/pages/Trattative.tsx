@@ -118,6 +118,7 @@ export default function Trattative() {
   };
 
   const handleOpenCounterOffer = (trade: EnrichedTrade) => {
+    setDetailsModalOpen(false);
     setCounterOfferSource(trade);
     setNewModalOpen(true);
   };
@@ -493,7 +494,7 @@ export default function Trattative() {
                   <div className="flex items-center gap-2">
                     <ShieldAlert className="h-4 w-4 shrink-0 text-purple-600" />
                     <span>
-                      <strong>Pannello Esecutivo Admin</strong>: In questa sezione compaiono tutte le trattative concluse tra le società o in corso. Puoi cliccare <strong>"Approva"</strong> direttamente su ciascuna card o aprire la scheda per esaminare i dettagli e i messaggi.
+                      <strong>Pannello Esecutivo Admin</strong>: In questa sezione compaiono le trattative formalmente accettate da entrambe le società in attesa di convalida ufficiale della Lega. Puoi cliccare <strong>"Approva"</strong> direttamente su ciascuna card o aprire la scheda per esaminare i dettagli e i messaggi.
                     </span>
                   </div>
                 </div>
@@ -779,7 +780,7 @@ const TradeCard: React.FC<TradeCardProps> = ({
               Scheda Dettagli
             </Button>
 
-            {isAdminView && onQuickReject && trade.status !== "completed" && (
+            {isAdminView && onQuickReject && trade.status === "pending_admin" && (
               <Button
                 size="sm"
                 variant="outline"
@@ -790,7 +791,7 @@ const TradeCard: React.FC<TradeCardProps> = ({
               </Button>
             )}
 
-            {isAdminView && onQuickApprove && trade.status !== "completed" && (
+            {isAdminView && onQuickApprove && trade.status === "pending_admin" && (
               <Button
                 size="sm"
                 onClick={onQuickApprove}

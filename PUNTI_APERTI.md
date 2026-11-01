@@ -1374,9 +1374,9 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 63. Scambi: Controproposte a Finestra Singola (Stesso ID), Blocco Override Admin Senza Accettazione & Rimozione AT dai Bisogni
-- **Stato**: 🔴 Da Sviluppare
+- **Stato**: 🟢 Completato & Testato (Override sullo stesso trade_id con log cronologico conversazione, blocco pulsanti admin per scambi non in pending_admin & rimozione ruolo AT)
 - **Priorità**: Alta (Integrità del mercato, workflow trattative e coerenza ruoli)
-- **Moduli coinvolti**: `src/pages/Trades.tsx`, `src/components/trades/*`, `src/services/marketTradesService.ts`, `supabase/migrations/*market_trades*`
+- **Moduli coinvolti**: `src/pages/Trattative.tsx`, `src/components/trades/TradeDetailsModal.tsx`, `src/components/trades/NewTradeModal.tsx`, `src/services/tradesService.ts`, `src/types/marketNeeds.ts`
 - **Specifiche & Requisiti**:
   1. **Blocco Override Amministrativo Senza Accettazione**:
      - Rimuovere la funzionalità di override/approvazione forzata da parte dell'Admin se non è presente la formale accettazione della seconda squadra coinvolta nello scambio.

@@ -387,25 +387,34 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
               ) : (
                 trade.messages.map((m) => {
                   const isMine = m.sender_team === currentTeam;
+                  const isProposal = m.message.includes("PROPOSTA") || m.sender_name === "Proposta Iniziale";
                   const isSystem = m.sender_team === "LEGA" || m.sender_name === "Sistema";
                   return (
                     <div
                       key={m.id}
-                      className={`p-2 rounded-lg text-xs flex flex-col gap-1 ${
-                        isSystem
+                      className={`p-2.5 rounded-xl text-xs flex flex-col gap-1 transition-all ${
+                        isProposal
+                          ? "bg-purple-500/10 dark:bg-purple-500/15 border border-purple-500/30"
+                          : isSystem
                           ? "bg-muted/80 border border-border"
                           : isMine
-                          ? "bg-blue-500/10 border border-blue-500/20 ml-6"
-                          : "bg-muted/40 border border-border mr-6"
+                          ? "bg-blue-500/10 border border-blue-500/20 ml-4"
+                          : "bg-muted/40 border border-border mr-4"
                       }`}
                     >
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span className="font-bold text-foreground">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground pb-0.5 border-b border-border/40">
+                        <span className="font-extrabold text-foreground flex items-center gap-1.5">
+                          {isProposal && <ArrowLeftRight className="h-3 w-3 text-purple-500" />}
                           {m.sender_name || m.sender_team}
                         </span>
-                        <span className="font-mono">{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="font-mono text-[9px]">
+                          {new Date(m.created_at).toLocaleDateString("it-IT", { day: '2-digit', month: '2-digit' })}{" "}
+                          {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                      <div className="text-foreground leading-relaxed">{m.message}</div>
+                      <div className="text-foreground leading-relaxed whitespace-pre-line text-[11px] font-medium pt-0.5">
+                        {m.message}
+                      </div>
                     </div>
                   );
                 })
@@ -513,8 +522,8 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
               </Button>
             )}
 
-            {/* Azioni Admin: sempre abilitate finché lo scambio non è concluso */}
-            {isAdmin && trade.status !== "completed" && trade.status !== "cancelled" && trade.status !== "admin_rejected" && (
+            {/* Azioni Admin: abilitate solo se lo scambio è stato formalmente accettato da entrambe le parti ('pending_admin') */}
+            {isAdmin && trade.status === "pending_admin" && (
               <>
                 <Button
                   size="sm"

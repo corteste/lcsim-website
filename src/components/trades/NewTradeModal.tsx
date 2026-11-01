@@ -36,6 +36,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   fetchTeamAssets,
   createTrade,
+  sendCounterProposal,
 } from "@/services/tradesService";
 import { TradePlayerAsset, TradePickAsset, EnrichedTrade } from "@/types/trades";
 import { MARKET_STATUS_OPTIONS } from "@/types/marketStatus";
@@ -126,7 +127,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
         setSelectedRequestedPlayerIds([...counterOfferTrade.requested_player_ids]);
         setSelectedRequestedPickNums([...counterOfferTrade.requested_pick_numbers]);
       }
-      setNotes(`Controproposta rispetto alla trattativa #${counterOfferTrade.id.slice(0, 8)}`);
+      setNotes("");
     } else if (open && !counterOfferTrade) {
       // Reset
       setTargetTeam(initialTargetTeam || "");
@@ -252,20 +253,34 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
     }
 
     setSubmitting(true);
-    const res = await createTrade({
-      sender_team: currentTeam,
-      receiver_team: targetTeam,
-      offered_player_ids: selectedOfferedPlayerIds,
-      offered_pick_numbers: selectedOfferedPickNums,
-      requested_player_ids: selectedRequestedPlayerIds,
-      requested_pick_numbers: selectedRequestedPickNums,
-      notes,
-      parent_trade_id: counterOfferTrade?.id,
-    });
+    let res;
+    if (counterOfferTrade) {
+      res = await sendCounterProposal({
+        trade_id: counterOfferTrade.id,
+        sender_team: currentTeam,
+        receiver_team: targetTeam,
+        offered_player_ids: selectedOfferedPlayerIds,
+        offered_pick_numbers: selectedOfferedPickNums,
+        requested_player_ids: selectedRequestedPlayerIds,
+        requested_pick_numbers: selectedRequestedPickNums,
+        notes,
+        sender_name: user?.name || user?.username || currentTeam,
+      });
+    } else {
+      res = await createTrade({
+        sender_team: currentTeam,
+        receiver_team: targetTeam,
+        offered_player_ids: selectedOfferedPlayerIds,
+        offered_pick_numbers: selectedOfferedPickNums,
+        requested_player_ids: selectedRequestedPlayerIds,
+        requested_pick_numbers: selectedRequestedPickNums,
+        notes,
+      });
+    }
     setSubmitting(false);
 
     if (res.success) {
-      toast.success("Proposta di scambio inviata con successo!");
+      toast.success(counterOfferTrade ? "Controproposta inviata con successo!" : "Proposta di scambio inviata con successo!");
       onTradeCreated();
       onOpenChange(false);
     } else {

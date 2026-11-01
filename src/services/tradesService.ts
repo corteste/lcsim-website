@@ -220,7 +220,7 @@ export async function fetchAdminPendingTrades(): Promise<EnrichedTrade[]> {
     const { data, error } = await supabase
       .from(TRADES_TABLE)
       .select("*")
-      .in("status", ["pending_admin", "pending"])
+      .eq("status", "pending_admin")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -320,7 +320,7 @@ export async function createTrade(payload: CreateTradePayload): Promise<{
     const allTradedPlayerIds = [...payload.offered_player_ids, ...payload.requested_player_ids];
     const { data: tradedPlayersData } = await supabase
       .from("an_player")
-      .select("ID, Posiz, Squadra")
+      .select("ID, Nome, Cognome, Posiz, Squadra, OVR")
       .or(
         `Squadra.eq.${payload.sender_team},Squadra.eq.${payload.receiver_team}${
           allTradedPlayerIds.length > 0 ? `,ID.in.(${allTradedPlayerIds.join(",")})` : ""
@@ -383,20 +383,200 @@ export async function createTrade(payload: CreateTradePayload): Promise<{
       return { success: false, error: error?.message || "Errore durante la creazione dello scambio." };
     }
 
-    // Se c'è una nota iniziale, inseriscila anche come primo messaggio della trattativa
-    if (payload.notes?.trim()) {
-      await supabase.from(MESSAGES_TABLE).insert({
-        trade_id: data.id,
-        sender_team: payload.sender_team,
-        sender_name: "Proposta Iniziale",
-        message: payload.notes.trim(),
+    // Inserisci il log della proposta iniziale nel thread storico della trattativa
+    const playerMap: Record<number, string> = {};
+    if (tradedPlayersData) {
+      tradedPlayersData.forEach((p: any) => {
+        playerMap[p.ID] = `${p.Nome} ${p.Cognome} (${p.Posiz} ${p.OVR})`;
       });
     }
+
+    const initialOfferedSummary = [
+      ...payload.offered_player_ids.map((id) => playerMap[id] || `Calciatore #${id}`),
+      ...payload.offered_pick_numbers.map((pk) => `Scelta #${pk}`),
+    ].join(", ");
+
+    const initialRequestedSummary = [
+      ...payload.requested_player_ids.map((id) => playerMap[id] || `Calciatore #${id}`),
+      ...payload.requested_pick_numbers.map((pk) => `Scelta #${pk}`),
+    ].join(", ");
+
+    const initialMsgLines = [
+      `📋 PROPOSTA INIZIALE da ${payload.sender_team}`,
+      `• Offre: ${initialOfferedSummary}`,
+      `• Richiede: ${initialRequestedSummary}`,
+    ];
+    if (payload.notes?.trim()) {
+      initialMsgLines.push(`• Nota: "${payload.notes.trim()}"`);
+    }
+
+    await supabase.from(MESSAGES_TABLE).insert({
+      trade_id: data.id,
+      sender_team: payload.sender_team,
+      sender_name: "Proposta Iniziale",
+      message: initialMsgLines.join("\n"),
+    });
 
     return { success: true, trade: data };
   } catch (err: any) {
     console.error("createTrade exception:", err);
     return { success: false, error: err?.message || "Errore imprevisto." };
+  }
+}
+
+export interface SendCounterProposalPayload {
+  trade_id: string;
+  sender_team: string;
+  receiver_team: string;
+  offered_player_ids: number[];
+  offered_pick_numbers: number[];
+  requested_player_ids: number[];
+  requested_pick_numbers: number[];
+  notes?: string;
+  sender_name?: string;
+}
+
+/**
+ * Invia una controproposta aggiornando lo scambio esistente (stesso trade_id)
+ * e registrando la nuova proposta nella cronologia dei messaggi della trattativa.
+ */
+export async function sendCounterProposal(payload: SendCounterProposalPayload): Promise<{
+  success: boolean;
+  trade?: Trade;
+  error?: string;
+}> {
+  try {
+    // Controllo stato finestra di mercato
+    const marketState = await getMarketState();
+    if (!marketState.isOpen) {
+      return {
+        success: false,
+        error: "Il Calciomercato è attualmente chiuso dalla Lega. Non è possibile inviare controproposte.",
+      };
+    }
+
+    const totalOffered = payload.offered_player_ids.length + payload.offered_pick_numbers.length;
+    const totalRequested = payload.requested_player_ids.length + payload.requested_pick_numbers.length;
+
+    if (totalOffered === 0 || totalRequested === 0) {
+      return { success: false, error: "Devi selezionare almeno un asset offerto e uno richiesto." };
+    }
+
+    if (totalOffered !== totalRequested) {
+      return {
+        success: false,
+        error: `Regola di parità di asset non rispettata: stai offrendo ${totalOffered} asset per ${totalRequested} asset. Il totale deve essere identico.`,
+      };
+    }
+
+    // Controllo vincoli Portieri per entrambe le squadre (Punto #43: min 2, max 3)
+    const allTradedPlayerIds = [...payload.offered_player_ids, ...payload.requested_player_ids];
+    const { data: tradedPlayersData } = await supabase
+      .from("an_player")
+      .select("ID, Nome, Cognome, Posiz, Squadra, OVR")
+      .or(
+        `Squadra.eq.${payload.sender_team},Squadra.eq.${payload.receiver_team}${
+          allTradedPlayerIds.length > 0 ? `,ID.in.(${allTradedPlayerIds.join(",")})` : ""
+        }`
+      );
+
+    if (tradedPlayersData) {
+      const senderCurGK = tradedPlayersData.filter((p) => p.Squadra === payload.sender_team && p.Posiz === "POR").length;
+      const receiverCurGK = tradedPlayersData.filter((p) => p.Squadra === payload.receiver_team && p.Posiz === "POR").length;
+
+      const offeredGK = tradedPlayersData.filter((p) => payload.offered_player_ids.includes(Number(p.ID)) && p.Posiz === "POR").length;
+      const requestedGK = tradedPlayersData.filter((p) => payload.requested_player_ids.includes(Number(p.ID)) && p.Posiz === "POR").length;
+
+      const senderPostGK = senderCurGK - offeredGK + requestedGK;
+      const receiverPostGK = receiverCurGK - requestedGK + offeredGK;
+
+      if (senderPostGK > 3) {
+        return {
+          success: false,
+          error: `Operazione non consentita: la tua squadra (${payload.sender_team}) supererebbe il limite massimo di 3 portieri in rosa (ne avrebbe ${senderPostGK}).`,
+        };
+      }
+      if (senderPostGK < 2) {
+        return {
+          success: false,
+          error: `Operazione non consentita: la tua squadra (${payload.sender_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${senderPostGK}).`,
+        };
+      }
+      if (receiverPostGK > 3) {
+        return {
+          success: false,
+          error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) supererebbe il limite massimo di 3 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
+        };
+      }
+      if (receiverPostGK < 2) {
+        return {
+          success: false,
+          error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
+        };
+      }
+    }
+
+    const playerMap: Record<number, string> = {};
+    if (tradedPlayersData) {
+      tradedPlayersData.forEach((p: any) => {
+        playerMap[p.ID] = `${p.Nome} ${p.Cognome} (${p.Posiz} ${p.OVR})`;
+      });
+    }
+
+    const offeredSummary = [
+      ...payload.offered_player_ids.map((id) => playerMap[id] || `Calciatore #${id}`),
+      ...payload.offered_pick_numbers.map((pk) => `Scelta #${pk}`),
+    ].join(", ");
+
+    const requestedSummary = [
+      ...payload.requested_player_ids.map((id) => playerMap[id] || `Calciatore #${id}`),
+      ...payload.requested_pick_numbers.map((pk) => `Scelta #${pk}`),
+    ].join(", ");
+
+    // Aggiornamento dello scambio esistente con override sullo stesso ID
+    const { data, error } = await supabase
+      .from(TRADES_TABLE)
+      .update({
+        sender_team: payload.sender_team,
+        receiver_team: payload.receiver_team,
+        offered_player_ids: payload.offered_player_ids,
+        offered_pick_numbers: payload.offered_pick_numbers,
+        requested_player_ids: payload.requested_player_ids,
+        requested_pick_numbers: payload.requested_pick_numbers,
+        status: "pending",
+        notes: payload.notes?.trim() || null,
+        rejection_reason: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", payload.trade_id)
+      .select()
+      .single();
+
+    if (error || !data) {
+      return { success: false, error: error?.message || "Errore durante l'aggiornamento della controproposta." };
+    }
+
+    // Inserimento del messaggio formattato nel thread storico della trattativa
+    const msgLines = [
+      `🔄 NUOVA CONTROPROPOSTA da ${payload.sender_team}`,
+      `• Offre: ${offeredSummary}`,
+      `• Richiede: ${requestedSummary}`,
+    ];
+    if (payload.notes?.trim()) {
+      msgLines.push(`• Nota: "${payload.notes.trim()}"`);
+    }
+
+    await supabase.from(MESSAGES_TABLE).insert({
+      trade_id: payload.trade_id,
+      sender_team: payload.sender_team,
+      sender_name: payload.sender_name || payload.sender_team,
+      message: msgLines.join("\n"),
+    });
+
+    return { success: true, trade: data };
+  } catch (err: any) {
+    console.error("sendCounterProposal exception:", err);
+    return { success: false, error: err?.message || "Errore imprevisto durante l'invio della controproposta." };
   }
 }
 
