@@ -271,7 +271,7 @@ function getPlayerStatValue(
   const disp = getStatDisplayByTokens(n, player.scoutingTokens);
   return {
     isRevealed: true,
-    numericVal: disp.midpoint,
+    numericVal: disp.minValue,
     displayVal: disp.label,
   };
 }

@@ -178,6 +178,8 @@ export interface StatDisplayResult {
   label: string;
   isUnlocked: boolean;
   midpoint: number;
+  minValue: number;
+  maxValue: number;
   rangeType: "none" | "10" | "3" | "exact";
 }
 
@@ -193,7 +195,14 @@ export function getStatDisplayByTokens(
 ): StatDisplayResult {
   const num = Math.max(0, Math.min(99, Number(value) || 0));
   if (tokensSpent < 1) {
-    return { label: "??", isUnlocked: false, midpoint: 0, rangeType: "none" };
+    return {
+      label: "??",
+      isUnlocked: false,
+      midpoint: 0,
+      minValue: 0,
+      maxValue: 0,
+      rangeType: "none",
+    };
   }
   if (tokensSpent === 1) {
     const decade = Math.floor(num / 10) * 10;
@@ -201,6 +210,8 @@ export function getStatDisplayByTokens(
       label: getStatRange10(num),
       isUnlocked: true,
       midpoint: decade + 4.5,
+      minValue: decade,
+      maxValue: Math.min(99, decade + 9),
       rangeType: "10",
     };
   }
@@ -208,14 +219,29 @@ export function getStatDisplayByTokens(
   const decade = Math.floor(num / 10) * 10;
   const unit = num % 10;
   let mid = decade + 1;
-  if (unit <= 2) mid = decade + 1;
-  else if (unit <= 5) mid = decade + 4;
-  else mid = decade + 7.5;
+  let min = decade;
+  let max = decade + 2;
+
+  if (unit <= 2) {
+    mid = decade + 1;
+    min = decade;
+    max = decade + 2;
+  } else if (unit <= 5) {
+    mid = decade + 4;
+    min = decade + 3;
+    max = decade + 5;
+  } else {
+    mid = decade + 7.5;
+    min = decade + 6;
+    max = Math.min(99, decade + 9);
+  }
 
   return {
     label: getStatRange3(num),
     isUnlocked: true,
     midpoint: mid,
+    minValue: min,
+    maxValue: max,
     rangeType: "3",
   };
 }
