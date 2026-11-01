@@ -844,7 +844,7 @@ PostgreSQL (execute_official_cuts): conteggio delle pick libere per club e blocc
 ---
 
 ## 📌 34. Visualizzazione Magliette Ufficiali nella Pagina Rosa
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato
 - **Priorità**: Media (Arricchimento estetico e immersione grafica del club)
 - **Moduli coinvolti**: src/pages/Roster.tsx (/mia-squadra/roster), src/pages/Squadre.tsx, componenti profilo calciatore
 Tabelle & Asset coinvolti: Cartella /images/teams/ o /images/jerseys/, colonna NumeroMaglia in an_player
@@ -1267,7 +1267,7 @@ Verifica completata: la differenziazione delle domande è pienamente operativa n
 ---
 
 ## 📌 56. Pagina Scambi Non Funzionante
-- **Stato**: 🟡 In attesa di diagnosi & correzione
+- **Stato**: 🟢 Completato (Risolto con la riorganizzazione della bacheca scambi e bisogni)
 - **Priorità**: Alta (Bug)
 - **Moduli coinvolti**: src/pages/UfficialitaScambi.tsx (/mercato/scambi), src/components/trades/LeagueMarketNeedsBoard.tsx
 - **Tabelle coinvolte**: market_trades, team_market_needs
