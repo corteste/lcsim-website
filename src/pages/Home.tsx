@@ -193,7 +193,7 @@ const Home = () => {
                   <span>5°-12° Play-In</span>
                 </div>
               </div>
-              <Link to="/classifica">
+              <Link to="/classifica?tab=playoff">
                 <Button variant="ghost" size="sm" className="h-7 text-xs">
                   Tabellone Playoff Completo &rarr;
                 </Button>

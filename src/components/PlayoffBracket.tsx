@@ -553,7 +553,7 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
   };
 
   return (
-    <Card className="border border-border/80 shadow-lg overflow-hidden bg-card mt-8">
+    <Card className="border border-border/80 shadow-lg overflow-hidden bg-card">
       {/* Top Header */}
       <CardHeader className="bg-muted/20 border-b border-border/60 p-5 md:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -570,6 +570,9 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
               <Trophy className="h-6 w-6 text-amber-500" />
               <span>Tabellone Playoff LCSIM</span>
             </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Clicca sul nome di una squadra nel tabellone per tracciarne il cammino verso il titolo.
+            </p>
           </div>
 
           {/* View Mode Toggle: Tabellone vs Fasi */}
@@ -596,61 +599,6 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
               <Calendar className="h-3.5 w-3.5" />
               <span>Vista per Fasi</span>
             </button>
-          </div>
-        </div>
-
-        {/* Team Pathway Selector Pills (Tutte le 12 Squadre) */}
-        <div className="pt-2 border-t border-border/40">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Route className="h-3.5 w-3.5 text-emerald-500" />
-              <span>Traccia Percorso Squadra nel Tabellone:</span>
-            </p>
-            {selectedTeam && (
-              <button
-                onClick={() => setSelectedTeam(null)}
-                className="text-[11px] font-semibold text-rose-500 hover:text-rose-600 flex items-center gap-1 transition-colors"
-              >
-                <X className="h-3 w-3" />
-                <span>Azzera Selezione</span>
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-            {teams.map((t, idx) => {
-              const pos = idx + 1;
-              const isSel = selectedTeam === pos;
-              const isDirectQuarters = pos <= 4;
-              return (
-                <button
-                  key={pos}
-                  onClick={() => setSelectedTeam(isSel ? null : pos)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex-shrink-0 border ${
-                    isSel
-                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 shadow-sm font-bold scale-105"
-                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60"
-                  }`}
-                >
-                  <span
-                    className={`font-mono text-[10px] font-bold px-1 rounded ${
-                      isDirectQuarters
-                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                        : "bg-blue-500/20 text-blue-600 dark:text-blue-400"
-                    }`}
-                  >
-                    #{pos}
-                  </span>
-                  <img
-                    src={`${SUPABASE_STORAGE_URL}/images/teams/${t.team.TEAM_ID}_Logo.png`}
-                    alt=""
-                    className="h-4 w-4 object-contain"
-                    onError={(e) => (e.currentTarget.style.display = "none")}
-                  />
-                  <span className="truncate max-w-[90px]">{t.team.NAME}</span>
-                </button>
-              );
-            })}
           </div>
         </div>
 
