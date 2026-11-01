@@ -29,6 +29,8 @@ import {
   Calendar as CalendarIcon,
   Award,
   RefreshCw,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -37,6 +39,11 @@ import {
   AdminTeamStatDraft,
   AdminPlayerStatDraft,
   ScreenshotProgress,
+  PLAYER_EXTRA_STAT_CATEGORIES,
+  KNOWN_PLAYER_EXTRA_KEYS,
+  TEAM_EXTRA_STAT_LABELS,
+  formatExtraStatLabel,
+  applyOfficialFormationsToMatchReport,
   fetchAvailableSeasons,
   fetchAdminSeasonSchedule,
   fetchAdminMatchReport,
@@ -94,6 +101,7 @@ export function MatchResultsManagerModal({
 
   const [report, setReport] = useState<AdminMatchFullReport | null>(null);
   const [activeEditorTab, setActiveEditorTab] = useState<string>("team");
+  const [expandedPlayerIds, setExpandedPlayerIds] = useState<Record<number, boolean>>({});
 
   // Screenshot OCR state
   const [isProcessingScreenshots, setIsProcessingScreenshots] = useState(false);
@@ -366,6 +374,90 @@ export function MatchResultsManagerModal({
         [key]: prev[key].map((p) => (p.ID === playerId ? { ...p, [field]: value } : p)),
       };
     });
+  };
+
+  const updateTeamExtraStat = (
+    side: "home" | "away",
+    extraKey: string,
+    rawVal: string
+  ) => {
+    setReport((prev) => {
+      if (!prev) return prev;
+      const key = side === "home" ? "homeTeamStat" : "awayTeamStat";
+      const nextExtra = { ...(prev[key].EXTRA_STATS || {}) };
+      if (rawVal === "" || isNaN(Number(rawVal))) {
+        delete nextExtra[extraKey];
+      } else {
+        nextExtra[extraKey] = Number(rawVal);
+      }
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          EXTRA_STATS: nextExtra,
+        },
+      };
+    });
+  };
+
+  const updatePlayerExtraStat = (
+    side: "home" | "away",
+    playerId: number,
+    extraKey: string,
+    rawVal: string
+  ) => {
+    setReport((prev) => {
+      if (!prev) return prev;
+      const key = side === "home" ? "homePlayers" : "awayPlayers";
+      return {
+        ...prev,
+        [key]: prev[key].map((p) => {
+          if (p.ID !== playerId) return p;
+          const nextExtra = { ...(p.EXTRA_STATS || {}) };
+          if (rawVal === "" || isNaN(Number(rawVal))) {
+            delete nextExtra[extraKey];
+          } else {
+            nextExtra[extraKey] = Number(rawVal);
+          }
+          return { ...p, EXTRA_STATS: nextExtra };
+        }),
+      };
+    });
+  };
+
+  const togglePlayerSub = (side: "home" | "away", player: AdminPlayerStatDraft) => {
+    setReport((prev) => {
+      if (!prev) return prev;
+      const key = side === "home" ? "homePlayers" : "awayPlayers";
+      const nextSub = !player.SUB;
+      const nextPos = nextSub
+        ? "SOS"
+        : player.POS_GIOCATA && player.POS_GIOCATA !== "SOS"
+        ? player.POS_GIOCATA
+        : player.Posiz || "CC";
+      return {
+        ...prev,
+        [key]: prev[key].map((p) =>
+          p.ID === player.ID ? { ...p, SUB: nextSub, POS_GIOCATA: nextPos } : p
+        ),
+      };
+    });
+  };
+
+  const toggleExpandPlayer = (playerId: number) => {
+    setExpandedPlayerIds((prev) => ({ ...prev, [playerId]: !prev[playerId] }));
+  };
+
+  const handleResyncFormations = async () => {
+    if (!report) return;
+    const cloned: AdminMatchFullReport = JSON.parse(JSON.stringify(report));
+    await applyOfficialFormationsToMatchReport(cloned, false);
+    setReport(cloned);
+    const hStart = cloned.homePlayers.filter((p) => p.MINUTI > 0 && !p.SUB).length;
+    const aStart = cloned.awayPlayers.filter((p) => p.MINUTI > 0 && !p.SUB).length;
+    toast.success(
+      `Formazioni ufficiali riallineate! Titolari: ${cloned.schedule.home} (${hStart}/11), ${cloned.schedule.away} (${aStart}/11).`
+    );
   };
 
   return (
@@ -934,20 +1026,101 @@ export function MatchResultsManagerModal({
                       })}
                     </div>
                   </div>
+
+                  {/* SEZIONE STATISTICHE EXTRA DI SQUADRA (EXTRA_STATS) */}
+                  {(() => {
+                    const allExtraKeys = Array.from(
+                      new Set([
+                        ...Object.keys(TEAM_EXTRA_STAT_LABELS),
+                        ...Object.keys(report.homeTeamStat.EXTRA_STATS || {}),
+                        ...Object.keys(report.awayTeamStat.EXTRA_STATS || {}),
+                      ])
+                    );
+                    return (
+                      <div className="rounded-xl border border-border/80 overflow-hidden bg-background/50">
+                        <div className="grid grid-cols-12 bg-muted/60 px-4 py-2 text-[11px] font-black uppercase tracking-wider border-b border-border/70">
+                          <div className="col-span-4 text-right pr-4">{report.schedule.home_name}</div>
+                          <div className="col-span-4 text-center text-emerald-600 dark:text-emerald-400">
+                            Statistiche Extra di Squadra (EXTRA_STATS)
+                          </div>
+                          <div className="col-span-4 text-left pl-4">{report.schedule.away_name}</div>
+                        </div>
+                        <div className="divide-y divide-border/50 text-xs">
+                          {allExtraKeys.map((extKey) => (
+                            <div
+                              key={extKey}
+                              className="grid grid-cols-12 items-center px-4 py-1.5 hover:bg-muted/20"
+                            >
+                              <div className="col-span-4 flex justify-end pr-4">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="-"
+                                  value={report.homeTeamStat.EXTRA_STATS?.[extKey] ?? ""}
+                                  onChange={(e) => updateTeamExtraStat("home", extKey, e.target.value)}
+                                  className="h-7 w-32 text-right font-mono text-xs"
+                                />
+                              </div>
+                              <div className="col-span-4 text-center font-semibold text-foreground">
+                                {formatExtraStatLabel(extKey)}
+                              </div>
+                              <div className="col-span-4 flex justify-start pl-4">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="-"
+                                  value={report.awayTeamStat.EXTRA_STATS?.[extKey] ?? ""}
+                                  onChange={(e) => updateTeamExtraStat("away", extKey, e.target.value)}
+                                  className="h-7 w-32 text-left font-mono text-xs"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </TabsContent>
 
                 {/* TAB 2 & 3: GIOCATORI CASA / TRASFERTA */}
                 {(["home", "away"] as const).map((side) => {
                   const players = side === "home" ? report.homePlayers : report.awayPlayers;
                   const tabVal = side === "home" ? "home_players" : "away_players";
+                  const startersCount = players.filter((p) => p.MINUTI > 0 && !p.SUB).length;
+                  const subsCount = players.filter((p) => p.MINUTI > 0 && p.SUB).length;
+
                   return (
-                    <TabsContent key={tabVal} value={tabVal}>
+                    <TabsContent key={tabVal} value={tabVal} className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl border border-border/80 bg-muted/25 text-xs">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono">
+                            Titolari: {startersCount} / 11
+                          </Badge>
+                          <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono">
+                            Subentrati: {subsCount}
+                          </Badge>
+                          <span className="text-[11px] text-muted-foreground">
+                            Clicca sul badge <strong>TIT / SUB</strong> per cambiare lo stato del giocatore o su <strong>Extra</strong> per espandere tutte le statistiche avanzate.
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResyncFormations}
+                          className="h-7 text-[11px] font-bold gap-1.5"
+                        >
+                          <RefreshCw className="h-3 w-3 text-emerald-500" />
+                          Ricalcola Titolari da Formazioni Ufficiali
+                        </Button>
+                      </div>
+
                       <div className="rounded-xl border border-border/80 overflow-x-auto bg-background/50">
                         <table className="w-full text-[11px] border-collapse">
                           <thead>
                             <tr className="bg-muted/70 border-b border-border/80 font-black uppercase text-muted-foreground">
-                              <th className="p-2 text-left sticky left-0 bg-muted/95 z-10 min-w-[170px]">Calciatore</th>
-                              <th className="p-1.5 text-center">Pos</th>
+                              <th className="p-2 text-left sticky left-0 bg-muted/95 z-10 min-w-[185px]">Calciatore</th>
+                              <th className="p-1.5 text-center">Stato / Pos</th>
                               <th className="p-1.5 text-center">Min'</th>
                               <th className="p-1.5 text-center">Voto</th>
                               <th className="p-1.5 text-center">G</th>
@@ -971,30 +1144,66 @@ export function MatchResultsManagerModal({
                             {players.map((p) => {
                               const played = p.MINUTI > 0;
                               const extraKeysCount = Object.keys(p.EXTRA_STATS || {}).length;
+                              const isExpanded = Boolean(expandedPlayerIds[p.ID]);
+                              const isSub = Boolean(p.SUB || p.POS_GIOCATA === "SOS");
+                              const dynamicExtraKeys = Object.keys(p.EXTRA_STATS || {}).filter(
+                                (k) => !KNOWN_PLAYER_EXTRA_KEYS.has(k)
+                              );
+
                               return (
-                                <tr
-                                  key={p.ID}
-                                  className={`transition-colors ${
-                                    played ? "bg-emerald-500/5 hover:bg-emerald-500/10" : "opacity-60 hover:opacity-100"
-                                  }`}
-                                >
-                                  <td className="p-2 sticky left-0 bg-card/95 z-10 font-bold border-r border-border/50">
-                                    <div className="flex items-center justify-between gap-1">
-                                      <span className="truncate">
-                                        {p.Nome} {p.Cognome}
-                                      </span>
-                                      <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">
-                                        {p.Posiz}
-                                      </Badge>
-                                    </div>
-                                  </td>
-                                  <td className="p-1 text-center">
-                                    <Input
-                                      value={p.POS_GIOCATA}
-                                      onChange={(e) => updatePlayerStat(side, p.ID, "POS_GIOCATA", e.target.value)}
-                                      className="h-6 w-12 text-center font-mono text-[10px] px-1"
-                                    />
-                                  </td>
+                                <React.Fragment key={p.ID}>
+                                  <tr
+                                    className={`transition-colors ${
+                                      played
+                                        ? isSub
+                                          ? "bg-amber-500/5 hover:bg-amber-500/10"
+                                          : "bg-emerald-500/5 hover:bg-emerald-500/10"
+                                        : "opacity-60 hover:opacity-100"
+                                    }`}
+                                  >
+                                    <td className="p-2 sticky left-0 bg-card/95 z-10 font-bold border-r border-border/50">
+                                      <div className="flex items-center justify-between gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleExpandPlayer(p.ID)}
+                                          className="flex items-center gap-1 text-left truncate hover:text-emerald-500 cursor-pointer"
+                                          title="Clicca per espandere le statistiche extra del calciatore"
+                                        >
+                                          {isExpanded ? (
+                                            <ChevronUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                          ) : (
+                                            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                          )}
+                                          <span className="truncate">
+                                            {p.Nome} {p.Cognome}
+                                          </span>
+                                        </button>
+                                        <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono shrink-0">
+                                          {p.Posiz}
+                                        </Badge>
+                                      </div>
+                                    </td>
+                                    <td className="p-1 text-center">
+                                      <div className="flex items-center justify-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => togglePlayerSub(side, p)}
+                                          title="Clicca per commutare tra Titolare (TIT) e Subentrato (SUB)"
+                                          className={`px-1.5 py-0.5 rounded text-[9px] font-black font-mono border cursor-pointer transition-colors ${
+                                            !isSub
+                                              ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30"
+                                              : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/30"
+                                          }`}
+                                        >
+                                          {!isSub ? "TIT" : "SUB"}
+                                        </button>
+                                        <Input
+                                          value={p.POS_GIOCATA}
+                                          onChange={(e) => updatePlayerStat(side, p.ID, "POS_GIOCATA", e.target.value)}
+                                          className="h-6 w-12 text-center font-mono text-[10px] px-1"
+                                        />
+                                      </div>
+                                    </td>
                                   <td className="p-1 text-center">
                                     <Input
                                       type="number"
@@ -1293,19 +1502,117 @@ export function MatchResultsManagerModal({
                                     />
                                   </td>
                                   <td className="p-1 text-center">
-                                    {extraKeysCount > 0 ? (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[9px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                                        title={JSON.stringify(p.EXTRA_STATS, null, 2)}
-                                      >
-                                        +{extraKeysCount}
-                                      </Badge>
-                                    ) : (
-                                      <span className="text-muted-foreground">-</span>
-                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleExpandPlayer(p.ID)}
+                                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold cursor-pointer transition-colors ${
+                                        extraKeysCount > 0
+                                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                                          : "border-border/70 bg-muted/40 text-muted-foreground hover:text-foreground"
+                                      }`}
+                                      title="Clicca per aprire/modificare tutte le statistiche extra (Possesso, Tiri, Passaggi, Difesa, Portiere)"
+                                    >
+                                      <span>{extraKeysCount > 0 ? `+${extraKeysCount}` : "Extra"}</span>
+                                      {isExpanded ? (
+                                        <ChevronUp className="h-3 w-3" />
+                                      ) : (
+                                        <ChevronDown className="h-3 w-3" />
+                                      )}
+                                    </button>
                                   </td>
-                                </tr>
+                                  </tr>
+
+                                  {isExpanded && (
+                                    <tr className="bg-muted/30 border-b border-border/80">
+                                      <td colSpan={19} className="p-3">
+                                        <div className="space-y-3">
+                                          <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
+                                            <span className="text-xs font-extrabold text-foreground">
+                                              Statistiche Avanzate &amp; Sub-Tab FC 25 — {p.Nome} {p.Cognome} ({p.Posiz})
+                                            </span>
+                                            <span className="text-[10px] font-mono text-muted-foreground">
+                                              {extraKeysCount} voci extra registrate in EXTRA_STATS
+                                            </span>
+                                          </div>
+
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                                            {PLAYER_EXTRA_STAT_CATEGORIES.map((cat) => (
+                                              <div
+                                                key={cat.id}
+                                                className="rounded-lg border border-border/70 bg-card/80 p-2.5 space-y-1.5"
+                                              >
+                                                <div className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/50 pb-1">
+                                                  {cat.title}
+                                                </div>
+                                                <div className="space-y-1">
+                                                  {cat.fields.map((field) => (
+                                                    <div
+                                                      key={field.key}
+                                                      className="flex items-center justify-between gap-2 text-[10px]"
+                                                    >
+                                                      <span className="text-muted-foreground truncate">
+                                                        {field.label}
+                                                      </span>
+                                                      <Input
+                                                        type="number"
+                                                        step={field.step || "1"}
+                                                        placeholder="-"
+                                                        value={p.EXTRA_STATS?.[field.key] ?? ""}
+                                                        onChange={(e) =>
+                                                          updatePlayerExtraStat(
+                                                            side,
+                                                            p.ID,
+                                                            field.key,
+                                                            e.target.value
+                                                          )
+                                                        }
+                                                        className="h-5 w-14 text-right font-mono text-[10px] px-1 shrink-0"
+                                                      />
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+
+                                          {dynamicExtraKeys.length > 0 && (
+                                            <div className="rounded-lg border border-border/70 bg-card/80 p-2.5 space-y-1.5">
+                                              <div className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 border-b border-border/50 pb-1">
+                                                Altre Statistiche Extra Rilevate
+                                              </div>
+                                              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                                                {dynamicExtraKeys.map((dk) => (
+                                                  <div
+                                                    key={dk}
+                                                    className="flex items-center justify-between gap-1.5 text-[10px]"
+                                                  >
+                                                    <span className="text-muted-foreground truncate">
+                                                      {formatExtraStatLabel(dk)}
+                                                    </span>
+                                                    <Input
+                                                      type="number"
+                                                      step="0.01"
+                                                      value={p.EXTRA_STATS?.[dk] ?? ""}
+                                                      onChange={(e) =>
+                                                        updatePlayerExtraStat(
+                                                          side,
+                                                          p.ID,
+                                                          dk,
+                                                          e.target.value
+                                                        )
+                                                      }
+                                                      className="h-5 w-14 text-right font-mono text-[10px] px-1 shrink-0"
+                                                    />
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
                               );
                             })}
                           </tbody>

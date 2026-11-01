@@ -20,6 +20,8 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   X,
   MapPin,
   BarChart3,
@@ -30,6 +32,11 @@ import {
   Shirt,
   Sparkles,
 } from "lucide-react";
+import {
+  PLAYER_EXTRA_STAT_CATEGORIES,
+  KNOWN_PLAYER_EXTRA_KEYS,
+  formatExtraStatLabel,
+} from "@/services/matchStatsImportService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -53,15 +60,18 @@ import { SUPABASE_STORAGE_URL } from "@/constants/App";
 function computePitchCoordinates(
   starters: PlayerStats[]
 ): { player: PlayerStats; x: string; y: string }[] {
-  const gk = starters.find((p) => p.Posiz === "POR") || starters[0];
+  const getEffPos = (p: PlayerStats) =>
+    p.POS_GIOCATA && p.POS_GIOCATA !== "SOS" ? p.POS_GIOCATA : p.Posiz;
+
+  const gk = starters.find((p) => getEffPos(p) === "POR" || p.Posiz === "POR") || starters[0];
   const others = starters.filter((p) => p !== gk);
 
-  const defenders = others.filter((p) => ["DC", "TD", "TS"].includes(p.Posiz));
+  const defenders = others.filter((p) => ["DC", "DCD", "DCS", "TD", "TS", "ASA", "ADA"].includes(getEffPos(p)));
   const midfielders = others.filter((p) =>
-    ["CDC", "CC", "ED", "ES", "COC"].includes(p.Posiz)
+    ["CDC", "CDD", "CDS", "CC", "CCD", "CCS", "ED", "ES", "COC", "COD", "COS"].includes(getEffPos(p))
   );
   const forwards = others.filter((p) =>
-    ["ATT", "AS", "AD"].includes(p.Posiz)
+    ["ATT", "AT", "AS", "AD", "PD", "PS"].includes(getEffPos(p))
   );
 
   const remaining = others.filter(
@@ -110,10 +120,10 @@ function computePitchCoordinates(
   });
 
   // 3. Midfielders
-  const cdcList = midfielders.filter((p) => p.Posiz === "CDC");
-  const cocList = midfielders.filter((p) => p.Posiz === "COC");
+  const cdcList = midfielders.filter((p) => ["CDC", "CDD", "CDS"].includes(getEffPos(p)));
+  const cocList = midfielders.filter((p) => ["COC", "COD", "COS"].includes(getEffPos(p)));
   const centralMidList = midfielders.filter(
-    (p) => p.Posiz !== "CDC" && p.Posiz !== "COC"
+    (p) => !["CDC", "CDD", "CDS", "COC", "COD", "COS"].includes(getEffPos(p))
   );
 
   if (cdcList.length > 0 && cocList.length > 0) {
@@ -161,7 +171,7 @@ function computePitchCoordinates(
   // 4. Forwards
   const fwdXs = getXCoords(forwards.length);
   forwards.forEach((p, i) => {
-    const isWinger = p.Posiz === "AS" || p.Posiz === "AD";
+    const isWinger = getEffPos(p) === "AS" || getEffPos(p) === "AD";
     result.push({ player: p, x: fwdXs[i], y: isWinger ? "22%" : "14%" });
   });
 
@@ -190,9 +200,17 @@ const Calendario = () => {
   // Active team in lineup view ("home" or "away")
   const [lineupTeamSide, setLineupTeamSide] = useState<"home" | "away">("home");
 
+  // Expanded player rows in Pagelle & Giocatori tab
+  const [expandedRecapPlayerIds, setExpandedRecapPlayerIds] = useState<Record<number, boolean>>({});
+
+  const toggleExpandRecapPlayer = (playerId: number) => {
+    setExpandedRecapPlayerIds((prev) => ({ ...prev, [playerId]: !prev[playerId] }));
+  };
+
   const handleCloseModal = () => {
     setSelected(null);
     setModalTab("lineup");
+    setExpandedRecapPlayerIds({});
   };
 
   // Find the active round
@@ -863,9 +881,19 @@ const Calendario = () => {
                         ? selected.match.home
                         : selected.match.away;
 
-                    // Separate Starters (11) and Bench
-                    const starters = activePlayerStats.slice(0, 11);
-                    const bench = activePlayerStats.slice(11);
+                    // Separate Starters (11) and Bench using SUB / POS_GIOCATA cross-referenced with official formations
+                    const explicitStarters = activePlayerStats.filter(
+                      (p) => !p.SUB && p.POS_GIOCATA !== "SOS"
+                    );
+                    const hasExplicitSubs = activePlayerStats.some(
+                      (p) => Boolean(p.SUB) || p.POS_GIOCATA === "SOS"
+                    );
+                    const starters =
+                      hasExplicitSubs && explicitStarters.length > 0
+                        ? explicitStarters.slice(0, 11)
+                        : activePlayerStats.slice(0, 11);
+                    const starterIdSet = new Set(starters.map((p) => p.ID));
+                    const bench = activePlayerStats.filter((p) => !starterIdSet.has(p.ID));
 
                     const pitchNodes = computePitchCoordinates(starters);
 
@@ -983,7 +1011,9 @@ const Calendario = () => {
                                     {player.Cognome}
                                   </span>
                                   <span className="text-[8px] font-bold text-emerald-200 drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
-                                    {player.Posiz}
+                                    {player.POS_GIOCATA && player.POS_GIOCATA !== "SOS"
+                                      ? player.POS_GIOCATA
+                                      : player.Posiz}
                                   </span>
                                 </div>
                               </div>
@@ -1159,50 +1189,173 @@ const Calendario = () => {
                       );
                     };
 
+                    const extraTeamKeys = Array.from(
+                      new Set([
+                        ...Object.keys(selected.match.home_extra_stats || {}),
+                        ...Object.keys(selected.match.away_extra_stats || {}),
+                      ])
+                    );
+
+                    const hasVal = (a: any, b: any) =>
+                      (a !== null && a !== undefined && Number(a) > 0) ||
+                      (b !== null && b !== undefined && Number(b) > 0);
+
                     return (
                       <div className="space-y-3 max-w-3xl mx-auto w-full">
-                          {renderStatBar(
-                            "Possesso Palla",
-                            selected.match.home_poss,
-                            selected.match.away_poss,
-                            (v) => `${Math.round(v * 100)}%`
+                        {renderStatBar(
+                          "Possesso Palla",
+                          selected.match.home_poss,
+                          selected.match.away_poss,
+                          (v) => `${Math.round(v * 100)}%`
+                        )}
+                        {hasVal(selected.match.home_xg, selected.match.away_xg) &&
+                          renderStatBar(
+                            "Expected Goals (xG)",
+                            Number(selected.match.home_xg ?? 0),
+                            Number(selected.match.away_xg ?? 0),
+                            (v) => v.toFixed(2)
                           )}
-                          {renderStatBar(
-                            "Tiri Totali",
-                            selected.match.home_tiri_tot,
-                            selected.match.away_tiri_tot
+                        {renderStatBar(
+                          "Tiri Totali",
+                          selected.match.home_tiri_tot,
+                          selected.match.away_tiri_tot
+                        )}
+                        {renderStatBar(
+                          "Tiri nello Specchio",
+                          selected.match.home_tiri_si,
+                          selected.match.away_tiri_si
+                        )}
+                        {renderStatBar(
+                          "Passaggi Riusciti",
+                          selected.match.home_pass_si,
+                          selected.match.away_pass_si
+                        )}
+                        {hasVal(selected.match.home_pass_tot, selected.match.away_pass_tot) &&
+                          renderStatBar(
+                            "Passaggi Tentati",
+                            selected.match.home_pass_tot,
+                            selected.match.away_pass_tot
                           )}
-                          {renderStatBar(
-                            "Tiri nello Specchio",
-                            selected.match.home_tiri_si,
-                            selected.match.away_tiri_si
+                        {hasVal(selected.match.home_drib_si, selected.match.away_drib_si) &&
+                          renderStatBar(
+                            "Dribbling Riusciti",
+                            selected.match.home_drib_si,
+                            selected.match.away_drib_si
                           )}
-                          {renderStatBar(
-                            "Calci d'Angolo",
-                            selected.match.home_cangl,
-                            selected.match.away_cangl
+                        {hasVal(selected.match.home_drib_tot, selected.match.away_drib_tot) &&
+                          renderStatBar(
+                            "Dribbling Tentati",
+                            selected.match.home_drib_tot,
+                            selected.match.away_drib_tot
                           )}
-                          {renderStatBar(
-                            "Falli Commessi",
-                            selected.match.home_falli,
-                            selected.match.away_falli
+                        {hasVal(selected.match.home_cros_si, selected.match.away_cros_si) &&
+                          renderStatBar(
+                            "Cross Riusciti",
+                            selected.match.home_cros_si,
+                            selected.match.away_cros_si
                           )}
-                          {renderStatBar(
-                            "Parate del Portiere",
-                            selected.match.home_para,
-                            selected.match.away_para
+                        {hasVal(selected.match.home_cros_tot, selected.match.away_cros_tot) &&
+                          renderStatBar(
+                            "Cross Tentati",
+                            selected.match.home_cros_tot,
+                            selected.match.away_cros_tot
                           )}
-                          {renderStatBar(
-                            "Passaggi Riusciti",
-                            selected.match.home_pass_si,
-                            selected.match.away_pass_si
+                        {renderStatBar(
+                          "Contrasti Vinti",
+                          selected.match.home_ctrs_si,
+                          selected.match.away_ctrs_si
+                        )}
+                        {hasVal(selected.match.home_ctrs_tot, selected.match.away_ctrs_tot) &&
+                          renderStatBar(
+                            "Contrasti Tentati",
+                            selected.match.home_ctrs_tot,
+                            selected.match.away_ctrs_tot
                           )}
-                          {renderStatBar(
-                            "Contrasti Vinti",
-                            selected.match.home_ctrs_si,
-                            selected.match.away_ctrs_si
+                        {hasVal(selected.match.home_interc, selected.match.away_interc) &&
+                          renderStatBar(
+                            "Intercettazioni",
+                            Number(selected.match.home_interc ?? 0),
+                            Number(selected.match.away_interc ?? 0)
                           )}
-                        </div>
+                        {hasVal(selected.match.home_temporec, selected.match.away_temporec) &&
+                          renderStatBar(
+                            "Tempo Recupero Palla (s)",
+                            Number(selected.match.home_temporec ?? 0),
+                            Number(selected.match.away_temporec ?? 0),
+                            (v) => `${v}s`
+                          )}
+                        {renderStatBar(
+                          "Parate del Portiere",
+                          selected.match.home_para,
+                          selected.match.away_para
+                        )}
+                        {renderStatBar(
+                          "Calci d'Angolo",
+                          selected.match.home_cangl,
+                          selected.match.away_cangl
+                        )}
+                        {renderStatBar(
+                          "Falli Commessi",
+                          selected.match.home_falli,
+                          selected.match.away_falli
+                        )}
+                        {hasVal(selected.match.home_fgioco, selected.match.away_fgioco) &&
+                          renderStatBar(
+                            "Fuorigioco",
+                            selected.match.home_fgioco,
+                            selected.match.away_fgioco
+                          )}
+                        {hasVal(selected.match.home_gialli, selected.match.away_gialli) &&
+                          renderStatBar(
+                            "Cartellini Gialli",
+                            selected.match.home_gialli,
+                            selected.match.away_gialli
+                          )}
+                        {hasVal(selected.match.home_rossi, selected.match.away_rossi) &&
+                          renderStatBar(
+                            "Cartellini Rossi",
+                            selected.match.home_rossi,
+                            selected.match.away_rossi
+                          )}
+                        {hasVal(selected.match.home_tagli, selected.match.away_tagli) &&
+                          renderStatBar(
+                            "Tagli Difesa",
+                            Number(selected.match.home_tagli ?? 0),
+                            Number(selected.match.away_tagli ?? 0)
+                          )}
+                        {hasVal(selected.match.home_aggir, selected.match.away_aggir) &&
+                          renderStatBar(
+                            "Aggiramenti Difesa",
+                            Number(selected.match.home_aggir ?? 0),
+                            Number(selected.match.away_aggir ?? 0)
+                          )}
+                        {hasVal(selected.match.home_scaval, selected.match.away_scaval) &&
+                          renderStatBar(
+                            "Scavalcamenti Difesa",
+                            Number(selected.match.home_scaval ?? 0),
+                            Number(selected.match.away_scaval ?? 0)
+                          )}
+                        {hasVal(selected.match.home_incurs, selected.match.away_incurs) &&
+                          renderStatBar(
+                            "Incursioni Tentate",
+                            Number(selected.match.home_incurs ?? 0),
+                            Number(selected.match.away_incurs ?? 0)
+                          )}
+                        {extraTeamKeys.map((extKey) => {
+                          const hVal = Number(selected.match.home_extra_stats?.[extKey] ?? 0);
+                          const aVal = Number(selected.match.away_extra_stats?.[extKey] ?? 0);
+                          if (!hasVal(hVal, aVal)) return null;
+                          return (
+                            <div key={extKey}>
+                              {renderStatBar(
+                                formatExtraStatLabel(extKey),
+                                hVal,
+                                aVal
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     );
                   })()}
                 </div>
@@ -1210,8 +1363,11 @@ const Calendario = () => {
 
               {/* TAB 3: PAGELLE & GIOCATORI */}
               {modalTab === "players" && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="text-xs text-muted-foreground text-center">
+                    Clicca su qualsiasi calciatore per espandere il dettaglio completo delle statistiche di gara e dei sub-tab avanzati.
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                     {[
                       {
                         teamName: selected.match.home_team,
@@ -1228,85 +1384,252 @@ const Calendario = () => {
                         key={sIdx}
                         className="border border-border/80 bg-card overflow-hidden"
                       >
-                        <div className="p-3 bg-muted/30 border-b border-border/80 flex items-center gap-2.5">
-                          <img
-                            src={`${SUPABASE_STORAGE_URL}/images/teams/${side.teamAbbr}_Logo.png`}
-                            alt=""
-                            className="h-6 w-6 object-contain"
-                          />
-                          <h4 className="font-extrabold text-xs uppercase tracking-wider text-foreground">
-                            {side.teamName} ({side.players.length} calciatori)
-                          </h4>
+                        <div className="p-3 bg-muted/30 border-b border-border/80 flex items-center justify-between gap-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <img
+                              src={`${SUPABASE_STORAGE_URL}/images/teams/${side.teamAbbr}_Logo.png`}
+                              alt=""
+                              className="h-6 w-6 object-contain"
+                            />
+                            <h4 className="font-extrabold text-xs uppercase tracking-wider text-foreground">
+                              {side.teamName} ({side.players.length} calciatori)
+                            </h4>
+                          </div>
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            Titolari: {side.players.filter((p) => !p.SUB && p.POS_GIOCATA !== "SOS").length} • Sub: {side.players.filter((p) => p.SUB || p.POS_GIOCATA === "SOS").length}
+                          </span>
                         </div>
 
                         <div className="divide-y divide-border/60">
-                          {side.players.map((p) => (
-                            <div
-                              key={p.ID}
-                              className="p-3 hover:bg-muted/30 transition-colors flex items-center justify-between gap-3 text-xs"
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <Avatar className="h-8 w-8 border border-border shrink-0">
-                                  <AvatarImage
-                                    src={getPlayerImage(p.ID)}
-                                    alt={p.Cognome}
-                                  />
-                                  <AvatarFallback className="text-[9px]">
-                                    {p.Cognome?.[0]}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
+                          {side.players.map((p) => {
+                            const isExpanded = Boolean(expandedRecapPlayerIds[p.ID]);
+                            const isSub = Boolean(p.SUB || p.POS_GIOCATA === "SOS");
+                            const playedRole =
+                              !isSub && p.POS_GIOCATA && p.POS_GIOCATA !== "SOS"
+                                ? p.POS_GIOCATA
+                                : p.Posiz;
+                            const extraStatsObj = p.EXTRA_STATS || {};
+                            const extraKeys = Object.keys(extraStatsObj).filter(
+                              (k) => extraStatsObj[k] !== null && extraStatsObj[k] !== undefined
+                            );
+                            const dynamicExtraKeys = extraKeys.filter(
+                              (k) => !KNOWN_PLAYER_EXTRA_KEYS.has(k)
+                            );
+
+                            return (
+                              <div key={p.ID} className="transition-colors">
+                                <div
+                                  onClick={() => toggleExpandRecapPlayer(p.ID)}
+                                  className="p-3 hover:bg-muted/30 transition-colors flex items-center justify-between gap-3 text-xs cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <Avatar className="h-8 w-8 border border-border shrink-0">
+                                      <AvatarImage
+                                        src={getPlayerImage(p.ID)}
+                                        alt={p.Cognome}
+                                      />
+                                      <AvatarFallback className="text-[9px]">
+                                        {p.Cognome?.[0]}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <Badge
+                                          variant="outline"
+                                          className={`text-[9px] font-bold px-1 py-0 ${getRoleColor(
+                                            playedRole
+                                          )}`}
+                                        >
+                                          {playedRole}
+                                        </Badge>
+                                        <span
+                                          className={`text-[9px] font-mono font-extrabold px-1.5 py-0.2 rounded border ${
+                                            isSub
+                                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                                              : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                          }`}
+                                        >
+                                          {isSub ? "🔄 SUB" : "TIT"}
+                                        </span>
+                                        <span className="font-bold text-foreground truncate">
+                                          {p.Nome} {p.Cognome}
+                                        </span>
+                                        {p.NumeroMaglia && (
+                                          <span className="text-[10px] font-mono text-muted-foreground">
+                                            #{p.NumeroMaglia}
+                                          </span>
+                                        )}
+                                        {p.MOTM && (
+                                          <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 text-[9px] px-1.5 py-0 font-black">
+                                            ⭐ MVP
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
+                                        <span>⏱️ {p.MINUTI}'</span>
+                                        {p.GOL > 0 && (
+                                          <span className="text-emerald-600 font-bold">
+                                            ⚽ {p.GOL}
+                                          </span>
+                                        )}
+                                        {p.ASST > 0 && (
+                                          <span className="text-blue-600 font-bold">
+                                            🅰️ {p.ASST}
+                                          </span>
+                                        )}
+                                        {p.AGOL > 0 && (
+                                          <span className="text-rose-500 font-bold">
+                                            ⚽ AG {p.AGOL}
+                                          </span>
+                                        )}
+                                        {p.GIALLI > 0 && <span>🟨 {p.GIALLI}</span>}
+                                        {p.ROSSI > 0 && <span>🟥 {p.ROSSI}</span>}
+                                        {extraKeys.length > 0 && (
+                                          <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+                                            • +{extraKeys.length} stat extra
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
                                     <Badge
                                       variant="outline"
-                                      className={`text-[9px] font-bold px-1 py-0 ${getRoleColor(
-                                        p.Posiz
-                                      )}`}
+                                      className={`font-mono font-black text-sm px-2 py-0.5 ${
+                                        Number(p.VOTO) >= 7.5
+                                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                                          : Number(p.VOTO) >= 6.5
+                                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                          : "bg-muted text-foreground"
+                                      }`}
                                     >
-                                      {p.Posiz}
+                                      {Number(p.VOTO).toFixed(1)}
                                     </Badge>
-                                    <span className="font-bold text-foreground truncate">
-                                      {p.Nome} {p.Cognome}
-                                    </span>
-                                    {p.NumeroMaglia && (
-                                      <span className="text-[10px] font-mono text-muted-foreground">
-                                        #{p.NumeroMaglia}
-                                      </span>
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-4 w-4 text-emerald-500" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                     )}
-                                  </div>
-                                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
-                                    <span>⏱️ {p.MINUTI}'</span>
-                                    {p.GOL > 0 && (
-                                      <span className="text-emerald-600 font-bold">
-                                        ⚽ {p.GOL}
-                                      </span>
-                                    )}
-                                    {p.ASST > 0 && (
-                                      <span className="text-blue-600 font-bold">
-                                        🅰️ {p.ASST}
-                                      </span>
-                                    )}
-                                    {p.GIALLI > 0 && <span>🟨 {p.GIALLI}</span>}
                                   </div>
                                 </div>
-                              </div>
 
-                              <div className="text-right shrink-0">
-                                <Badge
-                                  variant="outline"
-                                  className={`font-mono font-black text-sm px-2 py-0.5 ${
-                                    Number(p.VOTO) >= 7.5
-                                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                                      : Number(p.VOTO) >= 6.5
-                                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                                      : "bg-muted text-foreground"
-                                  }`}
-                                >
-                                  {Number(p.VOTO).toFixed(1)}
-                                </Badge>
+                                {isExpanded && (
+                                  <div className="px-3.5 pb-3.5 pt-2 bg-muted/20 border-t border-border/50 space-y-3 text-[11px]">
+                                    {/* RIEPILOGO BASE DEL CALCIATORE */}
+                                    <div>
+                                      <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1.5">
+                                        Statistiche Riepilogo Partita
+                                      </div>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono">
+                                        <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
+                                          <span className="text-muted-foreground">Tiri (In/Tot):</span>
+                                          <span className="font-bold">{p.TIRI_IN ?? 0}/{p.TIRI_TOT ?? 0}</span>
+                                        </div>
+                                        <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
+                                          <span className="text-muted-foreground">Passaggi:</span>
+                                          <span className="font-bold">{p.PASS_SI ?? 0}/{p.PASS_TOT ?? 0}</span>
+                                        </div>
+                                        <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
+                                          <span className="text-muted-foreground">Dribbling:</span>
+                                          <span className="font-bold">{p.DRIB_SI ?? 0}/{p.DRIB_TOT ?? 0}</span>
+                                        </div>
+                                        <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
+                                          <span className="text-muted-foreground">Cross:</span>
+                                          <span className="font-bold">{p.CROS_SI ?? 0}/{p.CROS_TOT ?? 0}</span>
+                                        </div>
+                                        <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
+                                          <span className="text-muted-foreground">Contrasti:</span>
+                                          <span className="font-bold">{p.CTRS_SI ?? 0}/{p.CTRS_TOT ?? 0}</span>
+                                        </div>
+                                        <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
+                                          <span className="text-muted-foreground">Poss. Vinti/Persi:</span>
+                                          <span className="font-bold">{p.POSS_VINTI ?? 0}/{p.PALLE_PERSE ?? 0}</span>
+                                        </div>
+                                        <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
+                                          <span className="text-muted-foreground">Km (Scatto):</span>
+                                          <span className="font-bold">{p.DIST_TOT ?? 0} ({p.DIST_SCATTO ?? 0})</span>
+                                        </div>
+                                        <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
+                                          <span className="text-muted-foreground">Falli / Fuorig.:</span>
+                                          <span className="font-bold">{p.FALLI ?? 0} / {p.FGIOCO ?? 0}</span>
+                                        </div>
+                                        {(p.Posiz === "POR" || (p.PARA ?? 0) > 0 || (p.GSUB ?? 0) > 0) && (
+                                          <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between col-span-2">
+                                            <span className="text-muted-foreground">Parate / Gol Subiti:</span>
+                                            <span className="font-bold">{p.PARA ?? 0} / {p.GSUB ?? 0}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* STATISTICHE EXTRA SUB-TAB DIVISE PER REPARTO */}
+                                    {extraKeys.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {PLAYER_EXTRA_STAT_CATEGORIES.map((cat) => {
+                                          const populatedFields = cat.fields.filter(
+                                            (f) =>
+                                              extraStatsObj[f.key] !== null &&
+                                              extraStatsObj[f.key] !== undefined
+                                          );
+                                          if (populatedFields.length === 0) return null;
+                                          return (
+                                            <div
+                                              key={cat.id}
+                                              className="rounded-lg border border-border/70 bg-card p-2 space-y-1"
+                                            >
+                                              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/50 pb-0.5">
+                                                {cat.title}
+                                              </div>
+                                              <div className="space-y-0.5 font-mono text-[10px]">
+                                                {populatedFields.map((f) => (
+                                                  <div
+                                                    key={f.key}
+                                                    className="flex items-center justify-between gap-2"
+                                                  >
+                                                    <span className="text-muted-foreground truncate">
+                                                      {f.label}
+                                                    </span>
+                                                    <span className="font-bold text-foreground">
+                                                      {extraStatsObj[f.key]}
+                                                      {f.unit ? ` ${f.unit}` : ""}
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+
+                                        {dynamicExtraKeys.length > 0 && (
+                                          <div className="rounded-lg border border-border/70 bg-card p-2 space-y-1">
+                                            <div className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 border-b border-border/50 pb-0.5">
+                                              Altre Statistiche
+                                            </div>
+                                            <div className="space-y-0.5 font-mono text-[10px]">
+                                              {dynamicExtraKeys.map((dk) => (
+                                                <div
+                                                  key={dk}
+                                                  className="flex items-center justify-between gap-2"
+                                                >
+                                                  <span className="text-muted-foreground truncate">
+                                                    {formatExtraStatLabel(dk)}
+                                                  </span>
+                                                  <span className="font-bold text-foreground">
+                                                    {String(extraStatsObj[dk])}
+                                                  </span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </Card>
                     ))}

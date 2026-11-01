@@ -1,6 +1,127 @@
 import { supabase } from "@/supabaseClient";
 import { getGeminiApiKey } from "@/services/aiJournalistService";
 import { createWorker } from "tesseract.js";
+import { EA_FC25_FORMATIONS } from "@/pages/Tattica";
+import { TEAM_TACTIC_TABLE } from "@/constants/App";
+
+// ============================================================================
+// CATALOGO STATISTICHE EXTRA (GIOCATORI & SQUADRE)
+// ============================================================================
+
+export interface ExtraStatFieldDef {
+  key: string;
+  label: string;
+  step?: string;
+  unit?: string;
+}
+
+export interface ExtraStatCategoryDef {
+  id: string;
+  title: string;
+  fields: ExtraStatFieldDef[];
+}
+
+export const PLAYER_EXTRA_STAT_CATEGORIES: ExtraStatCategoryDef[] = [
+  {
+    id: "possesso",
+    title: "Possesso & Movimento",
+    fields: [
+      { key: "possesso_pct", label: "Possesso Palla (%)", step: "0.1", unit: "%" },
+      { key: "dist_dribbling_km", label: "Distanza in Dribbling (km)", step: "0.1", unit: "km" },
+      { key: "avversari_superati", label: "Avversari Superati" },
+      { key: "tocchi_avanti", label: "Tocchi in Avanti" },
+      { key: "mosse_abilita", label: "Mosse Abilità" },
+      { key: "tunnel", label: "Tunnel" },
+      { key: "contrasti_subiti", label: "Contrasti Subiti" },
+      { key: "falli_conquistati", label: "Falli Conquistati" },
+      { key: "angoli_conquistati", label: "Angoli Conquistati" },
+      { key: "rigori_conquistati", label: "Rigori Conquistati" },
+    ],
+  },
+  {
+    id: "tiri",
+    title: "Tiri & Finalizzazione",
+    fields: [
+      { key: "xg", label: "Expected Goals (xG)", step: "0.01" },
+      { key: "tiri_fuori", label: "Tiri Fuori" },
+      { key: "tiri_bloccati", label: "Tiri Bloccati" },
+      { key: "tiri_precisione", label: "Tiri di Precisione" },
+      { key: "colpi_testa", label: "Colpi di Testa" },
+      { key: "gol_punizione", label: "Gol su Punizione" },
+      { key: "gol_rigore", label: "Gol su Rigore" },
+    ],
+  },
+  {
+    id: "passaggi",
+    title: "Passaggi & Regia",
+    fields: [
+      { key: "xa", label: "Expected Assists (xA)", step: "0.01" },
+      { key: "passaggi_chiave", label: "Passaggi Chiave" },
+      { key: "pre_assist", label: "Pre-Assist" },
+      { key: "superamenti_passaggi", label: "Superamenti con Passaggi" },
+      { key: "passaggi_rasoterra", label: "Passaggi Rasoterra" },
+      { key: "filtranti", label: "Passaggi Filtranti" },
+      { key: "filtranti_morbidi", label: "Filtranti Morbidi" },
+      { key: "passaggi_sotto_pressione", label: "Passaggi Sotto Pressione" },
+    ],
+  },
+  {
+    id: "difesa",
+    title: "Difesa & Duelli",
+    fields: [
+      { key: "intercettazioni", label: "Intercettazioni" },
+      { key: "tiri_bloccati_dif", label: "Tiri Bloccati (Difesa)" },
+      { key: "spazzate", label: "Spazzate" },
+      { key: "scivolate_vinte", label: "Scivolate Vinte" },
+      { key: "duelli_difensivi_vinti", label: "Duelli Difensivi Vinti" },
+      { key: "duelli_offensivi_vinti", label: "Duelli Offensivi Vinti" },
+      { key: "duelli_aerei_vinti", label: "Duelli Aerei Vinti" },
+      { key: "fuorigioco_provocati", label: "Fuorigioco Provocati" },
+      { key: "rigori_concessi", label: "Rigori Concessi" },
+    ],
+  },
+  {
+    id: "portiere",
+    title: "Portiere",
+    fields: [
+      { key: "tiri_subiti_por", label: "Tiri Subiti" },
+      { key: "parate_pugno", label: "Parate di Pugno" },
+      { key: "parate_uscita", label: "Parate in Uscita" },
+      { key: "rigori_parati", label: "Rigori Parati" },
+    ],
+  },
+];
+
+export const KNOWN_PLAYER_EXTRA_KEYS = new Set(
+  PLAYER_EXTRA_STAT_CATEGORIES.flatMap((c) => c.fields.map((f) => f.key))
+);
+
+export const TEAM_EXTRA_STAT_LABELS: Record<string, string> = {
+  precisione_tiri: "Precisione Tiri (%)",
+  precisione_passaggi: "Precisione Passaggi (%)",
+  precisione_dribbling: "Precisione Dribbling (%)",
+  contrasti_vinti_pct: "Contrasti Vinti (%)",
+  passaggi_chiave: "Passaggi Chiave",
+  tiri_fuori: "Tiri Fuori",
+  tiri_bloccati: "Tiri Bloccati",
+  spazzate: "Spazzate",
+  duelli_aerei_vinti: "Duelli Aerei Vinti",
+  fuorigioco_provocati: "Fuorigioco Provocati",
+  punizioni: "Calci di Punizione",
+  rigori: "Calci di Rigore",
+  scivolate_vinte: "Scivolate Vinte",
+};
+
+export function formatExtraStatLabel(key: string): string {
+  for (const cat of PLAYER_EXTRA_STAT_CATEGORIES) {
+    const found = cat.fields.find((f) => f.key === key);
+    if (found) return found.label;
+  }
+  if (TEAM_EXTRA_STAT_LABELS[key]) return TEAM_EXTRA_STAT_LABELS[key];
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -415,21 +536,206 @@ export async function fetchAdminMatchReport(
       AD: 9, AS: 10, AT: 11, ATT: 12, PD: 12, PS: 12, SOS: 99,
     };
 
-    return list.sort((a, b) => {
-      const aPlayed = a.MINUTI > 0 ? 0 : 1;
-      const bPlayed = b.MINUTI > 0 ? 0 : 1;
-      if (aPlayed !== bPlayed) return aPlayed - bPlayed;
-      return (roleOrder[a.Posiz] ?? 50) - (roleOrder[b.Posiz] ?? 50);
-    });
+    return list;
   };
 
-  return {
+  const fullReport: AdminMatchFullReport = {
     schedule: match,
     homeTeamStat,
     awayTeamStat,
     homePlayers: buildTeamPlayerList(match.home),
     awayPlayers: buildTeamPlayerList(match.away),
   };
+
+  await applyOfficialFormationsToMatchReport(fullReport, true);
+  return fullReport;
+}
+
+/**
+ * Incrocia i calciatori del referto con le formazioni ufficiali della giornata (team_lineup_snapshots)
+ * o, in assenza di snapshot, con la tattica salvata della squadra (an_team_tactic),
+ * definendo gli 11 titolari (SUB = false, POS_GIOCATA = ruolo nello schema) e i subentrati (SUB = true, POS_GIOCATA = "SOS").
+ */
+export async function applyOfficialFormationsToMatchReport(
+  report: AdminMatchFullReport,
+  preserveExistingSavedSub = false
+): Promise<void> {
+  const { stag, week, home, away } = report.schedule;
+
+  const [snapshotsRes, tacticsRes] = await Promise.all([
+    supabase
+      .from("team_lineup_snapshots")
+      .select("team_id, formation, starters, bench_order")
+      .eq("stag", stag)
+      .eq("week", week)
+      .in("team_id", [home, away]),
+    supabase
+      .from(TEAM_TACTIC_TABLE)
+      .select("team_id, formation, starters, bench_order")
+      .in("team_id", [home, away]),
+  ]);
+
+  const snapshots = snapshotsRes.data || [];
+  const tactics = tacticsRes.data || [];
+
+  const roleOrder: Record<string, number> = {
+    POR: 0, TD: 1, DC: 2, DCD: 2, DCS: 2, TS: 3, CDC: 4, CDD: 4, CDS: 4,
+    ED: 5, CC: 6, CCD: 6, CCS: 6, ES: 7, COC: 8, COD: 8, COS: 8,
+    AD: 9, AS: 10, AT: 11, ATT: 12, PD: 12, PS: 12, SOS: 99,
+  };
+
+  const applyForSide = (teamId: string, players: AdminPlayerStatDraft[]) => {
+    const snap = snapshots.find(
+      (s: any) =>
+        s.team_id === teamId &&
+        Array.isArray(s.starters) &&
+        s.starters.some((id: any) => id !== null && id !== undefined)
+    );
+    const tac = tactics.find(
+      (t: any) =>
+        t.team_id === teamId &&
+        Array.isArray(t.starters) &&
+        t.starters.some((id: any) => id !== null && id !== undefined)
+    );
+    const lineupSource = snap || tac;
+
+    const formationId = lineupSource?.formation || "4-4-2";
+    const matchedFormation =
+      EA_FC25_FORMATIONS.find((f) => f.id === formationId) || EA_FC25_FORMATIONS[0];
+
+    const starterSlotMap = new Map<number, { slotIdx: number; slotRole: string }>();
+    if (Array.isArray(lineupSource?.starters)) {
+      lineupSource.starters.forEach((rawId: any, idx: number) => {
+        if (rawId !== null && rawId !== undefined) {
+          const numId = Number(rawId);
+          if (!isNaN(numId) && numId > 0) {
+            starterSlotMap.set(numId, {
+              slotIdx: idx,
+              slotRole: matchedFormation.positions[idx]?.label || "",
+            });
+          }
+        }
+      });
+    }
+
+    const benchOrderMap = new Map<number, number>();
+    if (Array.isArray(lineupSource?.bench_order)) {
+      lineupSource.bench_order.forEach((rawId: any, idx: number) => {
+        const numId = Number(rawId);
+        if (!isNaN(numId) && numId > 0) {
+          benchOrderMap.set(numId, idx);
+        }
+      });
+    }
+
+    const activePlayers = players.filter((p) => p.MINUTI > 0);
+    const hasExplicitSavedSubs =
+      preserveExistingSavedSub &&
+      activePlayers.length > 0 &&
+      (activePlayers.some((p) => p.SUB === true || p.POS_GIOCATA === "SOS") ||
+        activePlayers.filter((p) => !p.SUB).length === 11);
+
+    if (activePlayers.length > 0) {
+      if (!hasExplicitSavedSubs) {
+        // 1. Incrocia i giocatori scesi in campo con la formazione ufficiale
+        for (const p of activePlayers) {
+          const slotInfo = starterSlotMap.get(Number(p.ID));
+          if (slotInfo) {
+            p.SUB = false;
+            p.POS_GIOCATA = slotInfo.slotRole || p.Posiz || "CC";
+          } else {
+            p.SUB = true;
+            p.POS_GIOCATA = "SOS";
+          }
+        }
+
+        // 2. Se tra i giocatori con MINUTI > 0 ci sono meno di 11 titolari riconosciuti
+        //    (es. cambio dell'ultimo minuto in gioco o formazione non salvata sul sito),
+        //    promuovi a titolari i restanti con più minuti giocati fino a raggiungere max 11 titolari.
+        const currentStarters = activePlayers.filter((p) => !p.SUB);
+        if (currentStarters.length < 11 && activePlayers.length > currentStarters.length) {
+          const hasStarterGK = currentStarters.some(
+            (p) => p.Posiz === "POR" || p.POS_GIOCATA === "POR"
+          );
+          const remainingCandidates = activePlayers
+            .filter((p) => p.SUB)
+            .sort((a, b) => {
+              if (!hasStarterGK) {
+                const aIsGK = a.Posiz === "POR" ? 0 : 1;
+                const bIsGK = b.Posiz === "POR" ? 0 : 1;
+                if (aIsGK !== bIsGK) return aIsGK - bIsGK;
+              }
+              if (b.MINUTI !== a.MINUTI) return b.MINUTI - a.MINUTI;
+              return (roleOrder[a.Posiz] ?? 50) - (roleOrder[b.Posiz] ?? 50);
+            });
+
+          const needed = Math.min(11 - currentStarters.length, remainingCandidates.length);
+          for (let i = 0; i < needed; i++) {
+            const promoted = remainingCandidates[i];
+            promoted.SUB = false;
+            promoted.POS_GIOCATA = promoted.Posiz || "CC";
+          }
+        }
+      }
+
+      // I giocatori con 0 minuti a partita giocata sono riserve non entrate
+      for (const p of players) {
+        if (p.MINUTI <= 0) {
+          p.SUB = true;
+        }
+      }
+    } else {
+      // Partita non ancora disputata: pre-imposta SUB e POS_GIOCATA dalla formazione ufficiale
+      for (const p of players) {
+        const slotInfo = starterSlotMap.get(Number(p.ID));
+        if (slotInfo) {
+          p.SUB = false;
+          p.POS_GIOCATA = slotInfo.slotRole || p.Posiz || "CC";
+        } else {
+          p.SUB = true;
+          p.POS_GIOCATA = p.Posiz || "CC";
+        }
+      }
+    }
+
+    // 3. Ordina: prima i Titolari attivi (in ordine di modulo/ruolo), poi i Subentrati attivi, infine i 0 minuti
+    players.sort((a, b) => {
+      const aGroup = a.MINUTI > 0 ? (a.SUB ? 1 : 0) : 2;
+      const bGroup = b.MINUTI > 0 ? (b.SUB ? 1 : 0) : 2;
+      if (aGroup !== bGroup) return aGroup - bGroup;
+
+      if (aGroup === 0) {
+        // Entrambi titolari con minuti > 0
+        const aSlot = starterSlotMap.get(Number(a.ID))?.slotIdx ?? 99;
+        const bSlot = starterSlotMap.get(Number(b.ID))?.slotIdx ?? 99;
+        const aRole = roleOrder[a.POS_GIOCATA || a.Posiz] ?? roleOrder[a.Posiz] ?? 50;
+        const bRole = roleOrder[b.POS_GIOCATA || b.Posiz] ?? roleOrder[b.Posiz] ?? 50;
+        if (aRole !== bRole) return aRole - bRole;
+        return aSlot - bSlot;
+      }
+
+      if (aGroup === 1) {
+        // Entrambi subentrati con minuti > 0
+        if (b.MINUTI !== a.MINUTI) return b.MINUTI - a.MINUTI;
+        return (roleOrder[a.Posiz] ?? 50) - (roleOrder[b.Posiz] ?? 50);
+      }
+
+      // Entrambi a 0 minuti (ordina per formazione ufficiale: titolari -> panchina -> tribuna)
+      const aInStart = starterSlotMap.has(Number(a.ID)) ? 0 : benchOrderMap.has(Number(a.ID)) ? 1 : 2;
+      const bInStart = starterSlotMap.has(Number(b.ID)) ? 0 : benchOrderMap.has(Number(b.ID)) ? 1 : 2;
+      if (aInStart !== bInStart) return aInStart - bInStart;
+      if (aInStart === 0) {
+        return (starterSlotMap.get(Number(a.ID))?.slotIdx ?? 99) - (starterSlotMap.get(Number(b.ID))?.slotIdx ?? 99);
+      }
+      if (aInStart === 1) {
+        return (benchOrderMap.get(Number(a.ID)) ?? 99) - (benchOrderMap.get(Number(b.ID)) ?? 99);
+      }
+      return (roleOrder[a.Posiz] ?? 50) - (roleOrder[b.Posiz] ?? 50);
+    });
+  };
+
+  applyForSide(home, report.homePlayers);
+  applyForSide(away, report.awayPlayers);
 }
 
 export async function saveAdminMatchReport(
@@ -1219,6 +1525,7 @@ export async function processMatchScreenshotsWithGemini(
     const teamB64 = teamFrames.slice(0, 6).map((f) => imageToBase64Jpeg(f.img));
     const prompt = `Sei un assistente per l'acquisizione referti di EA Sports FC 25.
 Dalle immagini del riepilogo partita fornite, estrai i dati delle due squadre (${report.schedule.home_name} in casa e ${report.schedule.away_name} in trasferta).
+Estrai sia le statistiche principali sia tutte le statistiche avanzate/extra visibili nelle schermate di riepilogo squadra (Riepilogo, Possesso, Tiri, Passaggi, Difesa).
 Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
 {
   "score": {
@@ -1233,6 +1540,8 @@ Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
     "xG": number,
     "pass_tot": number,
     "pass_si": number,
+    "cros_tot": number,
+    "cros_si": number,
     "ctrs_tot": number,
     "ctrs_si": number,
     "drib_tot": number,
@@ -1243,7 +1552,27 @@ Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
     "gialli": number,
     "rossi": number,
     "fgioco": number,
-    "temporec": number
+    "temporec": number,
+    "interc": number,
+    "tagli": number,
+    "aggir": number,
+    "scaval": number,
+    "incurs": number,
+    "extra_stats": {
+      "precisione_tiri": number,
+      "precisione_passaggi": number,
+      "precisione_dribbling": number,
+      "contrasti_vinti_pct": number,
+      "tiri_fuori": number,
+      "tiri_bloccati": number,
+      "passaggi_chiave": number,
+      "spazzate": number,
+      "duelli_aerei_vinti": number,
+      "fuorigioco_provocati": number,
+      "scivolate_vinte": number,
+      "punizioni": number,
+      "rigori": number
+    }
   },
   "awayTeam": {
     "poss": number,
@@ -1252,6 +1581,8 @@ Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
     "xG": number,
     "pass_tot": number,
     "pass_si": number,
+    "cros_tot": number,
+    "cros_si": number,
     "ctrs_tot": number,
     "ctrs_si": number,
     "drib_tot": number,
@@ -1262,7 +1593,27 @@ Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
     "gialli": number,
     "rossi": number,
     "fgioco": number,
-    "temporec": number
+    "temporec": number,
+    "interc": number,
+    "tagli": number,
+    "aggir": number,
+    "scaval": number,
+    "incurs": number,
+    "extra_stats": {
+      "precisione_tiri": number,
+      "precisione_passaggi": number,
+      "precisione_dribbling": number,
+      "contrasti_vinti_pct": number,
+      "tiri_fuori": number,
+      "tiri_bloccati": number,
+      "passaggi_chiave": number,
+      "spazzate": number,
+      "duelli_aerei_vinti": number,
+      "fuorigioco_provocati": number,
+      "scivolate_vinte": number,
+      "punizioni": number,
+      "rigori": number
+    }
   }
 }`;
 
@@ -1293,6 +1644,8 @@ Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
         if (typeof src.xG === "number") target.xG = src.xG;
         if (typeof src.pass_tot === "number") target.PASS_TOT = src.pass_tot;
         if (typeof src.pass_si === "number") target.PASS_SI = src.pass_si;
+        if (typeof src.cros_tot === "number") target.CROS_TOT = src.cros_tot;
+        if (typeof src.cros_si === "number") target.CROS_SI = src.cros_si;
         if (typeof src.ctrs_tot === "number") target.CTRS_TOT = src.ctrs_tot;
         if (typeof src.ctrs_si === "number") target.CTRS_SI = src.ctrs_si;
         if (typeof src.drib_tot === "number") target.DRIB_TOT = src.drib_tot;
@@ -1304,6 +1657,19 @@ Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
         if (typeof src.rossi === "number") target.ROSSI = src.rossi;
         if (typeof src.fgioco === "number") target.FGIOCO = src.fgioco;
         if (typeof src.temporec === "number") target.TEMPOREC = src.temporec;
+        if (typeof src.interc === "number") target.INTERC = src.interc;
+        if (typeof src.tagli === "number") target.TAGLI = src.tagli;
+        if (typeof src.aggir === "number") target.AGGIR = src.aggir;
+        if (typeof src.scaval === "number") target.SCAVAL = src.scaval;
+        if (typeof src.incurs === "number") target.INCURS = src.incurs;
+        if (src.extra_stats && typeof src.extra_stats === "object") {
+          target.EXTRA_STATS = { ...(target.EXTRA_STATS || {}) };
+          for (const [k, v] of Object.entries(src.extra_stats)) {
+            if (typeof v === "number" && !isNaN(v)) {
+              target.EXTRA_STATS[k] = v;
+            }
+          }
+        }
       };
 
       applyTeam(report.homeTeamStat, teamData.homeTeam);
@@ -1355,6 +1721,7 @@ REGOLE DI ESTRAZIONE:
 3. Riporta separatamente "pass_tot_giocatore" (PRIMO numero a sinistra nella riga "Passaggi") e "pass_tot_squadra" (SECONDO numero a destra nella riga "Passaggi").
 4. Per tutte le altre statistiche del calciatore, leggi ESCLUSIVAMENTE la COLONNA 1 (SINISTRA = GIOCATORE). Se la Colonna 1 è 0, restituisci 0!
 5. Se per passaggi/tiri/dribbling/contrasti nel solo tab Riepilogo è visibile il totale del giocatore (Colonna 1) e la % precisione del giocatore (Colonna 1), calcola il valore riuscito = Math.round(totale_giocatore * percentuale_giocatore / 100).
+6. Nella metà inferiore dell'immagine composita sono presenti fino a 4 sub-tab (Possesso, Tiri, Passaggi, Difesa o Portiere). Anche nei sub-tab leggi SEMPRE la Colonna 1 (Sinistra = Giocatore) e compila l'oggetto "extra_stats" con tutte le voci visibili!
 
 Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto per ciascuna delle ${batchImagesB64.length} immagini:
 {
@@ -1374,6 +1741,8 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
       "pass_si": number,
       "pass_tot_giocatore": number,
       "pass_tot_squadra": number,
+      "cros_si": number,
+      "cros_tot": number,
       "ctrs_si": number,
       "ctrs_tot": number,
       "drib_si": number,
@@ -1387,7 +1756,47 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
       "poss_vinti": number,
       "palle_perse": number,
       "dist_tot": number,
-      "dist_scatto": number
+      "dist_scatto": number,
+      "extra_stats": {
+        "possesso_pct": number,
+        "dist_dribbling_km": number,
+        "contrasti_subiti": number,
+        "angoli_conquistati": number,
+        "falli_conquistati": number,
+        "rigori_conquistati": number,
+        "avversari_superati": number,
+        "mosse_abilita": number,
+        "tunnel": number,
+        "tocchi_avanti": number,
+        "xg": number,
+        "tiri_fuori": number,
+        "tiri_bloccati": number,
+        "gol_punizione": number,
+        "gol_rigore": number,
+        "colpi_testa": number,
+        "tiri_precisione": number,
+        "xa": number,
+        "pre_assist": number,
+        "passaggi_chiave": number,
+        "superamenti_passaggi": number,
+        "passaggi_rasoterra": number,
+        "filtranti": number,
+        "filtranti_morbidi": number,
+        "passaggi_sotto_pressione": number,
+        "intercettazioni": number,
+        "tiri_bloccati_dif": number,
+        "spazzate": number,
+        "fuorigioco_provocati": number,
+        "duelli_offensivi_vinti": number,
+        "duelli_difensivi_vinti": number,
+        "duelli_aerei_vinti": number,
+        "scivolate_vinte": number,
+        "rigori_concessi": number,
+        "parate_pugno": number,
+        "parate_uscita": number,
+        "rigori_parati": number,
+        "tiri_subiti_por": number
+      }
     }
   ]
 }`;
@@ -1479,6 +1888,8 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
         matched.TIRI_TOT = tiriGiocatore;
         if (typeof pData.pass_si === "number") matched.PASS_SI = pData.pass_si;
         matched.PASS_TOT = copiedTeamPasses ? 0 : passGiocatore;
+        if (typeof pData.cros_si === "number") matched.CROS_SI = pData.cros_si;
+        if (typeof pData.cros_tot === "number") matched.CROS_TOT = pData.cros_tot;
         if (typeof pData.ctrs_si === "number") matched.CTRS_SI = pData.ctrs_si;
         if (typeof pData.ctrs_tot === "number") matched.CTRS_TOT = pData.ctrs_tot;
         if (typeof pData.drib_si === "number") matched.DRIB_SI = pData.drib_si;
@@ -1493,6 +1904,14 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
         if (typeof pData.palle_perse === "number") matched.PALLE_PERSE = pData.palle_perse;
         if (typeof pData.dist_tot === "number") matched.DIST_TOT = pData.dist_tot;
         if (typeof pData.dist_scatto === "number") matched.DIST_SCATTO = pData.dist_scatto;
+        if (pData.extra_stats && typeof pData.extra_stats === "object") {
+          matched.EXTRA_STATS = { ...(matched.EXTRA_STATS || {}) };
+          for (const [k, v] of Object.entries(pData.extra_stats)) {
+            if (typeof v === "number" && !isNaN(v)) {
+              matched.EXTRA_STATS[k] = v;
+            }
+          }
+        }
       }
     }
 
@@ -1514,6 +1933,8 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
 
     if (!teamStat.GOL) teamStat.GOL = sum((p) => p.GOL);
     if (!teamStat.ASST) teamStat.ASST = sum((p) => p.ASST);
+    if (!teamStat.CROS_SI) teamStat.CROS_SI = sum((p) => p.CROS_SI);
+    if (!teamStat.CROS_TOT) teamStat.CROS_TOT = sum((p) => p.CROS_TOT);
 
     const active = players.filter((p) => p.MINUTI > 0 && p.VOTO > 0);
     if (active.length > 0) {
@@ -1524,6 +1945,9 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
   finalizeStats(report.homePlayers, report.homeTeamStat, report.awayTeamStat.GOL);
   finalizeStats(report.awayPlayers, report.awayTeamStat, report.homeTeamStat.GOL);
 
+  // 4. Incrocio con le formazioni ufficiali per distinguere Titolari vs Subentrati
+  await applyOfficialFormationsToMatchReport(report, false);
+
   const allActive = [...report.homePlayers, ...report.awayPlayers].filter((p) => p.MINUTI > 0);
   if (allActive.length > 0) {
     allActive.forEach((p) => (p.MOTM = false));
@@ -1533,10 +1957,12 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
 
   const homeActiveCount = report.homePlayers.filter((p) => p.MINUTI > 0).length;
   const awayActiveCount = report.awayPlayers.filter((p) => p.MINUTI > 0).length;
+  const homeStartersCount = report.homePlayers.filter((p) => p.MINUTI > 0 && !p.SUB).length;
+  const awayStartersCount = report.awayPlayers.filter((p) => p.MINUTI > 0 && !p.SUB).length;
 
   return {
     report,
-    summaryText: `Elaborazione completata con successo tramite Gemini Vision AI (${totalSteps} chiamate Batch)! Calciatori con minuti > 0 registrati: ${homeActiveCount} ${report.schedule.home}, ${awayActiveCount} ${report.schedule.away} (${skippedZeroMinutePlayers} riserve con 0 minuti ignorate). Risultato: ${report.schedule.home} ${report.homeTeamStat.GOL} - ${report.awayTeamStat.GOL} ${report.schedule.away}.`,
+    summaryText: `Elaborazione completata con successo tramite Gemini Vision AI (${totalSteps} chiamate Batch)! Calciatori con minuti > 0: ${homeActiveCount} ${report.schedule.home} (${homeStartersCount} titolari, ${homeActiveCount - homeStartersCount} subentrati), ${awayActiveCount} ${report.schedule.away} (${awayStartersCount} titolari, ${awayActiveCount - awayStartersCount} subentrati). Risultato: ${report.schedule.home} ${report.homeTeamStat.GOL} - ${report.awayTeamStat.GOL} ${report.schedule.away}.`,
   };
 }
 
@@ -1940,6 +2366,8 @@ export async function processMatchScreenshots(
     report.homeTeamStat.GOL,
     awayTeamPct
   );
+
+  await applyOfficialFormationsToMatchReport(report, false);
 
   // Imposta MOTM sul giocatore col voto più alto dell'intero match
   const allActive = [...report.homePlayers, ...report.awayPlayers].filter((p) => p.MINUTI > 0);

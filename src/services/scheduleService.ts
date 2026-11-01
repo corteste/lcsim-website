@@ -9,7 +9,17 @@ const rolePriority: Record<string, number> = {
 };
 
 function sortPlayersByRole(players: PlayerStats[]): PlayerStats[] {
-  return players.slice().sort((a, b) => (rolePriority[a.Posiz] ?? 99) - (rolePriority[b.Posiz] ?? 99));
+  return players.slice().sort((a, b) => {
+    const aIsSub = Boolean(a.SUB || a.POS_GIOCATA === "SOS");
+    const bIsSub = Boolean(b.SUB || b.POS_GIOCATA === "SOS");
+    if (aIsSub !== bIsSub) return aIsSub ? 1 : -1;
+
+    const aRoleKey = !aIsSub && a.POS_GIOCATA && a.POS_GIOCATA !== "SOS" ? a.POS_GIOCATA : a.Posiz;
+    const bRoleKey = !bIsSub && b.POS_GIOCATA && b.POS_GIOCATA !== "SOS" ? b.POS_GIOCATA : b.Posiz;
+    const prioDiff = (rolePriority[aRoleKey] ?? rolePriority[a.Posiz] ?? 99) - (rolePriority[bRoleKey] ?? rolePriority[b.Posiz] ?? 99);
+    if (prioDiff !== 0) return prioDiff;
+    return (b.MINUTI ?? 0) - (a.MINUTI ?? 0);
+  });
 }
 
 export async function fetchScheduleGeneral(stag: number, week?: number): Promise<ScheduleGeneral[]> {
