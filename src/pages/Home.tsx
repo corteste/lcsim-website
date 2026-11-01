@@ -83,11 +83,6 @@ const Home = () => {
         <NextOpponentCard />
 
         {/* ========================================================= */}
-        {/* SQUADRA DELLA SETTIMANA (TOTW) PREVIEW                    */}
-        {/* ========================================================= */}
-        <TotwHomeCard />
-
-        {/* ========================================================= */}
         {/* SPLIT SCREEN: STANDINGS SPOTLIGHT + LEADERBOARDS          */}
         {/* ========================================================= */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -334,6 +329,10 @@ const Home = () => {
             </Link>
           </div>
         </div>
+        {/* ========================================================= */}
+        {/* SQUADRA DELLA SETTIMANA (TOTW) PREVIEW                    */}
+        {/* ========================================================= */}
+        <TotwHomeCard />
       </main>
     </div>
   );
