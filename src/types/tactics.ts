@@ -129,20 +129,21 @@ export interface PlayerRoleOption {
 export const FC25_ROLES_BY_POSITION: Record<string, PlayerRoleOption[]> = {
   POR: [
     {
-      id: "portiere",
-      name: "Portiere",
-      description: "Portiere tradizionale che protegge lo specchio della porta.",
+      id: "portiere_fuori_dai_pali",
+      name: "Portiere Fuori Dai Pali",
+      description: "Un portiere moderno, in grado di sventare le conclusioni e di supportare la costruzione della manovra offrendo un'opzione di passaggio.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Resta sulla linea di porta concentrandosi sulle parate tra i pali." },
-        { id: "equilibrato", name: "Equilibrato", description: "Esce moderatamente sui cross e sui traversoni ravvicinati." },
+        { id: "bilanciato", name: "Bilanciato", description: "Il portiere fuori dai pali uscirà per raccogliere i palloni vicino alla propria area." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il portiere fuori dai pali uscirà più fuori dalla propria area per raccogliere palla e supportare l'azione." },
       ],
     },
     {
-      id: "portiere_libero",
-      name: "Portiere fuori dai pali",
-      description: "Gioca come libero aggiunto, pronto a spazzare palloni profondi.",
+      id: "portiere_classico",
+      name: "Portiere Classico",
+      description: "Un portiere tradizionale, che rimane in porta e pensa a intercettare le conclusioni.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Esce con coraggio per intercettare passaggi filtranti lunghi avversari." },
+        { id: "difensivo", name: "Difensivo", description: "Il portiere non uscirà per raccogliere i palloni lunghi o vaganti." },
+        { id: "bilanciato", name: "Bilanciato", description: "Il portiere uscirà di tanto in tanto dalla propria area per raccogliere i palloni lunghi o vaganti." },
       ],
     },
   ],
@@ -150,175 +151,190 @@ export const FC25_ROLES_BY_POSITION: Record<string, PlayerRoleOption[]> = {
     {
       id: "difensore",
       name: "Difensore",
-      description: "Marcatore centrale solido e affidabile.",
+      description: "Un centrale abile nei fondamenti della difesa, compreso mantenere la linea difensiva.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Resta concentrato sulla marcatura pura e non rischia la giocata." },
-        { id: "equilibrato", name: "Equilibrato", description: "Mantiene la posizione difensiva e imposta con cautela se libero." },
+        { id: "difensivo", name: "Difensivo", description: "Il difensore si concentrerà esclusivamente sui propri compiti difensivi." },
+        { id: "bilanciato", name: "Bilanciato", description: "Il difensore cercherà di chiudere gli attaccanti quando necessario." },
       ],
     },
     {
       id: "stopper",
       name: "Stopper",
-      description: "Difensore aggressivo che gioca d'anticipo.",
+      description: "Un difensore centrale abile nel riconquistare palla. Tende a salire per effettuare contrasti, intercettare i passaggi e guidare il pressing.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Accorcia in avanti sull'attaccante per contrastarlo prima che riceva." },
+        { id: "bilanciato", name: "Bilanciato", description: "Lo stopper tenterà di intercettare i passaggi e presserà gli attaccanti che ricevono palla." },
+        { id: "aggressivita", name: "Aggressività", description: "Lo stopper si alzerà fino a centrocampo per intercettare i passaggi e chiudere gli attaccanti." },
       ],
     },
     {
       id: "regista_difensivo",
-      name: "Regista difensivo",
-      description: "Difensore centrale con eccellenti doti di passaggio e visione.",
+      name: "Regista Difensivo",
+      description: "Un difensore centrale moderno, abile sia nel chiamare il fuorigioco che con la palla tra i piedi. Può avanzare o allargarsi per supportare la manovra.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Imposta la manovra dalle retrovie con lanci o passaggi diagonali." },
-        { id: "costruzione", name: "Costruzione", description: "Avanza palla al piede fino alla mediana per creare superiorità." },
+        { id: "difensivo", name: "Difensivo", description: "Il regista difensivo avanzerà leggermente per supportare la manovra in fase di possesso." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il regista difensivo giocherà nella posizione di centrocampista difensivo di contenimento in fase di possesso." },
+        { id: "aggressivita", name: "Aggressività", description: "Il regista difensivo si concentrerà sull'intercettare i passaggi e sul chiudere gli avversari." },
       ],
     },
   ],
   TD: [
     {
-      id: "terzino",
-      name: "Terzino",
-      description: "Terzino tradizionale che presidia la propria corsia.",
+      id: "falso_difensore",
+      name: "Falso Difensore",
+      description: "L'evoluzione moderna del terzino, questo giocatore attacca in posizione centrale quando la sua squadra ha la palla.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Resta bloccato in linea con i centrali difensivi, concedendo zero spazio all'ala." },
-        { id: "equilibrato", name: "Equilibrato", description: "Accompagna l'azione offensiva solo quando c'è spazio sicuro." },
+        { id: "difensivo", name: "Difensivo", description: "Il falso difensore agirà da centrocampista difensivo quando la sua squadra è in possesso di palla." },
+        { id: "bilanciato", name: "Bilanciato", description: "Il falso difensore giocherà in posizione di centrocampista centrale quando la sua squadra è in possesso di palla." },
       ],
     },
     {
       id: "terzino_spinta",
-      name: "Terzino di spinta",
-      description: "Esterno basso moderno con forte vocazione offensiva.",
+      name: "Terzino Di Spinta",
+      description: "Nonostante sia sulla carta un difensore, questo giocatore pensa di più ad avanzare e a dare ampiezza agli attacchi della propria squadra.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Si sovrappone con continuità e rientra in transizione difensiva." },
-        { id: "attacco", name: "Attacco", description: "Spinge costantemente sulla trequarti per crossare o combinare con l'ala." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'esterno offensivo raramente ripiegherà in difesa, salvo nelle situazioni di contropiede." },
+        { id: "offensivo", name: "Offensivo", description: "L'esterno offensivo si spingerà in posizione ancora più avanzata e avrà meno compiti difensivi." },
       ],
     },
     {
-      id: "falso_difensore",
-      name: "Falso difensore",
-      description: "Terzino che stringe verso il centro formando un doppio perno.",
+      id: "terzino",
+      name: "Terzino",
+      description: "Un difensore largo che pensa soprattutto a proteggere la propria porta, mantenendo la linea di difesa e offrendo un'opzione di passaggio per allentare la pressione.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Stringe verso l'interno a protezione della zona centrale in non possesso." },
-        { id: "equilibrato", name: "Equilibrato", description: "In fase di possesso sale a centrocampo per facilitare la circolazione." },
+        { id: "difensivo", name: "Difensivo", description: "Il terzino tenderà ad accentrarsi per formare una difesa a tre in fase di possesso." },
+        { id: "bilanciato", name: "Bilanciato", description: "Il terzino sarà più libero di spingersi in avanti in posizione defilata per supportare gli attacchi." },
       ],
     },
     {
       id: "tornante",
       name: "Tornante",
-      description: "Giocatore a tutto campo in grado di fare l'intera fascia.",
+      description: "La versatilità e la resistenza di questo giocatore gli permettono di avanzare per supportare gli attacchi, prima di riprendere posizione in difesa.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Copre l'intero corridoio laterale con ritmo costante." },
-        { id: "attacco", name: "Attacco", description: "Cerca sempre il fondo e il traversone in area." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'esterno sarà libero di restare in avanti anche nella fase di non possesso, o di ripiegare in difesa se necessario." },
+        { id: "supporto", name: "Supporto", description: "l'esterno attaccherà solo quando la sua squadra ha la palla e difenderà quando ce l'hanno gli avversari" },
       ],
     },
   ],
   TS: [
     {
-      id: "terzino",
-      name: "Terzino",
-      description: "Terzino tradizionale che presidia la propria corsia.",
+      id: "falso_difensore",
+      name: "Falso Difensore",
+      description: "L'evoluzione moderna del terzino, questo giocatore attacca in posizione centrale quando la sua squadra ha la palla.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Resta bloccato in linea con i centrali difensivi, concedendo zero spazio all'ala." },
-        { id: "equilibrato", name: "Equilibrato", description: "Accompagna l'azione offensiva solo quando c'è spazio sicuro." },
+        { id: "difensivo", name: "Difensivo", description: "Il falso difensore agirà da centrocampista difensivo quando la sua squadra è in possesso di palla." },
+        { id: "bilanciato", name: "Bilanciato", description: "Il falso difensore giocherà in posizione di centrocampista centrale quando la sua squadra è in possesso di palla." },
       ],
     },
     {
       id: "terzino_spinta",
-      name: "Terzino di spinta",
-      description: "Esterno basso moderno con forte vocazione offensiva.",
+      name: "Terzino Di Spinta",
+      description: "Nonostante sia sulla carta un difensore, questo giocatore pensa di più ad avanzare e a dare ampiezza agli attacchi della propria squadra.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Si sovrappone con continuità e rientra in transizione difensiva." },
-        { id: "attacco", name: "Attacco", description: "Spinge costantemente sulla trequarti per crossare o combinare con l'ala." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'esterno offensivo raramente ripiegherà in difesa, salvo nelle situazioni di contropiede." },
+        { id: "offensivo", name: "Offensivo", description: "L'esterno offensivo si spingerà in posizione ancora più avanzata e avrà meno compiti difensivi." },
       ],
     },
     {
-      id: "falso_difensore",
-      name: "Falso difensore",
-      description: "Terzino che stringe verso il centro formando un doppio perno.",
+      id: "terzino",
+      name: "Terzino",
+      description: "Un difensore largo che pensa soprattutto a proteggere la propria porta, mantenendo la linea di difesa e offrendo un'opzione di passaggio per allentare la pressione.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Stringe verso l'interno a protezione della zona centrale in non possesso." },
-        { id: "equilibrato", name: "Equilibrato", description: "In fase di possesso sale a centrocampo per facilitare la circolazione." },
+        { id: "difensivo", name: "Difensivo", description: "Il terzino tenderà ad accentrarsi per formare una difesa a tre in fase di possesso." },
+        { id: "bilanciato", name: "Bilanciato", description: "Il terzino sarà più libero di spingersi in avanti in posizione defilata per supportare gli attacchi." },
       ],
     },
     {
       id: "tornante",
       name: "Tornante",
-      description: "Giocatore a tutto campo in grado di fare l'intera fascia.",
+      description: "La versatilità e la resistenza di questo giocatore gli permettono di avanzare per supportare gli attacchi, prima di riprendere posizione in difesa.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Copre l'intero corridoio laterale con ritmo costante." },
-        { id: "attacco", name: "Attacco", description: "Cerca sempre il fondo e il traversone in area." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'esterno sarà libero di restare in avanti anche nella fase di non possesso, o di ripiegare in difesa se necessario." },
+        { id: "supporto", name: "Supporto", description: "l'esterno attaccherà solo quando la sua squadra ha la palla e difenderà quando ce l'hanno gli avversari" },
       ],
     },
   ],
   CDC: [
     {
-      id: "contenimento",
-      name: "Contenimento",
-      description: "Centrocampista di rottura posizionato a protezione della retroguardia.",
+      id: "centrocampista_ampiezza",
+      name: "Centrocampista D'Ampiezza",
+      description: "Un centrocampista incaricato di marcare e coprire i lati del campo in caso di necessità.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Resta rigorosamente davanti ai centrali a schermare l'area di rigore." },
-        { id: "svaria", name: "Svaria", description: "Si muove in orizzontale per raddoppiare e chiudere gli spazi laterali." },
+        { id: "difensivo", name: "Difensivo", description: "Il centrocampista d'ampiezza è in grado di ripiegare in posizione di terzino e tornante quando la squadra ha la palla." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il centrocampista d'ampiezza può assumere la posizione di tornante e avanzare nel ruolo di esterno di centrocampo quando la squadra ha la palla." },
       ],
     },
     {
       id: "centromediano",
       name: "Centromediano",
-      description: "Mediano che si abbassa tra i due difensori centrali.",
+      description: "Un centrocampista difensivo che ripiegherà tra i difensori centrali in fase di possesso per offrire protezione contro le ripartenze.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Costruisce da 'terzo centrale' allargando i due difensori." },
+        { id: "difensivo", name: "Difensivo", description: "Il centromediano si concentrerà sui propri compiti difensivi." },
+      ],
+    },
+    {
+      id: "contenimento",
+      name: "Centrocampista Di Contenimento",
+      description: "Un ruolo fondamentale nel calcio moderno. Questo centrocampista dalla mentalità difensiva penserà a proteggere la difesa durante gli attacchi e a coprire gli spazi in occasione dei contropiedi, fornendo un supporto limitato in attacco.",
+      focuses: [
+        { id: "difensivo", name: "Difensivo", description: "Il centrocampista di contenimento si alzerà leggermente per offrire un'opzione di passaggio, ma per il resto si concentrerà sui compiti difensivi." },
+        { id: "riconquista_palla", name: "Riconquista palla", description: "Il centrocampista di contenimento tenterà di intercettare i passaggi in maniera aggressiva quando difende." },
+        { id: "svaria", name: "Svaria", description: "Il centrocampista di contenimento si muoverà per tutta l'ampiezza del campo per chiudere le linee di passaggio e tenterà di pressare gli attaccanti." },
       ],
     },
     {
       id: "regista_arretrato",
-      name: "Regista arretrato",
-      description: "Metronomo di centrocampo che imposta l'azione da posizione bassa.",
+      name: "Regista Arretrato",
+      description: "L'elemento chiave per costruire l'azione dal basso. Questo centrocampista difensivo sarà spesso il fulcro della manovra.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Resta arretrato per ricevere palla dai difensori e avviare la manovra." },
-        { id: "svaria", name: "Svaria", description: "Si propone costantemente su tutto il fronte mediano per offrire scarico." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il regista arretrato avanzerà per offrire un'opzione di passaggio a supporto dell'attacco." },
+        { id: "difensivo", name: "Difensivo", description: "Il regista arretrato si concentrerà sul chiudere le linee di passaggio e resterà dietro quando la squadra attacca." },
+        { id: "svaria", name: "Svaria", description: "Il regista arretrato si muoverà per tutta l'ampiezza del campo per supportare gli attacchi." },
       ],
     },
   ],
   CC: [
     {
-      id: "box_to_box",
-      name: "Box-to-Box",
-      description: "Incursore instancabile che opera da area ad area.",
+      id: "mezzala",
+      name: "Mezzala",
+      description: "Un centrocampista che fornisce ampiezza alla squadra in fase di possesso, agendo in posizione defilata per creare pericoli dalle fasce. Risulta particolarmente efficace se schierato come uno dei tre centrocampisti centrali.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Alterna supporto difensivo e inserimenti in zona tiro." },
+        { id: "offensivo", name: "Offensivo", description: "La mezzala avanzerà liberamente, sacrificando i compiti difensivi." },
+        { id: "bilanciato", name: "Bilanciato", description: "La mezzala attaccherà e difenderà in egual misura" },
+      ],
+    },
+    {
+      id: "contenimento",
+      name: "Centrocampista Di Contenimento",
+      description: "Un ruolo fondamentale nel calcio moderno. Questo centrocampista dalla mentalità difensiva penserà a proteggere la difesa durante gli attacchi e a coprire gli spazi in occasione dei contropiedi, fornendo un supporto limitato in attacco.",
+      focuses: [
+        { id: "difensivo", name: "Difensivo", description: "Il centrocampista di contenimento si alzerà leggermente per offrire un'opzione di passaggio, ma per il resto si concentrerà sui compiti difensivi." },
+        { id: "riconquista_palla", name: "Riconquista palla", description: "Il centrocampista di contenimento tenterà di intercettare i passaggi in maniera aggressiva quando difende." },
+      ],
+    },
+    {
+      id: "regista_arretrato",
+      name: "Regista Arretrato",
+      description: "L'elemento chiave per costruire l'azione dal basso. Questo centrocampista difensivo sarà spesso il fulcro della manovra.",
+      focuses: [
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il regista arretrato avanzerà per offrire un'opzione di passaggio a supporto dell'attacco." },
+        { id: "difensivo", name: "Difensivo", description: "Il regista arretrato si concentrerà sul chiudere le linee di passaggio e resterà dietro quando la squadra attacca." },
+      ],
+    },
+    {
+      id: "box_to_box",
+      name: "Box To Box",
+      description: "Questo giocatore opera tra le due aree, agendo come ultimo difensore o come terminale d'attacco, facendosi trovare sempre nel vivo dell'azione.",
+      focuses: [
+        { id: "bilanciato", name: "Bilanciato", description: "Il centrocampista box-to-box coprirà la zona centrale del campo in attacco e in difesa." },
       ],
     },
     {
       id: "regista",
       name: "Regista",
-      description: "Cervello della mediana che gestisce i tempi della squadra.",
+      description: "Questo giocatore tende a essere l'elemento di fantasia del centrocampo. Ha licenza di svariare per creare spazi e occasioni da rete. È facile che finisca fuori posizione in caso di contropiede.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Distribuisce palloni e detta il ritmo della manovra." },
-        { id: "attacco", name: "Attacco", description: "Si spinge sulla trequarti per servire passaggi chiave." },
-      ],
-    },
-    {
-      id: "mezzala",
-      name: "Mezzala",
-      description: "Centrocampista dinamico che agisce nei mezzi spazi.",
-      focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Si muove negli spazi tra terzino e centrale avversario." },
-        { id: "attacco", name: "Attacco", description: "Tagli profondi a supporto delle punte ed entrate in area." },
-      ],
-    },
-    {
-      id: "regista_arretrato",
-      name: "Regista arretrato",
-      description: "Regista posizionale con propensione al contenimento.",
-      focuses: [
-        { id: "difesa", name: "Difesa", description: "Conserva la posizione e orchestra senza scoprirsi." },
-      ],
-    },
-    {
-      id: "contenimento",
-      name: "Centrocampista di contenimento",
-      description: "Centrocampista centrale focalizzato sull'interdizione.",
-      focuses: [
-        { id: "difesa", name: "Difesa", description: "Priorità ai contrasti e al recupero seconde palle." },
+        { id: "offensivo", name: "Offensivo", description: "Il regista giocherà in posizione più avanzata per supportare gli attacchi." },
+        { id: "svaria", name: "Svaria", description: "Il regista sarà libero di muoversi per il campo a caccia di spazi per supportare gli attacchi." },
       ],
     },
   ],
@@ -326,37 +342,37 @@ export const FC25_ROLES_BY_POSITION: Record<string, PlayerRoleOption[]> = {
     {
       id: "ala",
       name: "Ala",
-      description: "Esterno classico orientato al fondo e al cross.",
+      description: "Un centrocampista che agisce sempre lungo la corsia laterale per offrire supporto sulle fasce in tutte le fasi di gioco.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Mantiene la linea laterale e cerca il cross morbido o teso." },
-        { id: "attacco", name: "Attacco", description: "Punta costantemente il terzino avversario nell'uno contro uno." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'ala offrirà supporto sia in attacco che in difesa, effettuando inserimenti da dietro per offrire un'opzione di passaggio." },
+        { id: "offensivo", name: "Offensivo", description: "L'ala penserà principalmente ad attaccare, preferendo gli inserimenti alle spalle della difesa piuttosto che ricevere palla sui piedi." },
       ],
     },
     {
-      id: "esterno_tuttocampo",
-      name: "Esterno a tutto campo",
-      description: "Giocatore di spola che assicura equilibrio e coperture.",
+      id: "regista_largo",
+      name: "Regista Largo",
+      description: "Un giocatore di fantasia schierato largo ma in grado di tagliare centralmente per mettere in difficoltà la difesa e creare occasioni da rete.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Garantisce ampiezza in attacco e ripiegamenti precisi." },
-        { id: "attacco", name: "Attacco", description: "Sale fino all'area di rigore a chiudere le azioni sul secondo palo." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il regista largo accorcerà per offrire un'opzione di passaggio, cercando al tempo stesso di dare una mano in difesa quando serve." },
+        { id: "offensivo", name: "Offensivo", description: "Il regista largo avanzerà per ricevere palla lungo le corsie laterali." },
       ],
     },
     {
-      id: "tornante_fascia",
-      name: "Tornante di fascia",
-      description: "Esterno tattico con compiti prioritari di sacrificio e raddoppio.",
+      id: "esterno_centrocampo",
+      name: "Esterno Di Centrocampo",
+      description: "Un centrocampista che gioca largo per agevolare la manovra, offrendo supporto in difesa e opzioni di passaggio. Raramente però si spinge in avanti per attaccare.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Rientra costantemente formando una linea difensiva allargata." },
-        { id: "equilibrato", name: "Equilibrato", description: "Supporta il terzino ed esce rapido in ripartenza." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'esterno di centrocampo manterrà una posizione larga per supportare il possesso palla e fornire supporto in difesa quando necessario." },
+        { id: "difensivo", name: "Difensivo", description: "L'esterno di centrocampo ripiegherà nella propria trequarti per proteggere la difesa." },
       ],
     },
     {
       id: "attaccante_interno",
-      name: "Attaccante interno",
-      description: "Esterno che gioca a piede invertito per convergere al tiro.",
+      name: "Attaccante Interno",
+      description: "Un attaccante largo che parte dalla fascia ma che tende regolarmente a tagliare all'interno per calciare a rete o per effettuare l'ultimo passaggio con il suo piede forte. Ama inserirsi alle spalle della difesa.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Si accentra verso il limite per tirare o dialogare con la punta." },
-        { id: "attacco", name: "Attacco", description: "Taglia dritto in area di rigore cercando la conclusione a rete." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'attaccante interno offrirà un supporto minimo in difesa e a volte eviterà di inserirsi da dietro preferendo offrire opzioni di passaggio." },
+        { id: "offensivo", name: "Offensivo", description: "L'attaccante interno tenderà a tagliare al centro e a effettuare inserimenti." },
       ],
     },
   ],
@@ -364,65 +380,75 @@ export const FC25_ROLES_BY_POSITION: Record<string, PlayerRoleOption[]> = {
     {
       id: "ala",
       name: "Ala",
-      description: "Esterno classico orientato al fondo e al cross.",
+      description: "Un centrocampista che agisce sempre lungo la corsia laterale per offrire supporto sulle fasce in tutte le fasi di gioco.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Mantiene la linea laterale e cerca il cross morbido o teso." },
-        { id: "attacco", name: "Attacco", description: "Punta costantemente il terzino avversario nell'uno contro uno." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'ala offrirà supporto sia in attacco che in difesa, effettuando inserimenti da dietro per offrire un'opzione di passaggio." },
+        { id: "offensivo", name: "Offensivo", description: "L'ala penserà principalmente ad attaccare, preferendo gli inserimenti alle spalle della difesa piuttosto che ricevere palla sui piedi." },
       ],
     },
     {
-      id: "esterno_tuttocampo",
-      name: "Esterno a tutto campo",
-      description: "Giocatore di spola che assicura equilibrio e coperture.",
+      id: "regista_largo",
+      name: "Regista Largo",
+      description: "Un giocatore di fantasia schierato largo ma in grado di tagliare centralmente per mettere in difficoltà la difesa e creare occasioni da rete.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Garantisce ampiezza in attacco e ripiegamenti precisi." },
-        { id: "attacco", name: "Attacco", description: "Sale fino all'area di rigore a chiudere le azioni sul secondo palo." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il regista largo accorcerà per offrire un'opzione di passaggio, cercando al tempo stesso di dare una mano in difesa quando serve." },
+        { id: "offensivo", name: "Offensivo", description: "Il regista largo avanzerà per ricevere palla lungo le corsie laterali." },
       ],
     },
     {
-      id: "tornante_fascia",
-      name: "Tornante di fascia",
-      description: "Esterno tattico con compiti prioritari di sacrificio e raddoppio.",
+      id: "esterno_centrocampo",
+      name: "Esterno Di Centrocampo",
+      description: "Un centrocampista che gioca largo per agevolare la manovra, offrendo supporto in difesa e opzioni di passaggio. Raramente però si spinge in avanti per attaccare.",
       focuses: [
-        { id: "difesa", name: "Difesa", description: "Rientra costantemente formando una linea difensiva allargata." },
-        { id: "equilibrato", name: "Equilibrato", description: "Supporta il terzino ed esce rapido in ripartenza." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'esterno di centrocampo manterrà una posizione larga per supportare il possesso palla e fornire supporto in difesa quando necessario." },
+        { id: "difensivo", name: "Difensivo", description: "L'esterno di centrocampo ripiegherà nella propria trequarti per proteggere la difesa." },
       ],
     },
     {
       id: "attaccante_interno",
-      name: "Attaccante interno",
-      description: "Esterno che gioca a piede invertito per convergere al tiro.",
+      name: "Attaccante Interno",
+      description: "Un attaccante largo che parte dalla fascia ma che tende regolarmente a tagliare all'interno per calciare a rete o per effettuare l'ultimo passaggio con il suo piede forte. Ama inserirsi alle spalle della difesa.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Si accentra verso il limite per tirare o dialogare con la punta." },
-        { id: "attacco", name: "Attacco", description: "Taglia dritto in area di rigore cercando la conclusione a rete." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'attaccante interno offrirà un supporto minimo in difesa e a volte eviterà di inserirsi da dietro preferendo offrire opzioni di passaggio." },
+        { id: "offensivo", name: "Offensivo", description: "L'attaccante interno tenderà a tagliare al centro e a effettuare inserimenti." },
       ],
     },
   ],
   COC: [
     {
-      id: "regista",
-      name: "Regista",
-      description: "Numero 10 classico tra le linee.",
+      id: "mezzala",
+      name: "Mezzala",
+      description: "Un centrocampista che fornisce ampiezza alla squadra in fase di possesso, agendo in posizione defilata per creare pericoli dalle fasce. Risulta particolarmente efficace se schierato come uno dei tre centrocampisti centrali.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Si smarca nella 'tasca' tra centrocampo e difesa per rifinire." },
-        { id: "attacco", name: "Attacco", description: "Cerca la giocata verticale per mandare in porta le punte." },
+        { id: "offensivo", name: "Offensivo", description: "La mezzala avanzerà liberamente, sacrificando i compiti difensivi." },
+        { id: "bilanciato", name: "Bilanciato", description: "La mezzala attaccherà e difenderà in egual misura." },
       ],
     },
     {
       id: "attaccante_ombra",
-      name: "Attaccante ombra",
-      description: "Trequartista predatore che si inserisce a sorpresa.",
+      name: "Attaccante Ombra",
+      description: "Un centrocampista offensivo che gioca tra le linee, dietro le punte. Abile negli inserimenti in area, da cui scaturiscono parecchie occasioni da rete.",
       focuses: [
-        { id: "attacco", name: "Attacco", description: "Attacca lo spazio centrale alle spalle della punta come secondo bomber." },
+        { id: "offensivo", name: "Offensivo", description: "L'attaccante ombra tenderà a effettuare inserimenti in area sfruttando lo spazio alle spalle della prima punta" },
       ],
     },
     {
-      id: "mezzala",
-      name: "Mezzala",
-      description: "Trequartista moderno che allarga la propria azione.",
+      id: "dieci_vecchia_scuola",
+      name: "10 Vecchia Scuola",
+      description: "Un centrocampista offensivo tradizionale, dai cui piedi passa la maggior parte delle iniziative in attacco.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Combina con l'esterno creando catene laterali fluide." },
-        { id: "attacco", name: "Attacco", description: "Inserimenti potenti per cross bassi o tiri dal limite." },
+        { id: "offensivo", name: "Offensivo", description: "Il 10 vecchia scuola agirà alle spalle degli attaccanti, fungendo da principale fonte di gioco." },
+        { id: "gioco_largo", name: "Gioco largo", description: "Il 10 vecchia scuola tende ad allargarsi sulla fascia per orchestrare gli attacchi da posizione defilata." },
+      ],
+    },
+    {
+      id: "regista",
+      name: "Regista",
+      description: "Questo giocatore tende a essere l'elemento di fantasia del centrocampo. Ha licenza di svariare per creare spazi e occasioni da rete. È facile che finisca fuori posizione in caso di contropiede.",
+      focuses: [
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il regista ripiegherà per prendere palla e impostare l'azione di attacco." },
+        { id: "bilanciato", name: "Bilanciato", description: "Il regista giocherà in posizione più avanzata per supportare gli attacchi." },
+        { id: "svaria", name: "Svaria", description: "Il regista sarà libero di muoversi per il campo a caccia di spazi per supportare gli attacchi." },
       ],
     },
   ],
@@ -430,28 +456,29 @@ export const FC25_ROLES_BY_POSITION: Record<string, PlayerRoleOption[]> = {
     {
       id: "ala",
       name: "Ala",
-      description: "Freccia offensiva che ara la corsia esterna.",
+      description: "Un centrocampista che agisce sempre lungo la corsia laterale per offrire supporto sulle fasce in tutte le fasi di gioco.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Alterna discese sul fondo e rientri per dare appoggio." },
-        { id: "attacco", name: "Attacco", description: "Punta costantemente verso la linea di fondo per il passaggio vincente." },
-      ],
-    },
-    {
-      id: "attaccante_interno",
-      name: "Attaccante interno",
-      description: "Ala moderna che si accentra per concludere sul palo lontano.",
-      focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Taglia verso il dischetto o il vertice dell'area." },
-        { id: "attacco", name: "Attacco", description: "Attacca direttamente la porta per finalizzare di prima intenzione." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'ala offrirà supporto sia in attacco che in difesa, effettuando inserimenti da dietro per offrire un'opzione di passaggio." },
+        { id: "offensivo", name: "Offensivo", description: "L'ala penserà principalmente ad attaccare, preferendo gli inserimenti alle spalle della difesa piuttosto che ricevere palla sui piedi." },
       ],
     },
     {
       id: "regista_largo",
-      name: "Regista largo",
-      description: "Giocatore di classe che riceve largo per inventare.",
+      name: "Regista Largo",
+      description: "Un giocatore di fantasia schierato largo ma in grado di tagliare centralmente per mettere in difficoltà la difesa e creare occasioni da rete.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Viene incontro e si accentra per creare la manovra." },
-        { id: "attacco", name: "Attacco", description: "Cerca il corridoio per il terzino in sovrapposizione o il filtrante." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il regista largo accorcerà per offrire un'opzione di passaggio, cercando al tempo stesso di dare una mano in difesa quando serve." },
+        { id: "offensivo", name: "Offensivo", description: "Il regista largo avanzerà per ricevere palla lungo le corsie laterali." },
+      ],
+    },
+    {
+      id: "attaccante_interno",
+      name: "Attaccante Interno",
+      description: "Un attaccante largo che parte dalla fascia ma che tende regolarmente a tagliare all'interno per calciare a rete o per effettuare l'ultimo passaggio con il suo piede forte. Ama inserirsi alle spalle della difesa.",
+      focuses: [
+        { id: "offensivo", name: "Offensivo", description: "L'attaccante interno tenderà a tagliare al centro e a effettuare inserimenti." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'attaccante interno offrirà un supporto minimo in difesa e a volte eviterà di inserirsi da dietro preferendo offrire opzioni di passaggio." },
+        { id: "svaria", name: "Svaria", description: "L'attaccante interno avrà libertà di muoversi per sfruttare eventuali spazi nella difesa avversaria." },
       ],
     },
   ],
@@ -459,64 +486,68 @@ export const FC25_ROLES_BY_POSITION: Record<string, PlayerRoleOption[]> = {
     {
       id: "ala",
       name: "Ala",
-      description: "Freccia offensiva che ara la corsia esterna.",
+      description: "Un centrocampista che agisce sempre lungo la corsia laterale per offrire supporto sulle fasce in tutte le fasi di gioco.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Alterna discese sul fondo e rientri per dare appoggio." },
-        { id: "attacco", name: "Attacco", description: "Punta costantemente verso la linea di fondo per il passaggio vincente." },
-      ],
-    },
-    {
-      id: "attaccante_interno",
-      name: "Attaccante interno",
-      description: "Ala moderna che si accentra per concludere sul palo lontano.",
-      focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Taglia verso il dischetto o il vertice dell'area." },
-        { id: "attacco", name: "Attacco", description: "Attacca direttamente la porta per finalizzare di prima intenzione." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'ala offrirà supporto sia in attacco che in difesa, effettuando inserimenti da dietro per offrire un'opzione di passaggio." },
+        { id: "offensivo", name: "Offensivo", description: "L'ala penserà principalmente ad attaccare, preferendo gli inserimenti alle spalle della difesa piuttosto che ricevere palla sui piedi." },
       ],
     },
     {
       id: "regista_largo",
-      name: "Regista largo",
-      description: "Giocatore di classe che riceve largo per inventare.",
+      name: "Regista Largo",
+      description: "Un giocatore di fantasia schierato largo ma in grado di tagliare centralmente per mettere in difficoltà la difesa e creare occasioni da rete.",
       focuses: [
-        { id: "equilibrato", name: "Equilibrato", description: "Viene incontro e si accentra per creare la manovra." },
-        { id: "attacco", name: "Attacco", description: "Cerca il corridoio per il terzino in sovrapposizione o il filtrante." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il regista largo accorcerà per offrire un'opzione di passaggio, cercando al tempo stesso di dare una mano in difesa quando serve." },
+        { id: "offensivo", name: "Offensivo", description: "Il regista largo avanzerà per ricevere palla lungo le corsie laterali." },
+      ],
+    },
+    {
+      id: "attaccante_interno",
+      name: "Attaccante Interno",
+      description: "Un attaccante largo che parte dalla fascia ma che tende regolarmente a tagliare all'interno per calciare a rete o per effettuare l'ultimo passaggio con il suo piede forte. Ama inserirsi alle spalle della difesa.",
+      focuses: [
+        { id: "offensivo", name: "Offensivo", description: "L'attaccante interno tenderà a tagliare al centro e a effettuare inserimenti." },
+        { id: "bilanciato", name: "Bilanciato", description: "L'attaccante interno offrirà un supporto minimo in difesa e a volte eviterà di inserirsi da dietro preferendo offrire opzioni di passaggio." },
+        { id: "svaria", name: "Svaria", description: "L'attaccante interno avrà libertà di muoversi per sfruttare eventuali spazi nella difesa avversaria." },
       ],
     },
   ],
   ATT: [
     {
-      id: "attaccante_avanzato",
-      name: "Attaccante avanzato",
-      description: "Punta classica completa che vive sul filo del fuorigioco.",
+      id: "torre",
+      name: "Torre",
+      description: "Un attaccante la cui fisicità gli permette di tenere palla e di proteggerla per far salire la squadra. Ama sia essere servito con i cross che ricevere palla sui piedi.",
       focuses: [
-        { id: "attacco", name: "Attacco", description: "Attacca costantemente la profondità e detta il filtrante." },
-        { id: "completo", name: "Completo", description: "Spazia su tutto il fronte offensivo, rifinendo e finalizzando." },
-      ],
-    },
-    {
-      id: "rapace_area",
-      name: "Rapace d'area",
-      description: "Bomber puro implacabile negli ultimi 16 metri.",
-      focuses: [
-        { id: "attacco", name: "Attacco", description: "Presidia stabilmente l'area di rigore in attesa della palla gol." },
+        { id: "offensivo", name: "Offensivo", description: "La torre avrà libertà di avanzare, senza alcun compito difensivo." },
+        { id: "bilanciato", name: "Bilanciato", description: "La torre si staccherà dalla difesa e terrà palla per cederla a un compagno. Avrà meno compiti difensivi." },
+        { id: "gioco_largo", name: "Gioco largo", description: "La torre giocherà in posizione defilata rispetto all'area in cerca di spazi da sfruttare." },
       ],
     },
     {
       id: "falso_nove",
       name: "Falso 9",
-      description: "Centravanti di manovra che svuota l'area attirando i centrali.",
+      description: "Schierato sulla linea degli attaccanti, questo giocatore tende a ripiegare davanti alla difesa per dettare i tempi della manovra. Così facendo riesce a dare il proprio contributo anche alla fase difensiva.",
       focuses: [
-        { id: "costruzione", name: "Costruzione", description: "Viene incontro sulla trequarti per aprire spazi agli inserimenti di ali e mezzali." },
+        { id: "costruzione_manovra", name: "Costruzione manovra", description: "Il falso 9 arretrerà la propria posizione rispetto alla difesa avversaria e agirà come un regista." },
       ],
     },
     {
-      id: "torre",
-      name: "Torre",
-      description: "Punta di peso e stazza dominante nei duelli aerei.",
+      id: "rapace_area",
+      name: "Rapace",
+      description: "Questo giocatore ha un solo obiettivo: fare gol. Resta in avanti e cerca di effettuare inserimenti alle spalle della difesa nella speranza di crearsi l'occasione per segnare.",
       focuses: [
-        { id: "attacco", name: "Attacco", description: "Attacca il dischetto sui cross per colpire di testa con potenza." },
-        { id: "equilibrato", name: "Equilibrato", description: "Fa da sponda spalle alla porta per i compagni che rimorchia." },
+        { id: "offensivo", name: "Offensivo", description: "Il rapace agirà nei pressi della difesa avversaria per sfruttare eventuali spazi o errori." },
+        { id: "supporto", name: "Supporto", description: "Il rapace presserà in maniera aggressiva i difensori quando hanno la palla per indurli all'errore." },
+      ],
+    },
+    {
+      id: "attaccante_avanzato",
+      name: "Attaccante Avanzato",
+      description: "Un attaccante versatile che di solito agisce vicino alla linea difensiva avversaria, ma che si fa vedere per ricevere palla durante la costruzione della manovra ed effettua inserimenti per crearsi occasioni da rete.",
+      focuses: [
+        { id: "offensivo", name: "Offensivo", description: "L'attaccante avanzato si concentrerà nello sfruttare le occasioni da rete, agendo di solito in posizione avanzata e centrale." },
+        { id: "supporto", name: "Supporto", description: "L'attaccante avanzato cercherà di effettuare inserimenti da dietro o da posizione defilata e presserà i difensori." },
+        { id: "completo", name: "Completo", description: "L'attaccante avanzato sarà libero di giocare largo, se serve, per ricevere palla o di creare spazio con un inserimento." },
       ],
     },
   ],
@@ -671,9 +702,24 @@ export function sanitizeTacticalSettings(
     const existing = rawPI[idx] || rawPI[String(idx)];
 
     if (existing && existing.roleId) {
-      const matchedRole = availableRoles.find((r) => r.id === existing.roleId);
+      const matchedRole = availableRoles.find(
+        (r) =>
+          r.id === existing.roleId ||
+          (existing.roleId === "portiere" && r.id === "portiere_classico") ||
+          (existing.roleId === "portiere_libero" && r.id === "portiere_fuori_dai_pali") ||
+          (existing.roleId === "esterno_tuttocampo" && r.id === "esterno_centrocampo") ||
+          (existing.roleId === "tornante_fascia" && r.id === "esterno_centrocampo") ||
+          (existing.roleId === "dieci_classico" && r.id === "dieci_vecchia_scuola")
+      );
       if (matchedRole) {
-        const matchedFocus = matchedRole.focuses.find((f) => f.id === existing.focusId);
+        const matchedFocus = matchedRole.focuses.find(
+          (f) =>
+            f.id === existing.focusId ||
+            (existing.focusId === "attacco" && f.id === "offensivo") ||
+            (existing.focusId === "equilibrato" && f.id === "bilanciato") ||
+            (existing.focusId === "difesa" && f.id === "difensivo") ||
+            (existing.focusId === "costruzione" && f.id === "costruzione_manovra")
+        );
         playerInstructions[idx] = {
           slotRole: slotPos,
           roleId: matchedRole.id,

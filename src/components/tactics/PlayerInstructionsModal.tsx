@@ -356,26 +356,6 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                         <span className="font-black text-xs text-foreground">
                           {focus.name}
                         </span>
-                        {focus.name === "Difesa" && (
-                          <Badge variant="outline" className="text-[9px] py-0 px-1 text-sky-500 border-sky-500/30">
-                            Difensivo
-                          </Badge>
-                        )}
-                        {focus.name === "Attacco" && (
-                          <Badge variant="outline" className="text-[9px] py-0 px-1 text-rose-500 border-rose-500/30">
-                            Offensivo
-                          </Badge>
-                        )}
-                        {focus.name === "Equilibrato" && (
-                          <Badge variant="outline" className="text-[9px] py-0 px-1 text-emerald-500 border-emerald-500/30">
-                            Bilanciato
-                          </Badge>
-                        )}
-                        {focus.name === "Costruzione" && (
-                          <Badge variant="outline" className="text-[9px] py-0 px-1 text-amber-500 border-amber-500/30">
-                            Manovra
-                          </Badge>
-                        )}
                       </div>
                       {isSelected && (
                         <Check className="w-4 h-4 text-emerald-500 shrink-0" />
