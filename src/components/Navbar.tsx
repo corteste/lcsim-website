@@ -28,6 +28,7 @@ import {
   ClipboardList,
   Newspaper,
   KeyRound,
+  UserCheck,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
