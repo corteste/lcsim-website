@@ -1349,3 +1349,54 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 - **Descrizione**:
   - Aggiunto nella schermata di Allenamento (`/allenamenti`), sulla colonna di destra sotto la card *Riepilogo Avanzamento*, il prospetto riassuntivo che mostra in tempo reale l'Overall (OVR) calcolato del calciatore selezionato in tutte le 12 posizioni di campo (POR, DC, TD, TS, CDC, CC, COC, ED, ES, AD, AS, ATT).
   - Il prospetto è organizzato per reparti (Portiere, Difesa, Centrocampo, Attacco) con layout tattico, badge distintivi per Ruolo Naturale (`NAT`) e Ruolo Secondario (`SEC`), e calcolo dinamico in tempo reale: mostra il valore Base (`Pre`), il nuovo valore stimato (`Post`) e il delta verde (`+X`) non appena il manager incrementa qualsiasi attributo o cambia ruolo.
+
+
+---
+
+## 📌 62. Allenamenti: Vincoli Tratti Dorati, Ruolo++ Automatico, Regole Cambio Ruolo & Limiti Fisici Veterani
+- **Stato**: 🔴 Da Sviluppare
+- **Priorità**: Alta (Regolamento e bilanciamento del sistema di crescita)
+- **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/utils/playerGrowth.ts`, `src/utils/playerRoleDiscount.ts`
+- **Specifiche & Requisiti**:
+  1. **Tratto Dorato Non Eliminabile**:
+     - Rimuovere il pulsante "Reimposta ad argento" (o qualsiasi azione di cancellazione/retrocessione) per i tratti Playmaker+ (oro).
+     - Una volta che un tratto è dorato, l'acquisizione è definitiva e permanente, non più modificabile o rimovibile.
+  2. **Ruolo++ Gratuito Automatico su Cambio Posizione**:
+     - Se un manager allena un calciatore per cambiargli posizione/ruolo principale, il giocatore deve ottenere in automatico e a costo zero la maestria massima **Ruolo++** (+2) nella nuova posizione assegnata.
+  3. **Validazione Cambio Ruolo (Stesso Ruolo & Sconto Presenze)**:
+     - Impedire la selezione del ruolo attuale del giocatore come nuovo ruolo di destinazione (un calciatore non può effettuare un "cambio ruolo" verso la posizione che già ricopre).
+     - Escludere il ruolo attuale dalla formula di calcolo dello sconto presenze: non mostrare né conteggiare il badge o il bonus sconto per il ruolo che il giocatore ha già attivo.
+  4. **Limiti ai Miglioramenti Fisici per Calciatori Anziani (Veterani)**:
+     - Implementare vincoli e blocchi di salvaguardia sui miglioramenti degli attributi fisici (es. Velocità, Accelerazione, Scatto, Resistenza, Forza, Agilità) per i giocatori che superano una determinata soglia anagrafica (es. over 30/32).
+     - Evitare che calciatori in età avanzata o a fine carriera possano registrare incrementi fisici irrealistici e in contrasto con le curve naturali di decadimento biologico.
+
+
+---
+
+## 📌 63. Scambi: Controproposte a Finestra Singola (Stesso ID), Blocco Override Admin Senza Accettazione & Rimozione AT dai Bisogni
+- **Stato**: 🔴 Da Sviluppare
+- **Priorità**: Alta (Integrità del mercato, workflow trattative e coerenza ruoli)
+- **Moduli coinvolti**: `src/pages/Trades.tsx`, `src/components/trades/*`, `src/services/marketTradesService.ts`, `supabase/migrations/*market_trades*`
+- **Specifiche & Requisiti**:
+  1. **Blocco Override Amministrativo Senza Accettazione**:
+     - Rimuovere la funzionalità di override/approvazione forzata da parte dell'Admin se non è presente la formale accettazione della seconda squadra coinvolta nello scambio.
+     - L'approvazione e la convalida ufficiale da parte della Lega possono avvenire unicamente su proposte che hanno completato l'accordo bilaterale (`accepted` / `pending_admin`).
+  2. **Finestra Singola per Trattativa & Override su Controproposte (Mantenimento Stesso ID)**:
+     - In caso di invio di una controproposta, mantenere un'unica finestra/thread per la trattativa, archiviando direttamente la proposta originaria.
+     - Gestire la controproposta come un aggiornamento/override della proposta precedente mantenendo lo stesso identificativo (`trade_id`), evitando la proliferazione di scambi paralleli o duplicati tra i due club.
+  3. **Rimozione Ruolo AT dalla Lista "I Miei Bisogni"**:
+     - Nella gestione e visualizzazione dei bisogni di squadra (macro-categorie e filtri mercato in `/mercato/scambi` e `/mia-squadra/trattative`), rimuovere il ruolo `AT` (seconda punta) dall'elenco delle posizioni selezionabili e visualizzate, uniformando i reparti ai ruoli ufficiali previsti dalla simulazione (es. ATT, AD, AS per l'attacco).
+
+
+---
+
+## 📌 64. Draft: Possibilità di Aggiungere Calciatori Svincolati alla Graduatoria (Priority Board)
+- **Stato**: 🔴 Da Sviluppare
+- **Priorità**: Media-Alta (Flessibilità e strategia completa nelle scelte del Draft)
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, `src/components/draft/*`
+- **Tabelle coinvolte**: `an_draft_board`, `an_player`, `draft_wishlists` (o tabella graduatorie)
+- **Specifiche & Requisiti**:
+  1. **Inclusione Svincolati nella Graduatoria Ufficiale**:
+     - Estendere la funzionalità della **Graduatoria** (Priority Board / Autopick) per consentire ai manager di ricercare, inserire e ordinare nell'elenco di preferenza non solo i Rookie, ma anche i calciatori **Svincolati** (`free_agent`).
+  2. **Autopick e Strategia di Chiamata Integrata**:
+     - In caso di assenza del manager al proprio turno di chiamata, il sistema di Autopick deve scorrere la graduatoria unificata e selezionare il primo profilo disponibile (Rookie o Svincolato), rispettando la priorità stabilita dal manager e i vincoli di ruolo/tetti di rosa (es. tetto portieri).
