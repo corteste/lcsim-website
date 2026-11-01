@@ -533,101 +533,6 @@ export default function AdminAutomazioni() {
         {/* Griglia Funzionalità Automazioni */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/* CARD MODALITÀ TEST (DRY RUN) */}
-          <Card className={`border shadow-lg relative overflow-hidden flex flex-col justify-between transition-all md:col-span-2 ${
-            testModeState?.isActive
-              ? "border-amber-500/60 bg-gradient-to-br from-card via-card/95 to-amber-500/15 shadow-amber-500/10"
-              : "border-border/80 bg-gradient-to-br from-card via-card/95 to-muted/20"
-          }`}>
-            <div className={`absolute top-0 right-0 w-44 h-44 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none ${
-              testModeState?.isActive ? "bg-amber-500/20" : "bg-muted/10"
-            }`} />
-            <div>
-              <CardHeader className="pb-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={testModeState?.isActive ? "default" : "outline"}
-                      className={
-                        testModeState?.isActive
-                          ? "bg-amber-500 text-amber-950 font-black uppercase tracking-wider text-[10px] flex items-center gap-1 shadow-sm"
-                          : "text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
-                      }
-                    >
-                      <FlaskConical className="h-3 w-3" />
-                      {testModeState?.isActive ? "Modalità Test ATTIVA (Dry Run)" : "Modalità Test DISATTIVA (Ufficiale)"}
-                    </Badge>
-                  </div>
-                  <FlaskConical className={`h-6 w-6 ${testModeState?.isActive ? "text-amber-500 animate-pulse" : "text-muted-foreground"}`} />
-                </div>
-                <CardTitle className="text-xl font-black flex items-center gap-2">
-                  Modalità Test (Dry Run Produzione)
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Attiva o disattiva la modalità di simulazione per testare il flusso del Draft in ambiente di produzione: quando attiva, disabilita il pulsante di conferma scelta e l'autopick per tutti i club, consentendo liberamente ogni altra interazione (board, scouting, graduatorie e filtri).
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs">
-                  <div className="space-y-0.5">
-                    <span className="text-muted-foreground block text-[11px]">Conferma Scelta Draft:</span>
-                    <span className={`font-mono font-bold ${testModeState?.isActive ? "text-amber-500 font-black" : "text-emerald-500"}`}>
-                      {testModeState?.isActive ? "🔒 DISABILITATA (Dry Run)" : "✅ ABILITATA (Scelte Reali)"}
-                    </span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="text-muted-foreground block text-[11px]">Interazioni Consentite:</span>
-                    <span className="font-mono font-bold text-foreground">Board, Scouting, Graduatoria, Filtri</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="text-muted-foreground block text-[11px]">Tasto Floating Feedback:</span>
-                    <span className="font-mono font-bold text-rose-500">Sempre Attivo su Tutto il Sito</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-                  <Button
-                    onClick={handleToggleTestMode}
-                    disabled={isTogglingTestMode}
-                    className={`w-full font-bold gap-2 text-xs py-2.5 transition-all shadow-sm ${
-                      testModeState?.isActive
-                        ? "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20"
-                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
-                    }`}
-                  >
-                    {isTogglingTestMode ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Aggiornamento in corso...
-                      </>
-                    ) : testModeState?.isActive ? (
-                      <>
-                        <FlaskConical className="h-4 w-4" />
-                        Disattiva Modalità Test (Ritorna a Ufficiale)
-                      </>
-                    ) : (
-                      <>
-                        <FlaskConical className="h-4 w-4" />
-                        Attiva Modalità Test (Dry Run Draft)
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </div>
-
-            {/* Timestamp Footer */}
-            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
-              <span className="flex items-center gap-1.5 font-sans">
-                <Clock className="h-3.5 w-3.5 text-amber-500" />
-                Ultima modifica stato:
-              </span>
-              <span className="font-semibold text-foreground truncate max-w-[320px]">
-                {formatLastRun(testModeState?.lastRunAt, testModeState?.lastRunBy)}
-              </span>
-            </div>
-          </Card>
-
           {/* 0. CARICAMENTO RISULTATI, TABELLINI & SCREENSHOT PARTITE (#1 & #27) */}
           <Card className="border-indigo-500/40 bg-gradient-to-br from-card via-card/95 to-indigo-500/10 shadow-lg relative overflow-hidden flex flex-col justify-between md:col-span-2">
             <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/15 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
@@ -1431,6 +1336,97 @@ export default function AdminAutomazioni() {
               </span>
               <span className="font-semibold text-foreground">
                 12 Club di Serie A
+              </span>
+            </div>
+          </Card>
+
+          {/* CARD 11: MODALITÀ TEST (DRY RUN) */}
+          <Card className={`overflow-hidden border shadow-sm hover:shadow-md transition-all flex flex-col justify-between ${
+            testModeState?.isActive
+              ? "border-amber-500/60 bg-gradient-to-br from-card via-card/95 to-amber-500/10 shadow-amber-500/10"
+              : "border-border/80 bg-card"
+          }`}>
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge
+                    variant={testModeState?.isActive ? "default" : "outline"}
+                    className={
+                      testModeState?.isActive
+                        ? "bg-amber-500 text-amber-950 font-black uppercase tracking-wider text-[10px] flex items-center gap-1 shadow-sm"
+                        : "text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
+                    }
+                  >
+                    <FlaskConical className="h-3 w-3" />
+                    {testModeState?.isActive ? "Test Attivo (Dry Run)" : "Test Disattivo (Ufficiale)"}
+                  </Badge>
+                  <FlaskConical className={`h-6 w-6 ${testModeState?.isActive ? "text-amber-500 animate-pulse" : "text-muted-foreground"}`} />
+                </div>
+                <CardTitle className="text-xl font-black">Modalità Test (Dry Run)</CardTitle>
+                <CardDescription className="text-xs">
+                  Simula il Draft in produzione senza salvare scelte ed autopick, lasciando libere board, scouting e graduatorie.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-3">
+                <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-[11px]">Conferma Scelta Draft:</span>
+                    <span className={`font-mono font-bold text-[11px] ${testModeState?.isActive ? "text-amber-500 font-black" : "text-emerald-500"}`}>
+                      {testModeState?.isActive ? "🔒 Disabilitata (Dry Run)" : "✅ Abilitata (Ufficiale)"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-[11px]">Autopick Draft:</span>
+                    <span className={`font-mono font-bold text-[11px] ${testModeState?.isActive ? "text-amber-500" : "text-emerald-500"}`}>
+                      {testModeState?.isActive ? "🔒 Bloccato" : "✅ Attivo"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-[11px]">Feedback Tasto Destro:</span>
+                    <span className="font-mono font-bold text-[11px] text-rose-500">
+                      Sempre Attivo
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleToggleTestMode}
+                  disabled={isTogglingTestMode}
+                  className={`w-full font-bold gap-2 text-xs py-2.5 transition-all shadow-sm ${
+                    testModeState?.isActive
+                      ? "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
+                  }`}
+                >
+                  {isTogglingTestMode ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Aggiornamento in corso...
+                    </>
+                  ) : testModeState?.isActive ? (
+                    <>
+                      <FlaskConical className="h-4 w-4" />
+                      Disattiva Modalità Test
+                    </>
+                  ) : (
+                    <>
+                      <FlaskConical className="h-4 w-4" />
+                      Attiva Modalità Test (Dry Run)
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-amber-500" />
+                Ultima modifica:
+              </span>
+              <span className="font-semibold text-foreground truncate max-w-[200px]">
+                {formatLastRun(testModeState?.lastRunAt, testModeState?.lastRunBy)}
               </span>
             </div>
           </Card>
