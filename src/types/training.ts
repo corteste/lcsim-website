@@ -142,10 +142,10 @@ export const OFFICIAL_TRAITS: TraitDef[] = [
     category: "Piazzati",
     statReqs: { PNIZ: 85, EFFT: 84, PTIR: 84 },
   },
-  // 5. Power Leader (Power Header)
+  // 5. Power Header
   {
-    id: "power_leader",
-    name: "Power Leader",
+    id: "power_header",
+    name: "Power Header",
     description: "Colpi di testa violenti e diretti verso la porta con straordinario stacco aereo.",
     category: "Tiro",
     statReqs: { TSTA: 84, FINA: 84, ELEV: 74 },
@@ -433,7 +433,7 @@ export const findTraitDef = (identifier: string): TraitDef | undefined => {
     (t) =>
       t.id.toLowerCase() === clean.replace(/ /g, "_") ||
       t.name.toLowerCase() === clean ||
-      (t.id === "power_leader" && clean === "power header")
+      (t.id === "power_header" && (clean === "power leader" || clean === "power header"))
   );
 };
 
