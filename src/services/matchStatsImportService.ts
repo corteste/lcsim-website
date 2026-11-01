@@ -714,7 +714,7 @@ function inspectFrameGeometry(img: HTMLImageElement, ctx: CanvasRenderingContext
     // Se il cerchio non ha pixel colorati (verde/giallo/arancio), è N/D!
     isUnusedBench = coloredPixels < 25;
 
-    // Hash leggero del box nome giocatore (x: 260..500, y: 185..255) per raggruppare screenshot consecutivi dello stesso giocatore
+    // Hash del box nome giocatore (x: 260..500, y: 185..255) filtrando solo il testo bianco nitido per ignorare lo sfondo animato 3D
     const nameData = ctx.getImageData(260, 185, 240, 70).data;
     const buckets: number[] = [];
     for (let bx = 0; bx < 12; bx++) {
@@ -722,7 +722,7 @@ function inspectFrameGeometry(img: HTMLImageElement, ctx: CanvasRenderingContext
       for (let y = 0; y < 70; y += 2) {
         for (let x = bx * 20; x < (bx + 1) * 20; x += 2) {
           const idx = (y * 240 + x) * 4;
-          if (nameData[idx] > 180) sum++;
+          if (nameData[idx] > 200 && nameData[idx + 1] > 200 && nameData[idx + 2] > 200) sum++;
         }
       }
       buckets.push(sum);
@@ -971,10 +971,10 @@ function applyPlayerRightPanelRow(
  */
 
 // ============================================================================
-// GEMINI VISION MULTIMODAL EXTRACTION ENGINE
+// GEMINI VISION MULTIMODAL EXTRACTION ENGINE (SMART BATCHING)
 // ============================================================================
 
-function imageToBase64Jpeg(img: HTMLImageElement, maxWidth = 1280, quality = 0.85): string {
+function imageToBase64Jpeg(img: HTMLImageElement, maxWidth = 1280, quality = 0.82): string {
   const canvas = document.createElement("canvas");
   let w = img.naturalWidth || img.width || 1920;
   let h = img.naturalHeight || img.height || 1080;
@@ -990,12 +990,82 @@ function imageToBase64Jpeg(img: HTMLImageElement, maxWidth = 1280, quality = 0.8
   return dataUrl.split(",")[1];
 }
 
+/**
+ * Confronto tollerante (distanza Manhattan) tra due hash del box nome giocatore
+ * per raggruppare i sub-tab dello stesso calciatore nonostante le animazioni di sfondo 3D.
+ */
+function arePlayerHashesSimilar(hashA: string, hashB: string): boolean {
+  if (!hashA || !hashB) return false;
+  if (hashA === hashB) return true;
+  const a = hashA.split("-").map(Number);
+  const b = hashB.split("-").map(Number);
+  if (a.length !== b.length) return false;
+  let totalDiff = 0;
+  for (let i = 0; i < a.length; i++) {
+    totalDiff += Math.abs(a[i] - b[i]);
+  }
+  return totalDiff <= 36; // Media <= 3 pixel di scarto per bucket
+}
+
+/**
+ * Compone una singola immagine compatta (1280x960) per un calciatore unendo:
+ * - Quadrante Alto-SX: Scheda principale / Riepilogo (con nome, squadra, voto, minuti e stats generali)
+ * - Altri quadranti: pannelli statistici dei sub-tab (Tiri, Passaggi, Possesso, Difesa, Portiere) se presenti
+ * In questo modo 1 sola immagine contiene il 100% dei tab del giocatore e possiamo inviare 6 giocatori per chiamata!
+ */
+function buildCompositePlayerBase64(group: AnalyzedFrame[]): string {
+  const mainFrame = group.find((f) => f.tab === "Riepilogo") || group[0];
+  if (group.length === 1) {
+    return imageToBase64Jpeg(mainFrame.img, 1280, 0.82);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1280;
+  canvas.height = 960;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(0, 0, 1280, 960);
+
+  // 1. Metà superiore (1280x520): Schermata Riepilogo completa (header, lista, card giocatore e tab Riepilogo)
+  ctx.drawImage(mainFrame.img, 0, 0, 1920, 980, 0, 0, 1280, 520);
+
+  // 2. Metà inferiore (1280x440): fino a 4 pannelli destri (x: 780..1860, y: 150..960) degli altri sub-tab
+  const subTabs = group.filter((f) => f !== mainFrame);
+  const uniqueSubTabs: AnalyzedFrame[] = [];
+  const seenTabs = new Set<string>([mainFrame.tab]);
+  for (const st of subTabs) {
+    if (!seenTabs.has(st.tab)) {
+      seenTabs.add(st.tab);
+      uniqueSubTabs.push(st);
+    }
+  }
+
+  const slots = [
+    { x: 0, y: 525, w: 320, h: 430 },
+    { x: 320, y: 525, w: 320, h: 430 },
+    { x: 640, y: 525, w: 320, h: 430 },
+    { x: 960, y: 525, w: 320, h: 430 },
+  ];
+
+  for (let i = 0; i < Math.min(uniqueSubTabs.length, slots.length); i++) {
+    const st = uniqueSubTabs[i];
+    const s = slots[i];
+    ctx.drawImage(st.img, 770, 145, 1100, 820, s.x, s.y, s.w, s.h);
+  }
+
+  return canvas.toDataURL("image/jpeg", 0.82).split(",")[1];
+}
+
 const VISION_MODELS = [
+  "gemini-3.5-flash-lite",
+  "gemini-flash-lite-latest",
+  "gemini-3.6-flash",
+  "gemini-3.1-flash-lite",
   "gemini-3-flash-preview",
   "gemini-3.5-flash",
-  "gemini-3.1-flash-lite",
-  "gemini-flash-latest",
 ];
+
+const exhaustedVisionModels = new Set<string>();
 
 async function callGeminiVisionApi(
   prompt: string,
@@ -1010,12 +1080,20 @@ async function callGeminiVisionApi(
   }));
   parts.push({ text: prompt });
 
-  for (const model of VISION_MODELS) {
+  const candidates = [
+    ...VISION_MODELS.filter((m) => !exhaustedVisionModels.has(m)),
+    ...VISION_MODELS.filter((m) => exhaustedVisionModels.has(m)),
+  ];
+
+  for (const model of candidates) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 14000);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           contents: [{ parts }],
           generationConfig: {
@@ -1024,6 +1102,7 @@ async function callGeminiVisionApi(
           },
         }),
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const json = await response.json();
@@ -1037,10 +1116,15 @@ async function callGeminiVisionApi(
           }
         }
       } else {
+        if (response.status === 429 || response.status === 404 || response.status === 503) {
+          exhaustedVisionModels.add(model);
+        }
         console.warn(`Vision model ${model} status ${response.status}`);
       }
     } catch (err) {
-      console.warn(`Errore Vision (${model}):`, err);
+      clearTimeout(timeoutId);
+      exhaustedVisionModels.add(model);
+      console.warn(`Errore/Timeout Vision (${model}):`, err);
     }
   }
   return null;
@@ -1053,38 +1137,68 @@ export async function processMatchScreenshotsWithGemini(
   skippedBenchFrames: number,
   onProgress?: (p: ScreenshotProgress) => void
 ): Promise<{ report: AdminMatchFullReport; summaryText: string }> {
-  const teamFrames = activeFrames.filter((f) => f.kind === "TEAM_SUMMARY");
+  const rawTeamFrames = activeFrames.filter((f) => f.kind === "TEAM_SUMMARY");
+  // Deduplica le schermate riepilogo squadra tenendo 1 immagine per ciascun tab unico (max 6)
+  const seenTeamTabs = new Set<string>();
+  const teamFrames: AnalyzedFrame[] = [];
+  for (const tf of rawTeamFrames) {
+    if (!seenTeamTabs.has(tf.tab)) {
+      seenTeamTabs.add(tf.tab);
+      teamFrames.push(tf);
+    }
+  }
+  if (teamFrames.length === 0 && rawTeamFrames.length > 0) {
+    teamFrames.push(rawTeamFrames[0]);
+  }
+
   const playerFrames = activeFrames.filter((f) => f.kind === "PLAYER_PERFORMANCE");
 
+  // Raggruppamento robusto multi-tab per calciatore (tollerante alle animazioni + ciclo naturale dei tab)
   const playerGroups: AnalyzedFrame[][] = [];
   let currentGroup: AnalyzedFrame[] = [];
   let currentSign = "";
+  let tabsInCurrentGroup = new Set<string>();
 
   for (const f of playerFrames) {
-    if (!currentSign || f.playerSignHash === currentSign) {
+    const sameHash = currentSign ? arePlayerHashesSimilar(f.playerSignHash, currentSign) : true;
+    const isNewRiepilogoCycle = f.tab === "Riepilogo" && tabsInCurrentGroup.has("Riepilogo") && !sameHash;
+    const isContinuationSubTab =
+      f.tab !== "Riepilogo" && currentGroup.length > 0 && !tabsInCurrentGroup.has(f.tab);
+
+    if (currentGroup.length === 0 || (sameHash && !isNewRiepilogoCycle) || isContinuationSubTab) {
       currentGroup.push(f);
-      currentSign = f.playerSignHash;
+      if (!currentSign) currentSign = f.playerSignHash;
+      tabsInCurrentGroup.add(f.tab);
     } else {
-      if (currentGroup.length > 0) playerGroups.push(currentGroup);
+      playerGroups.push(currentGroup);
       currentGroup = [f];
       currentSign = f.playerSignHash;
+      tabsInCurrentGroup = new Set<string>([f.tab]);
     }
   }
   if (currentGroup.length > 0) playerGroups.push(currentGroup);
 
-  const totalSteps = (teamFrames.length > 0 ? 1 : 0) + playerGroups.length;
+  // Suddivisione dei calciatori in BATCH da 6 calciatori per chiamata API (es. 26 giocatori = 5 chiamate)
+  const BATCH_SIZE = 6;
+  const playerBatches: AnalyzedFrame[][][] = [];
+  for (let i = 0; i < playerGroups.length; i += BATCH_SIZE) {
+    playerBatches.push(playerGroups.slice(i, i + BATCH_SIZE));
+  }
+
+  const totalSteps = (teamFrames.length > 0 ? 1 : 0) + playerBatches.length;
   let completedSteps = 0;
 
   // 1. Analisi Riepilogo Squadre (1 chiamata multi-immagine)
   if (teamFrames.length > 0) {
+    completedSteps++;
     onProgress?.({
-      phase: "Analisi Riepilogo Squadre con Gemini Vision AI",
-      current: 1,
+      phase: `Analisi Riepilogo Squadre con Gemini Vision AI (1/${totalSteps})`,
+      current: completedSteps,
       total: totalSteps,
-      detail: `Elaborazione di ${teamFrames.length} schermate riepilogative squadra...`,
+      detail: `Elaborazione ${teamFrames.length} schermate riepilogative squadra...`,
     });
 
-    const teamB64 = teamFrames.map((f) => imageToBase64Jpeg(f.img));
+    const teamB64 = teamFrames.slice(0, 6).map((f) => imageToBase64Jpeg(f.img));
     const prompt = `Sei un assistente per l'acquisizione referti di EA Sports FC 25.
 Dalle immagini del riepilogo partita fornite, estrai i dati delle due squadre (${report.schedule.home_name} in casa e ${report.schedule.away_name} in trasferta).
 Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
@@ -1178,54 +1292,79 @@ Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
       applyTeam(report.awayTeamStat, teamData.awayTeam);
     }
 
-    completedSteps++;
-    if (playerGroups.length > 0) await new Promise((r) => setTimeout(r, 3500));
+    if (playerBatches.length > 0) await new Promise((r) => setTimeout(r, 1200));
   }
 
-  // 2. Analisi Calciatori Multi-Tab (1 chiamata per calciatore)
-  for (let i = 0; i < playerGroups.length; i++) {
-    const group = playerGroups[i];
+  // Preparazione liste rose per aiutare Gemini nel matching esatto dei nomi
+  const homeRosterNames = report.homePlayers.map((p) => `${p.Nome} ${p.Cognome}`.trim()).join(", ");
+  const awayRosterNames = report.awayPlayers.map((p) => `${p.Nome} ${p.Cognome}`.trim()).join(", ");
+
+  // 2. Analisi Calciatori a Batch Multi-Immagine (6 calciatori per chiamata API)
+  for (let bIdx = 0; bIdx < playerBatches.length; bIdx++) {
+    const batch = playerBatches[bIdx];
     completedSteps++;
 
+    const firstPlayerNum = bIdx * BATCH_SIZE + 1;
+    const lastPlayerNum = Math.min((bIdx + 1) * BATCH_SIZE, playerGroups.length);
+
     onProgress?.({
-      phase: `Analisi Calciatori con Gemini Vision AI (${completedSteps}/${totalSteps})`,
+      phase: `Analisi Batch Calciatori con Gemini Vision AI (${completedSteps}/${totalSteps})`,
       current: completedSteps,
       total: totalSteps,
-      detail: `Elaborazione ${group.length} sub-tab per il calciatore ${i + 1}...`,
+      detail: `Blocco ${bIdx + 1}/${playerBatches.length}: calciatori ${firstPlayerNum}-${lastPlayerNum} su ${playerGroups.length} attivi...`,
     });
 
-    const pB64 = group.map((f) => imageToBase64Jpeg(f.img));
+    const batchImagesB64 = batch.map((group) => buildCompositePlayerBase64(group));
     const prompt = `Sei un assistente per l'acquisizione referti di EA Sports FC 25.
-Queste immagini mostrano le prestazioni di un singolo calciatore (nei vari tab Riepilogo, Tiri, Passaggi, Dribbling, Difesa, Portiere).
-Squadra di Casa: ${report.schedule.home_name} (${report.schedule.home})
-Squadra Trasferta: ${report.schedule.away_name} (${report.schedule.away})
+Ricevi ${batchImagesB64.length} immagini: ogni immagine mostra la scheda prestazioni di un calciatore (nella parte alta il Riepilogo con nome, squadra, voto, minuti giocati e statistiche principali; nella parte bassa gli eventuali sub-tab Tiri, Passaggi, Possesso, Difesa, Portiere).
 
-Estrai e restituisci ESCLUSIVAMENTE un JSON con i campi statistici del calciatore:
+Squadra di Casa (${report.schedule.home_name} - ${report.schedule.home}): [${homeRosterNames}]
+Squadra Trasferta (${report.schedule.away_name} - ${report.schedule.away}): [${awayRosterNames}]
+
+Per ciascuna delle ${batchImagesB64.length} immagini, estrai i dati del calciatore selezionato (se in un'immagine compare solo la percentuale, es. "% precisione passaggi 90" su "Passaggi 20", calcola il valore riuscito = Math.round(20 * 0.90) = 18).
+Restituisci ESCLUSIVAMENTE un JSON con un array "players":
 {
-  "teamSide": "home" | "away",
-  "playerName": string,
-  "voto": number,
-  "minuti": number,
-  "gol": number,
-  "asst": number,
-  "tiri_si": number,
-  "tiri_tot": number,
-  "pass_si": number,
-  "pass_tot": number,
-  "ctrs_si": number,
-  "ctrs_tot": number,
-  "drib_si": number,
-  "drib_tot": number,
-  "falli": number,
-  "para": number,
-  "gsub": number,
-  "gialli": number,
-  "rossi": number,
-  "fgioco": number
+  "players": [
+    {
+      "teamSide": "home" | "away",
+      "playerName": string,
+      "voto": number,
+      "minuti": number,
+      "gol": number,
+      "asst": number,
+      "tiri_si": number,
+      "tiri_tot": number,
+      "pass_si": number,
+      "pass_tot": number,
+      "ctrs_si": number,
+      "ctrs_tot": number,
+      "drib_si": number,
+      "drib_tot": number,
+      "falli": number,
+      "para": number,
+      "gsub": number,
+      "gialli": number,
+      "rossi": number,
+      "fgioco": number,
+      "poss_vinti": number,
+      "palle_perse": number,
+      "dist_tot": number,
+      "dist_scatto": number
+    }
+  ]
 }`;
 
-    const pData = await callGeminiVisionApi(prompt, pB64, apiKey);
-    if (pData && pData.playerName) {
+    const batchResult = await callGeminiVisionApi(prompt, batchImagesB64, apiKey);
+    const extractedList: any[] = Array.isArray(batchResult)
+      ? batchResult
+      : Array.isArray(batchResult?.players)
+      ? batchResult.players
+      : batchResult?.playerName
+      ? [batchResult]
+      : [];
+
+    for (const pData of extractedList) {
+      if (!pData || !pData.playerName) continue;
       const candidates = pData.teamSide === "away" ? report.awayPlayers : report.homePlayers;
       let matched = matchPlayerToRoster(pData.playerName, candidates);
       if (!matched) {
@@ -1254,11 +1393,15 @@ Estrai e restituisci ESCLUSIVAMENTE un JSON con i campi statistici del calciator
         if (typeof pData.gialli === "number") matched.GIALLI = pData.gialli;
         if (typeof pData.rossi === "number") matched.ROSSI = pData.rossi;
         if (typeof pData.fgioco === "number") matched.FGIOCO = pData.fgioco;
+        if (typeof pData.poss_vinti === "number") matched.POSS_VINTI = pData.poss_vinti;
+        if (typeof pData.palle_perse === "number") matched.PALLE_PERSE = pData.palle_perse;
+        if (typeof pData.dist_tot === "number") matched.DIST_TOT = pData.dist_tot;
+        if (typeof pData.dist_scatto === "number") matched.DIST_SCATTO = pData.dist_scatto;
       }
     }
 
-    if (i < playerGroups.length - 1) {
-      await new Promise((r) => setTimeout(r, 3500));
+    if (bIdx < playerBatches.length - 1) {
+      await new Promise((r) => setTimeout(r, 1200));
     }
   }
 
@@ -1297,7 +1440,7 @@ Estrai e restituisci ESCLUSIVAMENTE un JSON con i campi statistici del calciator
 
   return {
     report,
-    summaryText: `Elaborazione completata con successo tramite Gemini Vision AI! Rilevate ${activeFrames.length} schermate utili (${skippedBenchFrames} panchinari N/D scartati in automatico). Risultato: ${report.schedule.home} ${report.homeTeamStat.GOL} - ${report.awayTeamStat.GOL} ${report.schedule.away} (${homeActiveCount} calciatori casa, ${awayActiveCount} calciatori trasferta).`,
+    summaryText: `Elaborazione completata con successo tramite Gemini Vision AI (${totalSteps} chiamate Batch)! Rilevati ${playerGroups.length} calciatori attivi da ${activeFrames.length} schermate utili (${skippedBenchFrames} panchinari N/D scartati). Risultato: ${report.schedule.home} ${report.homeTeamStat.GOL} - ${report.awayTeamStat.GOL} ${report.schedule.away} (${homeActiveCount} casa, ${awayActiveCount} trasferta).`,
   };
 }
 
@@ -1321,32 +1464,37 @@ export async function processMatchScreenshots(
   workCanvas.height = 1080;
   const ctx = workCanvas.getContext("2d", { willReadFrequently: true })!;
 
-  // FASE 1: Scansione geometrica ultra-rapida (< 2ms a immagine) per classificare e scartare i sub-tab N/D
+  // FASE 1: Scansione geometrica parallela a blocchi di 16 immagini per decodifica ultra-rapida (~3s su 422 file)
   const activeFrames: AnalyzedFrame[] = [];
   let skippedBenchFrames = 0;
+  const CHUNK_SIZE = 16;
 
-  for (let i = 0; i < sortedFiles.length; i++) {
-    const file = sortedFiles[i];
-    if (i % 15 === 0 || i === sortedFiles.length - 1) {
-      onProgress?.({
-        phase: "Classificazione geometrica schermate & filtro panchinari N/D",
-        current: i + 1,
-        total: sortedFiles.length,
-        detail: `${file.name} (${skippedBenchFrames} sub-tab N/D ignorati)`,
-      });
-      await new Promise((r) => setTimeout(r, 0));
-    }
+  for (let i = 0; i < sortedFiles.length; i += CHUNK_SIZE) {
+    const chunk = sortedFiles.slice(i, i + CHUNK_SIZE);
+    onProgress?.({
+      phase: "Classificazione geometrica schermate & filtro panchinari N/D",
+      current: Math.min(i + chunk.length, sortedFiles.length),
+      total: sortedFiles.length,
+      detail: `Scansione parallela ${Math.min(i + chunk.length, sortedFiles.length)}/${sortedFiles.length} (${skippedBenchFrames} sub-tab N/D ignorati)`,
+    });
+    await new Promise((r) => setTimeout(r, 0));
 
-    try {
-      const img = await loadImageFromFile(file);
-      const info = inspectFrameGeometry(img, ctx);
+    const loadedImages = await Promise.all(
+      chunk.map((file) =>
+        loadImageFromFile(file)
+          .then((img) => ({ file, img }))
+          .catch(() => null)
+      )
+    );
+
+    for (const item of loadedImages) {
+      if (!item) continue;
+      const info = inspectFrameGeometry(item.img, ctx);
       if (info.kind === "PLAYER_PERFORMANCE" && info.isUnusedBench) {
         skippedBenchFrames++;
         continue;
       }
-      activeFrames.push({ file, img, ...info });
-    } catch {
-      // Ignora file danneggiati
+      activeFrames.push({ file: item.file, img: item.img, ...info });
     }
   }
 
