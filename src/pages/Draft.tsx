@@ -1896,79 +1896,113 @@ const Draft = () => {
                   {/* Selection Box & Confirm Button */}
                   <div className="p-3 rounded-xl border border-border/80 bg-muted/30 space-y-2.5">
                     {selectedPlayerItem ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs">
-                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                      <div className="space-y-2">
+                        {/* Header selezione con etichetta e pulsanti azione */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground text-[10px] uppercase font-semibold">
                             {selectedPlayerItem.type === "free_agent" ? "Svincolato Selezionato:" : "Rookie Selezionato:"}
                           </span>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] font-bold ${getRoleColor(
-                                selectedPlayerItem.player.Posiz
-                              )}`}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {activeUserTeamId && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleToggleWishlist(
+                                    selectedPlayerItem.id,
+                                    selectedPlayerItem.type,
+                                    selectedPlayerItem.player
+                                  )
+                                }
+                                className={`h-7 text-xs font-bold gap-1 ${
+                                  wishlistMap.has(Number(selectedPlayerItem.id))
+                                    ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-rose-600 hover:border-rose-500/40"
+                                    : "text-muted-foreground hover:text-emerald-500"
+                                }`}
+                                title={
+                                  wishlistMap.has(Number(selectedPlayerItem.id))
+                                    ? "Rimuovi dalla tua graduatoria di priorità"
+                                    : "Aggiungi alla tua graduatoria di priorità"
+                                }
+                              >
+                                <ListOrdered className="h-3 w-3" />
+                                <span>
+                                  {wishlistMap.has(Number(selectedPlayerItem.id))
+                                    ? `In Graduatoria (#${wishlistMap.get(Number(selectedPlayerItem.id))})`
+                                    : "Aggiungi a Graduatoria"}
+                                </span>
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedPlayerItem(null)}
+                              className="h-7 text-xs text-muted-foreground px-2"
                             >
-                              {selectedPlayerItem.player.Posiz}
-                            </Badge>
-                            <span className="font-extrabold text-sm flex items-center gap-1.5">
-                              {selectedPlayerItem.player.Nome} {selectedPlayerItem.player.Cognome}
-                              {selectedPlayerItem.type === "free_agent" && (
-                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold">
-                                  OVR {selectedPlayerItem.player.OVR}
-                                </Badge>
-                              )}
-                              {wishlistMap.has(Number(selectedPlayerItem.id)) && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[9px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-mono font-bold shrink-0"
-                                  title={`Posizione #${wishlistMap.get(Number(selectedPlayerItem.id))} in graduatoria`}
-                                >
-                                  #{wishlistMap.get(Number(selectedPlayerItem.id))}
-                                </Badge>
-                              )}
-                            </span>
+                              Cambia
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          {activeUserTeamId && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleToggleWishlist(
-                                  selectedPlayerItem.id,
-                                  selectedPlayerItem.type,
-                                  selectedPlayerItem.player
-                                )
-                              }
-                              className={`h-7 text-xs font-bold gap-1 ${
-                                wishlistMap.has(Number(selectedPlayerItem.id))
-                                  ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-rose-600 hover:border-rose-500/40"
-                                  : "text-muted-foreground hover:text-emerald-500"
-                              }`}
-                              title={
-                                wishlistMap.has(Number(selectedPlayerItem.id))
-                                  ? "Rimuovi dalla tua graduatoria di priorità"
-                                  : "Aggiungi alla tua graduatoria di priorità"
-                              }
-                            >
-                              <ListOrdered className="h-3 w-3" />
-                              <span>
-                                {wishlistMap.has(Number(selectedPlayerItem.id))
-                                  ? `In Graduatoria (#${wishlistMap.get(Number(selectedPlayerItem.id))})`
-                                  : "Aggiungi a Graduatoria"}
-                              </span>
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedPlayerItem(null)}
-                            className="h-7 text-xs text-muted-foreground"
+
+                        {/* Dati del giocatore selezionato */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-bold shrink-0 ${getRoleColor(
+                              selectedPlayerItem.player.Posiz
+                            )}`}
                           >
-                            Cambia
-                          </Button>
+                            {selectedPlayerItem.player.Posiz}
+                          </Badge>
+                          <span className="font-extrabold text-sm text-foreground">
+                            {selectedPlayerItem.player.Nome} {selectedPlayerItem.player.Cognome}
+                          </span>
+                          {selectedPlayerItem.type === "free_agent" && (
+                            <Badge
+                              variant="outline"
+                              className="font-mono font-black text-[11px] px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 whitespace-nowrap shrink-0"
+                            >
+                              OVR {selectedPlayerItem.player.OVR}
+                            </Badge>
+                          )}
+                          {selectedPlayerItem.type === "rookie" && (() => {
+                            const tokens = scoutingByRookie[Number(selectedPlayerItem.id)] ?? 0;
+                            const ovrInfo = getOvrDisplayByTokens(
+                              selectedPlayerItem.player.OVR,
+                              tokens,
+                              (selectedPlayerItem.player as any).Stelle
+                            );
+                            return (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Badge
+                                  variant="outline"
+                                  className="font-mono font-bold text-[11px] px-1.5 py-0.5 bg-muted/60 text-foreground border-border whitespace-nowrap shrink-0"
+                                >
+                                  {ovrInfo.isExact ? `OVR ${ovrInfo.label}` : ovrInfo.label}
+                                </Badge>
+                                {tokens > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[9px] font-mono px-1.5 py-0.5 shrink-0 whitespace-nowrap ${getTierBadgeStyle(
+                                      tokens
+                                    )}`}
+                                  >
+                                    🔭 ${tokens}G
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+                          })()}
+                          {wishlistMap.has(Number(selectedPlayerItem.id)) && (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] px-1.5 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-mono font-bold whitespace-nowrap shrink-0"
+                              title={`Posizione #${wishlistMap.get(Number(selectedPlayerItem.id))} in graduatoria`}
+                            >
+                              #{wishlistMap.get(Number(selectedPlayerItem.id))}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     ) : (
