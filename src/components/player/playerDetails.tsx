@@ -378,6 +378,13 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
   const [matchesLoading, setMatchesLoading] = useState<boolean>(true);
   const [statsScope, setStatsScope] = useState<"season" | "career">("season");
 
+  const { data: totwCount = 0 } = useQuery({
+    queryKey: ["player_totw_count", currentPlayer.ID],
+    queryFn: () => fetchPlayerTotwAppearances(currentPlayer.ID),
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(currentPlayer?.ID),
+  });
+
   const formatConfig = useMemo(() => getSeasonFormatConfig(xpSeason), [xpSeason]);
 
   // Caricamento rendimento e match stats dell'ultima stagione disputata
