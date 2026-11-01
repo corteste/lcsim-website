@@ -15,11 +15,14 @@ AS $$
 DECLARE
   v_user RECORD;
   v_clean_name TEXT;
+  v_target_team_id TEXT;
 BEGIN
   v_clean_name := TRIM(p_coach_name);
   IF v_clean_name IS NULL OR v_clean_name = '' THEN
     RETURN jsonb_build_object('success', false, 'error', 'Il nome dell''allenatore non può essere vuoto.');
   END IF;
+
+  v_target_team_id := UPPER(TRIM(p_team_id));
 
   -- Se p_acting_username è fornito, verifica permessi
   IF p_acting_username IS NOT NULL AND TRIM(p_acting_username) <> '' THEN
@@ -32,14 +35,14 @@ BEGIN
     END IF;
 
     -- L'utente deve essere admin oppure il manager assegnato alla squadra
-    IF NOT COALESCE(v_user.is_admin, false) AND COALESCE(v_user.team_id, '') <> p_team_id THEN
+    IF NOT COALESCE(v_user.is_admin, false) AND UPPER(COALESCE(v_user.team_id, '')) <> v_target_team_id THEN
       RETURN jsonb_build_object('success', false, 'error', 'Non hai i permessi per modificare l''allenatore di questa squadra.');
     END IF;
   END IF;
 
   UPDATE public.an_team
   SET "MANAGER" = v_clean_name
-  WHERE "TEAM_ID" = p_team_id;
+  WHERE UPPER(TRIM("TEAM_ID")) = v_target_team_id;
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'Squadra non trovata.');

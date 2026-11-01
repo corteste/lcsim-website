@@ -123,6 +123,7 @@ export function EditCoachModal({
       queryClient.invalidateQueries({ queryKey: ["all_teams_status"] });
       queryClient.invalidateQueries({ queryKey: ["team", teamId] });
       queryClient.invalidateQueries({ queryKey: ["all_teams_stadiums"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_teams_coach_list"] });
 
       onSuccess?.(fullFormattedCoach);
       onOpenChange(false);

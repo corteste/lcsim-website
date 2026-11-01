@@ -49,28 +49,20 @@ export async function updateTeamCoach(
       return { success: false, error: "Il nome dell'allenatore non può essere vuoto." };
     }
 
-    // Tentativo tramite RPC
+    // Chiamata RPC SECURITY DEFINER (rpc_update_team_coach)
     const { data: rpcData, error: rpcError } = await supabase.rpc("rpc_update_team_coach", {
-      p_team_id: teamId,
+      p_team_id: teamId.trim(),
       p_coach_name: trimmed,
-      p_acting_username: actingUsername || null,
+      p_acting_username: actingUsername?.trim() || null,
     });
 
-    if (!rpcError && rpcData) {
-      if (rpcData.success) {
-        return { success: true };
-      }
-      return { success: false, error: rpcData.error };
+    if (rpcError) {
+      console.error("Errore rpc_update_team_coach:", rpcError);
+      return { success: false, error: rpcError.message || "Errore durante l'aggiornamento dell'allenatore." };
     }
 
-    // Fallback: aggiornamento diretto sulla tabella an_team
-    const { error } = await supabase
-      .from(TEAM_TABLE)
-      .update({ MANAGER: trimmed })
-      .eq("TEAM_ID", teamId);
-
-    if (error) {
-      return { success: false, error: error.message };
+    if (rpcData && !rpcData.success) {
+      return { success: false, error: rpcData.error || "Impossibile aggiornare l'allenatore." };
     }
 
     return { success: true };
