@@ -159,20 +159,24 @@ const Draft = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [selectedPlayerItem, setSelectedPlayerItem] = useState<{ id: number; type: "rookie" | "free_agent"; player: Player } | null>(null);
-  const [inspectedFreeAgent, setInspectedFreeAgent] = useState<Player | null>(null);
+  const [inspectedPlayer, setInspectedPlayer] = useState<Player | null>(null);
   const [teamGoalkeepersMap, setTeamGoalkeepersMap] = useState<Record<string, number>>({});
 
-  // Apertura modale dettagli per calciatore svincolato (con caricamento lazy attributi completi se necessario)
-  const handleOpenFreeAgentDetails = useCallback(async (player: Player) => {
+  // Apertura modale dettagli completi per qualsiasi calciatore (decifrato/svincolato)
+  const handleOpenPlayerDetails = useCallback(async (player: Player) => {
     if (!player) return;
-    if (player.VELO === undefined && player.TUFP === undefined && player.ID) {
-      const { data } = await supabase.from("an_player").select("*").eq("ID", player.ID).single();
+    if ((player.VELO === undefined && player.TUFP === undefined) || !player.Squadra) {
+      const { data } = await supabase
+        .from("an_player")
+        .select("*")
+        .eq("ID", Number(player.ID))
+        .maybeSingle();
       if (data) {
-        setInspectedFreeAgent(data as Player);
+        setInspectedPlayer(data as Player);
         return;
       }
     }
-    setInspectedFreeAgent(player);
+    setInspectedPlayer(player);
   }, []);
 
   // Watchlist & Autopick State (Punti 6, 7 e 40)
@@ -749,6 +753,12 @@ const Draft = () => {
       return;
     }
 
+    if (draftedPlayerIds.has(Number(selectedPlayerItem.id))) {
+      toast.error("Questo giocatore è già stato scelto al Draft!");
+      setSelectedPlayerItem(null);
+      return;
+    }
+
     if (isGkDraftMandatory && selectedPlayerItem.player.Posiz !== "POR") {
       toast.error("Obbligo Portiere: hai un solo portiere a roster ed è la tua ultima scelta. Devi selezionare un portiere (POR).");
       return;
@@ -1011,12 +1021,7 @@ const Draft = () => {
               <div
                 className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
                 onClick={() => {
-                  if (isFa) {
-                    handleOpenFreeAgentDetails(dp as Player);
-                  } else {
-                    const fullRookie = rookies.find((r) => Number(r.ID) === Number(dp.ID)) || (dp as Player);
-                    setInspectedRookie(fullRookie);
-                  }
+                  handleOpenPlayerDetails(dp as Player);
                 }}
               >
                 <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full overflow-hidden bg-muted/50 border border-border/80 shrink-0 shadow-xs flex items-center justify-center">
@@ -1781,8 +1786,8 @@ const Draft = () => {
                                   title={item.type === "free_agent" ? "Apri scheda tecnica svincolato" : "Apri Report Scouting del rookie"}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (item.type === "free_agent") {
-                                      handleOpenFreeAgentDetails(item.player);
+                                    if (item.type === "free_agent" || draftedPlayerIds.has(Number(item.player.ID)) || item.player.Squadra) {
+                                      handleOpenPlayerDetails(item.player);
                                     } else {
                                       setInspectedRookie(item.player);
                                     }
@@ -2057,7 +2062,7 @@ const Draft = () => {
                           </div>
 
                           {isPicked && drafted ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity" onClick={() => handleOpenPlayerDetails(drafted as Player)}>
                               <div className="h-6 w-6 rounded-full overflow-hidden bg-muted/50 border border-border/80 shrink-0 shadow-xs flex items-center justify-center">
                                 <img
                                   src={getPlayerImage(Number(pick.player_id || pick.rookie_id || drafted.ID))}
@@ -2089,12 +2094,7 @@ const Draft = () => {
                               <span
                                 className="text-xs sm:text-sm font-bold text-foreground truncate cursor-pointer hover:underline"
                                 onClick={() => {
-                                  if (isFa) {
-                                    handleOpenFreeAgentDetails(drafted as Player);
-                                  } else {
-                                    const fullRookie = rookies.find((r) => Number(r.ID) === Number(drafted.ID)) || (drafted as Player);
-                                    setInspectedRookie(fullRookie);
-                                  }
+                                  handleOpenPlayerDetails(drafted as Player);
                                 }}
                               >
                                 {drafted.Nome} {drafted.Cognome}
@@ -2319,16 +2319,16 @@ const Draft = () => {
       />
 
       {/* MODAL DETTAGLIO COMPLETO CALCIATORE SVINCOLATO (Punto 40) */}
-      {inspectedFreeAgent &&
+      {inspectedPlayer &&
         createPortal(
           <div
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
-            onClick={() => setInspectedFreeAgent(null)}
+            onClick={() => setInspectedPlayer(null)}
           >
             <div onClick={(e) => e.stopPropagation()} className="w-full max-w-7xl flex items-center justify-center">
               <PlayerDetails
-                currentPlayer={inspectedFreeAgent}
-                onClose={() => setInspectedFreeAgent(null)}
+                currentPlayer={inspectedPlayer}
+                onClose={() => setInspectedPlayer(null)}
               />
             </div>
           </div>,
@@ -2493,20 +2493,39 @@ const Draft = () => {
                   <Button asChild variant="outline" size="sm">
                     <Link to="/mia-squadra/scouting">Apri in Centro Scouting</Link>
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setSelectedPlayerItem({
-                        id: Number(inspectedRookie.ID),
-                        type: "rookie",
-                        player: inspectedRookie,
-                      });
-                      setInspectedRookie(null);
-                    }}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                    Seleziona per il Draft
-                  </Button>
+                  {(draftedPlayerIds.has(Number(inspectedRookie.ID)) || inspectedRookie.Squadra) ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs px-2.5 py-1 font-bold">
+                        Già Draftato {inspectedRookie.Squadra ? `(${inspectedRookie.Squadra})` : ""}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const r = inspectedRookie;
+                          setInspectedRookie(null);
+                          handleOpenPlayerDetails(r);
+                        }}
+                        className="bg-primary text-xs font-semibold"
+                      >
+                        Visualizza Scheda Pubblica
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setSelectedPlayerItem({
+                          id: Number(inspectedRookie.ID),
+                          type: "rookie",
+                          player: inspectedRookie,
+                        });
+                        setInspectedRookie(null);
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      Seleziona per il Draft
+                    </Button>
+                  )}
                 </DialogFooter>
               </>
             );
