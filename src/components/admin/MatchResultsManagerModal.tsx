@@ -49,6 +49,7 @@ import {
 import { useSchedule } from "@/context/ScheduleContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
+import { getGeminiApiKey } from "@/services/aiJournalistService";
 
 interface MatchResultsManagerModalProps {
   open: boolean;
@@ -102,6 +103,13 @@ export function MatchResultsManagerModal({
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const filesInputRef = useRef<HTMLInputElement | null>(null);
   const csvInputRef = useRef<HTMLInputElement | null>(null);
+  const [hasGeminiKey, setHasGeminiKey] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (open) {
+      getGeminiApiKey().then((k) => setHasGeminiKey(Boolean(k && k.length > 5)));
+    }
+  }, [open]);
 
   // Carica stagioni disponibili all'apertura
   useEffect(() => {
@@ -643,9 +651,16 @@ export function MatchResultsManagerModal({
                       <Sparkles className="h-4 w-4 text-emerald-500" />
                       Acquisizione Automatica da Screenshot o File CSV
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      Supporta 32 o 422+ screenshot
-                    </span>
+                    {hasGeminiKey ? (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold font-mono flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shadow-2xs">
+                        <Sparkles className="h-3 w-3 text-emerald-500" />
+                        Gemini Vision AI Attivo (422 sub-tab)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        Supporta 32 o 422+ screenshot
+                      </span>
+                    )}
                   </div>
 
                   {/* Hidden File Inputs */}

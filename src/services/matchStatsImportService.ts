@@ -969,6 +969,339 @@ function applyPlayerRightPanelRow(
  * Elabora una cartella o selezione di screenshot (da 2 fino a 450+ immagini come PROVA OLD-VFC)
  * popolando il report completo di squadra e giocatori a costo zero.
  */
+
+// ============================================================================
+// GEMINI VISION MULTIMODAL EXTRACTION ENGINE
+// ============================================================================
+
+function imageToBase64Jpeg(img: HTMLImageElement, maxWidth = 1280, quality = 0.85): string {
+  const canvas = document.createElement("canvas");
+  let w = img.naturalWidth || img.width || 1920;
+  let h = img.naturalHeight || img.height || 1080;
+  if (w > maxWidth) {
+    h = Math.round((h * maxWidth) / w);
+    w = maxWidth;
+  }
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL("image/jpeg", quality);
+  return dataUrl.split(",")[1];
+}
+
+const VISION_MODELS = [
+  "gemini-3-flash-preview",
+  "gemini-3.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
+];
+
+async function callGeminiVisionApi(
+  prompt: string,
+  imagesBase64: string[],
+  apiKey: string
+): Promise<any | null> {
+  const parts: any[] = imagesBase64.map((b64) => ({
+    inlineData: {
+      mimeType: "image/jpeg",
+      data: b64,
+    },
+  }));
+  parts.push({ text: prompt });
+
+  for (const model of VISION_MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json",
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          try {
+            return JSON.parse(text);
+          } catch {
+            const cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+            return JSON.parse(cleaned);
+          }
+        }
+      } else {
+        console.warn(`Vision model ${model} status ${response.status}`);
+      }
+    } catch (err) {
+      console.warn(`Errore Vision (${model}):`, err);
+    }
+  }
+  return null;
+}
+
+export async function processMatchScreenshotsWithGemini(
+  activeFrames: AnalyzedFrame[],
+  report: AdminMatchFullReport,
+  apiKey: string,
+  skippedBenchFrames: number,
+  onProgress?: (p: ScreenshotProgress) => void
+): Promise<{ report: AdminMatchFullReport; summaryText: string }> {
+  const teamFrames = activeFrames.filter((f) => f.kind === "TEAM_SUMMARY");
+  const playerFrames = activeFrames.filter((f) => f.kind === "PLAYER_PERFORMANCE");
+
+  const playerGroups: AnalyzedFrame[][] = [];
+  let currentGroup: AnalyzedFrame[] = [];
+  let currentSign = "";
+
+  for (const f of playerFrames) {
+    if (!currentSign || f.playerSignHash === currentSign) {
+      currentGroup.push(f);
+      currentSign = f.playerSignHash;
+    } else {
+      if (currentGroup.length > 0) playerGroups.push(currentGroup);
+      currentGroup = [f];
+      currentSign = f.playerSignHash;
+    }
+  }
+  if (currentGroup.length > 0) playerGroups.push(currentGroup);
+
+  const totalSteps = (teamFrames.length > 0 ? 1 : 0) + playerGroups.length;
+  let completedSteps = 0;
+
+  // 1. Analisi Riepilogo Squadre (1 chiamata multi-immagine)
+  if (teamFrames.length > 0) {
+    onProgress?.({
+      phase: "Analisi Riepilogo Squadre con Gemini Vision AI",
+      current: 1,
+      total: totalSteps,
+      detail: `Elaborazione di ${teamFrames.length} schermate riepilogative squadra...`,
+    });
+
+    const teamB64 = teamFrames.map((f) => imageToBase64Jpeg(f.img));
+    const prompt = `Sei un assistente per l'acquisizione referti di EA Sports FC 25.
+Dalle immagini del riepilogo partita fornite, estrai i dati delle due squadre (${report.schedule.home_name} in casa e ${report.schedule.away_name} in trasferta).
+Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
+{
+  "score": {
+    "homeGol": number,
+    "awayGol": number,
+    "minutes": number
+  },
+  "homeTeam": {
+    "poss": number,
+    "tiri_tot": number,
+    "tiri_si": number,
+    "xG": number,
+    "pass_tot": number,
+    "pass_si": number,
+    "ctrs_tot": number,
+    "ctrs_si": number,
+    "drib_tot": number,
+    "drib_si": number,
+    "falli": number,
+    "para": number,
+    "cangl": number,
+    "gialli": number,
+    "rossi": number,
+    "fgioco": number,
+    "temporec": number
+  },
+  "awayTeam": {
+    "poss": number,
+    "tiri_tot": number,
+    "tiri_si": number,
+    "xG": number,
+    "pass_tot": number,
+    "pass_si": number,
+    "ctrs_tot": number,
+    "ctrs_si": number,
+    "drib_tot": number,
+    "drib_si": number,
+    "falli": number,
+    "para": number,
+    "cangl": number,
+    "gialli": number,
+    "rossi": number,
+    "fgioco": number,
+    "temporec": number
+  }
+}`;
+
+    const teamData = await callGeminiVisionApi(prompt, teamB64, apiKey);
+    if (teamData) {
+      if (teamData.score) {
+        if (typeof teamData.score.homeGol === "number") {
+          report.homeTeamStat.GOL = teamData.score.homeGol;
+          report.awayTeamStat.GSUB = teamData.score.homeGol;
+          report.schedule.home_gol = teamData.score.homeGol;
+        }
+        if (typeof teamData.score.awayGol === "number") {
+          report.awayTeamStat.GOL = teamData.score.awayGol;
+          report.homeTeamStat.GSUB = teamData.score.awayGol;
+          report.schedule.away_gol = teamData.score.awayGol;
+        }
+        if (typeof teamData.score.minutes === "number" && teamData.score.minutes >= 80) {
+          report.homeTeamStat.MINUTI = teamData.score.minutes;
+          report.awayTeamStat.MINUTI = teamData.score.minutes;
+        }
+      }
+
+      const applyTeam = (target: AdminTeamStatDraft, src: any) => {
+        if (!src) return;
+        if (typeof src.poss === "number") target.POSS = src.poss > 1 ? Number((src.poss / 100).toFixed(2)) : src.poss;
+        if (typeof src.tiri_tot === "number") target.TIRI_TOT = src.tiri_tot;
+        if (typeof src.tiri_si === "number") target.TIRI_SI = src.tiri_si;
+        if (typeof src.xG === "number") target.xG = src.xG;
+        if (typeof src.pass_tot === "number") target.PASS_TOT = src.pass_tot;
+        if (typeof src.pass_si === "number") target.PASS_SI = src.pass_si;
+        if (typeof src.ctrs_tot === "number") target.CTRS_TOT = src.ctrs_tot;
+        if (typeof src.ctrs_si === "number") target.CTRS_SI = src.ctrs_si;
+        if (typeof src.drib_tot === "number") target.DRIB_TOT = src.drib_tot;
+        if (typeof src.drib_si === "number") target.DRIB_SI = src.drib_si;
+        if (typeof src.falli === "number") target.FALLI = src.falli;
+        if (typeof src.para === "number") target.PARA = src.para;
+        if (typeof src.cangl === "number") target.CANGL = src.cangl;
+        if (typeof src.gialli === "number") target.GIALLI = src.gialli;
+        if (typeof src.rossi === "number") target.ROSSI = src.rossi;
+        if (typeof src.fgioco === "number") target.FGIOCO = src.fgioco;
+        if (typeof src.temporec === "number") target.TEMPOREC = src.temporec;
+      };
+
+      applyTeam(report.homeTeamStat, teamData.homeTeam);
+      applyTeam(report.awayTeamStat, teamData.awayTeam);
+    }
+
+    completedSteps++;
+    if (playerGroups.length > 0) await new Promise((r) => setTimeout(r, 3500));
+  }
+
+  // 2. Analisi Calciatori Multi-Tab (1 chiamata per calciatore)
+  for (let i = 0; i < playerGroups.length; i++) {
+    const group = playerGroups[i];
+    completedSteps++;
+
+    onProgress?.({
+      phase: `Analisi Calciatori con Gemini Vision AI (${completedSteps}/${totalSteps})`,
+      current: completedSteps,
+      total: totalSteps,
+      detail: `Elaborazione ${group.length} sub-tab per il calciatore ${i + 1}...`,
+    });
+
+    const pB64 = group.map((f) => imageToBase64Jpeg(f.img));
+    const prompt = `Sei un assistente per l'acquisizione referti di EA Sports FC 25.
+Queste immagini mostrano le prestazioni di un singolo calciatore (nei vari tab Riepilogo, Tiri, Passaggi, Dribbling, Difesa, Portiere).
+Squadra di Casa: ${report.schedule.home_name} (${report.schedule.home})
+Squadra Trasferta: ${report.schedule.away_name} (${report.schedule.away})
+
+Estrai e restituisci ESCLUSIVAMENTE un JSON con i campi statistici del calciatore:
+{
+  "teamSide": "home" | "away",
+  "playerName": string,
+  "voto": number,
+  "minuti": number,
+  "gol": number,
+  "asst": number,
+  "tiri_si": number,
+  "tiri_tot": number,
+  "pass_si": number,
+  "pass_tot": number,
+  "ctrs_si": number,
+  "ctrs_tot": number,
+  "drib_si": number,
+  "drib_tot": number,
+  "falli": number,
+  "para": number,
+  "gsub": number,
+  "gialli": number,
+  "rossi": number,
+  "fgioco": number
+}`;
+
+    const pData = await callGeminiVisionApi(prompt, pB64, apiKey);
+    if (pData && pData.playerName) {
+      const candidates = pData.teamSide === "away" ? report.awayPlayers : report.homePlayers;
+      let matched = matchPlayerToRoster(pData.playerName, candidates);
+      if (!matched) {
+        const otherCandidates = pData.teamSide === "away" ? report.homePlayers : report.awayPlayers;
+        matched = matchPlayerToRoster(pData.playerName, otherCandidates);
+      }
+
+      if (matched) {
+        if (typeof pData.voto === "number" && pData.voto > 0) matched.VOTO = pData.voto;
+        if (typeof pData.minuti === "number" && pData.minuti > 0) matched.MINUTI = pData.minuti;
+        else if (matched.VOTO > 0 && !matched.MINUTI) matched.MINUTI = 90;
+
+        if (typeof pData.gol === "number") matched.GOL = pData.gol;
+        if (typeof pData.asst === "number") matched.ASST = pData.asst;
+        if (typeof pData.tiri_si === "number") matched.TIRI_IN = pData.tiri_si;
+        if (typeof pData.tiri_tot === "number") matched.TIRI_TOT = pData.tiri_tot;
+        if (typeof pData.pass_si === "number") matched.PASS_SI = pData.pass_si;
+        if (typeof pData.pass_tot === "number") matched.PASS_TOT = pData.pass_tot;
+        if (typeof pData.ctrs_si === "number") matched.CTRS_SI = pData.ctrs_si;
+        if (typeof pData.ctrs_tot === "number") matched.CTRS_TOT = pData.ctrs_tot;
+        if (typeof pData.drib_si === "number") matched.DRIB_SI = pData.drib_si;
+        if (typeof pData.drib_tot === "number") matched.DRIB_TOT = pData.drib_tot;
+        if (typeof pData.falli === "number") matched.FALLI = pData.falli;
+        if (typeof pData.para === "number") matched.PARA = pData.para;
+        if (typeof pData.gsub === "number") matched.GSUB = pData.gsub;
+        if (typeof pData.gialli === "number") matched.GIALLI = pData.gialli;
+        if (typeof pData.rossi === "number") matched.ROSSI = pData.rossi;
+        if (typeof pData.fgioco === "number") matched.FGIOCO = pData.fgioco;
+      }
+    }
+
+    if (i < playerGroups.length - 1) {
+      await new Promise((r) => setTimeout(r, 3500));
+    }
+  }
+
+  // 3. Bilanciamento e totali finali
+  const finalizeStats = (players: AdminPlayerStatDraft[], teamStat: AdminTeamStatDraft, oppGol: number) => {
+    for (const p of players) {
+      if (p.Posiz === "POR" && p.MINUTI > 0) {
+        if (p.GSUB === 0 && oppGol > 0) p.GSUB = oppGol;
+        if (p.PARA === 0 && teamStat.PARA > 0) p.PARA = teamStat.PARA;
+      }
+    }
+    const sum = (fn: (p: AdminPlayerStatDraft) => number) =>
+      players.filter((p) => p.MINUTI > 0).reduce((acc, p) => acc + fn(p), 0);
+
+    if (!teamStat.GOL) teamStat.GOL = sum((p) => p.GOL);
+    if (!teamStat.ASST) teamStat.ASST = sum((p) => p.ASST);
+
+    const active = players.filter((p) => p.MINUTI > 0 && p.VOTO > 0);
+    if (active.length > 0) {
+      teamStat.VOTO = Number((active.reduce((a, p) => a + p.VOTO, 0) / active.length).toFixed(2));
+    }
+  };
+
+  finalizeStats(report.homePlayers, report.homeTeamStat, report.awayTeamStat.GOL);
+  finalizeStats(report.awayPlayers, report.awayTeamStat, report.homeTeamStat.GOL);
+
+  const allActive = [...report.homePlayers, ...report.awayPlayers].filter((p) => p.MINUTI > 0);
+  if (allActive.length > 0) {
+    allActive.forEach((p) => (p.MOTM = false));
+    const top = allActive.reduce((best, cur) => (cur.VOTO > best.VOTO ? cur : best), allActive[0]);
+    if (top && top.VOTO > 0) top.MOTM = true;
+  }
+
+  const homeActiveCount = report.homePlayers.filter((p) => p.MINUTI > 0).length;
+  const awayActiveCount = report.awayPlayers.filter((p) => p.MINUTI > 0).length;
+
+  return {
+    report,
+    summaryText: `Elaborazione completata con successo tramite Gemini Vision AI! Rilevate ${activeFrames.length} schermate utili (${skippedBenchFrames} panchinari N/D scartati in automatico). Risultato: ${report.schedule.home} ${report.homeTeamStat.GOL} - ${report.awayTeamStat.GOL} ${report.schedule.away} (${homeActiveCount} calciatori casa, ${awayActiveCount} calciatori trasferta).`,
+  };
+}
+
+
 export async function processMatchScreenshots(
   files: File[],
   baseReport: AdminMatchFullReport,
@@ -1017,7 +1350,23 @@ export async function processMatchScreenshots(
     }
   }
 
-  // FASE 2: Inizializzazione OCR locale (Tesseract.js Web Worker)
+  // FASE 2: Scelta Motore (Gemini Vision AI con fallback automatico su Tesseract locale)
+  const geminiApiKey = await getGeminiApiKey();
+  if (geminiApiKey && geminiApiKey.trim().length > 5) {
+    try {
+      return await processMatchScreenshotsWithGemini(
+        activeFrames,
+        report,
+        geminiApiKey.trim(),
+        skippedBenchFrames,
+        onProgress
+      );
+    } catch (geminiErr: any) {
+      console.warn("Estrazione con Gemini Vision fallita, fallback su Tesseract.js:", geminiErr);
+    }
+  }
+
+  // Fallback: Inizializzazione OCR locale (Tesseract.js Web Worker)
   onProgress?.({
     phase: "Inizializzazione motore OCR locale per estrazione statistiche",
     current: 0,

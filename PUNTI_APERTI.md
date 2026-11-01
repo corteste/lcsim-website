@@ -7,7 +7,7 @@ Questo documento tiene traccia di tutte le attività, requisiti aperti, logiche 
 ---
 
 ## 📌 1. Logica di Caricamento & Importazione Risultati (CSV & Screenshot Admin)
-- **Stato**: 🟢 Completato & Integrato in Amministrazione (Screenshot OCR 32/422+ file + CSV Import/Export + Sblocco Programmato +45 min)
+- **Stato**: 🟢 Completato & Integrato in Amministrazione (Gemini Vision AI Multimodale + Tesseract.js fallback 32/422+ file + CSV Import/Export + Sblocco Programmato +45 min)
 - **Priorità**: Alta (Funzionalità chiave per la gestione della nuova stagione)
 - **File di riferimento**: `src/services/matchStatsImportService.ts`, `src/components/admin/MatchResultsManagerModal.tsx`, `src/pages/admin/AdminAutomazioni.tsx`, `supabase/migrations/20261030_match_stats_and_unlock.sql`
 - **Tabelle coinvolte**: `an_schedule`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`, `an_team`, `an_player`, `an_standings`
