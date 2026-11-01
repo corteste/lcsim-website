@@ -340,7 +340,7 @@ export const FoglioCommento: React.FC = () => {
               </Badge>
             </div>
             <h1 className="text-3xl md:text-4xl font-black tracking-tight flex items-center gap-3">
-              Foglio Commento Partita
+              Probabili Formazioni
             </h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
               Schieramenti ufficiali degli 11 titolari e panchina a disposizione per la telecronaca, analisi e diretta streaming.

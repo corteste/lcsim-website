@@ -94,13 +94,6 @@ const Navbar = () => {
       icon: Calendar,
       colorClass: "text-blue-500",
     },
-    {
-      path: "/campionato/foglio-commento",
-      label: "Foglio Commento",
-      description: "Schieramenti ufficiali e formazioni della giornata",
-      icon: ClipboardList,
-      colorClass: "text-purple-500",
-    },
   ];
 
   // 2. SEZIONE SQUADRE
@@ -187,6 +180,13 @@ const Navbar = () => {
       icon: Megaphone,
       colorClass: "text-rose-500",
     },
+    {
+      path: "/probabili-formazioni",
+      label: "Probabili Formazioni",
+      description: "Schieramenti ufficiali e formazioni della giornata",
+      icon: ClipboardList,
+      colorClass: "text-purple-500",
+    },
   ];
 
   // 6. SEZIONE ARCHIVIO
@@ -249,7 +249,7 @@ const Navbar = () => {
   // Verifica stati attivi
   const isCampionatoActive =
     campionatoItems.some((i) => location.pathname === i.path) ||
-    location.pathname.startsWith("/campionato");
+    (location.pathname.startsWith("/campionato") && !location.pathname.includes("foglio-commento"));
   const isSquadreActive =
     squadreItems.some((i) => location.pathname === i.path) ||
     location.pathname.startsWith("/squadre") ||
@@ -264,8 +264,12 @@ const Navbar = () => {
     location.pathname.startsWith("/draft") ||
     location.pathname.startsWith("/mercato");
   const isMediaActive =
+    mediaItems.some((i) => location.pathname === i.path) ||
     location.pathname.startsWith("/sala-stampa") ||
-    location.pathname.startsWith("/comunicati");
+    location.pathname.startsWith("/comunicati") ||
+    location.pathname.startsWith("/media") ||
+    location.pathname === "/probabili-formazioni" ||
+    location.pathname.includes("foglio-commento");
   const isArchivioActive =
     location.pathname === "/archivio/giocatori" ||
     (location.pathname.startsWith("/archivio") && location.pathname !== "/archivio/hall-of-fame");
