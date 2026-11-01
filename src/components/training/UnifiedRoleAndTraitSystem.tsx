@@ -1301,13 +1301,8 @@ export default function UnifiedRoleAndTraitSystem({
                       : "bg-card hover:bg-muted/40 border-border/70"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-xs text-foreground">
-                      {sr.name} +
-                    </span>
-                    <Badge variant="outline" className="text-[10px] font-mono">
-                      ID {sr.id}
-                    </Badge>
+                  <div className="font-extrabold text-xs text-foreground">
+                    {sr.name} +
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     {sr.description}
