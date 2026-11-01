@@ -21,6 +21,8 @@ import {
   RefreshCw,
   ExternalLink,
   Lock,
+  Target,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -37,6 +39,7 @@ import { NewTradeModal } from "@/components/trades/NewTradeModal";
 import { TradeDetailsModal } from "@/components/trades/TradeDetailsModal";
 import { Link, useSearchParams } from "react-router-dom";
 import { TeamMarketNeedsCard } from "@/components/trades/TeamMarketNeedsCard";
+import { LeagueMarketNeedsBoard } from "@/components/trades/LeagueMarketNeedsBoard";
 import { toast } from "sonner";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
@@ -422,18 +425,7 @@ export default function Trattative() {
           </div>
         )}
 
-        {/* BISOGNI DI MERCATO DEL CLUB */}
-        {user && currentTeam && (
-          <div className="mb-8">
-            <TeamMarketNeedsCard
-              teamId={currentTeam}
-              teamName={effectiveTeamFullName}
-              userName={user?.name || user?.username}
-            />
-          </div>
-        )}
-
-        {/* TABS TRATTATIVE */}
+        {/* TABS PRINCIPALI: PROPOSTE SCAMBI vs BISOGNI DI MERCATO */}
         {!user ? (
           <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/50">
             <Shield className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
@@ -450,8 +442,30 @@ export default function Trattative() {
             </Button>
           </div>
         ) : (
-          <Tabs defaultValue={isAdmin ? "admin_approval" : "received"} className="space-y-6">
-            <TabsList className="bg-muted p-1 rounded-xl h-auto flex flex-wrap gap-1">
+          <Tabs defaultValue="trades" className="space-y-6">
+            <div className="flex items-center justify-between border-b border-border/70 pb-3 flex-wrap gap-4">
+              <TabsList className="bg-muted/70 p-1 rounded-2xl h-auto grid grid-cols-2 max-w-sm sm:max-w-md w-full border border-border/80 shadow-xs">
+                <TabsTrigger
+                  value="trades"
+                  className="py-2.5 px-3 sm:px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+                >
+                  <ArrowLeftRight className="h-4 w-4 text-blue-500" />
+                  <span>Proposte di Scambio</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="needs"
+                  className="py-2.5 px-3 sm:px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+                >
+                  <Target className="h-4 w-4 text-emerald-500" />
+                  <span>Bisogni di Mercato</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* TAB 1: PROPOSTE DI SCAMBIO */}
+            <TabsContent value="trades" className="space-y-6 focus-visible:outline-none mt-0">
+              <Tabs defaultValue={isAdmin ? "admin_approval" : "received"} className="space-y-6">
+                <TabsList className="bg-muted p-1 rounded-xl h-auto flex flex-wrap gap-1">
               {isAdmin && (
                 <TabsTrigger
                   value="admin_approval"
@@ -630,7 +644,33 @@ export default function Trattative() {
               )}
             </TabsContent>
           </Tabs>
-        )}
+        </TabsContent>
+
+        {/* TAB 2: BISOGNI DI MERCATO */}
+        <TabsContent value="needs" className="space-y-8 focus-visible:outline-none mt-0">
+          {currentTeam && (
+            <TeamMarketNeedsCard
+              teamId={currentTeam}
+              teamName={effectiveTeamFullName}
+              userName={user?.name || user?.username}
+            />
+          )}
+
+          <div className="pt-2">
+            <div className="mb-4">
+              <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
+                <Layers className="h-5 w-5 text-emerald-500" />
+                Bacheca Bisogni di Serie A
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Consulta in tempo reale i ruoli cercati dalle altre società per individuare opportunità di scambio.
+              </p>
+            </div>
+            <LeagueMarketNeedsBoard />
+          </div>
+        </TabsContent>
+      </Tabs>
+    )}
       </main>
 
       {/* NEW TRADE MODAL */}
