@@ -1079,7 +1079,7 @@ Funzioni RPC sollevano eccezione in caso di chiamata di un 4° portiere.
 ---
 
 ## 📌 44. Distinzione tra Manager e Allenatore (Impostabile da Admin o Manager)
-- **Stato**: 🟡 In attesa di definizione & implementazione
+- **Stato**: 🟢 Completato & Testato (Distinzione Manager/Presidente vs Allenatore, colonna an_team.MANAGER, scelta titolo Sig./Mister e cognome, modale in menu 'La mia squadra', gestione 12 club in Admin, pulizia prefissi doppi in Calendario e Schede Squadra)
 - **Priorità**: Media-Alta (Coerenza del ruolo manageriale con referti e statistiche di squadra)
 - **Moduli coinvolti**: src/pages/Squadre.tsx, src/pages/admin/AdminAutomazioni.tsx (o gestione squadre Admin), src/pages/Calendario.tsx
 - **Tabelle coinvolte**: an_team, "AS_TEAM_STAT" (campo ALLENATORE)

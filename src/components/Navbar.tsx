@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import LoginDialog from "@/components/LoginDialog";
 import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal";
+import { EditCoachModal } from "@/components/team/EditCoachModal";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { GlobalAnnouncementBanner } from "@/components/GlobalAnnouncementBanner";
 import { FormationCountdown } from "@/components/FormationCountdown";
@@ -68,6 +69,7 @@ const Navbar = () => {
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const { user, logout, openLogin, isAdmin, effectiveTeam } = useAuth();
 
   const handleLogout = () => {
@@ -586,6 +588,19 @@ const Navbar = () => {
 
                   <DropdownMenuSeparator className="my-1" />
 
+                  {/* Tasto Modifica Allenatore */}
+                  {user?.team && (
+                    <DropdownMenuItem
+                      onClick={() => setIsEditCoachOpen(true)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-bold text-foreground hover:bg-muted/60 focus:bg-muted/60 cursor-pointer"
+                    >
+                      <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <UserCheck className="h-4 w-4" />
+                      </div>
+                      <span>Modifica Allenatore</span>
+                    </DropdownMenuItem>
+                  )}
+
                   {/* Tasto Cambia Password */}
                   <DropdownMenuItem
                     onClick={() => setIsChangePasswordOpen(true)}
@@ -826,6 +841,19 @@ const Navbar = () => {
                             <LogOut className="h-3.5 w-3.5 mr-1" /> Esci
                           </Button>
                         </div>
+                        {user?.team && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setIsOpen(false);
+                              setIsEditCoachOpen(true);
+                            }}
+                            className="w-full h-8 text-xs font-bold border-border/80 gap-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                          >
+                            <UserCheck className="h-3.5 w-3.5" /> Modifica Allenatore
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -863,6 +891,14 @@ const Navbar = () => {
         open={isChangePasswordOpen}
         onOpenChange={setIsChangePasswordOpen}
       />
+      {user?.team && (
+        <EditCoachModal
+          open={isEditCoachOpen}
+          onOpenChange={setIsEditCoachOpen}
+          teamId={user.team}
+          teamName={user.teamFullName}
+        />
+      )}
     </nav>
   );
 };

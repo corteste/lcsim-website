@@ -1,3 +1,12 @@
+function formatCoachDisplay(name?: string | null): string {
+  if (!name) return "";
+  const trimmed = name.trim();
+  if (/^(mister|sig\.?|mr\.?)\b/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `Mister ${trimmed}`;
+}
+
 import { useState, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import {
@@ -479,7 +488,7 @@ const Calendario = () => {
                             </span>
                             {match.home_allenatore && (
                               <span className="text-[11px] text-muted-foreground block truncate">
-                                Mister {match.home_allenatore}
+                                {formatCoachDisplay(match.home_allenatore)}
                               </span>
                             )}
                           </div>
@@ -555,7 +564,7 @@ const Calendario = () => {
                             </span>
                             {match.away_allenatore && (
                               <span className="text-[11px] text-muted-foreground block truncate">
-                                Mister {match.away_allenatore}
+                                {formatCoachDisplay(match.away_allenatore)}
                               </span>
                             )}
                           </div>
@@ -673,7 +682,7 @@ const Calendario = () => {
                       </span>
                       {selected.match.home_allenatore && (
                         <span className="text-[11px] text-muted-foreground block truncate">
-                          Mister {selected.match.home_allenatore}
+                          {formatCoachDisplay(selected.match.home_allenatore)}
                         </span>
                       )}
                     </div>
@@ -724,7 +733,7 @@ const Calendario = () => {
                       </span>
                       {selected.match.away_allenatore && (
                         <span className="text-[11px] text-muted-foreground block truncate">
-                          Mister {selected.match.away_allenatore}
+                          {formatCoachDisplay(selected.match.away_allenatore)}
                         </span>
                       )}
                     </div>
@@ -993,7 +1002,7 @@ const Calendario = () => {
                             </div>
                             {activeTeamManager && (
                               <span className="text-xs text-muted-foreground font-medium">
-                                Allenatore: <strong>{activeTeamManager}</strong>
+                                Allenatore: <strong>{formatCoachDisplay(activeTeamManager)}</strong>
                               </span>
                             )}
                           </div>

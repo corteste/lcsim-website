@@ -38,7 +38,9 @@ import { PerformanceDecayModal } from "@/components/admin/PerformanceDecayModal"
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCutsComplianceReport, executeOfficialCutsRpc } from "@/services/cutsService";
 import { generatePressQuestionsForMatchday, generateRandomMarketRumors } from "@/services/aiJournalistService";
-import { Newspaper, Mic2, Flame, Camera, Trophy, TrendingDown } from "lucide-react";
+import { Newspaper, Mic2, Flame, Camera, Trophy, TrendingDown, UserCheck, Pencil } from "lucide-react";
+import { EditCoachModal } from "@/components/team/EditCoachModal";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 interface AutomationStateItem {
   id: string;
@@ -54,6 +56,29 @@ export default function AdminAutomazioni() {
   // State timestamps
   const [stateMap, setStateMap] = useState<Record<string, AutomationStateItem>>({});
   const [isLoadingState, setIsLoadingState] = useState(true);
+
+  const [editingCoachTeam, setEditingCoachTeam] = useState<{
+    teamId: string;
+    name: string;
+    manager: string | null;
+  } | null>(null);
+
+  const { data: adminTeamsList = [], refetch: refetchAdminTeams } = useQuery({
+    queryKey: ["admin_teams_coach_list"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("rpc_get_all_teams_status");
+      return (data || []) as Array<{
+        team_id: string;
+        name: string;
+        name_abbr: string;
+        manager: string | null;
+        is_claimed: boolean;
+        claimed_by_name: string | null;
+        claimed_by_username: string | null;
+      }>;
+    },
+    staleTime: 30 * 1000,
+  });
 
   // Export States
   const [isExportingFull, setIsExportingFull] = useState(false);
@@ -1100,6 +1125,88 @@ export default function AdminAutomazioni() {
             </div>
           </Card>
 
+          {/* CARD 10: GESTIONE ALLENATORI SERIE A */}
+          <Card className="overflow-hidden border border-border/80 bg-card shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
+                    Staff Tecnico
+                  </Badge>
+                  <UserCheck className="h-6 w-6 text-emerald-500" />
+                </div>
+                <CardTitle className="text-xl font-black">Gestione Allenatori Serie A</CardTitle>
+                <CardDescription className="text-xs">
+                  Visualizza e aggiorna il tecnico in panchina (Sig. / Mister) e la distinzione con il Manager di ciascun club.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[340px] overflow-y-auto pr-1">
+                  {adminTeamsList.map((t) => (
+                    <div
+                      key={t.team_id}
+                      className="p-2.5 rounded-xl border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img
+                          src={`${SUPABASE_STORAGE_URL}/images/teams/${t.team_id}_Logo.png`}
+                          alt={t.name}
+                          className="h-7 w-7 object-contain shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-foreground truncate">{t.name}</h4>
+                          <div className="text-[11px] text-muted-foreground truncate">
+                            <span className="font-medium">All:</span>{" "}
+                            <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              {t.manager || "Da Assegnare"}
+                            </strong>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            <span>Pres: </span>
+                            <span className="text-foreground/80 font-medium">
+                              {t.claimed_by_name || "In attesa"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          setEditingCoachTeam({
+                            teamId: t.team_id,
+                            name: t.name,
+                            manager: t.manager,
+                          })
+                        }
+                        className="h-7 px-2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 shrink-0 gap-1"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        <span>Modifica</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-emerald-500" />
+                Aggiornamento Immediato:
+              </span>
+              <span className="font-semibold text-foreground">
+                12 Club di Serie A
+              </span>
+            </div>
+          </Card>
+
         </div>
 
         {/* Informazioni Architettura Master Table */}
@@ -1318,6 +1425,20 @@ export default function AdminAutomazioni() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {editingCoachTeam && (
+        <EditCoachModal
+          open={Boolean(editingCoachTeam)}
+          onOpenChange={(op) => {
+            if (!op) setEditingCoachTeam(null);
+          }}
+          teamId={editingCoachTeam.teamId}
+          teamName={editingCoachTeam.name}
+          currentCoachName={editingCoachTeam.manager}
+          onSuccess={() => {
+            refetchAdminTeams();
+          }}
+        />
+      )}
     </div>
   );
 }

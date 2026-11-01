@@ -2,6 +2,8 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/supabaseClient";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/context/AuthContext";
+import { EditCoachModal } from "@/components/team/EditCoachModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -543,9 +545,21 @@ const Rose = () => {
                         </div>
 
                         <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-border/60 dark:border-white/15 text-xs">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
-                            Allenatore
-                          </span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
+                              Allenatore
+                            </span>
+                            {(isAdmin || user?.team === currentTeam.TEAM_ID) && (
+                              <button
+                                type="button"
+                                onClick={() => setIsEditCoachOpen(true)}
+                                className="text-muted-foreground hover:text-emerald-500 p-0.5 rounded transition-colors"
+                                title="Modifica Allenatore"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
                           <strong className="text-foreground font-extrabold truncate block text-xs">
                             {currentTeam.MANAGER || "Da Assegnare"}
                           </strong>

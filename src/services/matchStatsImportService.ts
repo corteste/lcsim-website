@@ -247,7 +247,7 @@ export async function fetchAdminSeasonSchedule(stag: number): Promise<AdminSched
   for (const t of teamsRes.data || []) {
     teamMap.set(t.TEAM_ID, {
       name: t.NAME || t.TEAM_ID,
-      manager: t.MANAGER ? `Sig. ${t.MANAGER}` : "",
+      manager: t.MANAGER ? (t.MANAGER.trim().startsWith("Sig.") || t.MANAGER.trim().startsWith("Mister") ? t.MANAGER.trim() : `Sig. ${t.MANAGER.trim()}`) : "",
     });
   }
 
