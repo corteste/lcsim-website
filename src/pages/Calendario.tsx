@@ -451,6 +451,11 @@ const Calendario = () => {
                         <span className="flex items-center gap-1 font-medium">
                           <MapPin className="h-3 w-3 text-muted-foreground" />
                           {match.stadium || "Stadio Ufficiale"}
+                          {match.is_neutral && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                              Neutro
+                            </span>
+                          )}
                         </span>
                       </div>
 
@@ -731,6 +736,11 @@ const Calendario = () => {
                   <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-card border border-border/80">
                     <MapPin className="h-3 w-3 text-emerald-500" />
                     <span>{selected.match.stadium || "Stadio Ufficiale"}</span>
+                    {selected.match.is_neutral && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 ml-1">
+                        Campo Neutro
+                      </span>
+                    )}
                   </div>
                   {selected.match.weather && (
                     <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-card border border-border/80">
@@ -797,7 +807,7 @@ const Calendario = () => {
                           alt=""
                           className="h-4 w-4 object-contain"
                         />
-                        <span>{selected.match.home_team} (Casa)</span>
+                        <span>{selected.match.home_team} {selected.match.is_neutral ? "(Campo Neutro)" : "(Casa)"}</span>
                       </button>
 
                       <button

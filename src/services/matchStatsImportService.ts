@@ -97,6 +97,7 @@ export interface AdminScheduleMatchSummary {
   match_time: string; // HH:MM
   unlock_at: string | null;
   standings_processed: boolean;
+  is_neutral?: boolean;
   has_stats: boolean;
   is_unlocked: boolean;
   home_gol: number | null;
@@ -283,6 +284,7 @@ export async function fetchAdminSeasonSchedule(stag: number): Promise<AdminSched
       match_time: row.match_time ? String(row.match_time).slice(0, 5) : "21:00",
       unlock_at: row.unlock_at || null,
       standings_processed: Boolean(row.standings_processed),
+      is_neutral: Boolean(row.is_neutral),
       has_stats: hasStats,
       is_unlocked: isUnlocked,
       home_gol: homeGol,
@@ -483,6 +485,7 @@ export async function saveAdminMatchReport(
       p_away_team_stat: awayPayload,
       p_player_stats: allPlayers,
       p_admin_name: adminName,
+      p_is_neutral: Boolean((report.schedule as any)?.is_neutral),
     });
 
     if (error) throw new Error(error.message);

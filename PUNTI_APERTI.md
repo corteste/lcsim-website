@@ -1186,15 +1186,30 @@ Descrizione
 
 
 
-## 📌 51. Classifica: Campo Neutro, Accesso Diretto alle Semifinali & Tabellone Playoff
-- **Stato**: 🟡 In attesa di implementazione
+## 📌 51. Classifica: Campo Neutro, Accesso Diretto ai Quarti & Tabellone Playoff a 12 Squadre
+- **Stato**: 🟢 Completato (Sviluppato su branch dev)
 - **Priorità**: Alta (Correttezza della classifica e dei playoff)
-- **Moduli coinvolti**: src/pages/Classifica.tsx (da verificare), src/pages/Calendario.tsx, tabellone playoff
-- **Tabelle coinvolte**: an_standings, an_schedule, "AS_TEAM_STAT"
-Descrizione
-Partite in Casa / Campo Neutro: correggere il conteggio delle partite in casa quando la partita si gioca in campo neutro.
-Accesso Diretto alle Semifinali Playoff: sistemare la logica e la visualizzazione dell'accesso diretto in classifica.
-Tabellone Playoff: collegare il tabellone ai risultati effettivi, in modo che si aggiorni automaticamente.
+- **Moduli coinvolti**: `src/pages/Classifica.tsx`, `src/pages/Calendario.tsx`, `src/pages/Home.tsx`, `src/components/PlayoffBracket.tsx`, `src/components/admin/MatchResultsManagerModal.tsx`, `src/services/scheduleService.ts`, `src/services/matchStatsImportService.ts`
+- **Tabelle & Funzioni coinvolte**: `an_standings`, `an_schedule`, `AS_TEAM_STAT`, `refresh_standings_for_season`, `rpc_admin_save_match_report`
+- **Migrazioni**: `supabase/migrations/20261101_schedule_is_neutral.sql` e rollback `20261101_schedule_is_neutral_rollback.sql`
+### Descrizione & Soluzioni Implementate:
+1. **Supporto Campo Neutro**:
+   - Aggiunta colonna `is_neutral BOOLEAN NOT NULL DEFAULT FALSE` su `public.an_schedule`.
+   - Aggiornata la procedura SQL `refresh_standings_for_season`: se `is_neutral = true`, nessuna delle due squadre incrementa il conteggio `played_at_home` in classifica.
+   - Esclusione dei match di playoff (`week > 11` per la Stagione 11) dal calcolo della classifica di regular season, garantendo la totale integrità di punti, presenze e gol.
+   - Aggiunto toggle *"Campo Neutro"* nella modale di gestione referti Admin (`MatchResultsManagerModal.tsx`) e badge visivo *"Neutro / Campo Neutro"* nelle card e nei dettagli di [`Calendario.tsx`](file:///d:/Users/Stefano/Documents/LCSIM_Website/lcsim-website/src/pages/Calendario.tsx).
+2. **Formula e Visualizzazione Accesso Playoff Serie A a 12 Squadre**:
+   - In [`Classifica.tsx`](file:///d:/Users/Stefano/Documents/LCSIM_Website/lcsim-website/src/pages/Classifica.tsx) e [`Home.tsx`](file:///d:/Users/Stefano/Documents/LCSIM_Website/lcsim-website/src/pages/Home.tsx), aggiornate le zone di competizione:
+     - **1° - 4° Posto**: **Accesso Diretto ai Quarti di Finale** (bordo smeraldo, Round Bye al Play-In).
+     - **5° - 12° Posto**: **Turno Play-In Preliminare** (bordo blu, gara secca per i 4 pass dei Quarti).
+3. **Tabellone Playoff a 12 Squadre Collegato ai Risultati Reali (`PlayoffBracket.tsx`)**:
+   - Ricostruito fedelmente secondo lo schema ufficiale a 12 squadre:
+     - **Play-In (Week 12)**: PI-1 (#8 vs #9), PI-2 (#5 vs #12), PI-3 (#6 vs #11), PI-4 (#7 vs #10).
+     - **Quarti (Week 13)**: Q1 (Vinc. PI-1 vs #1), Q2 (#4 vs Vinc. PI-2), Q3 (Vinc. PI-3 vs #3), Q4 (#2 vs Vinc. PI-4).
+     - **Semifinali (Week 14)**: SF-1 (Vinc. Q1 vs Vinc. Q2), SF-2 (Vinc. Q3 vs Vinc. Q4).
+     - **Grande Finale (Week 15)**: Vincente SF-1 vs Vincente SF-2.
+   - Collegamento automatico ai match reali registrati su Supabase (`an_schedule` + `view_team_stats` per `week >= 12`): mostra punteggi live ufficiali e fa avanzare automaticamente la squadra vincente alla fase successiva; in assenza di match disputati calcola le proiezioni coerenti con le posizioni della regular season.
+   - Selettore interattivo del cammino aggiornato per tutte le 12 teste di serie (#1..#12) per tracciare visivamente il percorso di ciascuna squadra verso il titolo.
 
 
 

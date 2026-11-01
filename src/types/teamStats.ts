@@ -98,6 +98,7 @@ export type MatchStats = {
   date: Date;
   match_time?: string;
   unlock_at?: string | null;
+  is_neutral?: boolean;
   home_temporec?: number | null;
   home_xg?: number | null;
   home_interc?: number | null;

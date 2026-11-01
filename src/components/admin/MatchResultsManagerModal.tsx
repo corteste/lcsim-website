@@ -554,9 +554,32 @@ export function MatchResultsManagerModal({
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">
-                        Stadio
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase">
+                          Stadio
+                        </label>
+                        <label className="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(report.schedule.is_neutral)}
+                            onChange={(e) =>
+                              setReport((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      schedule: {
+                                        ...prev.schedule,
+                                        is_neutral: e.target.checked,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                            className="rounded text-amber-600 focus:ring-amber-500 h-3 w-3"
+                          />
+                          <span>Campo Neutro</span>
+                        </label>
+                      </div>
                       <Input
                         value={report.schedule.stadium}
                         onChange={(e) =>

@@ -79,27 +79,26 @@ const Classifica = () => {
               </TableHeader>
               <TableBody className="divide-y divide-border/60">
                 {standings.map((team, index) => {
-                  const isChampions = index < 2;
-                  const isPlayoff = index >= 2 && index < 6;
-                  const isPlayIn = index >= 6 && index < 10;
+                  const isQuarterFinals = index < 4;
+                  const isPlayIn = index >= 4;
 
                   return (
                     <TableRow
                       key={index}
-                      className={`hover:bg-muted/50 transition-colors ${isChampions ? "border-l-4 border-l-emerald-500 bg-emerald-500/[0.02]" :
-                        isPlayoff ? "border-l-4 border-l-blue-500 bg-blue-500/[0.02]" :
-                          isPlayIn ? "border-l-4 border-l-amber-500 bg-amber-500/[0.02]" : ""
-                        }`}
+                      className={`hover:bg-muted/50 transition-colors ${
+                        isQuarterFinals
+                          ? "border-l-4 border-l-emerald-500 bg-emerald-500/[0.02]"
+                          : "border-l-4 border-l-blue-500 bg-blue-500/[0.02]"
+                      }`}
                     >
                       <TableCell className="text-center font-mono font-bold">
-                        <span className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${isChampions
-                          ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                          : isPlayoff
-                            ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
-                            : isPlayIn
-                              ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
-                              : "text-muted-foreground"
-                          }`}>
+                        <span
+                          className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${
+                            isQuarterFinals
+                              ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                              : "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                          }`}
+                        >
                           {index + 1}
                         </span>
                       </TableCell>
@@ -145,26 +144,19 @@ const Classifica = () => {
         </Card>
 
         {/* Competition Zone Legend */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex items-center gap-3 p-3.5 rounded-xl border border-border/80 bg-card shadow-sm">
             <span className="h-3 w-3 rounded-full bg-emerald-500 flex-shrink-0" />
             <div>
-              <p className="text-xs font-bold text-foreground">1° - 2° Posto</p>
-              <p className="text-[11px] text-muted-foreground">Accesso Diretto Semifinali Playoff</p>
+              <p className="text-xs font-bold text-foreground">1° - 4° Posto</p>
+              <p className="text-[11px] text-muted-foreground">Accesso Diretto Quarti di Finale Playoff (Round Bye)</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3.5 rounded-xl border border-border/80 bg-card shadow-sm">
             <span className="h-3 w-3 rounded-full bg-blue-500 flex-shrink-0" />
             <div>
-              <p className="text-xs font-bold text-foreground">3° - 6° Posto</p>
-              <p className="text-[11px] text-muted-foreground">Quarti di Finale Playoff</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3.5 rounded-xl border border-border/80 bg-card shadow-sm">
-            <span className="h-3 w-3 rounded-full bg-amber-500 flex-shrink-0" />
-            <div>
-              <p className="text-xs font-bold text-foreground">7° - 10° Posto</p>
-              <p className="text-[11px] text-muted-foreground">Turno Play In Preliminare</p>
+              <p className="text-xs font-bold text-foreground">5° - 12° Posto</p>
+              <p className="text-[11px] text-muted-foreground">Turno Play In Preliminare (Gara Secca)</p>
             </div>
           </div>
         </div>

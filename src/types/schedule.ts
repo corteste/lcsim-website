@@ -17,4 +17,5 @@ export type ScheduleGeneral = {
     match_time?: string;
     unlock_at?: string | null;
     standings_processed?: boolean;
+    is_neutral?: boolean;
 };

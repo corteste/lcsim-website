@@ -128,20 +128,20 @@ const Home = () => {
                 </thead>
                 <tbody className="divide-y divide-border/50">
                   {standings.slice(0, 6).map((team, idx) => {
-                    const isChampions = idx < 2;
-                    const isPlayoff = idx >= 2 && idx < 6;
+                    const isDirectQuarters = idx < 4;
                     return (
                       <tr
                         key={idx}
                         className="group hover:bg-muted/40 transition-colors"
                       >
                         <td className="py-3 px-3 text-center">
-                          <span className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${isChampions
-                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                            : isPlayoff
-                              ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
-                              : "text-muted-foreground"
-                            }`}>
+                          <span
+                            className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${
+                              isDirectQuarters
+                                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                                : "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                            }`}
+                          >
                             {idx + 1}
                           </span>
                         </td>
@@ -186,11 +186,11 @@ const Home = () => {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span>Fase Finale Diretta</span>
+                  <span>1°-4° Quarti Diretti</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-blue-500" />
-                  <span>Playoff</span>
+                  <span>5°-12° Play-In</span>
                 </div>
               </div>
               <Link to="/classifica">
