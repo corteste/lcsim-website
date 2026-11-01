@@ -1334,16 +1334,27 @@ Restituisci ESCLUSIVAMENTE un JSON con questa struttura:
 
     const batchImagesB64 = batch.map((group) => buildCompositePlayerBase64(group));
     const prompt = `Sei un assistente per l'acquisizione referti di EA Sports FC 25.
-Ricevi ${batchImagesB64.length} immagini: ogni immagine mostra la scheda prestazioni di un calciatore (nella parte alta il Riepilogo completo con nome, squadra, voto, tabella statistiche e la voce "Minuti giocati"; nella parte bassa gli eventuali sub-tab Tiri, Passaggi, Possesso, Difesa, Portiere).
+Ricevi ${batchImagesB64.length} immagini: ogni immagine mostra la scheda prestazioni di un calciatore (nella parte alta il Riepilogo completo; nella parte bassa gli eventuali sub-tab Tiri, Passaggi, Possesso, Difesa, Portiere).
 
 Squadra di Casa (${report.schedule.home_name} - ${report.schedule.home}): [${homeRosterNames}]
 Squadra Trasferta (${report.schedule.away_name} - ${report.schedule.away}): [${awayRosterNames}]
 
-REGOLE FONDAMENTALI:
-1. Leggi con attenzione la riga "Minuti giocati" nel pannello Riepilogo di ciascun calciatore:
-   - Se "Minuti giocati" è > 0 (es. 90, 75, 45, 15, ecc.), DEVI SEMPRE estrarre il calciatore con i suoi minuti giocati effettivi, ANCHE SE il suo voto è 6.0 (cerchio grigio), basso o "N/D" (se ha giocato minuti > 0 ma il voto è "N/D", restituisci voto: 6.0).
-   - Se e solo se "Minuti giocati" è 0 (calciatore rimasto in panchina tutta la partita con 0 minuti giocati e 0 statistiche), imposta "minuti": 0.
-2. Se per passaggi/tiri/dribbling/contrasti è visibile il totale e la percentuale (es. "Passaggi 20" e "% precisione passaggi 90"), calcola il valore riuscito = Math.round(totale * percentuale / 100).
+ATTENZIONE CRITICA — STRUTTURA A 2 COLONNE DEL TAB "RIEPILOGO":
+Nel pannello "Riepilogo" in alto a destra, ogni riga statistica ha DUE colonne numeriche affiancate a destra:
+- COLONNA 1 (SINISTRA, sotto l'icona o nome del calciatore): Statistica PERSONALE del singolo calciatore.
+- COLONNA 2 (DESTRA, sotto "Squadra" / stemma): Statistica TOTALE DELLA SQUADRA (es. Minuti giocati Squadra è sempre 90, Passaggi Squadra è ~100-180, Tiri Squadra è ~5-20).
+
+Quando un calciatore è un PANCHINARO NON ENTRATO IN CAMPO:
+- Nel cerchio del voto c'è scritto "N/D".
+- Nella COLONNA 1 (Giocatore) tutti i valori sono 0 (es. "Minuti giocati: 0  90", "Passaggi: 0  135", "Tiri: 0  12").
+- NON PRENDERE MAI i numeri della Colonna 2 (Squadra) come statistiche del calciatore!
+
+REGOLE DI ESTRAZIONE:
+1. Riporta in "voto_raw" il testo esatto nel cerchio del voto (es. "7.4", "6.0", oppure "N/D").
+2. Riporta separatamente "minuti_giocatore" (PRIMO numero a sinistra nella riga "Minuti giocati", che è 0 per i panchinari non entrati) e "minuti_squadra" (SECONDO numero a destra nella riga "Minuti giocati", sempre ~90).
+3. Riporta separatamente "pass_tot_giocatore" (PRIMO numero a sinistra nella riga "Passaggi") e "pass_tot_squadra" (SECONDO numero a destra nella riga "Passaggi").
+4. Per tutte le altre statistiche del calciatore, leggi ESCLUSIVAMENTE la COLONNA 1 (SINISTRA = GIOCATORE). Se la Colonna 1 è 0, restituisci 0!
+5. Se per passaggi/tiri/dribbling/contrasti nel solo tab Riepilogo è visibile il totale del giocatore (Colonna 1) e la % precisione del giocatore (Colonna 1), calcola il valore riuscito = Math.round(totale_giocatore * percentuale_giocatore / 100).
 
 Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto per ciascuna delle ${batchImagesB64.length} immagini:
 {
@@ -1351,14 +1362,18 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
     {
       "teamSide": "home" | "away",
       "playerName": string,
+      "voto_raw": string,
       "voto": number,
-      "minuti": number,
+      "minuti_giocatore": number,
+      "minuti_squadra": number,
       "gol": number,
       "asst": number,
       "tiri_si": number,
-      "tiri_tot": number,
+      "tiri_tot_giocatore": number,
+      "tiri_tot_squadra": number,
       "pass_si": number,
-      "pass_tot": number,
+      "pass_tot_giocatore": number,
+      "pass_tot_squadra": number,
       "ctrs_si": number,
       "ctrs_tot": number,
       "drib_si": number,
@@ -1389,14 +1404,56 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
     for (const pData of extractedList) {
       if (!pData || !pData.playerName) continue;
 
-      const minutiGiocati = typeof pData.minuti === "number" ? Math.round(pData.minuti) : 0;
-      const hasAnyActivity =
-        minutiGiocati > 0 ||
-        (typeof pData.pass_tot === "number" && pData.pass_tot > 0) ||
-        (typeof pData.dist_tot === "number" && pData.dist_tot > 0);
+      const votoRawStr = String(pData.voto_raw ?? "").toUpperCase().trim();
+      const numericVoto = typeof pData.voto === "number" && !isNaN(pData.voto) ? pData.voto : 0;
+      const isVotoND =
+        votoRawStr.includes("N/D") ||
+        votoRawStr.includes("ND") ||
+        votoRawStr === "-" ||
+        numericVoto <= 0;
 
-      // Scarta ESCLUSIVAMENTE chi ha 0 minuti giocati (e nessuna attività in campo)
-      if (!hasAnyActivity) {
+      const rawMinGiocatore =
+        typeof pData.minuti_giocatore === "number"
+          ? Math.round(pData.minuti_giocatore)
+          : typeof pData.minuti === "number"
+          ? Math.round(pData.minuti)
+          : 0;
+
+      const passGiocatore =
+        typeof pData.pass_tot_giocatore === "number"
+          ? Math.round(pData.pass_tot_giocatore)
+          : typeof pData.pass_tot === "number"
+          ? Math.round(pData.pass_tot)
+          : 0;
+
+      const passSquadra =
+        typeof pData.pass_tot_squadra === "number" ? Math.round(pData.pass_tot_squadra) : 0;
+
+      const tiriGiocatore =
+        typeof pData.tiri_tot_giocatore === "number"
+          ? Math.round(pData.tiri_tot_giocatore)
+          : typeof pData.tiri_tot === "number"
+          ? Math.round(pData.tiri_tot)
+          : 0;
+
+      const teamStatRef = pData.teamSide === "away" ? report.awayTeamStat : report.homeTeamStat;
+      const knownTeamPasses = teamStatRef.PASS_TOT || passSquadra || 0;
+
+      // Guardia matematica anti-copia colonna Squadra:
+      // 1. Se passGiocatore coincide coi passaggi dell'intera squadra (> 30), il modello aveva letto la colonna Squadra su un panchinaro a 0.
+      const copiedTeamPasses =
+        knownTeamPasses > 30 && Math.abs(passGiocatore - knownTeamPasses) <= 3;
+
+      // 2. Un giocatore con voto "N/D" non può MAI aver giocato >= 75 minuti (90 è il valore della colonna Squadra!).
+      const isFake90OnBenchND = isVotoND && rawMinGiocatore >= 75;
+
+      // 3. Se minuti_giocatore <= 0, oppure è un panchinaro N/D con 90 minuti copiati dalla squadra o statistiche copiate dalla squadra -> SCARTA!
+      if (
+        rawMinGiocatore <= 0 ||
+        isFake90OnBenchND ||
+        (isVotoND && copiedTeamPasses) ||
+        (isVotoND && passGiocatore === 0 && tiriGiocatore === 0 && (pData.dist_tot ?? 0) === 0)
+      ) {
         skippedZeroMinutePlayers++;
         continue;
       }
@@ -1409,19 +1466,19 @@ Restituisci ESCLUSIVAMENTE un JSON con un array "players" contenente un oggetto 
       }
 
       if (matched) {
-        matched.MINUTI = minutiGiocati > 0 ? minutiGiocati : 90;
-        if (typeof pData.voto === "number" && pData.voto > 0) {
-          matched.VOTO = pData.voto;
+        matched.MINUTI = rawMinGiocatore;
+        if (!isVotoND && numericVoto > 0) {
+          matched.VOTO = numericVoto;
         } else if (!matched.VOTO || matched.VOTO <= 0) {
-          matched.VOTO = 6.0; // Voto politico 6.0 se ha giocato minuti > 0 ma aveva voto N/D o 6.0 neutro
+          matched.VOTO = 6.0; // Subentrato reale con minuti > 0 (es. 10-20 min) e voto N/D
         }
 
         if (typeof pData.gol === "number") matched.GOL = pData.gol;
         if (typeof pData.asst === "number") matched.ASST = pData.asst;
         if (typeof pData.tiri_si === "number") matched.TIRI_IN = pData.tiri_si;
-        if (typeof pData.tiri_tot === "number") matched.TIRI_TOT = pData.tiri_tot;
+        matched.TIRI_TOT = tiriGiocatore;
         if (typeof pData.pass_si === "number") matched.PASS_SI = pData.pass_si;
-        if (typeof pData.pass_tot === "number") matched.PASS_TOT = pData.pass_tot;
+        matched.PASS_TOT = copiedTeamPasses ? 0 : passGiocatore;
         if (typeof pData.ctrs_si === "number") matched.CTRS_SI = pData.ctrs_si;
         if (typeof pData.ctrs_tot === "number") matched.CTRS_TOT = pData.ctrs_tot;
         if (typeof pData.drib_si === "number") matched.DRIB_SI = pData.drib_si;
