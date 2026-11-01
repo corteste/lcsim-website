@@ -125,7 +125,7 @@ const ROLE_PRIORITY: Record<string, number> = {
 
 const ROLE_GROUPS: { id: string; label: string; roles: string[] }[] = [
   { id: "ALL", label: "Tutti i Ruoli", roles: [] },
-  { id: "POR", label: "POR", roles: ["POR"] },
+  { id: "POR", label: "Portiere", roles: ["POR"] },
   { id: "DIF", label: "Difesa", roles: ["DC", "TD", "TS"] },
   { id: "CEN", label: "Centrocampo", roles: ["CDC", "CC", "ED", "ES", "COC"] },
   { id: "ATT", label: "Attacco", roles: ["AD", "AS", "ATT"] },
