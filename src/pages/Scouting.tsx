@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import PlayerDetails from "@/components/player/playerDetails";
 import {
   Card,
   CardContent,
@@ -190,6 +192,8 @@ const Scouting = () => {
   const activeTeamId = effectiveTeam;
 
   const [rookies, setRookies] = useState<Player[]>([]);
+  const [freeAgents, setFreeAgents] = useState<Player[]>([]);
+  const [inspectedFreeAgent, setInspectedFreeAgent] = useState<Player | null>(null);
   const [scoutingMap, setScoutingMap] = useState<Record<number, RookieScoutingRecord>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
@@ -246,12 +250,17 @@ const Scouting = () => {
       if (!activeTeamId) return;
       if (!silent) setLoading(true);
       try {
-        const [rookiesRes, scoutingRes] = await Promise.all([
+        const [rookiesRes, scoutingRes, freeAgentsRes] = await Promise.all([
           supabase.rpc("rpc_get_scouted_rookies", { p_team_id: activeTeamId }),
           supabase
             .from(ROOKIE_SCOUTING_TABLE)
             .select("*")
             .eq("team_id", activeTeamId),
+          supabase
+            .from("an_player")
+            .select("*")
+            .is("Squadra", null)
+            .order("OVR", { ascending: false }),
         ]);
 
         if (rookiesRes.error) throw rookiesRes.error;
@@ -259,6 +268,7 @@ const Scouting = () => {
 
         const rookieList = (rookiesRes.data ?? []) as Player[];
         setRookies(rookieList);
+        setFreeAgents((freeAgentsRes.data ?? []) as Player[]);
 
         const map: Record<number, RookieScoutingRecord> = {};
         for (const row of (scoutingRes.data ?? []) as RookieScoutingRecord[]) {
@@ -1759,7 +1769,7 @@ const Scouting = () => {
             )}
           </TabsContent>
 
-          {/* TAB 3: GRADUATORIA DRAFT & AUTOPICK (PUNTO 7) */}
+          {/* TAB 3: GRADUATORIA DRAFT & AUTOPICK (PUNTO 7 & 64) */}
           <TabsContent value="autopick" className="m-0">
             <ScoutingAutopickTab
               teamId={activeTeamId}
@@ -1769,16 +1779,37 @@ const Scouting = () => {
                   : user?.teamFullName
               }
               allRookies={rookies}
+              allFreeAgents={freeAgents}
               scoutingTokensByRookie={scoutingTokensByRookie}
               onInspectRookie={(rookieId) => {
                 setSelectedRookieId(rookieId);
                 handleTabChange("single");
+              }}
+              onInspectFreeAgent={(player) => {
+                setInspectedFreeAgent(player);
               }}
               onWishlistUpdated={loadWishlist}
             />
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* MODAL DETTAGLIO CALCIATORE SVINCOLATO */}
+      {inspectedFreeAgent &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+            onClick={() => setInspectedFreeAgent(null)}
+          >
+            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-7xl flex items-center justify-center">
+              <PlayerDetails
+                currentPlayer={inspectedFreeAgent}
+                onClose={() => setInspectedFreeAgent(null)}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

@@ -84,6 +84,8 @@ import {
   fetchAutopickSetting,
   fetchAllAutopickSettings,
   executeAutopick,
+  addToWishlist,
+  removeFromWishlist,
 } from "@/services/draftWishlistService";
 import { DraftWishlistItem } from "@/types/draftWishlist";
 
@@ -365,6 +367,40 @@ const Draft = () => {
       setWishlistItems([]);
     }
   }, [activeUserTeamId, loadWishlist]);
+
+  // Toggle aggiunta/rimozione dalla graduatoria personale (Punto 64)
+  const handleToggleWishlist = async (
+    playerId: number,
+    type: "rookie" | "free_agent",
+    player: Player
+  ) => {
+    if (!activeUserTeamId) {
+      toast.error("Devi selezionare o appartenere a una squadra per gestire la graduatoria.");
+      return;
+    }
+    const isAlreadyIn = wishlistMap.has(Number(playerId));
+    if (isAlreadyIn) {
+      const res = await removeFromWishlist(activeUserTeamId, Number(playerId));
+      if (res.success) {
+        toast.info(`${player.Nome} ${player.Cognome} rimosso dalla graduatoria.`);
+        await loadWishlist();
+      } else {
+        toast.error(res.error || "Errore rimozione dalla graduatoria");
+      }
+    } else {
+      const res = await addToWishlist(activeUserTeamId, Number(playerId));
+      if (res.success) {
+        toast.success(
+          `${player.Nome} ${player.Cognome} (${
+            type === "free_agent" ? "Svincolato" : "Rookie"
+          }) aggiunto alla graduatoria!`
+        );
+        await loadWishlist();
+      } else {
+        toast.error(res.error || "Errore aggiunta alla graduatoria");
+      }
+    }
+  };
 
   // Caricamento impostazioni autopick squadra (Punto 7)
   const loadAutopickSettings = useCallback(async () => {
@@ -1716,8 +1752,30 @@ const Draft = () => {
                                 )}
                               </div>
 
-                              {/* Azioni rapide a destra: Scheda, Scegli */}
+                              {/* Azioni rapide a destra: Graduatoria, Scheda, Scegli */}
                               <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                {activeUserTeamId && (
+                                  <button
+                                    type="button"
+                                    title={
+                                      item.wishlistRank
+                                        ? `Rimuovi dalla Graduatoria (#${item.wishlistRank})`
+                                        : "Aggiungi alla Graduatoria"
+                                    }
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      await handleToggleWishlist(item.id, item.type, item.player);
+                                    }}
+                                    className={`p-1 rounded-md transition-colors ${
+                                      item.wishlistRank
+                                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-rose-500/15 hover:text-rose-500"
+                                        : "hover:bg-muted text-muted-foreground/60 hover:text-emerald-500"
+                                    }`}
+                                  >
+                                    <ListOrdered className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+
                                 <button
                                   type="button"
                                   title={item.type === "free_agent" ? "Apri scheda tecnica svincolato" : "Apri Report Scouting del rookie"}
@@ -1866,14 +1924,47 @@ const Draft = () => {
                             </span>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedPlayerItem(null)}
-                          className="h-7 text-xs text-muted-foreground"
-                        >
-                          Cambia
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                          {activeUserTeamId && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                handleToggleWishlist(
+                                  selectedPlayerItem.id,
+                                  selectedPlayerItem.type,
+                                  selectedPlayerItem.player
+                                )
+                              }
+                              className={`h-7 text-xs font-bold gap-1 ${
+                                wishlistMap.has(Number(selectedPlayerItem.id))
+                                  ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-rose-600 hover:border-rose-500/40"
+                                  : "text-muted-foreground hover:text-emerald-500"
+                              }`}
+                              title={
+                                wishlistMap.has(Number(selectedPlayerItem.id))
+                                  ? "Rimuovi dalla tua graduatoria di priorità"
+                                  : "Aggiungi alla tua graduatoria di priorità"
+                              }
+                            >
+                              <ListOrdered className="h-3 w-3" />
+                              <span>
+                                {wishlistMap.has(Number(selectedPlayerItem.id))
+                                  ? `In Graduatoria (#${wishlistMap.get(Number(selectedPlayerItem.id))})`
+                                  : "Aggiungi a Graduatoria"}
+                              </span>
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedPlayerItem(null)}
+                            className="h-7 text-xs text-muted-foreground"
+                          >
+                            Cambia
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-xs text-muted-foreground text-center py-1">

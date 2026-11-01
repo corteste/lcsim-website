@@ -49,8 +49,10 @@ interface ScoutingAutopickTabProps {
   teamId: string;
   teamFullName?: string;
   allRookies: Player[];
+  allFreeAgents?: Player[];
   scoutingTokensByRookie?: Record<number, number>;
   onInspectRookie?: (rookieId: number) => void;
+  onInspectFreeAgent?: (player: Player) => void;
   onWishlistUpdated?: () => void;
 }
 
@@ -66,8 +68,10 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
   teamId,
   teamFullName,
   allRookies,
+  allFreeAgents = [],
   scoutingTokensByRookie = {},
   onInspectRookie,
+  onInspectFreeAgent,
   onWishlistUpdated,
 }) => {
   const [wishlist, setWishlist] = useState<DraftWishlistItem[]>([]);
@@ -78,6 +82,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
   // Search and manual addition state
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
+  const [poolTypeFilter, setPoolTypeFilter] = useState<"ALL" | "ROOKIE" | "FREE_AGENT">("ALL");
 
   // Carica i dati della graduatoria e l'impostazione autopick
   const loadData = useCallback(async () => {
@@ -141,7 +146,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
   const handleRemove = async (rookieId: number) => {
     const res = await removeFromWishlist(teamId, rookieId);
     if (res.success) {
-      toast.info("Rookie rimosso dalla graduatoria");
+      toast.info("Calciatore rimosso dalla graduatoria");
       await loadData();
       onWishlistUpdated?.();
     } else {
@@ -165,42 +170,60 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
     }
   };
 
-  // Aggiungi manualmente un rookie cercato
-  const handleAddRookie = async (rookie: Player) => {
-    const res = await addToWishlist(teamId, Number(rookie.ID));
+  // Aggiungi manualmente un calciatore cercato (Rookie o Svincolato)
+  const handleAddPlayer = async (player: Player, isFreeAgent: boolean) => {
+    const res = await addToWishlist(teamId, Number(player.ID));
     if (res.success) {
-      toast.success(`${rookie.Nome} ${rookie.Cognome} aggiunto in fondo alla graduatoria!`);
+      toast.success(`${player.Nome} ${player.Cognome} (${isFreeAgent ? "Svincolato" : "Rookie"}) aggiunto in fondo alla graduatoria!`);
       setSearchQuery("");
       await loadData();
       onWishlistUpdated?.();
     } else {
-      toast.error(res.error || "Errore aggiunta rookie");
+      toast.error(res.error || "Errore aggiunta calciatore");
     }
   };
 
   // Set di ID attualmente in graduatoria
   const wishlistIdsSet = useMemo(() => new Set(wishlist.map((w) => w.rookie_id)), [wishlist]);
 
-  // Candidati per l'aggiunta manuale
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim() && roleFilter === "ALL") return [];
+  // Candidati per l'aggiunta manuale (Rookie e Svincolati)
+  const candidatePool = useMemo(() => {
+    const list: Array<{ player: Player; isFreeAgent: boolean }> = [];
+    if (poolTypeFilter === "ALL" || poolTypeFilter === "ROOKIE") {
+      allRookies.forEach((r) => {
+        if (!wishlistIdsSet.has(Number(r.ID))) {
+          list.push({ player: r, isFreeAgent: false });
+        }
+      });
+    }
+    if (poolTypeFilter === "ALL" || poolTypeFilter === "FREE_AGENT") {
+      (allFreeAgents || []).forEach((fa) => {
+        if (!wishlistIdsSet.has(Number(fa.ID))) {
+          list.push({ player: fa, isFreeAgent: true });
+        }
+      });
+    }
+    return list;
+  }, [allRookies, allFreeAgents, wishlistIdsSet, poolTypeFilter]);
 
-    return allRookies
-      .filter((r) => !wishlistIdsSet.has(Number(r.ID)))
-      .filter((r) => {
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim() && roleFilter === "ALL" && poolTypeFilter === "ALL") return [];
+
+    return candidatePool
+      .filter(({ player: p }) => {
         if (roleFilter !== "ALL") {
           const group = ROLE_GROUPS.find((g) => g.id === roleFilter);
-          if (group && group.roles && !group.roles.includes(r.Posiz)) return false;
+          if (group && group.roles && !group.roles.includes(p.Posiz)) return false;
         }
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
-          const fullName = `${r.Nome} ${r.Cognome} ${r.Posiz}`.toLowerCase();
+          const fullName = `${p.Nome} ${p.Cognome} ${p.Posiz}`.toLowerCase();
           return fullName.includes(q);
         }
         return true;
       })
-      .slice(0, 10);
-  }, [allRookies, wishlistIdsSet, searchQuery, roleFilter]);
+      .slice(0, 16);
+  }, [candidatePool, searchQuery, roleFilter, poolTypeFilter]);
 
   return (
     <div className="space-y-6">
@@ -285,7 +308,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
       </Card>
 
       {/* =================================================================== */}
-      {/* 3. RICERCA E AGGIUNTA MANUALE DI ROOKIE ALLA CODA                  */}
+      {/* 3. RICERCA E AGGIUNTA MANUALE DI ROOKIE / SVINCOLATI ALLA CODA    */}
       {/* =================================================================== */}
       <Card className="border border-border/80 shadow-sm bg-card">
         <CardHeader className="p-4 pb-3 border-b border-border/70">
@@ -293,15 +316,15 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
             <div className="flex items-center gap-2">
               <Plus className="h-4 w-4 text-emerald-500" />
               <CardTitle className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-                Aggiungi Rookie alla Graduatoria
+                Aggiungi Rookie o Svincolato alla Graduatoria
               </CardTitle>
             </div>
             <span className="text-[11px] text-muted-foreground">
-              I nuovi rookie vengono inseriti in fondo alla coda
+              I nuovi profili vengono inseriti in fondo alla coda
             </span>
           </div>
 
-          <div className="mt-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="mt-2.5 flex flex-col lg:flex-row items-stretch lg:items-center gap-2">
             <div className="relative flex-1">
               <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
@@ -311,7 +334,46 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                 className="h-9 pl-9 text-xs"
               />
             </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 flex-wrap sm:flex-nowrap">
+
+            {/* Filtro Pool: Tutti / Rookie / Svincolati */}
+            <div className="flex items-center gap-1 p-0.5 bg-muted/60 rounded-lg border border-border/70 shrink-0">
+              <button
+                type="button"
+                onClick={() => setPoolTypeFilter("ALL")}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
+                  poolTypeFilter === "ALL"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tutti
+              </button>
+              <button
+                type="button"
+                onClick={() => setPoolTypeFilter("ROOKIE")}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
+                  poolTypeFilter === "ROOKIE"
+                    ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Rookie
+              </button>
+              <button
+                type="button"
+                onClick={() => setPoolTypeFilter("FREE_AGENT")}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
+                  poolTypeFilter === "FREE_AGENT"
+                    ? "bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Svincolati
+              </button>
+            </div>
+
+            {/* Filtro Ruoli */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 flex-wrap lg:flex-nowrap">
               {ROLE_GROUPS.map((g) => (
                 <button
                   key={g.id}
@@ -354,45 +416,56 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
-              {searchResults.map((r) => {
-                const rId = Number(r.ID);
-                const tokens = scoutingTokensByRookie[rId] ?? (r as any)?.tokens_spent ?? 0;
+              {searchResults.map(({ player: p, isFreeAgent }) => {
+                const pId = Number(p.ID);
+                const tokens = isFreeAgent ? 0 : (scoutingTokensByRookie[pId] ?? (p as any)?.tokens_spent ?? 0);
 
                 return (
                   <div
-                    key={r.ID}
+                    key={p.ID}
                     className="p-2.5 rounded-xl border border-border/80 bg-card flex items-center justify-between gap-2 hover:border-emerald-500/40 transition-all shadow-xs"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <Badge
                         variant="secondary"
-                        className={`text-[10px] font-bold shrink-0 ${getRoleColor(r.Posiz)}`}
+                        className={`text-[10px] font-bold shrink-0 ${getRoleColor(p.Posiz)}`}
                       >
-                        {r.Posiz}
+                        {p.Posiz}
                       </Badge>
                       <div className="min-w-0">
-                        <div className="font-bold text-xs truncate flex items-center gap-1">
-                          <span>{r.Nome} {r.Cognome}</span>
+                        <div className="font-bold text-xs truncate flex items-center gap-1.5">
+                          <span className="truncate">{p.Nome} {p.Cognome}</span>
+                          {isFreeAgent ? (
+                            <Badge variant="outline" className="text-[8.5px] px-1 py-0 h-3.5 bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0">
+                              Svincolato
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[8.5px] px-1 py-0 h-3.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shrink-0">
+                              Rookie
+                            </Badge>
+                          )}
                         </div>
                         <div className="text-[10px] text-muted-foreground flex items-center gap-2">
-                          <span>{r.Età} anni</span>
+                          <span>{p.Età} anni</span>
                           <span className="flex items-center gap-1 font-mono">
                             <img
-                              src={getNationalityFlag(r.Nazionalità)}
-                              alt={r.Nazionalità}
+                              src={getNationalityFlag(p.Nazionalità)}
+                              alt={p.Nazionalità}
                               className="h-3 w-4.5 object-cover rounded-xs border border-border/60 shrink-0 inline-block"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = "none";
                               }}
                             />
-                            <span>{r.Nazionalità}</span>
+                            <span>{p.Nazionalità}</span>
                           </span>
-                          <Badge
-                            variant="outline"
-                            className={`font-mono text-[9.5px] font-extrabold px-1.5 py-0 ${getTierBadgeStyle(tokens)}`}
-                          >
-                            {tokens > 0 ? `${tokens} ${tokens === 1 ? "gettone" : "gettoni"}` : "0 gettoni"}
-                          </Badge>
+                          {!isFreeAgent && (
+                            <Badge
+                              variant="outline"
+                              className={`font-mono text-[9.5px] font-extrabold px-1.5 py-0 ${getTierBadgeStyle(tokens)}`}
+                            >
+                              {tokens > 0 ? `${tokens} ${tokens === 1 ? "gettone" : "gettoni"}` : "0 gettoni"}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -400,15 +473,15 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Badge
                         variant="outline"
-                        className={`font-mono text-xs font-black ${getValueColor(Number(r.OVR) || 0)}`}
+                        className={`font-mono text-xs font-black ${getValueColor(Number(p.OVR) || 0)}`}
                       >
-                        {getOvrDisplayByTokens(r.OVR, tokens, r.Stelle).label}
+                        {isFreeAgent ? p.OVR : getOvrDisplayByTokens(p.OVR, tokens, p.Stelle).label}
                       </Badge>
                       <Button
                         type="button"
                         size="sm"
                         variant="default"
-                        onClick={() => handleAddRookie(r)}
+                        onClick={() => handleAddPlayer(p, isFreeAgent)}
                         className="h-7 px-2.5 text-xs font-bold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
                         <Plus className="h-3 w-3" />
@@ -433,33 +506,39 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
               <ListOrdered className="h-6 w-6" />
             </div>
             <h4 className="font-extrabold text-base text-foreground">
-              Nessun rookie in graduatoria
+              Nessun profilo in graduatoria
             </h4>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Costruisci la tua lista di preferenza: in caso di assenza, il sistema sceglierà il primo rookie libero partendo dall'ordine che imposti qui.
+              Costruisci la tua lista di preferenza aggiungendo Rookie o Svincolati: in caso di assenza, il sistema sceglierà il primo profilo libero partendo dall'ordine che imposti qui.
             </p>
-
           </div>
         </Card>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between px-1 text-xs text-muted-foreground font-semibold">
-            <span>Rookie in graduatoria ({wishlist.length})</span>
+            <span>Calciatori in graduatoria ({wishlist.length})</span>
             <span className="text-[11px]">Ordinati per priorità di scelta</span>
           </div>
           {wishlist.map((item, index) => {
-            const rookie = allRookies.find((r) => Number(r.ID) === Number(item.rookie_id)) || item.rookie;
-            if (!rookie) return null;
+            const player =
+              allRookies.find((r) => Number(r.ID) === Number(item.rookie_id)) ||
+              (allFreeAgents || []).find((fa) => Number(fa.ID) === Number(item.rookie_id)) ||
+              item.rookie;
+            if (!player) return null;
 
-            const rId = item.rookie_id;
-            const isDrafted = Boolean(
-              rookie.Squadra &&
-              rookie.Squadra.trim() !== "" &&
-              rookie.Squadra.toUpperCase() !== "SVINCOLATI" &&
-              rookie.Squadra !== "-"
+            const pId = item.rookie_id;
+            const isFreeAgent = Boolean(
+              (allFreeAgents || []).some((fa) => Number(fa.ID) === Number(pId)) ||
+              (!allRookies.some((r) => Number(r.ID) === Number(pId)))
             );
-            const tokens = scoutingTokensByRookie[rId] ?? (rookie as any)?.tokens_spent ?? 0;
-            const topStats = getTopUnlockedAttributes(rookie, tokens, 5);
+            const isDrafted = Boolean(
+              player.Squadra &&
+              player.Squadra.trim() !== "" &&
+              player.Squadra.toUpperCase() !== "SVINCOLATI" &&
+              player.Squadra !== "-"
+            );
+            const tokens = isFreeAgent ? 0 : (scoutingTokensByRookie[pId] ?? (player as any)?.tokens_spent ?? 0);
+            const topStats = !isFreeAgent && tokens > 0 ? getTopUnlockedAttributes(player, tokens, 5) : [];
 
             return (
               <div
@@ -470,7 +549,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                     : "border-border/80 bg-card hover:border-emerald-500/40"
                 }`}
               >
-                {/* RANK E DETTAGLI ROOKIE */}
+                {/* RANK E DETTAGLI CALCIATORE */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   {/* Numero di priorità (Rank) */}
                   <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-mono font-black text-sm shrink-0 shadow-xs">
@@ -480,19 +559,28 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                   {/* Ruolo */}
                   <Badge
                     variant="secondary"
-                    className={`text-xs font-extrabold px-2 py-0.5 shrink-0 ${getRoleColor(rookie.Posiz)}`}
+                    className={`text-xs font-extrabold px-2 py-0.5 shrink-0 ${getRoleColor(player.Posiz)}`}
                   >
-                    {rookie.Posiz}
+                    {player.Posiz}
                   </Badge>
 
                   {/* Anagrafica in linea */}
                   <div className="flex items-center gap-2.5 flex-wrap min-w-0">
                     <span className="font-extrabold text-sm truncate text-foreground">
-                      {rookie.Nome} {rookie.Cognome}
+                      {player.Nome} {player.Cognome}
                     </span>
+                    {isFreeAgent ? (
+                      <Badge variant="outline" className="text-[10px] bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0">
+                        Svincolato
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shrink-0">
+                        Rookie
+                      </Badge>
+                    )}
                     {isDrafted ? (
                       <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/30 font-bold shrink-0">
-                        Draftato da {rookie.Squadra}
+                        Draftato da {player.Squadra}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shrink-0">
@@ -500,28 +588,30 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground/60">•</span>
-                    <span className="text-xs text-muted-foreground shrink-0">{rookie.Età} anni</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{player.Età} anni</span>
                     <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground shrink-0">
                       <img
-                        src={getNationalityFlag(rookie.Nazionalità)}
-                        alt={rookie.Nazionalità}
+                        src={getNationalityFlag(player.Nazionalità)}
+                        alt={player.Nazionalità}
                         className="h-3.5 w-5 object-cover rounded-xs border border-border/80 shrink-0 inline-block shadow-2xs"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = "none";
                         }}
                       />
-                      <span>{rookie.Nazionalità}</span>
+                      <span>{player.Nazionalità}</span>
                     </span>
-                    <Badge
-                      variant="outline"
-                      className={`font-mono text-[10px] font-extrabold px-1.5 py-0.5 shrink-0 ${getTierBadgeStyle(tokens)}`}
-                    >
-                      {tokens > 0 ? `${tokens} ${tokens === 1 ? "gettone" : "gettoni"}` : "0 gettoni"}
-                    </Badge>
+                    {!isFreeAgent && (
+                      <Badge
+                        variant="outline"
+                        className={`font-mono text-[10px] font-extrabold px-1.5 py-0.5 shrink-0 ${getTierBadgeStyle(tokens)}`}
+                      >
+                        {tokens > 0 ? `${tokens} ${tokens === 1 ? "gettone" : "gettoni"}` : "0 gettoni"}
+                      </Badge>
+                    )}
                   </div>
 
-                  {/* TOP 5 STATISTICHE SBLOCCATE (se scoutato) */}
-                  {tokens > 0 ? (
+                  {/* TOP 5 STATISTICHE SBLOCCATE (se rookie scoutato) */}
+                  {!isFreeAgent && tokens > 0 && (
                     <div className="hidden md:flex items-center gap-1.5 ml-auto mr-3">
                       {topStats.map((st) => (
                         <div
@@ -538,10 +628,6 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="hidden lg:flex items-center text-[11px] text-muted-foreground/60 italic ml-auto mr-4">
-                      Nessun gettone investito
-                    </div>
                   )}
                 </div>
 
@@ -550,20 +636,32 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                   {/* OVR */}
                   <div className="text-right hidden sm:block mr-2">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground">OVR</div>
-                    <div className={`font-mono font-black text-sm ${getValueColor(Number(rookie.OVR) || 0)}`}>
-                      {getOvrDisplayByTokens(rookie.OVR, tokens, rookie.Stelle).label}
+                    <div className={`font-mono font-black text-sm ${getValueColor(Number(player.OVR) || 0)}`}>
+                      {isFreeAgent ? player.OVR : getOvrDisplayByTokens(player.OVR, tokens, player.Stelle).label}
                     </div>
                   </div>
 
-                  {/* Ispeziona Rookie nello Scouting */}
-                  {onInspectRookie && (
+                  {/* Ispeziona Giocatore */}
+                  {isFreeAgent && onInspectFreeAgent && (
                     <Button
                       type="button"
                       size="sm"
                       variant="ghost"
-                      onClick={() => onInspectRookie(rId)}
+                      onClick={() => onInspectFreeAgent(player)}
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                      title="Apri scheda rookie"
+                      title="Apri scheda calciatore svincolato"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {!isFreeAgent && onInspectRookie && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onInspectRookie(pId)}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                      title="Apri scheda rookie nello Scouting"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>

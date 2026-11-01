@@ -47,6 +47,7 @@ interface DraftWishlistDrawerProps {
   teamId: string;
   teamFullName?: string;
   availableRookies: Player[];
+  availableFreeAgents?: Player[];
   onWishlistChanged?: () => void;
 }
 
@@ -56,6 +57,7 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
   teamId,
   teamFullName,
   availableRookies,
+  availableFreeAgents = [],
   onWishlistChanged,
 }) => {
   const [wishlist, setWishlist] = useState<DraftWishlistItem[]>([]);
@@ -119,7 +121,7 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
   const handleRemove = async (rookieId: number) => {
     const res = await removeFromWishlist(teamId, rookieId);
     if (res.success) {
-      toast.info("Rookie rimosso dalla graduatoria");
+      toast.info("Calciatore rimosso dalla graduatoria");
       await loadData();
       onWishlistChanged?.();
     } else {
@@ -138,31 +140,38 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
     }
   };
 
-  // Aggiungi manualmente un rookie dalla ricerca
-  const handleAddRookie = async (rookie: Player) => {
-    const res = await addToWishlist(teamId, Number(rookie.ID));
+  // Aggiungi manualmente un giocatore dalla ricerca
+  const handleAddPlayer = async (player: Player) => {
+    const res = await addToWishlist(teamId, Number(player.ID));
     if (res.success) {
-      toast.success(`${rookie.Nome} ${rookie.Cognome} aggiunto in coda alla lista!`);
+      toast.success(`${player.Nome} ${player.Cognome} aggiunto in coda alla lista!`);
       setSearchRookieQuery("");
       await loadData();
       onWishlistChanged?.();
     } else {
-      toast.error(res.error || "Errore aggiunta rookie");
+      toast.error(res.error || "Errore aggiunta calciatore");
     }
   };
 
   // Set di ID già in wishlist
   const wishlistIdsSet = new Set(wishlist.map((w) => w.rookie_id));
 
-  // Rookie disponibili filtrati per la ricerca interna
+  const allAvailable = useMemo(() => {
+    return [
+      ...availableRookies.map((r) => ({ player: r, isFa: false })),
+      ...availableFreeAgents.map((fa) => ({ player: fa, isFa: true })),
+    ];
+  }, [availableRookies, availableFreeAgents]);
+
+  // Calciatori disponibili filtrati per la ricerca interna
   const searchResults = searchRookieQuery.trim()
-    ? availableRookies
-        .filter((r) => !wishlistIdsSet.has(Number(r.ID)))
+    ? allAvailable
+        .filter((item) => !wishlistIdsSet.has(Number(item.player.ID)))
         .filter(
-          (r) =>
-            r.Nome.toLowerCase().includes(searchRookieQuery.toLowerCase()) ||
-            r.Cognome.toLowerCase().includes(searchRookieQuery.toLowerCase()) ||
-            r.Posiz.toLowerCase().includes(searchRookieQuery.toLowerCase())
+          (item) =>
+            item.player.Nome.toLowerCase().includes(searchRookieQuery.toLowerCase()) ||
+            item.player.Cognome.toLowerCase().includes(searchRookieQuery.toLowerCase()) ||
+            item.player.Posiz.toLowerCase().includes(searchRookieQuery.toLowerCase())
         )
         .slice(0, 8)
     : [];
@@ -257,11 +266,11 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
             </div>
           )}
 
-          {/* Campo di ricerca per inserire un rookie alla volta */}
+          {/* Campo di ricerca per inserire un calciatore alla volta */}
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Cerca un rookie da aggiungere alla graduatoria..."
+              placeholder="Cerca un rookie o svincolato da aggiungere alla graduatoria..."
               value={searchRookieQuery}
               onChange={(e) => setSearchRookieQuery(e.target.value)}
               className="pl-8 text-xs h-8.5 rounded-xl bg-muted/40"
@@ -271,29 +280,39 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
           {/* Dropdown Risultati Ricerca */}
           {searchResults.length > 0 && (
             <div className="rounded-xl border border-border/80 bg-popover shadow-lg max-h-48 overflow-y-auto divide-y divide-border/60">
-              {searchResults.map((r) => (
+              {searchResults.map((item) => (
                 <div
-                  key={r.ID}
+                  key={item.player.ID}
                   className="p-2 flex items-center justify-between hover:bg-muted/50 transition-colors text-xs"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Badge
                       variant="outline"
-                      className={`text-[9px] font-black px-1.5 py-0 ${getRoleColor(r.Posiz)}`}
+                      className={`text-[9px] font-black px-1.5 py-0 ${getRoleColor(item.player.Posiz)}`}
                     >
-                      {r.Posiz}
+                      {item.player.Posiz}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={`text-[8px] font-bold px-1 py-0 uppercase ${
+                        item.isFa
+                          ? "bg-blue-500/10 text-blue-500 border-blue-500/30"
+                          : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                      }`}
+                    >
+                      {item.isFa ? "Svincolato" : "Rookie"}
                     </Badge>
                     <span className="font-bold text-foreground truncate">
-                      {r.Nome} {r.Cognome}
+                      {item.player.Nome} {item.player.Cognome}
                     </span>
                     <span className="text-[10px] text-muted-foreground font-mono">
-                      OVR {r.OVR ?? "?"}
+                      OVR {item.player.OVR ?? "?"}
                     </span>
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleAddRookie(r)}
+                    onClick={() => handleAddPlayer(item.player)}
                     className="h-7 px-2 text-xs font-bold text-emerald-600 hover:bg-emerald-500/10"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> Aggiungi
@@ -305,7 +324,7 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
         </div>
 
         {/* =================================================================== */}
-        {/* CORPO: LISTA DEI ROOKIE ORDINATA                                    */}
+        {/* CORPO: LISTA DEI CALCIATORI ORDINATA                                */}
         {/* =================================================================== */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading ? (
@@ -317,7 +336,7 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
               <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
                 <ListOrdered className="h-6 w-6" />
               </div>
-              <h4 className="text-sm font-bold text-foreground">Nessun rookie in graduatoria</h4>
+              <h4 className="text-sm font-bold text-foreground">Nessun calciatore in graduatoria</h4>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 Aggiungi i tuoi prospetti ideali con il campo di ricerca qui sopra o dalle schede nello Scouting e Draft.
               </p>
@@ -334,7 +353,13 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
           ) : (
             wishlist.map((item, index) => {
               const r = item.rookie;
-              const isAvailable = availableRookies.some((ar) => Number(ar.ID) === item.rookie_id);
+              const isAvailable =
+                availableRookies.some((ar) => Number(ar.ID) === item.rookie_id) ||
+                availableFreeAgents.some((fa) => Number(fa.ID) === item.rookie_id);
+              const isFreeAgent = Boolean(
+                availableFreeAgents.some((fa) => Number(fa.ID) === item.rookie_id) ||
+                (!availableRookies.some((ar) => Number(ar.ID) === item.rookie_id))
+              );
 
               return (
                 <div
@@ -362,6 +387,16 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
                           >
                             {r.Posiz}
                           </Badge>
+                          <Badge
+                            variant="outline"
+                            className={`text-[8px] font-bold px-1 py-0 uppercase ${
+                              isFreeAgent
+                                ? "bg-blue-500/10 text-blue-500 border-blue-500/30"
+                                : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                            }`}
+                          >
+                            {isFreeAgent ? "Svincolato" : "Rookie"}
+                          </Badge>
                           <span className="font-extrabold text-xs text-foreground truncate">
                             {r.Nome} {r.Cognome}
                           </span>
@@ -370,7 +405,7 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
                               variant="secondary"
                               className="text-[8px] uppercase tracking-wider px-1 py-0 bg-muted text-muted-foreground"
                             >
-                              Già Draftato
+                              Già Assegnato
                             </Badge>
                           )}
                         </div>
@@ -378,7 +413,11 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                           <span>
                             OVR:{" "}
-                            <strong className={getValueColor(r.OVR ?? 0)}>{getOvrDisplayByTokens(r.OVR, (r as any)?.tokens_spent ?? 0, r.Stelle).label}</strong>
+                            <strong className={getValueColor(r.OVR ?? 0)}>
+                              {isFreeAgent
+                                ? r.OVR ?? "?"
+                                : getOvrDisplayByTokens(r.OVR, (r as any)?.tokens_spent ?? 0, r.Stelle).label}
+                            </strong>
                           </span>
                           <span>• Età: {r.Età || "?"}</span>
                           <span>• {r.Nazionalità || ""}</span>
@@ -386,7 +425,7 @@ export const DraftWishlistDrawer: React.FC<DraftWishlistDrawerProps> = ({
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        Rookie #{item.rookie_id}
+                        Calciatore #{item.rookie_id}
                       </span>
                     )}
                   </div>

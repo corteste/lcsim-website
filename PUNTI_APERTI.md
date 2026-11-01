@@ -1391,12 +1391,15 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 64. Draft: Possibilità di Aggiungere Calciatori Svincolati alla Graduatoria (Priority Board)
-- **Stato**: 🔴 Da Sviluppare
+- **Stato**: 🟢 Completato (Sviluppato su branch dev)
 - **Priorità**: Media-Alta (Flessibilità e strategia completa nelle scelte del Draft)
-- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/services/draftWishlistService.ts`, `src/components/draft/*`
-- **Tabelle coinvolte**: `an_draft_board`, `an_player`, `draft_wishlists` (o tabella graduatorie)
-- **Specifiche & Requisiti**:
+- **Moduli coinvolti**: `src/pages/Draft.tsx`, `src/pages/Scouting.tsx`, `src/components/scouting/ScoutingAutopickTab.tsx`, `src/components/draft/DraftWishlistDrawer.tsx`, `src/services/draftWishlistService.ts`
+- **Tabelle coinvolte**: `draft_team_wishlist`, `an_player`, `an_rookie`
+- **Specifiche Implementate**:
   1. **Inclusione Svincolati nella Graduatoria Ufficiale**:
-     - Estendere la funzionalità della **Graduatoria** (Priority Board / Autopick) per consentire ai manager di ricercare, inserire e ordinare nell'elenco di preferenza non solo i Rookie, ma anche i calciatori **Svincolati** (`free_agent`).
-  2. **Autopick e Strategia di Chiamata Integrata**:
-     - In caso di assenza del manager al proprio turno di chiamata, il sistema di Autopick deve scorrere la graduatoria unificata e selezionare il primo profilo disponibile (Rookie o Svincolato), rispettando la priorità stabilita dal manager e i vincoli di ruolo/tetti di rosa (es. tetto portieri).
+     - Estesa la scheda Scouting (`/mia-squadra/scouting?tab=autopick`) con supporto completo per la ricerca e l'ordinamento di Rookie e Svincolati (filtri `Tutti`, `Rookie`, `Svincolati`).
+     - Distinzione grafica chiara con badge dedicato (`Rookie` in smeraldo vs `Svincolato` in azzurro/blu) sia nella ricerca sia nella graduatoria ordinata con supporto alle schede dettaglio.
+  2. **Pulsante Rapido Graduatoria nella Draft Room (`/campionato/draft`)**:
+     - Aggiunta azione rapida con icona graduatoria sia in ogni riga della tabella giocatori disponibili sia nella scheda di anteprima del giocatore selezionato per aggiungere o rimuovere al volo Rookie e Svincolati dalla propria priority board.
+  3. **Autopick e Strategia di Chiamata Integrata**:
+     - In caso di assenza del manager, il meccanismo di Autopick (già integrato con `rpc_draft_free_agent` e `rpc_draft_rookie` e rispetto del vincolo portieri) scorre la graduatoria unificata ed effettua la chiamata del profilo disponibile più in alto.
