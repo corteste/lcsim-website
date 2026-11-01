@@ -195,14 +195,6 @@ export function getStatDisplayByTokens(
   if (tokensSpent < 1) {
     return { label: "??", isUnlocked: false, midpoint: 0, rangeType: "none" };
   }
-  if (tokensSpent >= 5) {
-    return {
-      label: String(num),
-      isUnlocked: true,
-      midpoint: num,
-      rangeType: "exact",
-    };
-  }
   if (tokensSpent === 1) {
     const decade = Math.floor(num / 10) * 10;
     return {
