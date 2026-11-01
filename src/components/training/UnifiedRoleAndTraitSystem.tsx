@@ -137,6 +137,8 @@ export default function UnifiedRoleAndTraitSystem({
   // ACTIONS: MAIN ROLE & SUB-ROLES
   // -------------------------------------------------------------
 
+  const baseHadPlusPlus = Boolean(player.Role1?.endsWith("++") || player.Role2?.endsWith("++"));
+
   const handleOpenRoleChangeDialog = () => {
     if (isRosterLocked) {
       toast.error("Rose congelate dalla Lega");
@@ -145,7 +147,8 @@ export default function UnifiedRoleAndTraitSystem({
     const initialPos = OFFICIAL_POSITIONS.find((p) => p !== player.Posiz) || "CC";
     setPendingNewPos(initialPos);
     const firstSub = OFFICIAL_SUBROLES.find((sr) => sr.position === initialPos);
-    setPendingNewSubRole(firstSub ? `${firstSub.name} ++` : "");
+    const subSuffix = baseHadPlusPlus ? "++" : "+";
+    setPendingNewSubRole(firstSub ? `${firstSub.name} ${subSuffix}` : "");
     setRoleChangeDialogOpen(true);
   };
 
@@ -155,7 +158,7 @@ export default function UnifiedRoleAndTraitSystem({
       return;
     }
     if (!pendingNewSubRole) {
-      toast.error("Seleziona il primo Ruolo++ per la nuova posizione");
+      toast.error(`Seleziona il primo ${baseHadPlusPlus ? "Ruolo++" : "Ruolo+"} per la nuova posizione`);
       return;
     }
     const isNew = pendingNewPos !== player.Posiz;
@@ -1154,7 +1157,11 @@ export default function UnifiedRoleAndTraitSystem({
               {pendingNewPos !== player.Posiz && roleDiscounts?.[pendingNewPos] && (
                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold">(Sconto 50% applicato) </span>
               )}
-              ed assegna automaticamente la maestria massima <strong>Ruolo++</strong> (+2) gratuita nella nuova posizione.
+              {baseHadPlusPlus ? (
+                <>ed assegna automaticamente la maestria massima <strong>Ruolo++</strong> (+2) gratuita nella nuova posizione (mantenuta dal ruolo precedente).</>
+              ) : (
+                <>ed include la scelta del 1° <strong>Ruolo+</strong> (+1) gratuito nella nuova posizione.</>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -1167,7 +1174,8 @@ export default function UnifiedRoleAndTraitSystem({
                 onValueChange={(val) => {
                   setPendingNewPos(val);
                   const firstSub = OFFICIAL_SUBROLES.find((sr) => sr.position === val);
-                  setPendingNewSubRole(firstSub ? `${firstSub.name} ++` : "");
+                  const subSuffix = baseHadPlusPlus ? "++" : "+";
+                  setPendingNewSubRole(firstSub ? `${firstSub.name} ${subSuffix}` : "");
                 }}
               >
                 <SelectTrigger className="h-9 text-xs">
@@ -1200,22 +1208,27 @@ export default function UnifiedRoleAndTraitSystem({
               </div>
             )}
 
-            {/* Selettore 1° Ruolo++ Iniziale */}
+            {/* Selettore 1° Ruolo Iniziale */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Primo Ruolo++ (Incluso Gratuito):</label>
+              <label className="text-xs font-bold text-foreground">
+                Primo {baseHadPlusPlus ? "Ruolo++ (Mantenuto Gratuito)" : "Ruolo+ (Incluso Gratis)"}:
+              </label>
               <Select
                 value={pendingNewSubRole}
                 onValueChange={(val) => setPendingNewSubRole(val)}
               >
                 <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Seleziona Ruolo++" />
+                  <SelectValue placeholder={baseHadPlusPlus ? "Seleziona Ruolo++" : "Seleziona Ruolo+"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {pendingCompatibleSubRoles.map((sr) => (
-                    <SelectItem key={sr.id} value={`${sr.name} ++`} className="text-xs font-semibold">
-                      {sr.name} ++
-                    </SelectItem>
-                  ))}
+                  {pendingCompatibleSubRoles.map((sr) => {
+                    const valWithSuffix = `${sr.name} ${baseHadPlusPlus ? "++" : "+"}`;
+                    return (
+                      <SelectItem key={sr.id} value={valWithSuffix} className="text-xs font-semibold">
+                        {valWithSuffix}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -1230,8 +1243,11 @@ export default function UnifiedRoleAndTraitSystem({
                   : "40 XP"}
               </strong>
               <br />
-              • Il 1° Ruolo viene automaticamente potenziato a <strong>Ruolo++</strong> senza costi aggiuntivi.
-              <br />
+              {baseHadPlusPlus ? (
+                <>• Il 1° Ruolo viene automaticamente impostato a <strong>Ruolo++</strong> gratuito (mantenuto dal ruolo precedente).<br /></>
+              ) : (
+                <>• Il 1° Ruolo viene impostato a <strong>Ruolo+</strong>. L'upgrade a Ruolo++ potrà essere effettuato in seguito (100 XP).<br /></>
+              )}
               • Un eventuale 2° Ruolo+ potrà essere aggiunto in seguito a 100 XP.
             </div>
           </div>

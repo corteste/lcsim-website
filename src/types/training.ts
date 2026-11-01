@@ -564,21 +564,33 @@ export function calculateSpecializationsCost(
 
   // 1. RUOLO PRINCIPALE
   const roleChanged = draft.posiz !== baseSpec.posiz;
+  const baseHadPlusPlus = Boolean(baseSpec.role1?.endsWith("++") || baseSpec.role2?.endsWith("++"));
   if (roleChanged) {
     const cost = isRoleChangeDiscounted ? (TRAINING_COSTS.ROLE_CHANGE / 2) : TRAINING_COSTS.ROLE_CHANGE;
     roleCost += cost;
+    const includedRoleName = baseHadPlusPlus ? "1° Ruolo++ incluso" : "1° Ruolo+ incluso";
     if (isRoleChangeDiscounted) {
-      roleBreakdown.push(`Cambio Ruolo Principale a ${draft.posiz}: +${cost} XP (Sconto 50% applicato, 1° Ruolo++ incluso)`);
+      roleBreakdown.push(`Cambio Ruolo Principale a ${draft.posiz}: +${cost} XP (Sconto 50% applicato, ${includedRoleName})`);
     } else {
-      roleBreakdown.push(`Cambio Ruolo Principale a ${draft.posiz}: +${cost} XP (1° Ruolo++ incluso)`);
+      roleBreakdown.push(`Cambio Ruolo Principale a ${draft.posiz}: +${cost} XP (${includedRoleName})`);
     }
   }
 
   // 2. RUOLI+
   if (roleChanged) {
-    // Il 1° Ruolo++ è incluso gratuitamente nel cambio di ruolo principale
     if (draft.role1) {
-      roleBreakdown.push(`1° Ruolo++ (${draft.role1}): Gratuito (incluso nel cambio ruolo)`);
+      if (draft.role1.endsWith("++")) {
+        if (baseHadPlusPlus) {
+          roleBreakdown.push(`1° Ruolo++ (${draft.role1}): Gratuito (mantenuto dal ruolo precedente)`);
+        } else {
+          // Non possedeva Ruolo++: il cambio ruolo include Ruolo+, l'upgrade a ++ costa 100 XP
+          roleCost += TRAINING_COSTS.ROLE_PLUSPLUS;
+          roleBreakdown.push(`1° Ruolo+ (${draft.role1.replace(/\+\+$/, "+")}): Gratuito (incluso nel cambio ruolo)`);
+          roleBreakdown.push(`Upgrade 1° Ruolo a Ruolo++: +${TRAINING_COSTS.ROLE_PLUSPLUS} XP`);
+        }
+      } else {
+        roleBreakdown.push(`1° Ruolo+ (${draft.role1}): Gratuito (incluso nel cambio ruolo)`);
+      }
     }
     // Se viene aggiunto un 2° Ruolo+, costa 100 XP
     if (draft.role2) {
