@@ -140,12 +140,12 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
         <div
           onMouseEnter={() => setIsPressPaused(true)}
           onMouseLeave={() => setIsPressPaused(false)}
-          className={`p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 relative transition-all ${
-            isStacked ? "flex-1 min-h-[135px]" : "min-h-[145px]"
+          className={`p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 relative transition-all ${
+            isStacked ? "flex-1 min-h-[160px]" : "min-h-[160px]"
           }`}
         >
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
+          <div className="space-y-2 flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-1.5">
                 <Badge
                   variant="outline"
@@ -192,14 +192,14 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
             {loading ? (
               <p className="text-xs text-muted-foreground italic py-1">Caricamento...</p>
             ) : currentPress ? (
-              <div key={currentPress.id || pressIndex} className="animate-in fade-in duration-300">
-                <p className="text-xs font-bold text-foreground line-clamp-1">
+              <div key={currentPress.id || pressIndex} className="animate-in fade-in duration-300 flex-1 min-h-0 flex flex-col justify-start">
+                <p className="text-xs sm:text-[13px] font-bold text-foreground line-clamp-1">
                   {currentPress.team?.NAME || currentPress.team_id}
                   <span className="text-muted-foreground font-normal ml-1">
                     ({currentPress.manager_name || currentPress.team?.MANAGER || "Presidente"})
                   </span>
                 </p>
-                <p className="text-xs italic text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                <p className="text-xs sm:text-[13px] italic text-muted-foreground mt-1.5 line-clamp-4 lg:line-clamp-5 leading-relaxed">
                   "{currentPress.answer || currentPress.question}"
                 </p>
               </div>
@@ -210,10 +210,10 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-0.5">
+          <div className="flex items-center justify-between pt-1 border-t border-border/40 shrink-0">
             <Link
               to="/sala-stampa"
-              className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+              className="text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
             >
               Tutte le interviste &rarr;
             </Link>
@@ -244,12 +244,12 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
         <div
           onMouseEnter={() => setIsRumorPaused(true)}
           onMouseLeave={() => setIsRumorPaused(false)}
-          className={`p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 relative transition-all ${
-            isStacked ? "flex-1 min-h-[135px]" : "min-h-[145px]"
+          className={`p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 relative transition-all ${
+            isStacked ? "flex-1 min-h-[160px]" : "min-h-[160px]"
           }`}
         >
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
+          <div className="space-y-2 flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-1.5">
                 <Badge
                   variant="outline"
@@ -291,11 +291,11 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
             {loading ? (
               <p className="text-xs text-muted-foreground italic py-1">Caricamento...</p>
             ) : currentRumor ? (
-              <div key={currentRumor.id || rumorIndex} className="animate-in fade-in duration-300">
-                <p className="text-xs font-bold text-foreground line-clamp-1">
+              <div key={currentRumor.id || rumorIndex} className="animate-in fade-in duration-300 flex-1 min-h-0 flex flex-col justify-start">
+                <p className="text-xs sm:text-[13px] font-bold text-foreground line-clamp-2 leading-snug">
                   {currentRumor.headline}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                <p className="text-xs sm:text-[13px] text-muted-foreground mt-1.5 line-clamp-4 lg:line-clamp-5 leading-relaxed">
                   {currentRumor.content}
                 </p>
               </div>
@@ -306,10 +306,10 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-0.5">
+          <div className="flex items-center justify-between pt-1 border-t border-border/40 shrink-0">
             <Link
               to="/sala-stampa"
-              className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+              className="text-[10px] sm:text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
             >
               Leggi le indiscrezioni &rarr;
             </Link>
