@@ -132,7 +132,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
       </CardHeader>
 
       <CardContent
-        className={`p-3.5 sm:p-4 flex-1 flex flex-col justify-between ${
+        className={`p-3.5 sm:p-4 flex-1 min-h-0 flex flex-col justify-between overflow-hidden ${
           isStacked ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 gap-3"
         }`}
       >
@@ -140,66 +140,68 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
         <div
           onMouseEnter={() => setIsPressPaused(true)}
           onMouseLeave={() => setIsPressPaused(false)}
-          className={`p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 relative transition-all ${
-            isStacked ? "flex-1 min-h-[160px]" : "min-h-[160px]"
+          className={`p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between relative overflow-hidden transition-all ${
+            isStacked ? "h-[195px] min-h-[195px] max-h-[195px]" : "min-h-[180px]"
           }`}
         >
-          <div className="space-y-2 flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-1.5">
-                <Badge
-                  variant="outline"
-                  className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold flex items-center gap-1 py-0 px-1.5"
-                >
-                  <Mic2 className="h-2.5 w-2.5" />
-                  Sala Stampa
-                </Badge>
-                {currentPress?.matchday && (
-                  <span className="text-[10px] font-mono text-muted-foreground/80">
-                    G{currentPress.matchday}
-                  </span>
-                )}
-              </div>
-
-              {/* Controlli manuali carosello */}
-              {conferences.length > 1 && (
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
-                    {pressIndex + 1}/{conferences.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handlePrevPress}
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                    title="Dichiarazione precedente"
-                    aria-label="Precedente"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextPress}
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                    title="Dichiarazione successiva"
-                    aria-label="Successiva"
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+          {/* Header Sub-Card */}
+          <div className="flex items-center justify-between gap-2 shrink-0 h-6">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Badge
+                variant="outline"
+                className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold flex items-center gap-1 py-0 px-1.5 shrink-0"
+              >
+                <Mic2 className="h-2.5 w-2.5" />
+                Sala Stampa
+              </Badge>
+              {currentPress?.matchday && (
+                <span className="text-[10px] font-mono text-muted-foreground/80 shrink-0">
+                  G{currentPress.matchday}
+                </span>
               )}
             </div>
 
+            {/* Controlli manuali carosello */}
+            {conferences.length > 1 && (
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
+                  {pressIndex + 1}/{conferences.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={handlePrevPress}
+                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                  title="Dichiarazione precedente"
+                  aria-label="Precedente"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextPress}
+                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                  title="Dichiarazione successiva"
+                  aria-label="Successiva"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Area Contenuto (Altezza Controllata e Fissa) */}
+          <div className="flex-1 min-h-0 my-1.5 flex flex-col justify-center overflow-hidden">
             {loading ? (
               <p className="text-xs text-muted-foreground italic py-1">Caricamento...</p>
             ) : currentPress ? (
-              <div key={currentPress.id || pressIndex} className="animate-in fade-in duration-300 flex-1 min-h-0 flex flex-col justify-start">
-                <p className="text-xs sm:text-[13px] font-bold text-foreground line-clamp-1">
+              <div key={currentPress.id || pressIndex} className="animate-in fade-in duration-300">
+                <p className="text-xs sm:text-[13px] font-bold text-foreground truncate" title={`${currentPress.team?.NAME || currentPress.team_id} (${currentPress.manager_name || currentPress.team?.MANAGER || "Presidente"})`}>
                   {currentPress.team?.NAME || currentPress.team_id}
                   <span className="text-muted-foreground font-normal ml-1">
                     ({currentPress.manager_name || currentPress.team?.MANAGER || "Presidente"})
                   </span>
                 </p>
-                <p className="text-xs sm:text-[13px] italic text-muted-foreground mt-1.5 line-clamp-4 lg:line-clamp-5 leading-relaxed">
+                <p className="text-xs sm:text-[13px] italic text-muted-foreground mt-1 line-clamp-3 leading-relaxed">
                   "{currentPress.answer || currentPress.question}"
                 </p>
               </div>
@@ -210,7 +212,8 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-1 border-t border-border/40 shrink-0">
+          {/* Footer Sub-Card */}
+          <div className="flex items-center justify-between pt-1.5 border-t border-border/40 shrink-0 h-6">
             <Link
               to="/sala-stampa"
               className="text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
@@ -244,58 +247,60 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
         <div
           onMouseEnter={() => setIsRumorPaused(true)}
           onMouseLeave={() => setIsRumorPaused(false)}
-          className={`p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between space-y-2 relative transition-all ${
-            isStacked ? "flex-1 min-h-[160px]" : "min-h-[160px]"
+          className={`p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between relative overflow-hidden transition-all ${
+            isStacked ? "h-[195px] min-h-[195px] max-h-[195px]" : "min-h-[180px]"
           }`}
         >
-          <div className="space-y-2 flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-1.5">
-                <Badge
-                  variant="outline"
-                  className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold flex items-center gap-1 py-0 px-1.5"
-                >
-                  <Flame className="h-2.5 w-2.5 text-amber-500" />
-                  Ultime Notizie
-                </Badge>
-              </div>
-
-              {/* Controlli manuali carosello */}
-              {rumors.length > 1 && (
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
-                    {rumorIndex + 1}/{rumors.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handlePrevRumor}
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                    title="Notizia precedente"
-                    aria-label="Precedente"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextRumor}
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                    title="Notizia successiva"
-                    aria-label="Successiva"
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
+          {/* Header Sub-Card */}
+          <div className="flex items-center justify-between gap-2 shrink-0 h-6">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Badge
+                variant="outline"
+                className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold flex items-center gap-1 py-0 px-1.5 shrink-0"
+              >
+                <Flame className="h-2.5 w-2.5 text-amber-500" />
+                Ultime Notizie
+              </Badge>
             </div>
 
+            {/* Controlli manuali carosello */}
+            {rumors.length > 1 && (
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
+                  {rumorIndex + 1}/{rumors.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={handlePrevRumor}
+                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                  title="Notizia precedente"
+                  aria-label="Precedente"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextRumor}
+                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                  title="Notizia successiva"
+                  aria-label="Successiva"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Area Contenuto (Altezza Controllata e Fissa) */}
+          <div className="flex-1 min-h-0 my-1.5 flex flex-col justify-center overflow-hidden">
             {loading ? (
               <p className="text-xs text-muted-foreground italic py-1">Caricamento...</p>
             ) : currentRumor ? (
-              <div key={currentRumor.id || rumorIndex} className="animate-in fade-in duration-300 flex-1 min-h-0 flex flex-col justify-start">
-                <p className="text-xs sm:text-[13px] font-bold text-foreground line-clamp-2 leading-snug">
+              <div key={currentRumor.id || rumorIndex} className="animate-in fade-in duration-300">
+                <p className="text-xs sm:text-[13px] font-bold text-foreground truncate" title={currentRumor.headline}>
                   {currentRumor.headline}
                 </p>
-                <p className="text-xs sm:text-[13px] text-muted-foreground mt-1.5 line-clamp-4 lg:line-clamp-5 leading-relaxed">
+                <p className="text-xs sm:text-[13px] text-muted-foreground mt-1 line-clamp-3 leading-relaxed">
                   {currentRumor.content}
                 </p>
               </div>
@@ -306,7 +311,8 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-1 border-t border-border/40 shrink-0">
+          {/* Footer Sub-Card */}
+          <div className="flex items-center justify-between pt-1.5 border-t border-border/40 shrink-0 h-6">
             <Link
               to="/sala-stampa"
               className="text-[10px] sm:text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
