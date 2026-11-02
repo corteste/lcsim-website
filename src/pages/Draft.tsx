@@ -434,16 +434,17 @@ const Draft = () => {
 
       let rookieData: DraftPickAnnouncementData["rookie"] | null = null;
 
-      // 1. Cerca in an_player per avere i dati decifrati ufficiali (OVR, Altezza, Peso)
+      // 1. Cerca in an_player per avere tutti i dati decifrati ufficiali (statistiche, tratti, fisico, ecc.)
       try {
         const { data: pData } = await supabase
           .from("an_player")
-          .select("ID, Nome, Cognome, Posiz, OVR, Altezza, Peso")
+          .select("*")
           .eq("ID", rookieId)
           .maybeSingle();
 
         if (pData) {
           rookieData = {
+            ...pData,
             ID: Number(pData.ID),
             Nome: pData.Nome || "",
             Cognome: pData.Cognome || "",
@@ -462,6 +463,7 @@ const Draft = () => {
         const local = rookies.find((r) => Number(r.ID) === Number(rookieId));
         if (local) {
           rookieData = {
+            ...local,
             ID: Number(local.ID),
             Nome: local.Nome || "",
             Cognome: local.Cognome || "",
@@ -474,11 +476,12 @@ const Draft = () => {
           try {
             const { data: rkRow } = await supabase
               .from(ROOKIE_TABLE)
-              .select("ID, Nome, Cognome, Posiz, OVR, Altezza, Peso")
+              .select("*")
               .eq("ID", rookieId)
               .maybeSingle();
             if (rkRow) {
               rookieData = {
+                ...rkRow,
                 ID: Number(rkRow.ID),
                 Nome: rkRow.Nome || "",
                 Cognome: rkRow.Cognome || "",
