@@ -158,9 +158,6 @@ const Home = () => {
                               <span className="font-semibold text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                                 {team.team.NAME}
                               </span>
-                              <span className="ml-2 text-[10px] font-mono uppercase px-1 rounded bg-muted text-muted-foreground">
-                                {team.team.TEAM_ID}
-                              </span>
                             </div>
                           </div>
                         </td>
