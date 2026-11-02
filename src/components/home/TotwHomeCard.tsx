@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Star, Trophy, Crown, ArrowRight, Loader2, Sparkles, Shield } from "lucide-react";
+import { Star, Trophy, Crown, ArrowRight, Loader2 } from "lucide-react";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import { getRoleColor, getPlayerImage } from "@/utils/functions";
 import { fetchAvailableTotwWeeks, fetchTotwForWeek, TotwResult } from "@/services/totwService";
@@ -52,7 +51,7 @@ export function TotwHomeCard() {
 
   if (isLoading) {
     return (
-      <Card className="rounded-2xl border border-border/80 bg-card p-5 md:p-6 shadow-sm flex items-center justify-center min-h-[220px]">
+      <Card className="rounded-2xl border border-border/80 bg-card p-5 md:p-6 shadow-sm flex items-center justify-center h-full min-h-[280px]">
         <div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
           <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
           <span>Caricamento Squadra della Settimana...</span>
@@ -68,7 +67,7 @@ export function TotwHomeCard() {
   const { mvp, week, season, players } = totwData;
 
   return (
-    <Card className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-card via-card/95 to-amber-950/10 p-5 md:p-6 shadow-md hover:border-amber-500/50 transition-all duration-300">
+    <Card className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-card via-card/95 to-amber-950/10 p-5 md:p-6 shadow-sm hover:border-amber-500/50 transition-all duration-300 h-full flex flex-col justify-between">
       {/* Ambient background glow */}
       <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
 
@@ -95,20 +94,21 @@ export function TotwHomeCard() {
 
         <Link
           to={`/statistiche?tab=totw`}
-          className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:text-amber-500 flex items-center gap-1 group"
+          className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:text-amber-500 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all group"
         >
-          <span>Vedi sul Campo</span>
+          <Trophy className="h-3.5 w-3.5 text-amber-500" />
+          <span>Vedi Formazione 2D</span>
           <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
 
       {/* BODY CONTENT: MVP SPOTLIGHT + 11 AVATARS STRIP */}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-1 my-auto">
         {/* MVP Spotlight Banner (5 cols) */}
         {mvp ? (
-          <div className="md:col-span-5 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 backdrop-blur-sm flex items-center gap-3.5">
-            <div className="relative">
-              <div className="h-14 w-14 rounded-full overflow-hidden bg-slate-950 border-2 border-amber-400 ring-4 ring-amber-400/30 shrink-0">
+          <div className="md:col-span-5 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 backdrop-blur-sm flex items-center gap-3.5 h-full">
+            <div className="relative shrink-0">
+              <div className="h-16 w-16 rounded-full overflow-hidden bg-slate-950 border-2 border-amber-400 ring-4 ring-amber-400/30">
                 <img
                   src={getPlayerImage(mvp.id)}
                   alt={mvp.surname}
@@ -119,7 +119,7 @@ export function TotwHomeCard() {
                 />
               </div>
               <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-amber-500 text-slate-950 shadow-md">
-                <Crown className="h-3 w-3 fill-slate-950" />
+                <Crown className="h-3.5 w-3.5 fill-slate-950" />
               </div>
             </div>
 
@@ -132,7 +132,7 @@ export function TotwHomeCard() {
                   {mvp.position}
                 </Badge>
               </div>
-              <h3 className="text-sm font-black text-foreground truncate">
+              <h3 className="text-sm font-black text-foreground truncate mt-0.5">
                 {mvp.fullName}
               </h3>
               <p className="text-[11px] text-muted-foreground truncate">
@@ -141,7 +141,7 @@ export function TotwHomeCard() {
             </div>
 
             <div className="text-right shrink-0">
-              <span className="text-xl font-black font-mono text-amber-500 block leading-tight">
+              <span className="text-2xl font-black font-mono text-amber-500 block leading-tight">
                 {mvp.vote.toFixed(1)}
               </span>
               <span className="text-[9px] font-bold uppercase text-muted-foreground">
@@ -156,7 +156,7 @@ export function TotwHomeCard() {
         )}
 
         {/* 11 Players Compact Visual Grid (7 cols) */}
-        <div className="md:col-span-7 flex flex-wrap items-center justify-between gap-1.5 py-1 px-2 rounded-xl bg-muted/30 border border-border/40">
+        <div className="md:col-span-7 flex flex-wrap items-center justify-between gap-1.5 p-3 rounded-xl bg-muted/30 border border-border/40 h-full">
           {players.map((p) => (
             <div
               key={p.id}
@@ -164,7 +164,7 @@ export function TotwHomeCard() {
               title={`${p.fullName} (${p.position}) - Voto ${p.vote}`}
             >
               <div
-                className={`relative h-8 w-8 sm:h-9 sm:w-9 rounded-full overflow-hidden bg-slate-950 border transition-all ${
+                className={`relative h-9 w-9 sm:h-10 sm:w-10 rounded-full overflow-hidden bg-slate-950 border transition-all ${
                   p.isMvp
                     ? "border-amber-400 ring-2 ring-amber-400/50"
                     : "border-border/80 group-hover:border-amber-400"
@@ -179,31 +179,15 @@ export function TotwHomeCard() {
                   }}
                 />
               </div>
-              <span className="text-[9px] font-mono font-bold text-foreground truncate max-w-[42px] leading-tight mt-0.5">
+              <span className="text-[9px] font-mono font-bold text-foreground truncate max-w-[46px] leading-tight mt-1">
                 {p.surname}
               </span>
-              <span className="text-[8px] font-mono text-amber-500 font-extrabold leading-none">
+              <span className="text-[9px] font-mono text-amber-500 font-extrabold leading-none mt-0.5">
                 {p.vote.toFixed(1)}
               </span>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* FOOTER ACTION */}
-      <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          Calcolato in base ai voti e statistiche ufficiali della Giornata {week}
-        </span>
-        <Link to="/statistiche?tab=totw">
-          <Button
-            size="sm"
-            className="h-8 text-xs font-bold gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 hover:from-amber-600 hover:to-yellow-600 shadow-sm"
-          >
-            <Trophy className="h-3.5 w-3.5" />
-            Schiera sul Campo 2D
-          </Button>
-        </Link>
       </div>
     </Card>
   );
