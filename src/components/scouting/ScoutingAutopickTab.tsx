@@ -526,7 +526,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
               item.rookie;
             if (!player) return null;
 
-            const pId = item.rookie_id;
+            const pId = Number(item.rookie_id);
             const isFreeAgent = Boolean(
               (allFreeAgents || []).some((fa) => Number(fa.ID) === Number(pId)) ||
               (!allRookies.some((r) => Number(r.ID) === Number(pId)))
@@ -673,7 +673,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       type="button"
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleMove(rId, "up")}
+                      onClick={() => handleMove(pId, "up")}
                       disabled={index === 0}
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
                       title="Sposta su"
@@ -684,7 +684,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       type="button"
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleMove(rId, "down")}
+                      onClick={() => handleMove(pId, "down")}
                       disabled={index === wishlist.length - 1}
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
                       title="Sposta giù"
@@ -698,7 +698,7 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                     type="button"
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleRemove(rId)}
+                    onClick={() => handleRemove(pId)}
                     className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     title="Rimuovi dalla graduatoria"
                   >
