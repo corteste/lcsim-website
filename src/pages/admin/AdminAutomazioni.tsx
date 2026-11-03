@@ -1096,6 +1096,11 @@ export default function AdminAutomazioni() {
                         >
                           <div className="flex flex-col min-w-0 pr-2">
                             <span className="font-bold text-foreground truncate">{team.teamName}</span>
+                            {team.rosterReason && (
+                              <span className="text-[10px] text-destructive font-semibold">
+                                {team.rosterReason}
+                              </span>
+                            )}
                             {team.postGk !== undefined && team.gkReason && (
                               <span className="text-[10px] text-destructive font-semibold">
                                 {team.gkReason}
@@ -1119,7 +1124,7 @@ export default function AdminAutomazioni() {
                       ))}
                     </div>
                     <p className="text-[11px] text-muted-foreground italic">
-                      L'ufficializzazione è bloccata finché tutte le squadre non avranno, dopo i tagli, tra 13 e 16 giocatori, al massimo 21 asset tra giocatori e scelte draft, e almeno 2 portieri (salvo eccezione ritiro/espansione con obbligo al Draft).
+                      L'ufficializzazione è bloccata finché tutte le squadre non avranno, dopo i tagli, tra 13 e 16 giocatori, al massimo 21 asset tra giocatori e scelte draft, e almeno 2 portieri (consentito 1 portiere per eccezione di ritiro o espansione, con obbligo di draftare un portiere al Draft).
                     </p>
                     <Button
                       disabled={true}

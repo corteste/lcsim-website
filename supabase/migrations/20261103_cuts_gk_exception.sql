@@ -44,7 +44,7 @@ DECLARE
   v_r1_teams TEXT[] := ARRAY[]::TEXT[];
   v_team_id TEXT;
   v_comp_slot INT;
-  v_temp_neg INT := -1;
+  v_temp_high INT := 1000;
 BEGIN
   -- A. Verifica conformità per tutte le squadre attive (Serie A)
   FOR v_team IN
@@ -248,7 +248,7 @@ BEGIN
   END IF;
 
   -- 3. Inserimento scelte compensatorie con pick_overall temporaneo negativo
-  v_temp_neg := -1000;
+  v_temp_high := 1000;
 
   -- Round 2 Compensatorie (per squadre con rosa post-tagli <= 13)
   v_comp_slot := 13;
@@ -260,11 +260,11 @@ BEGIN
         rookie_id, player_id, player_type, picked_at, picked_by,
         is_compensatory, compensatory_reason
       ) VALUES (
-        v_temp_neg, 2, v_comp_slot, v_team_id, v_team_id,
+        v_temp_high, 2, v_comp_slot, v_team_id, v_team_id,
         NULL, NULL, 'rookie', NULL, NULL,
         true, 'Scelta compensatoria Round 2 (Rosa post-tagli a ' || v_post_roster || ' giocatori)'
       );
-      v_temp_neg := v_temp_neg - 1;
+      v_temp_high := v_temp_high + 1;
       v_comp_slot := v_comp_slot + 1;
       v_comp_picks_generated := v_comp_picks_generated || jsonb_build_object(
         'round', 2,
@@ -284,11 +284,11 @@ BEGIN
         rookie_id, player_id, player_type, picked_at, picked_by,
         is_compensatory, compensatory_reason
       ) VALUES (
-        v_temp_neg, 3, v_comp_slot, v_team_id, v_team_id,
+        v_temp_high, 3, v_comp_slot, v_team_id, v_team_id,
         NULL, NULL, 'rookie', NULL, NULL,
         true, 'Scelta compensatoria Round 3 (Rosa post-tagli a ' || v_post_roster || ' giocatori)'
       );
-      v_temp_neg := v_temp_neg - 1;
+      v_temp_high := v_temp_high + 1;
       v_comp_slot := v_comp_slot + 1;
       v_comp_picks_generated := v_comp_picks_generated || jsonb_build_object(
         'round', 3,
@@ -308,11 +308,11 @@ BEGIN
         rookie_id, player_id, player_type, picked_at, picked_by,
         is_compensatory, compensatory_reason
       ) VALUES (
-        v_temp_neg, 4, v_comp_slot, v_team_id, v_team_id,
+        v_temp_high, 4, v_comp_slot, v_team_id, v_team_id,
         NULL, NULL, 'rookie', NULL, NULL,
         true, 'Scelta compensatoria Round 4 (Rosa post-tagli a ' || v_post_roster || ' giocatori)'
       );
-      v_temp_neg := v_temp_neg - 1;
+      v_temp_high := v_temp_high + 1;
       v_comp_slot := v_comp_slot + 1;
       v_comp_picks_generated := v_comp_picks_generated || jsonb_build_object(
         'round', 4,
@@ -324,7 +324,7 @@ BEGIN
 
   -- 4. Riordino atomico di pick_overall (1..N) sequenziale ordinato per round e pick_in_round
   UPDATE public.an_draft_board
-  SET pick_overall = -ABS(pick_overall) - 10000;
+  SET pick_overall = pick_overall + 10000;
 
   WITH ordered AS (
     SELECT ctid, ROW_NUMBER() OVER (ORDER BY round ASC, pick_in_round ASC) AS new_pick_overall

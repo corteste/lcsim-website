@@ -23,6 +23,7 @@ export interface TeamCutCompliance {
   isCompliant: boolean;
   gkReason?: string;
   assetReason?: string;
+  rosterReason?: string;
 }
 
 /** Limiti regolamentari della rosa post-tagli */
@@ -266,6 +267,11 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
           ? postGk === 0
             ? "Nessun portiere rimasto in rosa (0 POR)"
             : `Meno di 2 portieri rimasti a seguito di tagli (${postGk} POR)`
+          : undefined,
+        rosterReason: !isRosterCompliant
+          ? postRoster < CUTS_MIN_ROSTER
+            ? `Rosa post-tagli inferiore al minimo di ${CUTS_MIN_ROSTER} giocatori (${postRoster} rimasti)`
+            : `Rosa post-tagli superiore al massimo di ${CUTS_MAX_ROSTER} giocatori (${postRoster} rimasti)`
           : undefined,
         assetReason: !isAssetCompliant
           ? `Asset oltre il limite: ${postAssets}/${CUTS_MAX_ASSETS} (${postRoster} giocatori + ${picksCount} pick)`
