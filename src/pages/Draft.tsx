@@ -77,6 +77,10 @@ import { getTestModeState } from "@/services/testModeService";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
 import {
+  fetchRookieCombine,
+  buildMetricsFromCombine,
+} from "@/services/rookieCombineService";
+import {
   DraftPickAnnouncementModal,
   DraftPickAnnouncementData,
 } from "@/components/draft/DraftPickAnnouncementModal";
@@ -499,6 +503,18 @@ const Draft = () => {
 
       if (rookieData) {
         const teamObj = teamMap.get(teamId);
+        let combineMetrics = undefined;
+        let athleticIndex = undefined;
+        try {
+          const combine = await fetchRookieCombine(rookieId);
+          if (combine) {
+            combineMetrics = buildMetricsFromCombine(combine);
+            athleticIndex = Number(combine.athletic_index) || undefined;
+          }
+        } catch (cErr) {
+          console.warn("Errore recupero combine per annuncio:", cErr);
+        }
+
         setAnnouncementPick({
           pickOverall,
           round,
@@ -506,6 +522,8 @@ const Draft = () => {
           teamAbbr: teamObj?.NAME_ABBR || teamObj?.TEAM_ID || teamId,
           teamName: teamObj?.NAME || teamId,
           rookie: rookieData,
+          combineMetrics,
+          athleticIndex,
         });
       }
     },

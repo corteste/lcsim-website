@@ -18,6 +18,10 @@ import { Button } from "@/components/ui/button";
 import { getPlayerImage, getRoleColor, getValueColor } from "@/utils/functions";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import { Player } from "@/types/player";
+import {
+  fetchRookieCombine,
+  buildMetricsFromCombine,
+} from "@/services/rookieCombineService";
 
 export interface CombineMetric {
   id: string;
@@ -42,6 +46,7 @@ export interface DraftPickAnnouncementData {
     OVR: number;
   };
   combineMetrics?: CombineMetric[];
+  athleticIndex?: number;
 }
 
 interface DraftPickAnnouncementModalProps {
@@ -73,42 +78,42 @@ export const buildCombineMetrics = (
   // 5 slot predisposti per i valori della Combine (pronti per essere popolati con le metriche specifiche)
   const defaultSlots: CombineMetric[] = [
     {
-      id: "combine_1",
-      label: "Test Combine 1",
+      id: "40yd_dash",
+      label: "40 YD Dash",
       value: customMetrics?.[0]?.value ?? "—",
-      unit: customMetrics?.[0]?.unit ?? "",
+      unit: customMetrics?.[0]?.unit ?? "s",
       grade: customMetrics?.[0]?.grade ?? "N/D",
       score: customMetrics?.[0]?.score ?? 0,
     },
     {
-      id: "combine_2",
-      label: "Test Combine 2",
+      id: "bench_press",
+      label: "Bench Press",
       value: customMetrics?.[1]?.value ?? "—",
-      unit: customMetrics?.[1]?.unit ?? "",
+      unit: customMetrics?.[1]?.unit ?? "reps",
       grade: customMetrics?.[1]?.grade ?? "N/D",
       score: customMetrics?.[1]?.score ?? 0,
     },
     {
-      id: "combine_3",
-      label: "Test Combine 3",
+      id: "vertical_jump",
+      label: "Vertical Jump",
       value: customMetrics?.[2]?.value ?? "—",
-      unit: customMetrics?.[2]?.unit ?? "",
+      unit: customMetrics?.[2]?.unit ?? "cm",
       grade: customMetrics?.[2]?.grade ?? "N/D",
       score: customMetrics?.[2]?.score ?? 0,
     },
     {
-      id: "combine_4",
-      label: "Test Combine 4",
+      id: "shuttle_run",
+      label: "20 YD Shuttle",
       value: customMetrics?.[3]?.value ?? "—",
-      unit: customMetrics?.[3]?.unit ?? "",
+      unit: customMetrics?.[3]?.unit ?? "s",
       grade: customMetrics?.[3]?.grade ?? "N/D",
       score: customMetrics?.[3]?.score ?? 0,
     },
     {
-      id: "combine_5",
-      label: "Test Combine 5",
+      id: "three_cone",
+      label: "3 Cone Drill",
       value: customMetrics?.[4]?.value ?? "—",
-      unit: customMetrics?.[4]?.unit ?? "",
+      unit: customMetrics?.[4]?.unit ?? "s",
       grade: customMetrics?.[4]?.grade ?? "N/D",
       score: customMetrics?.[4]?.score ?? 0,
     },
@@ -124,6 +129,42 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
 }) => {
   const [progress, setProgress] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
+  const [internalMetrics, setInternalMetrics] = useState<CombineMetric[] | null>(
+    pickData?.combineMetrics ?? null
+  );
+  const [internalAthleticIndex, setInternalAthleticIndex] = useState<number | null>(
+    pickData?.athleticIndex ?? null
+  );
+
+  useEffect(() => {
+    if (!pickData?.rookie?.ID) {
+      setInternalMetrics(null);
+      setInternalAthleticIndex(null);
+      return;
+    }
+
+    if (pickData.combineMetrics && pickData.combineMetrics.length === 5) {
+      setInternalMetrics(pickData.combineMetrics);
+      setInternalAthleticIndex(pickData.athleticIndex ?? null);
+      return;
+    }
+
+    let isSubscribed = true;
+    fetchRookieCombine(Number(pickData.rookie.ID)).then((res) => {
+      if (!isSubscribed) return;
+      if (res) {
+        setInternalMetrics(buildMetricsFromCombine(res));
+        setInternalAthleticIndex(Number(res.athletic_index) || null);
+      } else {
+        setInternalMetrics(null);
+        setInternalAthleticIndex(null);
+      }
+    });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [pickData?.rookie?.ID, pickData?.combineMetrics, pickData?.athleticIndex]);
 
   useEffect(() => {
     if (!pickData) {
@@ -223,7 +264,7 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
     .flatMap((t) => t.split(",").map((s) => s.trim()))
     .filter(Boolean);
 
-  const combineList = buildCombineMetrics(rookie, pickData.combineMetrics);
+  const combineList = buildCombineMetrics(rookie, internalMetrics ?? pickData.combineMetrics);
 
   const getStatBarColor = (val: number | null) => {
     if (!val) return "bg-muted-foreground/30";
@@ -516,9 +557,16 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
                   Risultati Draft Combine
                 </span>
               </div>
-              <Badge variant="outline" className="text-[10px] font-mono bg-background/70">
-                5 Misurazioni Ufficiali
-              </Badge>
+              <div className="flex items-center gap-2">
+                {internalAthleticIndex !== null && internalAthleticIndex !== undefined && (
+                  <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold">
+                    Athletic Index: {Number(internalAthleticIndex).toFixed(2)}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="text-[10px] font-mono bg-background/70">
+                  5 Misurazioni Ufficiali
+                </Badge>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
