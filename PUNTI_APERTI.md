@@ -1435,3 +1435,22 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
      - Aggiunta azione rapida con icona graduatoria sia in ogni riga della tabella giocatori disponibili sia nella scheda di anteprima del giocatore selezionato per aggiungere o rimuovere al volo Rookie e Svincolati dalla propria priority board.
   3. **Autopick e Strategia di Chiamata Integrata**:
      - In caso di assenza del manager, il meccanismo di Autopick (già integrato con `rpc_draft_free_agent` e `rpc_draft_rookie` e rispetto del vincolo portieri) scorre la graduatoria unificata ed effettua la chiamata del profilo disponibile più in alto.
+
+
+---
+
+## 📌 65. Pagina "Storia del Torneo" (Archivio) con Rendering Markdown & Gestione Contenuti
+- **Stato**: 🟡 Da Pianificare / In Backlog
+- **Priorità**: Media
+- **Moduli previsti**: Nuova pagina `src/pages/StoriaTorneo.tsx` (`/archivio/storia`), `src/components/Navbar.tsx` (voce nel menu Archivio), `package.json` (`react-markdown`), eventuale file Markdown `src/content/storia-torneo.md` o tabella Supabase
+- **Descrizione & Obiettivi**:
+  - Inserire nella sezione **Archivio** la narrazione della storia del torneo LCSIM, consentendo la stesura in formato **Markdown (`.md`)** invece che in codice HTML/JSX rigido, per facilitare aggiornamenti e redazione testuale.
+- **Specifiche & Requisiti da Definire**:
+  1. **Integrazione Parser Markdown**:
+     - Installare `react-markdown` per convertire automaticamente titoli (`#`, `##`), paragrafi, elenchi, tabelle, citazioni e date in componenti React stilizzati con la palette LCSIM (dark/light mode).
+  2. **Collocazione & Navigazione**:
+     - Creare la rotta `/archivio/storia` e aggiungere la voce dedicata *"Storia del Torneo"* (con icona `BookOpen` o `Scroll`) all'interno del menu a tendina **Archivio** della Navbar (sia desktop che mobile).
+  3. **Sorgente dei Contenuti (Modalità di Gestione)**:
+     - **Opzione 1 (File Locale `.md`)**: file statico `src/content/storia-torneo.md` importato nativamente da Vite con `?raw`. Ideale per versionamento rapido via Git.
+     - **Opzione 2 (Dinamico su Supabase)**: testo Markdown memorizzato su tabella di lega (es. `league_pages`) con form di editing nell'area Amministrazione per consentire all'Admin di aggiornare il testo direttamente dal sito web.
+     - **Opzione 3 (Ibrida con Timeline Grafica)**: render Markdown per i capitoli descrittivi combinato con una timeline grafica a tappe per le edizioni/stagioni concluse e relativi campioni.
