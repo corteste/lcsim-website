@@ -1030,14 +1030,25 @@ const Draft = () => {
         {/* Top Row: Progressive Pick Number + Team Owner Logo & Name */}
         <div className="flex items-start justify-between gap-1.5">
           <div className="flex items-center gap-1.5">
-            <span
-              className={`font-mono font-black text-sm sm:text-base leading-none ${isOnTheClock
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-foreground"
-                }`}
-            >
-              #{pick.pick_overall}
-            </span>
+            <div className="flex items-center gap-1">
+              <span
+                className={`font-mono font-black text-sm sm:text-base leading-none ${isOnTheClock
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-foreground"
+                  }`}
+              >
+                #{pick.pick_overall}
+              </span>
+              {pick.is_compensatory && (
+                <Badge
+                  variant="outline"
+                  className="text-[8px] font-mono font-black px-1 py-0 h-3.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/35 leading-none shrink-0"
+                  title={pick.compensatory_reason || "Scelta Compensatoria"}
+                >
+                  ⚖️ COMP
+                </Badge>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col items-end">
@@ -1426,8 +1437,9 @@ const Draft = () => {
                       .sort((a, b) => a.pick_in_round - b.pick_in_round);
                     const firstRowPicks = roundPicks.slice(0, 6);
                     const secondRowPicks = roundPicks.slice(6, 12);
+                    const compensatoryPicks = roundPicks.slice(12);
                     const completedInRound = roundPicks.filter(
-                      (p) => p.rookie_id !== null
+                      (p) => p.rookie_id !== null || p.player_id !== null
                     ).length;
 
                     return (
@@ -1436,7 +1448,7 @@ const Draft = () => {
                         className="rounded-2xl border border-border/80 bg-muted/15 p-3 space-y-2.5"
                       >
                         <div className="grid grid-cols-1 lg:grid-cols-[68px_1fr] gap-3 items-stretch">
-                          {/* Coupled Round Badge spanning the 2 rows */}
+                          {/* Coupled Round Badge spanning the rows */}
                           <button
                             type="button"
                             onClick={() => setViewMode(`r${roundNum}` as ViewMode)}
@@ -1447,14 +1459,19 @@ const Draft = () => {
                               R{roundNum}
                             </span>
                             <span className="text-[10px] font-mono font-bold opacity-85">
-                              {completedInRound}/12
+                              {completedInRound}/{roundPicks.length}
                             </span>
                             <span className="text-[9px] font-mono opacity-70 hidden lg:inline">
-                              1→12
+                              {roundPicks.length > 12 ? `1→${roundPicks.length}` : "1→12"}
                             </span>
+                            {compensatoryPicks.length > 0 && (
+                              <span className="text-[8px] font-mono font-black px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 hidden lg:inline mt-0.5 whitespace-nowrap shadow-2xs">
+                                +{compensatoryPicks.length} ⚖️
+                              </span>
+                            )}
                           </button>
 
-                          {/* 2 Coupled Rows of 6 Squares each */}
+                          {/* Coupled Rows: Picks 1-6, Picks 7-12, e Riga Aggiuntiva Scelte Compensatorie */}
                           <div className="space-y-2.5">
                             {/* Row 1 of Round: Picks 1 to 6 */}
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
@@ -1462,9 +1479,28 @@ const Draft = () => {
                             </div>
 
                             {/* Row 2 of Round: Picks 7 to 12 */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-                              {secondRowPicks.map((pick) => renderPickSquare(pick, false))}
-                            </div>
+                            {secondRowPicks.length > 0 && (
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                                {secondRowPicks.map((pick) => renderPickSquare(pick, false))}
+                              </div>
+                            )}
+
+                            {/* Riga Aggiuntiva: Scelte Compensatorie del Round (Opzione 1) */}
+                            {compensatoryPicks.length > 0 && (
+                              <div className="pt-2.5 mt-1 border-t border-amber-500/25">
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1">
+                                    ⚖️ Scelte Compensatorie Round {roundNum} ({compensatoryPicks.length})
+                                  </Badge>
+                                  <span className="text-[10px] text-muted-foreground font-mono">
+                                    Slot {compensatoryPicks[0].pick_in_round}→{compensatoryPicks[compensatoryPicks.length - 1].pick_in_round} (Pick #{compensatoryPicks[0].pick_overall}–#{compensatoryPicks[compensatoryPicks.length - 1].pick_overall})
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                                  {compensatoryPicks.map((pick) => renderPickSquare(pick, false))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1474,67 +1510,73 @@ const Draft = () => {
               </Card>
             ) : (
               /* SINGLE ROUND ZOOMED SQUARE VIEW (Round 1..5) */
-              activeSingleRound && (
-                <Card className="border border-border/80 shadow-md overflow-hidden bg-card">
-                  <CardHeader className="py-3.5 px-4 bg-muted/30 border-b border-border/70 flex flex-row items-center justify-between space-y-0">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center font-mono font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
-                        R{activeSingleRound}
-                      </div>
-                      <div>
-                        <CardTitle className="text-base font-extrabold tracking-tight flex items-center gap-2">
-                          Dettaglio Round {activeSingleRound}
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] font-mono px-1.5 py-0 flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                          >
-                            <ArrowRight className="h-2.5 w-2.5" /> Ordine 1→12 (Classifica Inversa)
-                          </Badge>
-                        </CardTitle>
-                        <CardDescription className="text-xs">
-                          Scelte #{(activeSingleRound - 1) * 12 + 1} – #{activeSingleRound * 12}
-                        </CardDescription>
-                      </div>
-                    </div>
+              activeSingleRound && (() => {
+                const singlePicks = picks
+                  .filter((p) => p.round === activeSingleRound)
+                  .sort((a, b) => a.pick_in_round - b.pick_in_round);
+                const minPick = singlePicks[0]?.pick_overall || ((activeSingleRound - 1) * 12 + 1);
+                const maxPick = singlePicks[singlePicks.length - 1]?.pick_overall || (activeSingleRound * 12);
+                const hasComp = singlePicks.some((p) => p.is_compensatory || p.pick_in_round > 12);
 
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={activeSingleRound <= 1}
-                        onClick={() =>
-                          setViewMode(`r${activeSingleRound - 1}` as ViewMode)
-                        }
-                        className="h-8 px-2.5 text-xs"
-                      >
-                        <ChevronLeft className="h-4 w-4 mr-1" />
-                        Round Prec
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={activeSingleRound >= 5}
-                        onClick={() =>
-                          setViewMode(`r${activeSingleRound + 1}` as ViewMode)
-                        }
-                        className="h-8 px-2.5 text-xs"
-                      >
-                        Round Succ
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </div>
-                  </CardHeader>
+                return (
+                  <Card className="border border-border/80 shadow-md overflow-hidden bg-card">
+                    <CardHeader className="py-3.5 px-4 bg-muted/30 border-b border-border/70 flex flex-row items-center justify-between space-y-0">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center font-mono font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
+                          R{activeSingleRound}
+                        </div>
+                        <div>
+                          <CardTitle className="text-base font-extrabold tracking-tight flex items-center gap-2">
+                            Dettaglio Round {activeSingleRound}
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-mono px-1.5 py-0 flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                            >
+                              <ArrowRight className="h-2.5 w-2.5" /> Ordine 1→{singlePicks.length} {hasComp ? "(Inversa + Compensatorie)" : "(Classifica Inversa)"}
+                            </Badge>
+                          </CardTitle>
+                          <CardDescription className="text-xs">
+                            {singlePicks.length} Scelte nel Round: #{minPick} – #{maxPick}
+                          </CardDescription>
+                        </div>
+                      </div>
 
-                  <CardContent className="p-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {picks
-                        .filter((p) => p.round === activeSingleRound)
-                        .sort((a, b) => a.pick_in_round - b.pick_in_round)
-                        .map((pick) => renderPickSquare(pick, true))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={activeSingleRound <= 1}
+                          onClick={() =>
+                            setViewMode(`r${activeSingleRound - 1}` as ViewMode)
+                          }
+                          className="h-8 px-2.5 text-xs"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          Round Prec
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={activeSingleRound >= 5}
+                          onClick={() =>
+                            setViewMode(`r${activeSingleRound + 1}` as ViewMode)
+                          }
+                          className="h-8 px-2.5 text-xs"
+                        >
+                          Round Succ
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {singlePicks.map((pick) => renderPickSquare(pick, true))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()
             )}
           </div>
 
