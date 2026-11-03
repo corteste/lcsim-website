@@ -1017,15 +1017,18 @@ Wishlist & Autopick Integrati: supporto ai preferiti (⭐) sia per i rookie sia 
 
 ---
 
-## 📌 41. Controllo di Salvaguardia Portieri sui Tagli di Calciomercato
-- **Stato**: 🟢 Completato & Testato (Migrazione SQL RPC, Service, Blocco UI Roster & Dashboard Admin)
-- **Priorità**: Alta (Integrità sportiva delle rose e prevenzione blocchi formazioni)
+## 📌 41. Controllo di Salvaguardia Portieri sui Tagli di Calciomercato & Eccezione Ritiro/Espansione
+- **Stato**: 🟢 Completato & Testato (Migrazioni SQL RPC, Service, Blocco UI Roster, Banner Informativo & Dashboard Admin)
+- **Priorità**: Alta (Integrità sportiva delle rose, rispetto espansioni/ritiri e prevenzione blocchi formazioni)
 - **Moduli coinvolti**: src/pages/Roster.tsx (/mia-squadra/roster), src/services/cutsService.ts, src/pages/admin/AdminAutomazioni.tsx
 - **Tabelle coinvolte**: team_cuts_registry, an_player, execute_official_cuts
-- **Migrazioni**: supabase/migrations/20261025_cuts_goalkeeper_protection.sql e rollback
+- **Migrazioni**: supabase/migrations/20261025_cuts_goalkeeper_protection.sql, supabase/migrations/20261103_cuts_gk_exception.sql e relativi rollback
 Specifiche Implementate & Risoluzione Tecnica
 Regola di Salvaguardia Portieri sui Tagli:
 Nessun club può tagliare un portiere se questo riduce i portieri di ruolo (Posiz = 'POR') rimanenti al di sotto del minimo regolamentare di 2.
+Eccezione Ritiro / Espansione (Opzione A - 03/11/2026):
+Se una squadra si ritrova con 1 solo portiere post-tagli a causa di cause di forza maggiore (ritiro anagrafico a 35 anni o cessione/draft per espansione, come nella Stagione 11) ed ha tagliato 0 portieri in questa sessione (cut_gk = 0), la squadra è pienamente CONFORME sia nel report tagli che nell'RPC execute_official_cuts.
+Resta invece vietato tagliare volontariamente un portiere per scendere sotto a 2 (e mai a 0 portieri), ed è fatto obbligo alla squadra di selezionare un portiere al Draft (Punto #42).
 Interfaccia Rosa Club (Roster.tsx):
 Calcolo real-time di totalGks, cutGks e remainingGks.
 Disabilitazione condizionale del pulsante di taglio (✂️ Taglia) sui portieri quando remainingGks <= 2, con tooltip esplicito: "Obbligatorio mantenere almeno 2 portieri in rosa".

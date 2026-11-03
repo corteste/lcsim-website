@@ -443,7 +443,8 @@ const Roster = () => {
     [players, cutPlayerIds]
   );
   const remainingGks = totalGks - cutGks;
-  const isGkCompliant = remainingGks >= 2;
+  // Conforme se rimangono almeno 2 portieri, oppure se ne rimane 1 ma non ne è stato tagliato nessuno (eccezione ritiro/espansione)
+  const isGkCompliant = remainingGks >= 2 || (remainingGks === 1 && cutGks === 0);
   const isCutsCompliant =
     postCutRoster >= CUTS_MIN_ROSTER &&
     postCutRoster <= CUTS_MAX_ROSTER &&
@@ -467,6 +468,11 @@ const Roster = () => {
 
     if (!isCurrentlyCut && !canAddMoreCuts) {
       toast.error(`Hai raggiunto il limite massimo di ${maxCutsAllowed} tagli per mantenere almeno 13 giocatori in rosa.`);
+      return;
+    }
+
+    if (!isCurrentlyCut && player.Posiz === "POR" && remainingGks <= 1) {
+      toast.error("Impossibile tagliare l'unico portiere rimasto in rosa!");
       return;
     }
 
@@ -1326,7 +1332,16 @@ const Roster = () => {
                   <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center gap-2.5">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <span>
-                      <strong>Salvaguardia Portieri:</strong> È obbligatorio mantenere almeno 2 portieri in rosa dopo i tagli. Attualmente ne rimarrebbero {remainingGks}.
+                      <strong>Salvaguardia Portieri:</strong> {remainingGks === 0 ? "La rosa non può rimanere senza portieri dopo i tagli (0 POR)." : `È obbligatorio mantenere almeno 2 portieri in rosa dopo i tagli. Attualmente ne rimarrebbero ${remainingGks}.`}
+                    </span>
+                  </div>
+                )}
+
+                {remainingGks === 1 && cutGks === 0 && (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-2.5">
+                    <Shield className="h-4 w-4 shrink-0" />
+                    <span>
+                      <strong>Nota Portieri (Eccezione Ritiro / Espansione):</strong> La squadra dispone attualmente di 1 solo portiere. La lista tagli è considerata regolare, ma sarà obbligatorio selezionare un portiere al Draft per ripristinare il reparto.
                     </span>
                   </div>
                 )}
@@ -1589,7 +1604,9 @@ const Roster = () => {
                                   }`}
                                 title={
                                   isGkCutBlocked
-                                    ? "Obbligatorio mantenere almeno 2 portieri in rosa"
+                                    ? remainingGks <= 1
+                                      ? "Impossibile tagliare l'unico portiere rimasto in rosa"
+                                      : "Obbligatorio mantenere almeno 2 portieri in rosa"
                                     : !isCut && !canAddMoreCuts
                                       ? `Limite massimo di ${maxCutsAllowed} tagli raggiunto (per garantire almeno 13 giocatori in rosa)`
                                       : isCut

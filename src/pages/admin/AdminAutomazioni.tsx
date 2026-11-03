@@ -1065,7 +1065,7 @@ export default function AdminAutomazioni() {
                 <div className="p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs space-y-2">
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Parametri rosa post-tagli:</span>
-                    <span className="font-mono font-bold text-foreground">13-16 giocatori, max 21 asset (con scelte compensatorie), min. 2 portieri</span>
+                    <span className="font-mono font-bold text-foreground">13-16 giocatori, max 21 asset (con scelte compensatorie), min. 2 portieri (salvo ritiro/espansione)</span>
                   </div>
                   <div className="flex items-center justify-between font-semibold">
                     <span className="text-muted-foreground">Calciatori in lista tagli:</span>
@@ -1096,9 +1096,9 @@ export default function AdminAutomazioni() {
                         >
                           <div className="flex flex-col min-w-0 pr-2">
                             <span className="font-bold text-foreground truncate">{team.teamName}</span>
-                            {team.postGk !== undefined && team.postGk < 2 && (
+                            {team.postGk !== undefined && team.gkReason && (
                               <span className="text-[10px] text-destructive font-semibold">
-                                Meno di 2 portieri rimasti ({team.postGk} POR)
+                                {team.gkReason}
                               </span>
                             )}
                             {team.assetReason && (
@@ -1119,7 +1119,7 @@ export default function AdminAutomazioni() {
                       ))}
                     </div>
                     <p className="text-[11px] text-muted-foreground italic">
-                      L'ufficializzazione è bloccata finché tutte le squadre non avranno, dopo i tagli, tra 13 e 16 giocatori, al massimo 21 asset tra giocatori e scelte draft, e almeno 2 portieri.
+                      L'ufficializzazione è bloccata finché tutte le squadre non avranno, dopo i tagli, tra 13 e 16 giocatori, al massimo 21 asset tra giocatori e scelte draft, e almeno 2 portieri (salvo eccezione ritiro/espansione con obbligo al Draft).
                     </p>
                     <Button
                       disabled={true}

@@ -138,6 +138,14 @@ export async function togglePlayerCut(
         const alreadyCutGkCount = (cutRecords || []).filter((c) => gkIds.has(Number(c.player_id))).length;
         const remainingGk = (gks || []).length - alreadyCutGkCount;
 
+        if (remainingGk <= 1) {
+          return {
+            success: false,
+            isNowCut: false,
+            error: "Impossibile tagliare l'unico portiere rimasto in rosa!",
+          };
+        }
+
         if (remainingGk <= 2) {
           return {
             success: false,
@@ -234,9 +242,9 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
       const postGk = currentGk - cutGk;
       const postAssets = postRoster + picksCount;
 
-      // In regola se: 13-16 giocatori, giocatori + pick <= 21 asset, almeno 2 portieri
+      // In regola se: 13-16 giocatori, giocatori + pick <= 21 asset, almeno 2 portieri (oppure 1 portiere se 0 tagliati per eccezione ritiro/espansione)
       const isRosterCompliant = postRoster >= CUTS_MIN_ROSTER && postRoster <= CUTS_MAX_ROSTER;
-      const isGkCompliant = postGk >= CUTS_MIN_GK;
+      const isGkCompliant = postGk >= CUTS_MIN_GK || (postGk === 1 && cutGk === 0);
       const isAssetCompliant = postAssets <= CUTS_MAX_ASSETS;
       const isCompliant = isRosterCompliant && isGkCompliant && isAssetCompliant;
 
@@ -254,7 +262,11 @@ export async function getCutsComplianceReport(): Promise<CutsComplianceReport> {
         picksCount,
         postAssets,
         isCompliant,
-        gkReason: !isGkCompliant ? `Meno di 2 portieri rimasti (${postGk} POR)` : undefined,
+        gkReason: !isGkCompliant
+          ? postGk === 0
+            ? "Nessun portiere rimasto in rosa (0 POR)"
+            : `Meno di 2 portieri rimasti a seguito di tagli (${postGk} POR)`
+          : undefined,
         assetReason: !isAssetCompliant
           ? `Asset oltre il limite: ${postAssets}/${CUTS_MAX_ASSETS} (${postRoster} giocatori + ${picksCount} pick)`
           : undefined,
