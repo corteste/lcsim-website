@@ -872,7 +872,7 @@ const Draft = () => {
     }
   };
 
-  // Admin: Reassign pick owner (for pick trades)
+  // Admin: Reassign pick owner (override admin, no trade badge)
   const handleAdminTradePick = async (pickOverall: number, newTeamId: string) => {
     if (!isAdmin) return;
     setAdminSaving(true);
@@ -880,7 +880,10 @@ const Draft = () => {
       const targetPick = picks.find((p) => p.pick_overall === pickOverall);
       const { error } = await supabase
         .from(DRAFT_BOARD_TABLE)
-        .update({ team_id: newTeamId })
+        .update({
+          team_id: newTeamId,
+          original_team_id: newTeamId, // Override admin: imposta sia team_id che original_team_id per non mostrare scambi nella board
+        })
         .eq("pick_overall", pickOverall);
       if (error) throw error;
 
@@ -2249,7 +2252,7 @@ const Draft = () => {
               className="text-xs gap-1.5"
             >
               <Repeat className="h-3.5 w-3.5" />
-              Scambi Singole Scelte (Pick 1–60)
+              Assegnazione Singole Scelte (Override)
             </Button>
             <Button
               size="sm"
@@ -2266,7 +2269,7 @@ const Draft = () => {
             <div className="space-y-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-muted-foreground">
-                  Seleziona il Round per riassegnare le scelte scambiate:
+                  Seleziona il Round per riassegnare le scelte (override a sistema, senza mostrare scambi):
                 </span>
                 <div className="flex gap-1">
                   {["1", "2", "3", "4", "5"].map((r) => (
@@ -2288,7 +2291,6 @@ const Draft = () => {
                   .filter((p) => String(p.round) === tradeFilterRound)
                   .sort((a, b) => a.pick_in_round - b.pick_in_round)
                   .map((pick) => {
-                    const isTraded = pick.team_id !== pick.original_team_id;
                     return (
                       <div
                         key={pick.pick_overall}
@@ -2296,20 +2298,12 @@ const Draft = () => {
                       >
                         <div className="flex items-center gap-2.5">
                           <span className="font-mono text-xs font-bold px-2 py-1 rounded bg-muted border">
-                            #{pick.pick_overall} (R{pick.round})
+                            #{pick.pick_overall} (R{pick.round} - Pick {pick.pick_in_round})
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            Originaria:{" "}
-                            <strong className="text-foreground">{pick.original_team_id}</strong>
+                            Squadra assegnata:{" "}
+                            <strong className="text-foreground">{pick.team_id}</strong>
                           </span>
-                          {isTraded && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] bg-amber-500/15 text-amber-600 border-amber-500/30"
-                            >
-                              Scambiata → {pick.team_id}
-                            </Badge>
-                          )}
                         </div>
 
                         <Select
