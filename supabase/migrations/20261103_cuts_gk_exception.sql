@@ -227,7 +227,8 @@ BEGIN
           )
         )
       ELSE t.tactical_settings
-    END;
+    END
+  WHERE t.team_id IS NOT NULL;
 
   -- G. Assegnazione Automatica Scelte Compensatorie al Draft (Punto #32)
   -- 1. Rimozione scelte compensatorie pregresse per rigenerazione pulita
@@ -324,7 +325,8 @@ BEGIN
 
   -- 4. Riordino atomico di pick_overall (1..N) sequenziale ordinato per round e pick_in_round
   UPDATE public.an_draft_board
-  SET pick_overall = pick_overall + 10000;
+  SET pick_overall = pick_overall + 10000
+  WHERE pick_overall IS NOT NULL;
 
   WITH ordered AS (
     SELECT ctid, ROW_NUMBER() OVER (ORDER BY round ASC, pick_in_round ASC) AS new_pick_overall
@@ -400,7 +402,8 @@ BEGIN
     updated_at = timezone('utc'::text, now());
 
   -- L. Svuotamento del registro tagli
-  DELETE FROM public.team_cuts_registry;
+  DELETE FROM public.team_cuts_registry
+  WHERE id IS NOT NULL;
 
   RETURN jsonb_build_object(
     'success', true,
