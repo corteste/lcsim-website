@@ -48,7 +48,20 @@ export const MARKET_STATUS_OPTIONS: MarketStatusOption[] = [
   },
 ];
 
-export function getMarketStatusCode(market?: any): MarketStatusCode | null {
+/**
+ * Verifica se un calciatore appartiene alla Serie A attiva ed è quindi eleggibile
+ * per avere uno status di mercato. Sono esclusi svincolati, ritirati e serie minore (B - %).
+ */
+export function isEligibleForMarketStatus(squadra?: string | null): boolean {
+  if (!squadra) return false;
+  const trimmed = squadra.trim();
+  if (trimmed === "" || trimmed === "RITIRATO" || trimmed === "SVINCOLATO") return false;
+  if (trimmed.startsWith("B -") || trimmed.startsWith("B-") || trimmed.includes("B -")) return false;
+  return true;
+}
+
+export function getMarketStatusCode(market?: any, squadra?: string | null): MarketStatusCode | null {
+  if (squadra !== undefined && !isEligibleForMarketStatus(squadra)) return null;
   if (!market) return null;
   const status =
     typeof market === "string"
@@ -62,8 +75,8 @@ export function getMarketStatusCode(market?: any): MarketStatusCode | null {
   return null;
 }
 
-export function getMarketStatusOption(market?: any): MarketStatusOption | null {
-  const code = getMarketStatusCode(market);
+export function getMarketStatusOption(market?: any, squadra?: string | null): MarketStatusOption | null {
+  const code = getMarketStatusCode(market, squadra);
   if (!code) return null;
   return MARKET_STATUS_OPTIONS.find((opt) => opt.code === code) || null;
 }

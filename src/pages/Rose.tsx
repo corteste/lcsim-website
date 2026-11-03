@@ -353,7 +353,7 @@ const Rose = () => {
     let defined = 0;
     let cedCount = 0;
     for (const p of rawPlayers) {
-      const code = getMarketStatusCode(p.MarketStatus);
+      const code = getMarketStatusCode(p.MarketStatus, p.Squadra);
       if (code) {
         defined++;
         if (code === "ced") cedCount++;
@@ -778,7 +778,7 @@ const Rose = () => {
           /* GRID VIEW (SCHEDE STILE EA FC) */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
             {filteredPlayers.map((player) => {
-              const marketOpt = getMarketStatusOption(player.MarketStatus);
+              const marketOpt = getMarketStatusOption(player.MarketStatus, player.Squadra);
 
               return (
                 <Card
@@ -925,7 +925,7 @@ const Rose = () => {
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {filteredPlayers.map((player) => {
-                    const marketOpt = getMarketStatusOption(player.MarketStatus);
+                    const marketOpt = getMarketStatusOption(player.MarketStatus, player.Squadra);
 
                     return (
                       <tr

@@ -47,9 +47,11 @@ import { fetchTeamFavorites, toggleTeamFavorite } from "@/services/draftWishlist
 import { toast } from "sonner";
 import PlayerDetails from "@/components/player/playerDetails";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
+import { isEligibleForMarketStatus } from "@/types/marketStatus";
 
 // Helper per estrarre il codice dello stato mercato
-export const extractMarketStatusCode = (market: any): string | null => {
+export const extractMarketStatusCode = (market: any, squadra?: string | null): string | null => {
+  if (squadra !== undefined && !isEligibleForMarketStatus(squadra)) return null;
   if (!market) return null;
   if (typeof market === "string") return market;
   if (Array.isArray(market) && market.length > 0) return market[0]?.Status || null;
@@ -235,7 +237,8 @@ const ListaGiocatori = () => {
 
       // 5. Filtro Stato Mercato
       if (marketFilter !== "all") {
-        const code = extractMarketStatusCode(player.MarketStatus);
+        if (!isEligibleForMarketStatus(player.Squadra)) return false;
+        const code = extractMarketStatusCode(player.MarketStatus, player.Squadra);
         if (code !== marketFilter) return false;
       }
 
@@ -768,7 +771,7 @@ const ListaGiocatori = () => {
                   </thead>
                   <tbody className="divide-y divide-border/60">
                     {currentPlayers.map((player) => {
-                      const marketCode = extractMarketStatusCode(player.MarketStatus);
+                      const marketCode = extractMarketStatusCode(player.MarketStatus, player.Squadra);
                       const teamName = teamsMap.get(player.Squadra || "") || player.Squadra;
                       const isSvincolato = !player.Squadra || player.Squadra === "RITIRATO";
                       const isSerieB = player.Squadra && player.Squadra.includes("B -");
@@ -917,7 +920,7 @@ const ListaGiocatori = () => {
             /* =================================================================== */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {currentPlayers.map((player) => {
-                const marketCode = extractMarketStatusCode(player.MarketStatus);
+                const marketCode = extractMarketStatusCode(player.MarketStatus, player.Squadra);
                 const teamName = teamsMap.get(player.Squadra || "") || player.Squadra;
                 const isSvincolato = !player.Squadra || player.Squadra === "RITIRATO";
 

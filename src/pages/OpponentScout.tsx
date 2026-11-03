@@ -479,7 +479,7 @@ export const OpponentScout: React.FC = () => {
                           </tr>
                         ) : (
                           rawRoster.map((player) => {
-                            const marketOpt = getMarketStatusOption(player.MarketStatus);
+                            const marketOpt = getMarketStatusOption(player.MarketStatus, player.Squadra);
                             const stats = getPlayerCardStats(player);
 
                             return (

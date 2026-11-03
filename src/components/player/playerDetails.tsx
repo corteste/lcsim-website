@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/player";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPlayerTotwAppearances } from "@/services/totwService";
-import { MarketStatus } from "@/types/marketStatus";
+import { MarketStatus, isEligibleForMarketStatus } from "@/types/marketStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, Ruler, Weight, Footprints, X, Shield, Zap, Target, Activity, 
@@ -613,7 +613,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   {currentPlayer.Squadra}
                 </Badge>
               )}
-              {currentPlayer.MarketStatus && (
+              {currentPlayer.MarketStatus && isEligibleForMarketStatus(currentPlayer.Squadra) && (
                 <Badge variant="outline" className={`text-xs font-semibold ${getMarketStatus(currentPlayer.MarketStatus)}`}>
                   {getMarketStatusDisplay(currentPlayer.MarketStatus)}
                 </Badge>
