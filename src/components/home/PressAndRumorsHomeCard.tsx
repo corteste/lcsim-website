@@ -14,6 +14,7 @@ import {
 import {
   fetchPressConferences,
   fetchMarketRumors,
+  maybeTriggerRandomRumor,
   PressConference,
   MarketRumor,
 } from "@/services/aiJournalistService";
@@ -38,6 +39,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
+      maybeTriggerRandomRumor();
       try {
         const [press, rumorsData] = await Promise.all([
           fetchPressConferences(undefined, 11, true),

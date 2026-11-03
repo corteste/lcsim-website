@@ -1232,6 +1232,20 @@ export default function AdminAutomazioni() {
                     <Mic2 className="h-4 w-4" />
                     Genera Domande Differenziate per i 12 Club (Giornata 1)
                   </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      toast.info("Generazione scoop e voci di mercato in corso...");
+                      const res = await generateRandomMarketRumors(1, true);
+                      if (res.error) toast.error(res.error);
+                      else toast.success("Nuovo rumor di mercato generato e pubblicato nel feed!");
+                    }}
+                    className="w-full font-bold gap-2 text-xs border-amber-500/30 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 py-2.5 mt-2"
+                  >
+                    <Flame className="h-4 w-4 text-amber-500" />
+                    Genera 1 Notizia / Rumor di Mercato
+                  </Button>
                 </div>
 
                 <Button

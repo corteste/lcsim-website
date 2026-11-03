@@ -532,25 +532,56 @@ export async function checkIsMarketOpen(): Promise<boolean> {
 
 /**
  * Controllo automatico per generare rumor randomici durante la giornata:
- * Viene eseguito in background quando un utente naviga sul sito.
- * Se il mercato è aperto e sono passate più di 3-4 ore dall'ultimo rumor (oppure con probabilità casuale),
- * genera silenziosamente 1 nuovo scoop con giocatori reali.
+ * Viene eseguito in background quando un utente naviga sul sito (Home o Sala Stampa).
+ * Se il mercato è aperto:
+ * - Se c'è una nuova trattativa reale non ancora coperta dalla stampa, genera subito uno scoop!
+ * - Altrimenti rispetta un intervallo naturale (ogni 4-8 ore con trattative attive, ogni 8-16 senza).
  */
 export async function maybeTriggerRandomRumor(): Promise<void> {
   try {
     const isOpen = await checkIsMarketOpen();
     if (!isOpen) return;
 
-    // 1. Controlla se esistono trattative reali aperte nel mercato
+    // 1. Controlla trattative reali aperte
     const { data: realTrades } = await supabase
       .from('market_trades')
-      .select('id, status')
+      .select('id, sender_team, receiver_team, created_at, updated_at')
       .in('status', ['pending', 'pending_admin'])
-      .limit(5);
+      .order('updated_at', { ascending: false });
 
     const hasRealTrades = Boolean(realTrades && realTrades.length > 0);
 
-    // 2. Controlla data dell'ultimo rumor
+    // 2. Controlla se una trattativa reale non è mai stata coperta da alcun rumor
+    if (hasRealTrades && realTrades) {
+      const { data: recentRumors } = await supabase
+        .from('league_market_rumors')
+        .select('involved_team_ids, created_at')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      // Cerca se c'è una trattativa recente non ancora coperta
+      const uncoveredTrade = realTrades.find((trade) => {
+        const teams = [trade.sender_team, trade.receiver_team];
+        const tradeTime = new Date(trade.created_at).getTime();
+        const hasRumor = recentRumors?.some((r) => {
+          const rTime = new Date(r.created_at).getTime();
+          const rTeams = r.involved_team_ids || [];
+          return (
+            rTime >= tradeTime - 60000 &&
+            teams.every((t) => rTeams.includes(t))
+          );
+        });
+        return !hasRumor;
+      });
+
+      if (uncoveredTrade) {
+        // Genera subito uno scoop su questa trattativa non ancora coperta!
+        await generateRandomMarketRumors(1, false);
+        return;
+      }
+    }
+
+    // 3. Altrimenti controlla data dell'ultimo rumor per la cadenza periodica
     const { data: latest } = await supabase
       .from('league_market_rumors')
       .select('created_at')
@@ -568,18 +599,17 @@ export async function maybeTriggerRandomRumor(): Promise<void> {
       const hoursDiff = (now - lastCreated) / (1000 * 60 * 60);
 
       if (hasRealTrades) {
-        // Con trattative reali: genera indiscrezioni con intervallo tra 12 e 24 ore
-        if (hoursDiff >= 24) {
+        // Con trattative reali: genera notizie ogni 4-8 ore (oppure con probabilità 35% tra le 2 e le 4 ore)
+        if (hoursDiff >= 6) {
           shouldGenerate = true;
-        } else if (hoursDiff >= 12 && Math.random() < 0.4) {
+        } else if (hoursDiff >= 2 && Math.random() < 0.35) {
           shouldGenerate = true;
         }
       } else {
-        // Senza trattative reali: silenzio stampa per 24-48 ore (1 o 2 giorni).
-        // Solo superate le 48-72 ore c'è una modesta probabilità (30%) di produrre un singolo rumor di retroscena
-        if (hoursDiff >= 72) {
+        // Senza trattative reali: notizie ogni 8-16 ore (oppure 25% tra le 4 e le 8 ore)
+        if (hoursDiff >= 12) {
           shouldGenerate = true;
-        } else if (hoursDiff >= 48 && Math.random() < 0.3) {
+        } else if (hoursDiff >= 4 && Math.random() < 0.25) {
           shouldGenerate = true;
         }
       }
@@ -599,7 +629,7 @@ export async function generateRandomMarketRumors(
 ): Promise<{ success: boolean; generated: number; error?: string }> {
   try {
     const isOpen = await checkIsMarketOpen();
-    if (!isOpen) {
+    if (!isOpen && !force) {
       return { success: false, generated: 0, error: 'Il calciomercato è chiuso. La generazione di voci di mercato è disattivata.' };
     }
 
@@ -612,112 +642,169 @@ export async function generateRandomMarketRumors(
     if (!teams || teams.length < 2) {
       return { success: false, generated: 0, error: 'Dati squadre insufficienti.' };
     }
+    const teamMap = new Map<string, any>(teams.map((t: any) => [t.TEAM_ID, t]));
 
-    // 2. Recupera giocatori reali sotto contratto dalle rose dei club attivi
-    const { data: players } = await supabase
+    // 2. Recupera trattative reali aperte (pending o pending_admin)
+    const { data: activeTrades } = await supabase
+      .from('market_trades')
+      .select('*')
+      .in('status', ['pending', 'pending_admin'])
+      .order('updated_at', { ascending: false });
+
+    // Raccogli ID dei giocatori coinvolti nelle trattative reali
+    const tradePlayerIds = new Set<number>();
+    if (activeTrades) {
+      activeTrades.forEach((t: any) => {
+        (t.offered_player_ids || []).forEach((id: number) => tradePlayerIds.add(id));
+        (t.requested_player_ids || []).forEach((id: number) => tradePlayerIds.add(id));
+      });
+    }
+
+    // 3. Recupera giocatori reali:
+    // - Quelli specifici delle trattative reali (se ce ne sono)
+    // - Più i top player del campionato per fake news e colpi a sorpresa
+    const { data: topPlayers } = await supabase
       .from('an_player')
       .select('ID, Nome, Cognome, Squadra, Posiz, OVR')
       .in('Squadra', teams.map((t: any) => t.TEAM_ID))
       .not('OVR', 'is', null)
       .order('OVR', { ascending: false })
-      .limit(80);
+      .limit(100);
 
-    if (!players || players.length === 0) {
+    const allPlayers: any[] = topPlayers ? [...topPlayers] : [];
+
+    if (tradePlayerIds.size > 0) {
+      const missingIds = Array.from(tradePlayerIds).filter(
+        (id) => !allPlayers.some((p: any) => Number(p.ID) === Number(id))
+      );
+      if (missingIds.length > 0) {
+        const { data: specificPlayers } = await supabase
+          .from('an_player')
+          .select('ID, Nome, Cognome, Squadra, Posiz, OVR')
+          .in('ID', missingIds);
+        if (specificPlayers) {
+          allPlayers.push(...specificPlayers);
+        }
+      }
+    }
+
+    if (allPlayers.length === 0) {
       return { success: false, generated: 0, error: 'Nessun giocatore reale trovato.' };
     }
 
-    // 3. Recupera eventuali proposte reali aperte o recenti
-    const { data: activeTrades } = await supabase
-      .from('market_trades')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(8);
+    const playerMap = new Map<number, any>(allPlayers.map((p: any) => [Number(p.ID), p]));
 
     let generatedCount = 0;
 
     for (let i = 0; i < count; i++) {
-      // Scegli due club reali differenti
-      const teamA = teams[Math.floor(Math.random() * teams.length)];
-      let teamB = teams[Math.floor(Math.random() * teams.length)];
-      while (teamB.TEAM_ID === teamA.TEAM_ID) {
-        teamB = teams[Math.floor(Math.random() * teams.length)];
-      }
-
-      // Prendi giocatori reali dei rispettivi due club
-      const teamAPlayers = players.filter((p: any) => p.Squadra === teamA.TEAM_ID);
-      const teamBPlayers = players.filter((p: any) => p.Squadra === teamB.TEAM_ID);
-
-      const playerA = teamAPlayers.length > 0
-        ? teamAPlayers[Math.floor(Math.random() * teamAPlayers.length)]
-        : players[Math.floor(Math.random() * players.length)];
-
-      const playerB = teamBPlayers.length > 0
-        ? teamBPlayers[Math.floor(Math.random() * teamBPlayers.length)]
-        : players[Math.floor(Math.random() * players.length)];
-
-      const playerAName = `${playerA.Nome} ${playerA.Cognome}`.trim();
-      const playerBName = `${playerB.Nome} ${playerB.Cognome}`.trim();
-
-      // Categoria interna (utilizzata dall'AI per dosare il realismo, ma NON esposta in UI con etichette rivelatrici)
-      const roll = Math.random();
       let internalCategory: RumorCategory = 'FAKE_NEWS';
-      if (roll < 0.40 && activeTrades && activeTrades.length > 0) {
-        internalCategory = 'TRATTATIVA_DISTORTA';
-      } else if (roll < 0.70) {
-        internalCategory = 'FAKE_NEWS';
-      } else if (roll < 0.90) {
-        internalCategory = 'TRATTATIVA_REALE';
-      } else {
-        internalCategory = 'COLPO_A_SORPRESA';
-      }
-
-      // Badge giornalistici autentici (senza rivelare se è fake o vero!)
-      const journalisticBadges = ['ESCLUSIVA', 'INDISCREZIONE', 'RETROSCENA', 'RADAR MERCATO', 'ULTIM\'ORA'];
-      const credibilityBadge = journalisticBadges[Math.floor(Math.random() * journalisticBadges.length)];
-      const sourceLabel = ['Gianluca Di LCSIM', 'Fabrizio Romano LCSIM Edition', 'Gazzetta del Manager', 'Insider LCSIM TV'][Math.floor(Math.random() * 4)];
-
+      let teamA: any;
+      let teamB: any;
+      let involvedPlayerNames: string[] = [];
       let headline = '';
       let content = '';
-      const credibilityScore = Math.floor(Math.random() * 45) + 45; // punteggio neutro verosimile (45-90)
 
-      // Prompt per Gemini con nomi reali di calciatori
-      const prompt = `Sei il più celebre insider di calciomercato della Lega LCSIM (stile Di Marzio / Fabrizio Romano).
-Scrivi una notizia di mercato breve e accattivante in lingua italiana.
-Dettagli reali dei club e dei calciatori:
-- Club 1: ${teamA.NAME} (${teamA.TEAM_ID}) - Presidente: ${teamA.MANAGER || 'N/A'}
-- Club 2: ${teamB.NAME} (${teamB.TEAM_ID}) - Presidente: ${teamB.MANAGER || 'N/A'}
-- Calciatore 1 del ${teamA.NAME}: ${playerAName} (${playerA.Posiz}, OVR ${playerA.OVR})
-- Calciatore 2 del ${teamB.NAME}: ${playerBName} (${playerB.Posiz}, OVR ${playerB.OVR})
+      const hasActive = Boolean(activeTrades && activeTrades.length > 0);
+      const roll = Math.random();
 
-Linee guida:
-- Usa SEMPRE i nomi e cognomi reali dei calciatori forniti (${playerAName} e/o ${playerBName}) e delle squadre.
-- Stile verosimile e narrativo: parla di contatti telefonici notturni, nodi sull'ingaggio, contropartite tecniche, clausole o vertici improvvisi.
-- IMPORTANTE: NON scrivere mai nel testo che si tratta di una "fake news" o di una notizia finta! Il lettore non deve sapere a priori se è una trattativa reale, una voce distorta o una speculazione infondata.
-- Rispondi ESCLUSIVAMENTE in formato JSON:
-{
-  "headline": "Titolo d'impatto stile breaking news con emoji (massimo 15 parole)",
-  "content": "Articolo di 2 o 3 paragrafi brevi con dettagli succosi sulla trattativa o sull'interesse"
-}`;
+      // Priorità alle trattative reali in corso (60% tra scoop reali e retroscena distorti), 40% fake news / colpi a sorpresa
+      if (hasActive && roll < 0.60) {
+        const pickedTrade = activeTrades![Math.floor(Math.random() * activeTrades!.length)];
+        const isDistorted = Math.random() < 0.50;
+        internalCategory = isDistorted ? 'TRATTATIVA_DISTORTA' : 'TRATTATIVA_REALE';
 
-      // Usa sempre il generatore procedurale per le voci di mercato (nessuna chiamata alle API Gemini)
-      const proc = generateImmersiveProceduralRumor(
-        internalCategory,
-        teamA.NAME,
-        teamB.NAME,
-        playerAName,
-        playerBName,
-        playerA.Posiz,
-        playerB.Posiz
-      );
-      headline = proc.headline;
-      content = proc.content;
+        teamA = teamMap.get(pickedTrade.sender_team) || { TEAM_ID: pickedTrade.sender_team, NAME: pickedTrade.sender_team };
+        teamB = teamMap.get(pickedTrade.receiver_team) || { TEAM_ID: pickedTrade.receiver_team, NAME: pickedTrade.receiver_team };
+
+        const offeredList = (pickedTrade.offered_player_ids || []).map((id: number) => playerMap.get(Number(id))).filter(Boolean);
+        const requestedList = (pickedTrade.requested_player_ids || []).map((id: number) => playerMap.get(Number(id))).filter(Boolean);
+
+        const thirdTeams = teams.filter((t: any) => t.TEAM_ID !== teamA.TEAM_ID && t.TEAM_ID !== teamB.TEAM_ID);
+        const thirdTeam = thirdTeams[Math.floor(Math.random() * thirdTeams.length)];
+
+        if (internalCategory === 'TRATTATIVA_REALE') {
+          const res = buildRealTradeRumor(teamA, teamB, requestedList, offeredList, pickedTrade, allPlayers);
+          headline = res.headline;
+          content = res.content;
+          involvedPlayerNames = res.involvedPlayerNames;
+        } else {
+          const res = buildDistortedTradeRumor(teamA, teamB, requestedList, offeredList, thirdTeam, allPlayers);
+          headline = res.headline;
+          content = res.content;
+          involvedPlayerNames = res.involvedPlayerNames;
+        }
+      } else {
+        const isSurprise = Math.random() < 0.30;
+        internalCategory = isSurprise ? 'COLPO_A_SORPRESA' : 'FAKE_NEWS';
+
+        teamA = teams[Math.floor(Math.random() * teams.length)];
+        let tempB = teams[Math.floor(Math.random() * teams.length)];
+        while (tempB.TEAM_ID === teamA.TEAM_ID) {
+          tempB = teams[Math.floor(Math.random() * teams.length)];
+        }
+        teamB = tempB;
+
+        const teamAPlayers = allPlayers.filter((p: any) => p.Squadra === teamA.TEAM_ID);
+        const teamBPlayers = allPlayers.filter((p: any) => p.Squadra === teamB.TEAM_ID);
+
+        const playerA = teamAPlayers.length > 0
+          ? teamAPlayers[Math.floor(Math.random() * teamAPlayers.length)]
+          : allPlayers[Math.floor(Math.random() * allPlayers.length)];
+
+        const playerB = teamBPlayers.length > 0
+          ? teamBPlayers[Math.floor(Math.random() * teamBPlayers.length)]
+          : allPlayers[Math.floor(Math.random() * allPlayers.length)];
+
+        const pAName = `${playerA.Nome} ${playerA.Cognome}`.trim();
+        const pBName = `${playerB.Nome} ${playerB.Cognome}`.trim();
+
+        if (internalCategory === 'COLPO_A_SORPRESA') {
+          const res = buildSurpriseHitRumor(teamA, teamB, playerA, playerB);
+          headline = res.headline;
+          content = res.content;
+          involvedPlayerNames = [pAName, pBName];
+        } else {
+          const res = buildFakeNewsRumor(teamA, teamB, playerA, playerB);
+          headline = res.headline;
+          content = res.content;
+          involvedPlayerNames = [pAName, pBName];
+        }
+      }
+
+      // Badge e fonti giornalistiche realistiche e differenziate
+      const journalisticBadges =
+        internalCategory === 'TRATTATIVA_REALE'
+          ? ['SCOOP ESCLUSIVO', 'TRATTATIVA IN CORSO', 'FONTI DIRETTE', 'ULTIM\'ORA', 'RADAR MERCATO']
+          : internalCategory === 'TRATTATIVA_DISTORTA'
+          ? ['RETROSCENA', 'INDISCREZIONE', 'VOCI DI SPOGLIATOIO', 'PISTA CALDA', 'DETTAGLI EMERSI']
+          : internalCategory === 'COLPO_A_SORPRESA'
+          ? ['COLPO A SORPRESA', 'BOMBA DI MERCATO', 'ATTENZIONE AL BLITZ', 'RADAR MERCATO']
+          : ['INDISCREZIONE', 'SUGGESTIONE', 'SIRENE DI MERCATO', 'VOCI DI CORRIDOIO', 'RUMOR'];
+
+      const credibilityBadge = journalisticBadges[Math.floor(Math.random() * journalisticBadges.length)];
+      const sourceList = [
+        'Gianluca Di LCSIM',
+        'Fabrizio Romano LCSIM Edition',
+        'Gazzetta del Manager',
+        'Insider LCSIM TV',
+        'Sky Sport LCSIM',
+        'Tuttomercato LCSIM',
+        'Corriere del Fantamercato'
+      ];
+      const sourceLabel = sourceList[Math.floor(Math.random() * sourceList.length)];
+
+      const baseScore =
+        internalCategory === 'TRATTATIVA_REALE' ? 82 :
+        internalCategory === 'TRATTATIVA_DISTORTA' ? 68 :
+        internalCategory === 'COLPO_A_SORPRESA' ? 58 : 48;
+      const credibilityScore = Math.min(98, Math.max(35, baseScore + Math.floor(Math.random() * 15) - 7));
 
       const { error: insErr } = await supabase.from('league_market_rumors').insert({
         category: internalCategory,
         headline,
         content,
         involved_team_ids: [teamA.TEAM_ID, teamB.TEAM_ID],
-        involved_player_names: [playerAName, playerBName],
+        involved_player_names: involvedPlayerNames,
         credibility_score: credibilityScore,
         credibility_badge: credibilityBadge,
         source_label: sourceLabel,
@@ -740,37 +827,242 @@ Linee guida:
 }
 
 /**
- * Generatore procedurale realistico con nomi veri di calciatori (senza indizi rivelatori)
+ * 1. TRATTATIVA_REALE: Notizia autentica basata su una proposta aperta tra due club
  */
-function generateImmersiveProceduralRumor(
-  category: RumorCategory,
-  teamAName: string,
-  teamBName: string,
-  playerAName: string,
-  playerBName: string,
-  posA: string,
-  posB: string
-): { headline: string; content: string } {
+
+/**
+ * Helper per grammatica e articoli italiani con i nomi dei club
+ */
+function teamArt(name: string, prep: 'il' | 'del' | 'al' | 'dal' | 'nel' = 'il'): string {
+  if (!name) return '';
+  const trimmed = name.trim();
+  const firstLetter = trimmed.charAt(0).toUpperCase();
+  const isVowel = ['A', 'E', 'I', 'O', 'U'].includes(firstLetter);
+
+  switch (prep) {
+    case 'il':
+      return isVowel ? `l'${trimmed}` : `il ${trimmed}`;
+    case 'del':
+      return isVowel ? `dell'${trimmed}` : `del ${trimmed}`;
+    case 'al':
+      return isVowel ? `all'${trimmed}` : `al ${trimmed}`;
+    case 'dal':
+      return isVowel ? `dall'${trimmed}` : `dal ${trimmed}`;
+    case 'nel':
+      return isVowel ? `nell'${trimmed}` : `nel ${trimmed}`;
+    default:
+      return trimmed;
+  }
+}
+
+function buildRealTradeRumor(
+  teamA: any,
+  teamB: any,
+  requestedPlayers: any[],
+  offeredPlayers: any[],
+  trade: any,
+  allPlayers: any[]
+): { headline: string; content: string; involvedPlayerNames: string[] } {
+  const reqP = requestedPlayers[0] || allPlayers[0];
+  const offP = offeredPlayers[0] || allPlayers[1] || allPlayers[0];
+  const reqName = `${reqP.Nome} ${reqP.Cognome}`.trim();
+  const offName = `${offP.Nome} ${offP.Cognome}`.trim();
+  const reqPos = reqP.Posiz || 'giocatore';
+  const offPos = offP.Posiz || 'giocatore';
+
+  const reqExtra = requestedPlayers.length > 1
+    ? ` e ${requestedPlayers[1].Nome} ${requestedPlayers[1].Cognome}`
+    : '';
+  const offExtra = offeredPlayers.length > 1
+    ? ` assieme a ${offeredPlayers[1].Nome} ${offeredPlayers[1].Cognome}`
+    : '';
+
+  const pickNote = (trade?.offered_pick_numbers?.length || trade?.requested_pick_numbers?.length)
+    ? ' con l\'inclusione di scelte al Draft a bilanciare l\'operazione'
+    : '';
+
+  const involvedPlayerNames = Array.from(new Set([
+    ...requestedPlayers.map((p) => `${p.Nome} ${p.Cognome}`.trim()),
+    ...offeredPlayers.map((p) => `${p.Nome} ${p.Cognome}`.trim())
+  ]));
+
   const templates = [
     {
-      headline: `🔥 ASSE CALDO: ${teamAName} punta dritto su ${playerBName}!`,
-      content: `Contatti frenetici sull'asse tra ${teamAName} e ${teamBName}. La dirigenza del ${teamAName} è alla ricerca di rinforzi nel ruolo di ${posB} e avrebbe individuato in ${playerBName} il profilo ideale. Sul tavolo si ragiona su una possibile contropartita tecnica o su un accordo con opzione di riscatto a fine stagione. Le parti si aggiorneranno in serata.`
+      headline: `🚨 SCOOP MERCATO: Trattativa aperta tra ${teamA.NAME} e ${teamB.NAME} per ${reqName}!`,
+      content: `Le voci trovano piena conferma: ${teamA.NAME} e ${teamB.NAME} sono sedute al tavolo delle trattative. Al centro delle discussioni c'è ${reqName}${reqExtra}, obiettivo dichiarato per rinforzare la rosa. Per sbloccare l'affare, sul piatto è stato inserito ${offName}${offExtra}${pickNote}. I presidenti sono in contatto continuo per trovare la quadratura definitiva.`
     },
     {
-      headline: `⚡ RETROSCENA: Maxi-scambio tra ${playerAName} e ${playerBName}?`,
-      content: `Indiscrezione clamorosa trapelata dai corridoi di mercato: ${teamAName} e ${teamBName} avrebbero discusso a sorpresa un clamoroso scambio che coinvolgerebbe ${playerAName} e ${playerBName}. Secondo gli addetti ai lavori, l'intesa tra i due club sarebbe vicina, ma resta ancora da limare l'accordo con gli entourage dei due calciatori.`
+      headline: `🔥 MAXI-SCAMBIO IN CORSO: ${teamA.NAME} e ${teamB.NAME} trattano ${reqName} e ${offName}!`,
+      content: `Asse caldissimo tra ${teamA.NAME} e ${teamB.NAME}. Secondo quanto appreso da fonti vicine alle due società, è in corso una complessa operazione di mercato: ${offName}${offExtra} verso ${teamArt(teamB.NAME, 'il')}, mentre ${reqName}${reqExtra} farebbe il percorso inverso verso ${teamArt(teamA.NAME, 'il')}${pickNote}. Le parti stanno limando gli ultimi dettagli.`
     },
     {
-      headline: `🚨 ULTIM'ORA: Sondaggio improvviso del ${teamBName} per ${playerAName}!`,
-      content: `Blitz a sorpresa nelle ultime ore: il ${teamBName} avrebbe effettuato una mossa ufficiale per capire la fattibilità dell'operazione ${playerAName}. Il calciatore del ${teamAName} piace moltissimo per duttilità e valore in campo. Dalla società filtra prudenza, ma i rumors su un'offerta imminente continuano a rimbalzare con insistenza.`
+      headline: `⚡ CONTATTI SERRATI: ${teamArt(teamA.NAME, 'il')} accelera per ${reqName}, proposto ${offName}`,
+      content: `Accelerata improvvisa nelle ultime ore: ${teamArt(teamA.NAME, 'il')} ha formalizzato una proposta ufficiale ${teamArt(teamB.NAME, 'al')} per assicurarsi il ${reqPos} ${reqName}. La contropartita tecnica individuata è ${offName} (${offPos})${pickNote}. La dirigenza ${teamArt(teamB.NAME, 'del')} sta esaminando attentamente la fattibilità tattica prima di dare il via libera.`
     },
     {
-      headline: `💬 TENSIONE MERCATO: ${playerBName} nel mirino del ${teamAName}, muro del ${teamBName}`,
-      content: `Non si placano le voci sul futuro di ${playerBName}. Il ${teamAName} avrebbe recapitato una proposta allettante, trovando però per ora la ferma opposizione del ${teamBName}, che considera il giocatore incedibile. La sensazione tra gli addetti ai lavori è che la partita sia appena cominciata.`
+      headline: `💣 ASSE BOLLENTE: Vertice tra ${teamA.NAME} e ${teamB.NAME}, in ballo ${reqName} e ${offName}`,
+      content: `Il calciomercato entra nel vivo: emissari di ${teamA.NAME} e ${teamB.NAME} stanno lavorando a fari spenti su uno scambio di spessore. Al centro dell'affare ci sono ${reqName}${reqExtra} e ${offName}${offExtra}. Clima costruttivo tra le parti, con la sensazione diffusa che la fumata bianca possa arrivare a breve.`
     },
     {
-      headline: `🔎 RADAR MERCATO: ${teamAName} valuta la mossa per ${playerBName} in extremis`,
-      content: `Attenzione alle sorprese dell'ultima ora: ${teamAName} sta monitorando con attenzione la situazione di ${playerBName} del ${teamBName}. Se dovesse sbloccarsi un'uscita in quella zona di campo, il presidente potrebbe dare il via libera all'affondo decisivo prima del gong.`
+      headline: `💼 ACCORDO VICINO: ${teamA.NAME} insiste per ${reqName}, c'è l'apertura ${teamArt(teamB.NAME, 'del')}`,
+      content: `Summit decisivo tra i vertici di ${teamA.NAME} e ${teamB.NAME}. La priorità assoluta ${teamArt(teamA.NAME, 'del')} resta ${reqName}, e la disponibilità a cedere ${offName}${offExtra} ha sbloccato un negoziato che sembrava complicato. Si attende la firma definitiva.`
+    },
+    {
+      headline: `🎯 TAVOLO DIRETTO: ${teamA.NAME} e ${teamB.NAME} a colloquio, sprint decisivo per ${reqName}`,
+      content: `Dialogo diretto tra i due club: ${teamA.NAME} vuole chiudere in tempi brevi per ${reqName} e ha messo sul piatto ${offName}${pickNote}. ${teamArt(teamB.NAME, 'il')} sta valutando l'incastro nella rosa e la risposta definitiva è attesa nelle prossime ore.`
+    }
+  ];
+
+  return {
+    ...templates[Math.floor(Math.random() * templates.length)],
+    involvedPlayerNames
+  };
+}
+
+/**
+ * 2. TRATTATIVA_DISTORTA: Mezza verità su una trattativa reale, arricchita da retroscena o dettagli alterati
+ */
+function buildDistortedTradeRumor(
+  teamA: any,
+  teamB: any,
+  requestedPlayers: any[],
+  offeredPlayers: any[],
+  thirdTeam: any,
+  allPlayers: any[]
+): { headline: string; content: string; involvedPlayerNames: string[] } {
+  const reqP = requestedPlayers[0] || allPlayers[0];
+  const offP = offeredPlayers[0] || allPlayers[1] || allPlayers[0];
+  const reqName = `${reqP.Nome} ${reqP.Cognome}`.trim();
+  const offName = `${offP.Nome} ${offP.Cognome}`.trim();
+  const thirdName = thirdTeam?.NAME || 'un club rivale';
+
+  // Giocatore alternativo per la mezza verità
+  const altP = allPlayers.find((p) => p.Squadra === teamA.TEAM_ID && p.ID !== offP.ID) || allPlayers[2] || offP;
+  const altName = `${altP.Nome} ${altP.Cognome}`.trim();
+
+  const involvedPlayerNames = Array.from(new Set([reqName, offName, altName]));
+
+  const templates = [
+    {
+      headline: `👀 RETROSCENA: Trattativa tra ${teamA.NAME} e ${teamB.NAME}, ma spunta il nodo contropartita per ${reqName}`,
+      content: `Trapelano indiscrezioni infuocate sull'asse tra ${teamA.NAME} e ${teamB.NAME}: l'interesse per ${reqName} è concreto, ma sul piatto non ci sarebbe solo ${offName}. Secondo voci di corridoio, ${teamArt(teamB.NAME, 'il')} avrebbe chiesto invece ${altName} o un ulteriore rilancio per lasciar partire il proprio gioiello.`
+    },
+    {
+      headline: `⚠️ VOCI DI SPOGLIATOIO: Accordo vicino tra ${teamA.NAME} e ${teamB.NAME}, ma ${offName} tentenna?`,
+      content: `Mentre tra ${teamA.NAME} e ${teamB.NAME} i contatti per lo scambio che porta a ${reqName} proseguono a ritmo serrato, arrivano voci contrastanti: ${offName} vorrebbe garanzie sul minutaggio prima di dare il proprio assenso definitivo al trasferimento. I presidenti lavorano per ricucire.`
+    },
+    {
+      headline: `🌪️ RILANCIO O FUMATA NERA? ${teamArt(teamB.NAME, 'il')} alza il muro per ${reqName}, ${teamA.NAME} studia l'alternativa`,
+      content: `Braccio di ferro di mercato tra ${teamA.NAME} e ${teamB.NAME}. La proposta con ${offName} è arrivata sulla scrivania del presidente, ma la richiesta economica e tecnica per ${reqName} è considerata ancora troppo alta. Possibile nuovo contatto in serata.`
+    },
+    {
+      headline: `🕵️ INSIDER: ${teamA.NAME} su ${reqName}, ma attenzione all'inserimento a sorpresa del ${thirdName}!`,
+      content: `Colpo di scena nel negoziato tra ${teamA.NAME} e ${teamB.NAME}: mentre i due club discutono il futuro di ${reqName} e ${offName}, ${teamArt(thirdName, 'il')} avrebbe effettuato un sondaggio lampo per capire i margini di un clamoroso inserimento dell'ultimo minuto.`
+    },
+    {
+      headline: `🧩 DETTAGLI EMERSI: ${teamA.NAME} e ${teamB.NAME}, sul tavolo non solo ${reqName}: spunta una clausola segreta`,
+      content: `Non solo scambio secco tra ${reqName} e ${offName}: dietro i dialoghi tra ${teamA.NAME} e ${teamB.NAME} ci sarebbero clausole legate al rendimento stagionale e prelazioni su futuri scambi. Trattativa viva ma ricca di dettagli ancora da definire.`
+    },
+    {
+      headline: `📱 MESSAGGI INTERCETTATI: Asse caldo tra ${teamA.NAME} e ${teamB.NAME}, la verità sul futuro di ${reqName}`,
+      content: `Dichiarazioni di facciata e prudenza non frenano i rumors: tra ${teamA.NAME} e ${teamB.NAME} c'è un canale aperto per ${reqName}. Si sussurra di un incontro segreto già avvenuto per sbloccare ${offName}, ma la parola fine non è ancora scritta.`
+    }
+  ];
+
+  return {
+    ...templates[Math.floor(Math.random() * templates.length)],
+    involvedPlayerNames
+  };
+}
+
+/**
+ * 3. FAKE_NEWS: Voci e suggestioni inventate tra due club reali e loro calciatori effettivi
+ */
+function buildFakeNewsRumor(
+  teamA: any,
+  teamB: any,
+  playerA: any,
+  playerB: any
+): { headline: string; content: string } {
+  const pAName = `${playerA.Nome} ${playerA.Cognome}`.trim();
+  const pBName = `${playerB.Nome} ${playerB.Cognome}`.trim();
+  const posA = playerA.Posiz || 'calciatore';
+  const posB = playerB.Posiz || 'calciatore';
+
+  const templates = [
+    {
+      headline: `🚨 INDISCREZIONE: ${teamArt(teamA.NAME, 'il')} sonda a sorpresa ${pBName} ${teamArt(teamB.NAME, 'del')}!`,
+      content: `Rumor inaspettato nelle chat degli addetti ai lavori: ${teamArt(teamA.NAME, 'il')} avrebbe chiesto informazioni per il ${posB} ${pBName}. ${teamArt(teamB.NAME, 'dal')} al momento filtrano smentite di rito, ma gli intermediari assicurano che l'interesse sia reale e monitorato con attenzione.`
+    },
+    {
+      headline: `🔥 SUGGESTIONE DI MERCATO: ${pAName} proposto ${teamArt(teamB.NAME, 'al')}? La situazione`,
+      content: `Una clamorosa suggestione scuote l'ambiente: nelle ultime ore alcuni intermediari avrebbero accostato il nome di ${pAName} ${teamArt(teamB.NAME, 'al')}. L'idea stuzzica i tifosi, anche se ad oggi la fattibilità dell'operazione appare complessa e priva di conferme societarie.`
+    },
+    {
+      headline: `⚡ SIRENE DI MERCATO: ${teamArt(teamB.NAME, 'il')} vigila su ${pAName}, ma ${teamArt(teamA.NAME, 'il')} fa scudo`,
+      content: `Fari puntati sul talento di ${pAName}: ${teamArt(teamB.NAME, 'il')} sarebbe rimasto favorevolmente impressionato dalle prestazioni del calciatore ${teamArt(teamA.NAME, 'del')}. La dirigenza proprietaria ha però alzato una barricata, ribadendo l'incedibilità del giocatore in questo momento della stagione.`
+    },
+    {
+      headline: `🔍 SCENARIO FUTURO: Occhi ${teamArt(teamA.NAME, 'del')} su ${pBName}, contatto interlocutorio`,
+      content: `Cresce l'attenzione attorno a ${pBName} del ${teamB.NAME}. Secondo indiscrezioni di corridoio, ${teamArt(teamA.NAME, 'il')} avrebbe fatto registrare un timido interesse per sondare la disponibilità del club a trattare prima della chiusura della finestra.`
+    },
+    {
+      headline: `💭 TENSIONE D'INGAGGIO: Voci di malumore per ${pAName}, ${teamArt(teamB.NAME, 'il')} resta alla finestra`,
+      content: `Voci insistenti parlano di una fase di riflessione tra ${pAName} e ${teamArt(teamA.NAME, 'il')}. Una situazione di potenziale stallo che avrebbe attirato lo sguardo attento ${teamArt(teamB.NAME, 'del')}, pronto ad approfittare di qualsiasi spiraglio qualora la situazione precipitasse.`
+    },
+    {
+      headline: `📞 TELEFONATA ESPLORATIVA: Contatto informale tra i presidenti di ${teamA.NAME} e ${teamB.NAME}`,
+      content: `Una semplice chiacchierata tra colleghi o l'inizio di qualcosa di più? I vertici di ${teamA.NAME} e ${teamB.NAME} si sono sentiti in mattinata: sul piatto sarebbe finito il nome di ${pBName}, ma la sensazione è che si sia trattato solo di una chiacchierata esplorativa.`
+    },
+    {
+      headline: `🚪 PORTA APERTA? ${teamArt(teamA.NAME, 'il')} valuta il futuro di ${pAName}: l'ombra ${teamArt(teamB.NAME, 'del')}`,
+      content: `Riflessioni in corso in casa ${teamA.NAME}: la società sta valutando la composizione della rosa e ${pAName} potrebbe non essere considerato più intoccabile. ${teamArt(teamB.NAME, 'il')} osserva con discrezione l'evolversi della situazione.`
+    },
+    {
+      headline: `📰 RETROSCENA STAMPA: ${teamArt(teamB.NAME, 'il')} cerca rinforzi come ${posA}, sondato ${pAName}`,
+      content: `Secondo quanto riportato da fonti giornalistiche, ${teamArt(teamB.NAME, 'il')} è a caccia di un innesto di spessore nel ruolo di ${posA}. Tra i profili seguiti con maggiore curiosità figura ${pAName} del ${teamA.NAME}, sebbene una trattativa ufficiale non sia ancora decollata.`
+    }
+  ];
+
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
+/**
+ * 4. COLPO_A_SORPRESA: Tentativi di assalto a top player, maxi-offerte e tentativi di all-in
+ */
+function buildSurpriseHitRumor(
+  teamA: any,
+  teamB: any,
+  playerA: any,
+  playerB: any
+): { headline: string; content: string } {
+  const pAName = `${playerA.Nome} ${playerA.Cognome}`.trim();
+  const pBName = `${playerB.Nome} ${playerB.Cognome}`.trim();
+
+  const templates = [
+    {
+      headline: `💣 FANTAMERCATO O REALTÀ? ${teamArt(teamA.NAME, 'il')} prepara una maxi-offerta per ${pBName}!`,
+      content: `Se confermata, sarebbe l'operazione dell'anno: ${teamArt(teamA.NAME, 'il')} starebbe preparando un'offerta irrinunciabile per convincere ${teamArt(teamB.NAME, 'il')} a cedere ${pBName}. Il club proprietario fa muro, ma si sussurra di una proposta allettante in arrivo a ore.`
+    },
+    {
+      headline: `🌟 BLITZ ALL'HOTEL DEL MERCATO: ${teamA.NAME} a caccia del colpo da novanta, assalto a ${pBName}!`,
+      content: `Tutti i riflettori sono puntati su ${pBName}: il presidente del ${teamA.NAME} avrebbe confidato ai propri collaboratori di voler regalare un grandissimo innesto alla piazza. La trattativa con il ${teamB.NAME} è difficile, ma l'intenzione è seria.`
+    },
+    {
+      headline: `🎩 IL COLPO DELLA DISPERAZIONE: ${teamArt(teamA.NAME, 'il')} tenta l'all-in per ${pBName}`,
+      content: `Mossa da poker per ${teamArt(teamA.NAME, 'il')}: per dare una svolta decisiva alla stagione, la società sta valutando una proposta ad altissimo impatto per arrivare a ${pBName}. ${teamArt(teamB.NAME, 'dal')} filtra intransigenza, ma i contatti proseguono sottotraccia.`
+    },
+    {
+      headline: `💎 PROFILO DA VERTICE: ${teamArt(teamA.NAME, 'il')} mette gli occhi sulla stella ${teamArt(teamB.NAME, 'del')}`,
+      content: `La dirigenza del ${teamA.NAME} vuole alzare l'asticella delle proprie ambizioni e ha inserito in cima alla lista dei desideri ${pBName}. L'operazione richiederebbe uno sforzo enorme e l'inserimento di più pedine di scambio, ma l'ambizione è altissima.`
+    },
+    {
+      headline: `⚡ ASSALTO CLAMOROSO: ${teamArt(teamB.NAME, 'il')} lancia l'offensiva per ${pAName} ${teamArt(teamA.NAME, 'del')}`,
+      content: `Offensiva a sorpresa nelle ultime ore: ${teamArt(teamB.NAME, 'il')} è uscito allo scoperto per ${pAName}, considerato l'elemento ideale per compiere il definitivo salto di qualità. La risposta ${teamArt(teamA.NAME, 'del')} non si è fatta attendere: servirà un'offerta monstre.`
+    },
+    {
+      headline: `🔥 ASSE A SORPRESA: Proposta choc del ${teamA.NAME} ${teamArt(teamB.NAME, 'al')} per ${pBName}`,
+      content: `Clamoroso retroscena di mercato: il ${teamA.NAME} avrebbe recapitato una bozza di accordo ${teamArt(teamB.NAME, 'al')} per tentare lo strappo su ${pBName}. Una pista caldissima che promette scintille nei prossimi giorni.`
     }
   ];
 
