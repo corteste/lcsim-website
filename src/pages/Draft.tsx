@@ -765,12 +765,49 @@ const Draft = () => {
         const rankB = b.wishlistRank ?? 9999;
         return rankA - rankB;
       }
-      const rp = (ROLE_PRIORITY[a.player.Posiz] ?? 99) - (ROLE_PRIORITY[b.player.Posiz] ?? 99);
-      if (rp !== 0) return rp;
+
+      // Nel tab "Tutti" vanno prima tutti i Rookie e in coda gli Svincolati
+      if (a.type !== b.type) {
+        return a.type === "rookie" ? -1 : 1;
+      }
+
+      // Se entrambi sono Rookie:
+      if (a.type === "rookie") {
+        const tokensA = scoutingByRookie[a.id] ?? 0;
+        const tokensB = scoutingByRookie[b.id] ?? 0;
+        const hasOvrA = tokensA >= 5 && a.player.OVR !== null && a.player.OVR !== undefined;
+        const hasOvrB = tokensB >= 5 && b.player.OVR !== null && b.player.OVR !== undefined;
+
+        // Se entrambi hanno l'OVR svelato dallo scouting (5 gettoni), ordina per OVR decrescente
+        if (hasOvrA && hasOvrB) {
+          const diff = (Number(b.player.OVR) || 0) - (Number(a.player.OVR) || 0);
+          if (diff !== 0) return diff;
+          return a.id - b.id;
+        }
+
+        // Se non entrambi hanno l'OVR esatto svelato, ordina primariamente per numero di Stelle decrescente
+        const starsA = Number(a.player.Stelle) || 0;
+        const starsB = Number(b.player.Stelle) || 0;
+        if (starsB !== starsA) {
+          return starsB - starsA;
+        }
+
+        // A parità di stelle, se solo uno ha l'OVR esatto svelato, prioritizza chi ha l'OVR noto
+        if (hasOvrA || hasOvrB) {
+          const ovrA = hasOvrA ? Number(a.player.OVR) || 0 : 0;
+          const ovrB = hasOvrB ? Number(b.player.OVR) || 0 : 0;
+          if (ovrB !== ovrA) return ovrB - ovrA;
+        }
+
+        // A parità di stelle (o OVR), ordina per ID crescente
+        return a.id - b.id;
+      }
+
+      // Se entrambi sono Svincolati: ordina per OVR decrescente, poi per ID crescente
       const ovrA = Number(a.player.OVR) || 0;
       const ovrB = Number(b.player.OVR) || 0;
       if (ovrB !== ovrA) return ovrB - ovrA;
-      return (a.player.Cognome || "").localeCompare(b.player.Cognome || "");
+      return a.id - b.id;
     });
   }, [
     rookies,
@@ -782,6 +819,7 @@ const Draft = () => {
     wishlistMap,
     searchQuery,
     isGkDraftMandatory,
+    scoutingByRookie,
   ]);
 
   // Backward-compat alias for rookie count
@@ -981,6 +1019,7 @@ const Draft = () => {
     return found ? found.roundNum : null;
   }, [viewMode]);
 
+  const totalPicksCount = picks.length;
   const completedPicksCount = useMemo(
     () => picks.filter((p) => p.rookie_id !== null).length,
     [picks]
@@ -1331,7 +1370,7 @@ const Draft = () => {
             ) : (
               <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                 <CheckCircle2 className="h-5 w-5" />
-                Draft Completato! Tutte le 60 scelte sono state ufficializzate.
+                Draft Completato! Tutte le {totalPicksCount} scelte sono state ufficializzate.
               </div>
             )}
 
@@ -1341,7 +1380,7 @@ const Draft = () => {
                   Avanzamento Draft
                 </div>
                 <div className="text-xs font-mono font-bold">
-                  {completedPicksCount} / 60 Scelte ({Math.round((completedPicksCount / 60) * 100)}%)
+                  {completedPicksCount} / {totalPicksCount} Scelte ({totalPicksCount > 0 ? Math.round((completedPicksCount / totalPicksCount) * 100) : 0}%)
                 </div>
               </div>
               <div className="w-28 h-2.5 rounded-full bg-muted overflow-hidden border border-border/60">
@@ -1375,7 +1414,7 @@ const Draft = () => {
                       }`}
                   >
                     <LayoutGrid className="h-3.5 w-3.5" />
-                    Tabellone Completo (60 Scelte)
+                    Tabellone Completo
                   </Button>
 
                   <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
