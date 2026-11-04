@@ -114,19 +114,17 @@ const Classifica = () => {
                       return (
                         <TableRow
                           key={index}
-                          className={`hover:bg-muted/50 transition-colors ${
-                            isQuarterFinals
+                          className={`hover:bg-muted/50 transition-colors ${isQuarterFinals
                               ? "border-l-4 border-l-emerald-500 bg-emerald-500/[0.02]"
                               : "border-l-4 border-l-blue-500 bg-blue-500/[0.02]"
-                          }`}
+                            }`}
                         >
                           <TableCell className="text-center font-mono font-bold">
                             <span
-                              className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${
-                                isQuarterFinals
+                              className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${isQuarterFinals
                                   ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
                                   : "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
-                              }`}
+                                }`}
                             >
                               {index + 1}
                             </span>
@@ -142,9 +140,6 @@ const Classifica = () => {
                           <TableCell className="font-semibold text-sm">
                             <div className="flex items-center gap-2">
                               <span className="text-foreground">{team.team.NAME}</span>
-                              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">
-                                {team.team.TEAM_ID}
-                              </span>
                             </div>
                           </TableCell>
                           <TableCell className="text-center font-mono text-xs text-muted-foreground">{team.games_played}</TableCell>
