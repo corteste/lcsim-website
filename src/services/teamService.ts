@@ -1,19 +1,20 @@
-import { Team } from '@/types/team';
-import { supabase } from '@/supabaseClient';
-import { TEAM_TABLE } from '@/constants/App';
+import { supabase } from "@/supabaseClient";
+import { TEAM_TABLE } from "@/constants/App";
+import { Team } from "@/types/team";
 
-export async function fetchTeams(_pageIndex = 1): Promise<Team[]> {
+export async function fetchTeams(): Promise<Team[]> {
   const { data, error } = await supabase
     .from(TEAM_TABLE)
-    .select('*, players:an_player(*, MarketStatus:as_player_market(Status))')
-    .eq('ACTIVE', true);
+    .select('*')
+    .eq('ACTIVE', true)
+    .order('NAME', { ascending: true });
 
   if (error) {
     console.error('Error fetching teams:', error);
     throw new Error(error.message || 'Failed to fetch teams');
   }
 
-  return (data as Team[]) ?? [];
+  return (data || []) as Team[];
 }
 
 export async function fetchTeamById(team?: string): Promise<Team | null> {
@@ -21,12 +22,12 @@ export async function fetchTeamById(team?: string): Promise<Team | null> {
 
   const { data, error } = await supabase
     .from(TEAM_TABLE)
-    .select('*, players:an_player(*, MarketStatus:as_player_market(Status))')
-    .or(`TEAM_ID.eq.${team},NAME_ABBR.eq.${team},NAME.eq.${team}`)
+    .select('*')
+    .eq('TEAM_ID', team)
     .maybeSingle();
 
   if (error) {
-    console.error(`Error fetching team ${team}:`, error);
+    console.error('Error fetching team by id:', error);
     throw new Error(error.message || 'Failed to fetch team');
   }
 
@@ -43,30 +44,46 @@ export async function updateTeamCoach(
   coachName: string,
   actingUsername?: string
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const trimmed = coachName.trim();
-    if (!trimmed) {
-      return { success: false, error: "Il nome dell'allenatore non può essere vuoto." };
-    }
+  return updateTeamStaff({
+    teamId,
+    coachName,
+    actingUsername,
+  });
+}
 
-    // Chiamata RPC SECURITY DEFINER (rpc_update_team_coach)
-    const { data: rpcData, error: rpcError } = await supabase.rpc("rpc_update_team_coach", {
+/**
+ * Aggiorna lo staff del club (Allenatore e Presidente).
+ * Utilizza la RPC SECURITY DEFINER (rpc_update_team_staff)
+ */
+export async function updateTeamStaff(params: {
+  teamId: string;
+  coachName?: string;
+  presidentName?: string;
+  actingUsername?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { teamId, coachName, presidentName, actingUsername } = params;
+    const cleanCoach = coachName?.trim() || "";
+    const cleanPresident = presidentName?.trim() || "";
+
+    const { data: rpcData, error: rpcError } = await supabase.rpc("rpc_update_team_staff", {
       p_team_id: teamId.trim(),
-      p_coach_name: trimmed,
+      p_coach_name: cleanCoach,
+      p_president_name: cleanPresident || null,
       p_acting_username: actingUsername?.trim() || null,
     });
 
     if (rpcError) {
-      console.error("Errore rpc_update_team_coach:", rpcError);
-      return { success: false, error: rpcError.message || "Errore durante l'aggiornamento dell'allenatore." };
+      console.error("Errore rpc_update_team_staff:", rpcError);
+      return { success: false, error: rpcError.message || "Errore durante l'aggiornamento dello staff." };
     }
 
     if (rpcData && !rpcData.success) {
-      return { success: false, error: rpcData.error || "Impossibile aggiornare l'allenatore." };
+      return { success: false, error: rpcData.error || "Impossibile aggiornare lo staff." };
     }
 
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err?.message || "Errore durante l'aggiornamento dell'allenatore." };
+    return { success: false, error: err?.message || "Errore durante l'aggiornamento dello staff." };
   }
 }

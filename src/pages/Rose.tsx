@@ -539,9 +539,21 @@ const Rose = () => {
                       {/* Club Key Figures & Info: Presidente, Manager, Stadio */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                         <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-border/60 dark:border-white/15 text-xs">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
-                            Presidente
-                          </span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
+                              Presidente
+                            </span>
+                            {(isAdmin || user?.team === currentTeam.TEAM_ID) && (
+                              <button
+                                type="button"
+                                onClick={() => setIsEditCoachOpen(true)}
+                                className="text-muted-foreground hover:text-emerald-500 p-0.5 rounded transition-colors"
+                                title="Modifica Staff (Allenatore e Presidente)"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
                           <strong className="text-foreground font-extrabold truncate block text-xs">
                             {presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}
                           </strong>
@@ -1129,6 +1141,8 @@ const Rose = () => {
           }}
           teamId={currentTeam.TEAM_ID}
           teamName={currentTeam.NAME}
+          currentCoachName={currentTeam.MANAGER}
+          currentPresidentName={presidentMap[currentTeam.TEAM_ID]}
         />
       )}
     </div>
