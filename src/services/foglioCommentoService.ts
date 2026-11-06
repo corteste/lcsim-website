@@ -413,7 +413,7 @@ export async function fetchTeamSheetFormation(
 
     // D) Fallback automatico su rosa completa del club
     const sortedRoster = sortPlayersByRole(roster);
-    const formDef = EA_FC25_FORMATIONS.find((f) => f.id === "4-3-3") || EA_FC25_FORMATIONS[0];
+    const formDef = EA_FC25_FORMATIONS.find((f) => f.id === "4-3-3-flat") || EA_FC25_FORMATIONS[0];
 
     const starters = formDef.positions.map((_, idx) => sortedRoster[idx] || null);
     const bench = sortedRoster.slice(11);

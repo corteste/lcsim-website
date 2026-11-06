@@ -1457,3 +1457,39 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
      - **Opzione 1 (File Locale `.md`)**: file statico `src/content/storia-torneo.md` importato nativamente da Vite con `?raw`. Ideale per versionamento rapido via Git.
      - **Opzione 2 (Dinamico su Supabase)**: testo Markdown memorizzato su tabella di lega (es. `league_pages`) con form di editing nell'area Amministrazione per consentire all'Admin di aggiornare il testo direttamente dal sito web.
      - **Opzione 3 (Ibrida con Timeline Grafica)**: render Markdown per i capitoli descrittivi combinato con una timeline grafica a tappe per le edizioni/stagioni concluse e relativi campioni.
+
+
+---
+
+## 📌 66. Analisi Post-Partita dell'Allenatore (Report Tattico e Statistico)
+- **Stato**: 💡 Future Improvement / Backlog
+- **Priorità**: Media
+- **Moduli previsti**: Nuova sezione in `src/pages/Calendario.tsx` (Match Report / Dettaglio Partita) o widget nella dashboard squadra (`src/pages/Roster.tsx`)
+- **Tabelle coinvolte**: `an_schedule`, `as_team_stat`, `as_player_stat`, `an_team`
+- **Descrizione & Obiettivi**:
+  - Generazione di un report di analisi post-partita redatto dal punto di vista dell'allenatore della squadra (es. Sig./Mister impostato per il club).
+  - L'analisi deve basarsi sui dati statistici effettivi dell'ultima partita giocata (possesso palla, conclusioni, precisione passaggi, contrasti vinti, prestazioni dei singoli, gol fatti/subiti e voti).
+  - Evidenziare punti di forza emersi nel match, criticità da correggere in settimana durante gli allenamenti e indicazioni tattiche per il prossimo incontro.
+
+---
+
+## 📌 67. Accessori Calciatori & Vestiti Allenatori (Asset Grafici, Codici e Nomi)
+- **Stato**: 💡 Future Improvement / Backlog
+- **Priorità**: Bassa-Media (Visual & Immersione)
+- **Moduli previsti**: `src/pages/Roster.tsx`, `src/constants/accessories.ts`, `src/components/team/EditCoachModal.tsx`, Supabase Storage (`images/accessories`, `images/coaches`)
+- **Tabelle coinvolte**: `an_player`, `an_team`
+- **Descrizione & Obiettivi**:
+  - **Accessori Calciatori**: completare la mappatura delle immagini degli accessori (scarpe, polsini, fasce, parastinchi, ecc.) facendole combaciare con i codici numerici interni EA FC e con le denominazioni ufficiali dei modelli/brand.
+  - **Outfit Allenatori**: inserire opzioni e immagini di abbigliamento per gli allenatori (completo elegante, tuta sociale, giacca/cappotto, stile casual) selezionabili dal popup di modifica staff o visibili nella scheda squadra.
+
+---
+
+## 📌 68. Metrica Avanzata di Valore Giocatore (Stile Win Shares NBA / WAR MLB)
+- **Stato**: 💡 Future Improvement / Backlog
+- **Priorità**: Media-Alta (Analytics & Statistiche Avanzate)
+- **Moduli previsti**: `src/pages/Statistiche.tsx`, `src/pages/StatisticheSquadre.tsx`, `src/types/player.ts`, script o trigger di calcolo su Supabase
+- **Tabelle coinvolte**: `as_player_stat`, `as_team_stat`, `an_standings`
+- **Descrizione & Obiettivi**:
+  - Definizione e calcolo di una metrica sintetica avanzata d'impatto sul risultato (omologa alle **Win Shares** del basket o al **WAR - Wins Above Replacement** del baseball) adattata alle statistiche di calcio disponibili in lega (gol, assist, tiri, contrasti, passaggi riusciti, clean sheet, falli subiti, minutaggio e voti).
+  - La statistica quantifica in modo oggettivo quante vittorie o punti in classifica un singolo calciatore ha generato per la propria squadra rispetto a un sostituto medio/rimpiazzo nel suo ruolo.
+  - Integrazione della metrica nelle classifiche individuali, nei premi di fine stagione (MVP) e nelle schede di confronto giocatore.
