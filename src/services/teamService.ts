@@ -5,7 +5,7 @@ import { Team } from "@/types/team";
 export async function fetchTeams(): Promise<Team[]> {
   const { data, error } = await supabase
     .from(TEAM_TABLE)
-    .select('*')
+    .select('*, players:an_player(*, MarketStatus:as_player_market(Status))')
     .eq('ACTIVE', true)
     .order('NAME', { ascending: true });
 
@@ -22,8 +22,8 @@ export async function fetchTeamById(team?: string): Promise<Team | null> {
 
   const { data, error } = await supabase
     .from(TEAM_TABLE)
-    .select('*')
-    .eq('TEAM_ID', team)
+    .select('*, players:an_player(*, MarketStatus:as_player_market(Status))')
+    .or(`TEAM_ID.eq.${team},NAME_ABBR.eq.${team},NAME.eq.${team}`)
     .maybeSingle();
 
   if (error) {
