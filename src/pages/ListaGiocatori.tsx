@@ -30,6 +30,7 @@ import {
   Activity,
   Layers,
   X,
+  UserX,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -38,6 +39,7 @@ import {
   getValueColor,
   getPlayerImage,
   getNationalityFlag,
+  LCSIM_LOGO_SMALL,
 } from "@/utils/functions";
 import { getPlayers } from "@/hooks/use-players";
 import { getTeams } from "@/hooks/use-teams";
@@ -91,7 +93,7 @@ export const getMarketLabel = (code: string | null) => {
 
 type SortField = "OVR" | "Età" | "Nome" | "Posiz" | "XP";
 type SortDir = "asc" | "desc";
-type ScopeTab = "SERIE_A" | "ALL" | "SVINCOLATI" | "SERIE_B" | "FAVORITES";
+type ScopeTab = "LCSIM" | "ALL" | "SVINCOLATI" | "RITIRATI" | "SERIE_B" | "FAVORITES";
 type ViewMode = "table" | "grid";
 
 const ROLE_GROUPS = [
@@ -107,7 +109,7 @@ const ListaGiocatori = () => {
   const { teams } = getTeams();
 
   // Scope / Ambito Giocatori (Scelta utente: default Serie A)
-  const [scopeTab, setScopeTab] = useState<ScopeTab>("SERIE_A");
+  const [scopeTab, setScopeTab] = useState<ScopeTab>("LCSIM");
 
   // Vista (Scelta utente: Doppia vista Tabella / Griglia)
   const [viewMode, setViewMode] = useState<ViewMode>("table");
@@ -147,25 +149,29 @@ const ListaGiocatori = () => {
 
   // Conteggi per i tab di ambito
   const countsByScope = useMemo(() => {
-    let serieACount = 0;
+    let lcsimCount = 0;
     let svincolatiCount = 0;
+    let ritiratiCount = 0;
     let serieBCount = 0;
 
     for (const p of players) {
       const sq = p.Squadra;
-      if (!sq || sq === "RITIRATO") {
+      if (!sq) {
         svincolatiCount++;
+      } else if (sq === "RITIRATO") {
+        ritiratiCount++;
       } else if (sq.includes("B -")) {
         serieBCount++;
       } else {
-        serieACount++;
+        lcsimCount++;
       }
     }
 
     return {
       total: players.length,
-      serieA: serieACount,
+      lcsim: lcsimCount,
       svincolati: svincolatiCount,
+      ritirati: ritiratiCount,
       serieB: serieBCount,
     };
   }, [players]);
@@ -199,13 +205,15 @@ const ListaGiocatori = () => {
 
     const filtered = players.filter((player) => {
       const sq = player.Squadra;
-      const isSvincolato = !sq || sq === "RITIRATO";
+      const isSvincolato = !sq;
+      const isRitirato = sq === "RITIRATO";
       const isSerieB = !!sq && sq.includes("B -");
-      const isSerieA = !isSvincolato && !isSerieB;
+      const isLcsim = !isSvincolato && !isRitirato && !isSerieB;
 
       // 1. Filtro Scope Tab
-      if (scopeTab === "SERIE_A" && !isSerieA) return false;
+      if (scopeTab === "LCSIM" && !isLcsim) return false;
       if (scopeTab === "SVINCOLATI" && !isSvincolato) return false;
+      if (scopeTab === "RITIRATI" && !isRitirato) return false;
       if (scopeTab === "SERIE_B" && !isSerieB) return false;
       if (scopeTab === "FAVORITES" && !favoritePlayerIds.has(Number(player.ID))) return false;
 
@@ -335,7 +343,7 @@ const ListaGiocatori = () => {
                     Lista Calciatori
                   </h1>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    Consulta, filtra ed esplora tutti i calciatori della Serie A e dell'archivio di lega.
+                    Consulta, filtra ed esplora tutti i calciatori della LCSIM e dell'archivio di lega.
                   </p>
                 </div>
               </div>
@@ -344,10 +352,10 @@ const ListaGiocatori = () => {
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm min-w-[95px]">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Serie A
+                    LCSIM
                   </span>
                   <span className="text-lg sm:text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                    {countsByScope.serieA}
+                    {countsByScope.lcsim}
                   </span>
                   <span className="text-[9px] text-muted-foreground block">atleti attivi</span>
                 </div>
@@ -359,7 +367,7 @@ const ListaGiocatori = () => {
                   <span className="text-lg sm:text-xl font-black font-mono text-foreground">
                     {avgSerieAOvr}
                   </span>
-                  <span className="text-[9px] text-muted-foreground block">Serie A</span>
+                  <span className="text-[9px] text-muted-foreground block">LCSIM</span>
                 </div>
 
                 <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm min-w-[95px]">
@@ -392,24 +400,24 @@ const ListaGiocatori = () => {
         <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-3">
           <button
             type="button"
-            onClick={() => setScopeTab("SERIE_A")}
+            onClick={() => setScopeTab("LCSIM")}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-sm ${
-              scopeTab === "SERIE_A"
+              scopeTab === "LCSIM"
                 ? "bg-emerald-600 text-white shadow-emerald-500/20"
                 : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/30"
             }`}
           >
-            <Trophy className="h-4 w-4" />
-            <span>Serie A</span>
+            <img src={LCSIM_LOGO_SMALL} alt="LCSIM" className="h-4 w-4 object-contain shrink-0" />
+            <span>LCSIM</span>
             <Badge
               variant="outline"
               className={`text-[10px] px-1.5 py-0 font-mono ${
-                scopeTab === "SERIE_A"
+                scopeTab === "LCSIM"
                   ? "bg-white/20 text-white border-white/30"
                   : "bg-muted text-muted-foreground"
               }`}
             >
-              {countsByScope.serieA}
+              {countsByScope.lcsim}
             </Badge>
           </button>
 
@@ -446,7 +454,7 @@ const ListaGiocatori = () => {
             }`}
           >
             <Sparkles className="h-4 w-4" />
-            <span>Svincolati &amp; Ritirati</span>
+            <span>Svincolati</span>
             <Badge
               variant="outline"
               className={`text-[10px] px-1.5 py-0 font-mono ${
@@ -461,6 +469,29 @@ const ListaGiocatori = () => {
 
           <button
             type="button"
+            onClick={() => setScopeTab("RITIRATI")}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-sm ${
+              scopeTab === "RITIRATI"
+                ? "bg-rose-600 text-white shadow-rose-500/20"
+                : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            }`}
+          >
+            <UserX className="h-4 w-4" />
+            <span>Ritirati</span>
+            <Badge
+              variant="outline"
+              className={`text-[10px] px-1.5 py-0 font-mono ${
+                scopeTab === "RITIRATI"
+                  ? "bg-white/20 text-white border-white/30"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {countsByScope.ritirati}
+            </Badge>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setScopeTab("SERIE_B")}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-sm ${
               scopeTab === "SERIE_B"
@@ -469,7 +500,7 @@ const ListaGiocatori = () => {
             }`}
           >
             <Shield className="h-4 w-4" />
-            <span>Serie Inferiore</span>
+            <span>LCSIM 2</span>
             <Badge
               variant="outline"
               className={`text-[10px] px-1.5 py-0 font-mono ${

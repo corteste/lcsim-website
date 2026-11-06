@@ -1314,14 +1314,24 @@ La pagina degli scambi risulta rotta. Individuare l'errore (console, query Supab
 ---
 
 ## 📌 57. Archivio da Rifare & Aggiornamento Hall of Fame
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Completato & Testato (Sviluppato su branch dev)
 - **Priorità**: Media
-- **Moduli coinvolti**: pagina Archivio, pagina Hall of Fame (da verificare)
-- **Tabelle coinvolte**: an_standings, an_schedule, VIEW_PLAYER_STATS (da definire)
-Descrizione
-Archivio: ripensare l'archivio storico delle stagioni.
-Hall of Fame: aggiornarla con le stagioni e i dati recenti.
-Da definire il contenuto di entrambe e il collegamento con il palmarès delle squadre (vedi punto #45).
+- **Moduli coinvolti**: `src/pages/ArchivioGiocatori.tsx`, `src/pages/HallOfFame.tsx`, `src/components/team/ClubHistoryCard.tsx`, `src/pages/Rose.tsx`, `src/services/archiveService.ts`, `src/components/Navbar.tsx`
+- **Tabelle & Viste coinvolte**: `as_player_stat`, `an_team_rebrands`, `an_player_transactions`, `an_player_career_seasons`, `an_league_events`, `an_coach_history`, `an_match_captains`, `an_captain_leaderboards`, `an_historical_news`, `an_hall_of_fame`, `view_player_season_summary`, `view_player_career_summary`
+- **Migrazioni**: `supabase/migrations/20261106_archive_and_cronistoria.sql` e rollback `20261106_archive_and_cronistoria_rollback.sql`
+### Descrizione & Soluzioni Implementate:
+1. **Database & Popolamento Storico (`CRONISTORIA_LCSIM.xlsx` — 5 Fogli)**:
+   - Importati a database tutti i 5 fogli della Cronistoria: Movimenti Giocatori (`an_player_transactions`, 1.703 record), Cambi di Nome Squadre (`an_team_rebrands`, 11 rebranding), Eventi di Lega (`an_league_events`, 164 eventi), Storico Allenatori (`an_coach_history`, 58 movimenti panchina), Capitani per Partita & Classifica Capitani (`an_match_captains`, 538 match / 1.076 fasce assegnate con risoluzione 100% degli ID giocatore; `an_captain_leaderboards`), e Comunicazioni Storiche (`an_historical_news`, 318 articoli).
+   - Ricostruita la tabella `an_player_career_seasons` (2.029 stagioni a roster da S1 a S11, incluse le stagioni con 0 minuti giocati) e popolato il campo storico `"TEAM_ID"` su tutti i 14.714 record S1–S10 di `as_player_stat`.
+   - Create le viste `view_player_season_summary` e `view_player_career_summary` per aggregare lato server tutte le statistiche stagionali e di carriera senza incorrere nel limite di 1.000 righe di PostgREST.
+2. **Archivio Storico Calciatori (`/archivio/giocatori`)**:
+   - Directory completa dei 660 calciatori con ricerca istantanea, filtri per Stato (`In Attività Serie A`, `Ritirati`, `Svincolati`, `Serie B`, `Hall of Fame`), Ruolo/Reparto e Franchigia Storica (raggruppando la continuità storica dei club, es. `GAP ➔ ACD`, `SBM ➔ MAR`, `PAN ➔ HTV ➔ PFC`, `PRO ➔ YBO ➔ OLD`, `HVI ➔ ASK ➔ SKA`, `BLA ➔ RMB`), e ordinamento per Presenze, Minuti, Gol, Assist, Media Voto, Capitano e OVR.
+   - Scheda singola calciatore (`?player=ID`) con dati reali (rimossi i vecchi dati mock), badge per le sigle storiche dell'epoca con tooltip della franchigia attuale, stagioni a roster anche con `0 pres (In rosa)`, presenze da Capitano per stagione e timeline completa dei trasferimenti ufficiali (Draft con n° scelta, Scambi, Espansione, Tagli, Fallimento, Ritiro).
+3. **Hall of Fame & Albo dei Record (`/archivio/hall-of-fame`)**:
+   - Corretta l'associazione agli ID reali di `an_player` per Oscar Brown (`#50205`), Mario Conti (`#50219`) e Claudio Cassani (`#50073`) nella tabella `an_hall_of_fame`, con gestione Admin completa (`rpc_admin_upsert_hof_member`, `rpc_admin_delete_hof_member`) direttamente dall'interfaccia.
+   - Sezione **Record & Classifiche All-Time (S1–S11)** con podio Top 3 e Top 20 per Marcatori, Assist-man, Partecipazione Gol (G+A), Presenze & Minutaggio, Capitani Storici, Media Voto (min. 20 presenze) e Portieri (Clean Sheet & Parate), con collegamento diretto alla scheda in Archivio Calciatori.
+4. **Storia Franchigia & Allenatori nella Pagina Club (`/squadre`)**:
+   - Integrato il componente `ClubHistoryCard` nella pagina di dettaglio di ciascuna squadra per mostrare l'evoluzione storica dei rebranding e la cronologia completa degli allenatori (assunzioni, esoneri e note storiche).
 
 
 

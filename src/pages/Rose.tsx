@@ -4,6 +4,10 @@ import { supabase } from "@/supabaseClient";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
+import {
+  ClubHistoryInlineControls,
+  ClubHistoryExpandedDrawer,
+} from "@/components/team/ClubHistoryCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -149,6 +153,7 @@ const TEAM_STADIUMS: Record<string, string> = {
 const Rose = () => {
   const { user, isAdmin } = useAuth();
   const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
+  const [isClubHistoryOpen, setIsClubHistoryOpen] = useState(false);
   const { teams, loading: loadingTeams, refetch: refetchTeams } = getTeams();
 
   // Fetch claimed president names
@@ -238,6 +243,7 @@ const Rose = () => {
       audioRef.current.currentTime = 0;
     }
     setIsPlayingAnthem(false);
+    setIsClubHistoryOpen(false);
   }, [currentTeam?.TEAM_ID]);
 
   // Clean up audio element on unmount
@@ -638,66 +644,80 @@ const Rose = () => {
                                   <span className="w-1 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                                 </span>
                               </>
-                            ) : (
-                              <>
-                                <Volume2 className="h-3.5 w-3.5 shrink-0 text-foreground dark:text-white" />
-                                <span>Inno Ufficiale</span>
-                              </>
-                            )}
+                              ) : (
+                                <>
+                                  <Volume2 className="h-3.5 w-3.5 shrink-0 text-foreground dark:text-white" />
+                                  <span>Inno Ufficiale</span>
+                                </>
+                              )}
+                            </button>
+                          ) : null}
+
+                          {/* Inline Club History & Bench Controls */}
+                          <ClubHistoryInlineControls
+                            teamId={currentTeam.TEAM_ID}
+                            isOpen={isClubHistoryOpen}
+                            onToggle={() => setIsClubHistoryOpen((prev) => !prev)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Center: Divise (Jerseys) positioned between Stadio & KPIs */}
+                    {currentJerseys.length > 0 && (
+                      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 py-1 self-center">
+                        {currentJerseys.map((j) => (
+                          <button
+                            key={j.type}
+                            type="button"
+                            onClick={() => setSelectedJersey(j)}
+                            className="group relative flex flex-col items-center p-2 rounded-2xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 hover:border-foreground/20 dark:hover:border-white/30 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md shrink-0"
+                            title={`Visualizza ${j.fullLabel} - Clicca per ingrandire`}
+                          >
+                            <div className="h-18 w-18 sm:h-20 sm:w-20 2xl:h-24 2xl:w-24 flex items-center justify-center p-1 overflow-hidden">
+                              <img
+                                src={j.url}
+                                alt={`${currentTeam.NAME} - ${j.label}`}
+                                className="max-h-full max-w-full object-contain drop-shadow-md group-hover:drop-shadow-xl group-hover:scale-105 transition-transform duration-200"
+                                loading="lazy"
+                              />
+                            </div>
+                            
                           </button>
-                        ) : null}
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Right Telemetry KPI: OVR Medio & Età Media */}
+                    <div className="flex items-center sm:self-center gap-2.5 sm:gap-3 shrink-0">
+                      <div className="px-4 py-2.5 rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[90px]">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
+                          OVR Medio
+                        </span>
+                        <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                          {avgOvr}
+                        </span>
+                      </div>
+
+                      <div className="px-4 py-2.5 rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[90px]">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
+                          Età Media
+                        </span>
+                        <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                          {avgAge} <span className="text-xs font-normal text-muted-foreground dark:text-white/70">a</span>
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Center: Divise (Jerseys) positioned between Stadio & KPIs */}
-                  {currentJerseys.length > 0 && (
-                    <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 py-1 self-center">
-                      {currentJerseys.map((j) => (
-                        <button
-                          key={j.type}
-                          type="button"
-                          onClick={() => setSelectedJersey(j)}
-                          className="group relative flex flex-col items-center p-2 rounded-2xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 hover:border-foreground/20 dark:hover:border-white/30 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md shrink-0"
-                          title={`Visualizza ${j.fullLabel} - Clicca per ingrandire`}
-                        >
-                          <div className="h-18 w-18 sm:h-20 sm:w-20 2xl:h-24 2xl:w-24 flex items-center justify-center p-1 overflow-hidden">
-                            <img
-                              src={j.url}
-                              alt={`${currentTeam.NAME} - ${j.label}`}
-                              className="max-h-full max-w-full object-contain drop-shadow-md group-hover:drop-shadow-xl group-hover:scale-105 transition-transform duration-200"
-                              loading="lazy"
-                            />
-                          </div>
-                          
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Right Telemetry KPI: OVR Medio & Età Media */}
-                  <div className="flex items-center sm:self-center gap-2.5 sm:gap-3 shrink-0">
-                    <div className="px-4 py-2.5 rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[90px]">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
-                        OVR Medio
-                      </span>
-                      <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-                        {avgOvr}
-                      </span>
-                    </div>
-
-                    <div className="px-4 py-2.5 rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[90px]">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
-                        Età Media
-                      </span>
-                      <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-                        {avgAge} <span className="text-xs font-normal text-muted-foreground dark:text-white/70">a</span>
-                      </span>
-                    </div>
-                  </div>
+                  {/* Expanded Club History Drawer inside the Header */}
+                  <ClubHistoryExpandedDrawer
+                    teamId={currentTeam.TEAM_ID}
+                    teamName={currentTeam.NAME}
+                    isOpen={isClubHistoryOpen}
+                  />
                 </div>
               </div>
-            </div>
 
         {/* CONTROLS & FILTERS BAR */}
         <div className="space-y-3">

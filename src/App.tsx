@@ -18,6 +18,7 @@ import Scouting from "./pages/Scouting";
 import ConfrontoGiocatori from "./pages/ConfrontoGiocatori";
 import ArchivioGiocatori from "./pages/ArchivioGiocatori";
 import HallOfFame from "./pages/HallOfFame";
+import RecordAllTime from "./pages/RecordAllTime";
 import Draft from "./pages/Draft";
 import Trattative from "./pages/Trattative";
 import UfficialitaScambi from "./pages/UfficialitaScambi";
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/amministrazione/automazioni" element={<AdminAutomazioni />} />
                 <Route path="/archivio/giocatori" element={<ArchivioGiocatori />} />
                 <Route path="/archivio/hall-of-fame" element={<HallOfFame />} />
+                <Route path="/archivio/record" element={<RecordAllTime />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <FloatingBugReportButton />

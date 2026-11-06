@@ -137,13 +137,6 @@ const Navbar = () => {
       icon: Swords,
       colorClass: "text-rose-500",
     },
-    {
-      path: "/archivio/hall-of-fame",
-      label: "Hall of Fame",
-      description: "Le leggende e i campioni storici di Lega",
-      icon: Crown,
-      colorClass: "text-yellow-500",
-    },
   ];
 
   // 4. SEZIONE DRAFT & MERCATO
@@ -194,9 +187,23 @@ const Navbar = () => {
     {
       path: "/archivio/giocatori",
       label: "Archivio Calciatori",
-      description: "Statistiche e giocatori delle stagioni passate",
+      description: "Carriere, stagioni a roster, statistiche e movimenti storici",
       icon: History,
       colorClass: "text-purple-500",
+    },
+    {
+      path: "/archivio/hall-of-fame",
+      label: "Hall of Fame",
+      description: "Le leggende ufficiali e i campioni storici di Lega",
+      icon: Crown,
+      colorClass: "text-yellow-500",
+    },
+    {
+      path: "/archivio/record",
+      label: "Record All-Time",
+      description: "Albo dei primati e classifiche storiche (S1–S11)",
+      icon: Trophy,
+      colorClass: "text-emerald-500",
     },
   ];
 
@@ -258,8 +265,7 @@ const Navbar = () => {
   const isCalciatoriActive =
     calciatoriItems.some((i) => location.pathname === i.path) ||
     location.pathname.startsWith("/giocatori") ||
-    location.pathname === "/statistiche" ||
-    location.pathname === "/archivio/hall-of-fame";
+    location.pathname === "/statistiche";
   const isDraftActive =
     location.pathname.startsWith("/draft") ||
     location.pathname.startsWith("/mercato");
@@ -270,9 +276,7 @@ const Navbar = () => {
     location.pathname.startsWith("/media") ||
     location.pathname === "/probabili-formazioni" ||
     location.pathname.includes("foglio-commento");
-  const isArchivioActive =
-    location.pathname === "/archivio/giocatori" ||
-    (location.pathname.startsWith("/archivio") && location.pathname !== "/archivio/hall-of-fame");
+  const isArchivioActive = location.pathname.startsWith("/archivio");
   const isMiaSquadraActive =
     location.pathname.startsWith("/mia-squadra") ||
     location.pathname.startsWith("/admin") ||
