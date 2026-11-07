@@ -1374,16 +1374,12 @@ export default function StatisticheSquadre() {
                     >
                       Angoli / Disc.
                     </th>
-                    <th className="py-3 px-3 text-right font-black text-emerald-600 dark:text-emerald-400">
-                      {activeCategoryConfig.shortLabel}
-                    </th>
                     <th className="py-3 px-3 text-right w-10"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {sortedTeams.map((team, index) => {
                     const rank = index + 1;
-                    const primaryDisplay = getTeamStatDisplay(team);
                     const mainCoach = team.coaches[0]?.name || "N/D";
 
                     return (
@@ -1541,13 +1537,6 @@ export default function StatisticheSquadre() {
                           </span>
                           <span className="text-[10px] text-muted-foreground ml-1">
                             ({team.gialli}G/{team.rossi}R)
-                          </span>
-                        </td>
-
-                        {/* Highlight Primary Metric */}
-                        <td className="py-3 px-3 text-right">
-                          <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            {primaryDisplay.value}
                           </span>
                         </td>
 
