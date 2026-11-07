@@ -19,3 +19,13 @@ export type ScheduleGeneral = {
     standings_processed?: boolean;
     is_neutral?: boolean;
 };
+
+export interface LeagueCalendarEvent {
+    id: number;
+    event_order: number;
+    event_date: string | null;
+    evento: string;
+    tipo: string;
+    stagione: number;
+    note?: string | null;
+}

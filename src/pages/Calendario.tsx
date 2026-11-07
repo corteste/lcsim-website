@@ -1,6 +1,13 @@
 function formatCoachDisplay(name?: string | null): string {
   if (!name) return "";
-  const trimmed = name.trim();
+  let trimmed = name.trim();
+  // Strip duplicated prefixes like "Mister Signor", "Mister Sig.", "Signor Mister"
+  trimmed = trimmed.replace(
+    /^(mister|mr\.?|signore?|sig\.?)\s+(signore?|sig\.?|mister|mr\.?)\s+/i,
+    "$2 "
+  );
+  // Normalize "Signor" / "Signore" -> "Sig."
+  trimmed = trimmed.replace(/^(signore?)\b\.?\s*/i, "Sig. ");
   if (/^(mister|sig\.?|mr\.?)\b/i.test(trimmed)) {
     return trimmed;
   }
@@ -31,17 +38,31 @@ import {
   Activity,
   Shirt,
   Sparkles,
+  Plus,
+  Pencil,
+  Trash2,
+  Briefcase,
+  Scissors,
+  Lock,
+  Flame,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import {
   PLAYER_EXTRA_STAT_CATEGORIES,
   KNOWN_PLAYER_EXTRA_KEYS,
   formatExtraStatLabel,
 } from "@/services/matchStatsImportService";
+import {
+  upsertLeagueEvent,
+  deleteLeagueEvent,
+} from "@/services/scheduleService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Schedule } from "@/types/schedule";
+import { Schedule, LeagueCalendarEvent } from "@/types/schedule";
 import { MatchStats } from "@/types/teamStats";
 import { PlayerStats } from "@/types/playerStats";
 import {
@@ -52,9 +73,66 @@ import {
   getTeamBackground,
 } from "@/utils/functions";
 import { useSchedule } from "@/context/ScheduleContext";
+import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "next-themes";
 import { getMatchStatsColors } from "@/utils/teamColors";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
+import { toast } from "sonner";
+
+/**
+ * Horizontal left-to-right ordering on the 2D pitch (attacking upwards from y=91% to y=14%):
+ * Left side of screen (x=15%) = Left flank (TS, ASA, DCS, CDS, ES, CCS, COS, AS, PS)
+ * Center of screen (x=50%) = Central roles (DC, CDC, CC, COC, AT, ATT)
+ * Right side of screen (x=85%) = Right flank (TD, ADA, DCD, CDD, ED, CCD, COD, AD, PD)
+ */
+function getHorizontalSlotOrder(role: string): number {
+  switch (role?.toUpperCase()) {
+    case "TS":
+    case "ASA":
+    case "ES":
+    case "AS":
+      return -2;
+    case "DCS":
+    case "CDS":
+    case "CCS":
+    case "COS":
+    case "PS":
+      return -1;
+    case "DC":
+    case "CDC":
+    case "CC":
+    case "COC":
+    case "AT":
+    case "ATT":
+      return 0;
+    case "DCD":
+    case "CDD":
+    case "CCD":
+    case "COD":
+    case "PD":
+      return 1;
+    case "TD":
+    case "ADA":
+    case "ED":
+    case "AD":
+      return 2;
+    default:
+      return 0;
+  }
+}
+
+function sortLineLeftToRight(
+  players: PlayerStats[],
+  getEffPos: (p: PlayerStats) => string
+): PlayerStats[] {
+  return players
+    .slice()
+    .sort(
+      (a, b) =>
+        getHorizontalSlotOrder(getEffPos(a)) -
+        getHorizontalSlotOrder(getEffPos(b))
+    );
+}
 
 // Function to compute pitch coordinates for 11 starters
 function computePitchCoordinates(
@@ -63,15 +141,40 @@ function computePitchCoordinates(
   const getEffPos = (p: PlayerStats) =>
     p.POS_GIOCATA && p.POS_GIOCATA !== "SOS" ? p.POS_GIOCATA : p.Posiz;
 
-  const gk = starters.find((p) => getEffPos(p) === "POR" || p.Posiz === "POR") || starters[0];
+  const gk =
+    starters.find((p) => getEffPos(p) === "POR" || p.Posiz === "POR") ||
+    starters[0];
   const others = starters.filter((p) => p !== gk);
 
-  const defenders = others.filter((p) => ["DC", "DCD", "DCS", "TD", "TS", "ASA", "ADA"].includes(getEffPos(p)));
-  const midfielders = others.filter((p) =>
-    ["CDC", "CDD", "CDS", "CC", "CCD", "CCS", "ED", "ES", "COC", "COD", "COS"].includes(getEffPos(p))
+  const defenders = sortLineLeftToRight(
+    others.filter((p) =>
+      ["DC", "DCD", "DCS", "TD", "TS", "ASA", "ADA"].includes(getEffPos(p))
+    ),
+    getEffPos
   );
-  const forwards = others.filter((p) =>
-    ["ATT", "AT", "AS", "AD", "PD", "PS"].includes(getEffPos(p))
+  const midfielders = sortLineLeftToRight(
+    others.filter((p) =>
+      [
+        "CDC",
+        "CDD",
+        "CDS",
+        "CC",
+        "CCD",
+        "CCS",
+        "ED",
+        "ES",
+        "COC",
+        "COD",
+        "COS",
+      ].includes(getEffPos(p))
+    ),
+    getEffPos
+  );
+  const forwards = sortLineLeftToRight(
+    others.filter((p) =>
+      ["ATT", "AT", "AS", "AD", "PD", "PS"].includes(getEffPos(p))
+    ),
+    getEffPos
   );
 
   const remaining = others.filter(
@@ -91,7 +194,7 @@ function computePitchCoordinates(
     result.push({ player: gk, x: "50%", y: "91%" });
   }
 
-  // Spacing helper
+  // Spacing helper (from Left x=15% to Right x=85%)
   const getXCoords = (count: number): string[] => {
     switch (count) {
       case 1:
@@ -112,18 +215,28 @@ function computePitchCoordinates(
     }
   };
 
-  // 2. Defenders
+  // 2. Defenders (sorted Left -> Right: TS on left x=15%, DCs in middle, TD on right x=85%)
   const defXs = getXCoords(defenders.length);
   defenders.forEach((p, i) => {
     const isCentral = defenders.length === 4 && (i === 1 || i === 2);
     result.push({ player: p, x: defXs[i], y: isCentral ? "79%" : "75%" });
   });
 
-  // 3. Midfielders
-  const cdcList = midfielders.filter((p) => ["CDC", "CDD", "CDS"].includes(getEffPos(p)));
-  const cocList = midfielders.filter((p) => ["COC", "COD", "COS"].includes(getEffPos(p)));
-  const centralMidList = midfielders.filter(
-    (p) => !["CDC", "CDD", "CDS", "COC", "COD", "COS"].includes(getEffPos(p))
+  // 3. Midfielders (sorted Left -> Right in each sub-line)
+  const cdcList = sortLineLeftToRight(
+    midfielders.filter((p) => ["CDC", "CDD", "CDS"].includes(getEffPos(p))),
+    getEffPos
+  );
+  const cocList = sortLineLeftToRight(
+    midfielders.filter((p) => ["COC", "COD", "COS"].includes(getEffPos(p))),
+    getEffPos
+  );
+  const centralMidList = sortLineLeftToRight(
+    midfielders.filter(
+      (p) =>
+        !["CDC", "CDD", "CDS", "COC", "COD", "COS"].includes(getEffPos(p))
+    ),
+    getEffPos
   );
 
   if (cdcList.length > 0 && cocList.length > 0) {
@@ -147,8 +260,12 @@ function computePitchCoordinates(
       result.push({ player: p, x: cdcXs[i], y: "63%" })
     );
 
-    const midXs = getXCoords(centralMidList.concat(cocList).length);
-    centralMidList.concat(cocList).forEach((p, i) =>
+    const combinedMid = sortLineLeftToRight(
+      centralMidList.concat(cocList),
+      getEffPos
+    );
+    const midXs = getXCoords(combinedMid.length);
+    combinedMid.forEach((p, i) =>
       result.push({ player: p, x: midXs[i], y: "47%" })
     );
   } else if (cocList.length > 0) {
@@ -162,13 +279,14 @@ function computePitchCoordinates(
       result.push({ player: p, x: cocXs[i], y: "34%" })
     );
   } else {
-    const midXs = getXCoords(midfielders.length);
-    midfielders.forEach((p, i) =>
+    const sortedMid = sortLineLeftToRight(midfielders, getEffPos);
+    const midXs = getXCoords(sortedMid.length);
+    sortedMid.forEach((p, i) =>
       result.push({ player: p, x: midXs[i], y: "50%" })
     );
   }
 
-  // 4. Forwards
+  // 4. Forwards (sorted Left -> Right: AS on left, ATT in center, AD on right)
   const fwdXs = getXCoords(forwards.length);
   forwards.forEach((p, i) => {
     const isWinger = getEffPos(p) === "AS" || getEffPos(p) === "AD";
@@ -178,13 +296,56 @@ function computePitchCoordinates(
   return result;
 }
 
+type CarouselItem =
+  | { kind: "offseason"; event: LeagueCalendarEvent }
+  | { kind: "week"; round: Schedule };
+
+const EVENT_PRESETS = [
+  "Apertura Calciomercato",
+  "Taglio Giocatori",
+  "Draft",
+  "Supercoppa",
+  "Blocco Rose",
+  "Chiusura Calciomercato",
+  "Play In",
+  "Quarti",
+  "Semifinali",
+  "Finali",
+];
+
+function getOffseasonEventIcon(evento: string, tipo: string) {
+  const lower = `${evento} ${tipo}`.toLowerCase();
+  if (lower.includes("tagli")) return <Scissors className="h-4 w-4 text-rose-500" />;
+  if (lower.includes("draft")) return <Sparkles className="h-4 w-4 text-amber-500" />;
+  if (lower.includes("mercato") || lower.includes("scambi"))
+    return <Briefcase className="h-4 w-4 text-blue-500" />;
+  if (lower.includes("blocco")) return <Lock className="h-4 w-4 text-violet-500" />;
+  if (lower.includes("supercoppa") || lower.includes("final") || lower.includes("play"))
+    return <Trophy className="h-4 w-4 text-amber-500" />;
+  return <Flame className="h-4 w-4 text-emerald-500" />;
+}
+
 const Calendario = () => {
-  const { schedule, loaded, season, setSeason } = useSchedule();
+  const { schedule, seasonEvents, loaded, season, setSeason, reloadSchedule } =
+    useSchedule();
+  const { isAdmin } = useAuth();
   const { resolvedTheme } = useTheme();
   const isDarkMode = resolvedTheme !== "light";
 
-  // Active selected week state (defaults to 1)
+  // Active selected week state (defaults to 1) or selected offseason event ID
   const [activeWeek, setActiveWeek] = useState<number>(1);
+  const [selectedOffseasonId, setSelectedOffseasonId] = useState<number | null>(
+    null
+  );
+
+  // Admin modal state for adding/editing Offseason & Season Events
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [eventName, setEventName] = useState("");
+  const [eventType, setEventType] = useState("Offseason");
+  const [eventDate, setEventDate] = useState("");
+  const [eventNote, setEventNote] = useState("");
+  const [savingEvent, setSavingEvent] = useState(false);
 
   // Selected match for modal detail
   const [selected, setSelected] = useState<{
@@ -201,10 +362,15 @@ const Calendario = () => {
   const [lineupTeamSide, setLineupTeamSide] = useState<"home" | "away">("home");
 
   // Expanded player rows in Pagelle & Giocatori tab
-  const [expandedRecapPlayerIds, setExpandedRecapPlayerIds] = useState<Record<number, boolean>>({});
+  const [expandedRecapPlayerIds, setExpandedRecapPlayerIds] = useState<
+    Record<number, boolean>
+  >({});
 
   const toggleExpandRecapPlayer = (playerId: number) => {
-    setExpandedRecapPlayerIds((prev) => ({ ...prev, [playerId]: !prev[playerId] }));
+    setExpandedRecapPlayerIds((prev) => ({
+      ...prev,
+      [playerId]: !prev[playerId],
+    }));
   };
 
   const handleCloseModal = () => {
@@ -212,6 +378,85 @@ const Calendario = () => {
     setModalTab("lineup");
     setExpandedRecapPlayerIds({});
   };
+
+  // Offseason events (events that happen before/outside regular matchdays: Offseason & Draft)
+  const offseasonEvents = useMemo(() => {
+    return (seasonEvents || []).filter(
+      (ev) =>
+        ev.tipo.toLowerCase() === "offseason" ||
+        ev.tipo.toLowerCase() === "draft" ||
+        (!ev.evento.toLowerCase().startsWith("giornata") &&
+          ev.tipo.toLowerCase() !== "regular season" &&
+          ev.tipo.toLowerCase() !== "playoff")
+    );
+  }, [seasonEvents]);
+
+  // All non-regular-season events (Offseason + Draft + Playoff) for the full table
+  const specialSeasonEvents = useMemo(() => {
+    return (seasonEvents || []).filter(
+      (ev) =>
+        !ev.evento.toLowerCase().startsWith("giornata") &&
+        ev.tipo.toLowerCase() !== "regular season"
+    );
+  }, [seasonEvents]);
+
+  // Unified items for the horizontal carousel: Offseason milestones first, then Championship rounds
+  const carouselItems: CarouselItem[] = useMemo(() => {
+    const items: CarouselItem[] = [];
+    for (const ev of offseasonEvents) {
+      items.push({ kind: "offseason", event: ev });
+    }
+    for (const round of schedule) {
+      items.push({ kind: "week", round });
+    }
+    return items;
+  }, [offseasonEvents, schedule]);
+
+  // Current index in the unified carousel
+  const activeCarouselIndex = useMemo(() => {
+    if (selectedOffseasonId !== null) {
+      const idx = carouselItems.findIndex(
+        (it) => it.kind === "offseason" && it.event.id === selectedOffseasonId
+      );
+      if (idx >= 0) return idx;
+    }
+    const wIdx = carouselItems.findIndex(
+      (it) => it.kind === "week" && it.round.week === activeWeek
+    );
+    return wIdx >= 0 ? wIdx : 0;
+  }, [carouselItems, selectedOffseasonId, activeWeek]);
+
+  const handlePrevCarousel = () => {
+    if (activeCarouselIndex <= 0) return;
+    const prevItem = carouselItems[activeCarouselIndex - 1];
+    if (prevItem.kind === "offseason") {
+      setSelectedOffseasonId(prevItem.event.id);
+    } else {
+      setSelectedOffseasonId(null);
+      setActiveWeek(prevItem.round.week);
+    }
+  };
+
+  const handleNextCarousel = () => {
+    if (activeCarouselIndex >= carouselItems.length - 1) return;
+    const nextItem = carouselItems[activeCarouselIndex + 1];
+    if (nextItem.kind === "offseason") {
+      setSelectedOffseasonId(nextItem.event.id);
+    } else {
+      setSelectedOffseasonId(null);
+      setActiveWeek(nextItem.round.week);
+    }
+  };
+
+  // Selected offseason event object (if an offseason tab is active)
+  const activeOffseasonEvent = useMemo(() => {
+    if (selectedOffseasonId === null) return null;
+    return (
+      offseasonEvents.find((ev) => ev.id === selectedOffseasonId) ||
+      offseasonEvents[0] ||
+      null
+    );
+  }, [offseasonEvents, selectedOffseasonId]);
 
   // Find the active round
   const currentRound: Schedule | undefined = useMemo(() => {
@@ -238,6 +483,79 @@ const Calendario = () => {
     return { totalMatches, playedMatches, totalGoals };
   }, [schedule]);
 
+  // Admin handlers for Offseason Events
+  const openCreateEventModal = () => {
+    setEditingEventId(null);
+    setEventName("Taglio Giocatori");
+    setEventType("Offseason");
+    setEventDate(new Date().toISOString().slice(0, 10));
+    setEventNote("");
+    setEventModalOpen(true);
+  };
+
+  const openEditEventModal = (ev: LeagueCalendarEvent) => {
+    setEditingEventId(ev.id);
+    setEventName(ev.evento);
+    setEventType(ev.tipo || "Offseason");
+    setEventDate(ev.event_date ? ev.event_date.slice(0, 10) : "");
+    setEventNote(ev.note || "");
+    setEventModalOpen(true);
+  };
+
+  const handleSaveEvent = async () => {
+    if (!eventName.trim()) {
+      toast.error("Inserisci il nome dell'evento.");
+      return;
+    }
+    setSavingEvent(true);
+    try {
+      const res = await upsertLeagueEvent({
+        id: editingEventId,
+        stagione: season,
+        evento: eventName.trim(),
+        tipo: eventType,
+        event_date: eventDate || null,
+        note: eventNote.trim() || null,
+      });
+      if (!res.success) {
+        toast.error(res.error || "Errore durante il salvataggio.");
+        return;
+      }
+      toast.success(
+        editingEventId
+          ? "Data Offseason aggiornata con successo!"
+          : "Nuova data Offseason aggiunta al calendario!"
+      );
+      setEventModalOpen(false);
+      await reloadSchedule();
+      if (res.id) {
+        setSelectedOffseasonId(res.id);
+      }
+    } finally {
+      setSavingEvent(false);
+    }
+  };
+
+  const handleDeleteEvent = async (ev: LeagueCalendarEvent) => {
+    if (
+      !window.confirm(
+        `Sei sicuro di voler eliminare "${ev.evento}" dal calendario della Stagione ${season}?`
+      )
+    ) {
+      return;
+    }
+    const res = await deleteLeagueEvent(ev.id);
+    if (!res.success) {
+      toast.error(res.error || "Impossibile eliminare l'evento.");
+      return;
+    }
+    toast.success("Evento rimosso dal calendario.");
+    if (selectedOffseasonId === ev.id) {
+      setSelectedOffseasonId(null);
+    }
+    await reloadSchedule();
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors">
       <Navbar />
@@ -251,7 +569,7 @@ const Calendario = () => {
                 LCSIM Ufficiale • Serie A
               </span>
               <span className="text-xs text-muted-foreground">
-                Stagione 2024/25 • Calendario Ufficiale
+                Stagione {season} • Calendario &amp; Offseason
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
@@ -259,11 +577,23 @@ const Calendario = () => {
               Calendario &amp; Risultati
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Tutti i turni di campionato, risultati ufficiali, statistiche gara e formazioni tattiche in campo.
+              Date offseason (tagli, mercato, draft, blocco rose), turni di campionato, risultati e formazioni tattiche in campo.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 self-start md:self-auto">
+          <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openCreateEventModal}
+                className="h-8 px-3 text-xs font-bold gap-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Aggiungi Data Offseason</span>
+              </Button>
+            )}
+
             <div className="px-3.5 py-1.5 rounded-xl border border-border/80 bg-card text-xs flex items-center gap-2 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-muted-foreground">Stagione Attiva:</span>
@@ -271,13 +601,20 @@ const Calendario = () => {
                 value={season}
                 onChange={(e) => {
                   setSeason(Number(e.target.value));
+                  setSelectedOffseasonId(null);
                   setActiveWeek(1);
                 }}
                 className="font-semibold text-foreground font-mono bg-transparent focus:outline-none cursor-pointer"
               >
-                <option value={11} className="bg-card text-foreground">Stagione 11</option>
-                <option value={10} className="bg-card text-foreground">Stagione 10</option>
-                <option value={9} className="bg-card text-foreground">Stagione 9</option>
+                <option value={11} className="bg-card text-foreground">
+                  Stagione 11
+                </option>
+                <option value={10} className="bg-card text-foreground">
+                  Stagione 10
+                </option>
+                <option value={9} className="bg-card text-foreground">
+                  Stagione 9
+                </option>
               </select>
             </div>
           </div>
@@ -287,10 +624,18 @@ const Calendario = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
           <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Giornata Selezionata
+              Tappa Selezionata
             </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-              Giornata {activeWeek}
+            <span
+              className={`text-lg sm:text-xl font-black font-mono truncate block ${
+                activeOffseasonEvent
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              {activeOffseasonEvent
+                ? activeOffseasonEvent.evento
+                : `Giornata ${activeWeek}`}
             </span>
           </Card>
 
@@ -314,26 +659,38 @@ const Calendario = () => {
 
           <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Turni di Campionato
+              Fasi &amp; Turni
             </span>
             <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-              {schedule.length || 9} Giornate
+              {offseasonEvents.length > 0
+                ? `${offseasonEvents.length} Offs. + ${schedule.length || 9} G.`
+                : `${schedule.length || 9} Giornate`}
             </span>
           </Card>
         </div>
 
-        {/* HORIZONTAL WEEK CAROUSEL SELECTOR */}
+        {/* HORIZONTAL UNIFIED CAROUSEL SELECTOR (OFFSEASON + GIORNATE) */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Seleziona Turno di Campionato:
-            </span>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Seleziona Tappa Stagionale (Offseason &amp; Campionato):
+              </span>
+              {offseasonEvents.length > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] font-semibold border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                >
+                  {offseasonEvents.length} Date Offseason
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setActiveWeek((w) => Math.max(1, w - 1))}
-                disabled={activeWeek === 1}
+                onClick={handlePrevCarousel}
+                disabled={activeCarouselIndex <= 0}
                 className="h-7 px-2.5 text-xs gap-1"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
@@ -342,12 +699,8 @@ const Calendario = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setActiveWeek((w) =>
-                    Math.min(schedule.length || 9, w + 1)
-                  )
-                }
-                disabled={activeWeek === (schedule.length || 9)}
+                onClick={handleNextCarousel}
+                disabled={activeCarouselIndex >= carouselItems.length - 1}
                 className="h-7 px-2.5 text-xs gap-1"
               >
                 <span>Successiva</span>
@@ -358,8 +711,68 @@ const Calendario = () => {
 
           {/* Carousel Buttons */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {/* 1. OFFSEASON MILESTONES BEFORE GIORNATA 1 */}
+            {offseasonEvents.map((ev) => {
+              const isSelected = selectedOffseasonId === ev.id;
+              const isPast = ev.event_date
+                ? new Date(ev.event_date).getTime() <= Date.now()
+                : false;
+
+              return (
+                <button
+                  key={`offs-${ev.id}`}
+                  type="button"
+                  onClick={() => setSelectedOffseasonId(ev.id)}
+                  className={`group shrink-0 flex flex-col items-start px-3.5 py-2 rounded-xl border text-left transition-all duration-200 cursor-pointer min-w-[142px] ${
+                    isSelected
+                      ? "bg-amber-600 text-white border-amber-500 shadow-md ring-2 ring-amber-500/30 scale-[1.02]"
+                      : "bg-amber-500/5 border-amber-500/30 text-foreground hover:bg-amber-500/15 hover:border-amber-500/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full gap-1.5 mb-1">
+                    <span className="font-extrabold text-xs tracking-tight truncate max-w-[95px]">
+                      {ev.evento}
+                    </span>
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase shrink-0 ${
+                        isSelected
+                          ? "bg-white/20 text-white"
+                          : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                      }`}
+                    >
+                      {ev.tipo === "Draft" ? "Draft" : "Offseason"}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[10px] font-mono ${
+                      isSelected
+                        ? "text-amber-100"
+                        : isPast
+                        ? "text-muted-foreground"
+                        : "text-amber-600/90 dark:text-amber-400/90 font-semibold"
+                    }`}
+                  >
+                    {ev.event_date
+                      ? new Date(ev.event_date).toLocaleDateString("it-IT", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "Data da definire"}
+                  </span>
+                </button>
+              );
+            })}
+
+            {/* Divider between Offseason and Regular Season */}
+            {offseasonEvents.length > 0 && schedule.length > 0 && (
+              <div className="h-9 w-[2px] bg-border/80 shrink-0 mx-0.5 rounded-full" />
+            )}
+
+            {/* 2. CHAMPIONSHIP ROUNDS (GIORNATA 1..N) */}
             {schedule.map((round) => {
-              const isSelected = round.week === activeWeek;
+              const isSelected =
+                selectedOffseasonId === null && round.week === activeWeek;
               const isPlayed =
                 round.matches.length > 0 &&
                 round.matches[0]?.home_minuti &&
@@ -367,9 +780,12 @@ const Calendario = () => {
 
               return (
                 <button
-                  key={round.week}
+                  key={`week-${round.week}`}
                   type="button"
-                  onClick={() => setActiveWeek(round.week)}
+                  onClick={() => {
+                    setSelectedOffseasonId(null);
+                    setActiveWeek(round.week);
+                  }}
                   className={`group shrink-0 flex flex-col items-start px-3.5 py-2 rounded-xl border text-left transition-all duration-200 cursor-pointer min-w-[130px] ${
                     isSelected
                       ? "bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500/30 scale-[1.02]"
@@ -412,13 +828,247 @@ const Calendario = () => {
           </div>
         </div>
 
-        {/* ACTIVE ROUND BOARD & MATCH CARDS */}
+        {/* ACTIVE CONTENT: OFFSEASON DEDICATED CARD OR MATCHDAY ROUND BOARD */}
         {loaded ? (
           <div className="w-full py-16 flex flex-col items-center justify-center gap-3">
             <div className="h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
             <span className="text-xs text-muted-foreground font-mono">
               Caricamento calendario e statistiche...
             </span>
+          </div>
+        ) : activeOffseasonEvent ? (
+          /* DEDICATED OFFSEASON & SEASON DATES CARD + TABLE */
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <Card className="border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-card to-card shadow-md overflow-hidden">
+              <div className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/70">
+                <div className="flex items-start gap-3.5">
+                  <div className="h-12 w-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+                    {getOffseasonEventIcon(
+                      activeOffseasonEvent.evento,
+                      activeOffseasonEvent.tipo
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <Badge className="bg-amber-500 text-black font-extrabold text-[10px] uppercase">
+                        {activeOffseasonEvent.tipo}
+                      </Badge>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        Stagione {season} • Tappa Ufficiale
+                      </span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">
+                      {activeOffseasonEvent.evento}
+                    </h2>
+                    {activeOffseasonEvent.note && (
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                        {activeOffseasonEvent.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 self-start md:self-center">
+                  <div className="px-4 py-2.5 rounded-xl bg-card border border-border/80 text-right shadow-xs">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      Data Fissata
+                    </span>
+                    <span className="text-sm sm:text-base font-black font-mono text-amber-600 dark:text-amber-400">
+                      {activeOffseasonEvent.event_date
+                        ? new Date(
+                            activeOffseasonEvent.event_date
+                          ).toLocaleDateString("it-IT", {
+                            weekday: "short",
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Da definire"}
+                    </span>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => openEditEventModal(activeOffseasonEvent)}
+                        className="h-9 w-9 border-border/80"
+                        title="Modifica Evento"
+                      >
+                        <Pencil className="h-4 w-4 text-amber-500" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDeleteEvent(activeOffseasonEvent)}
+                        className="h-9 w-9 border-border/80 hover:border-rose-500/50"
+                        title="Elimina Evento"
+                      >
+                        <Trash2 className="h-4 w-4 text-rose-500" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* COMPLETE OFFSEASON & SPECIAL DATES TABLE FOR THE SEASON */}
+              <div className="p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <CalendarIcon className="h-3.5 w-3.5 text-amber-500" />
+                    <span>
+                      Tabella Completa Date Offseason &amp; Fasi Stagionali •
+                      Stagione {season}
+                    </span>
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={openCreateEventModal}
+                        className="h-7 px-2.5 text-xs font-bold gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Nuova Data</span>
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedOffseasonId(null);
+                        setActiveWeek(1);
+                      }}
+                      className="h-7 px-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400"
+                    >
+                      <span>Vai a Giornata 1</span>
+                      <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border/80 overflow-hidden bg-card">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-muted/40 border-b border-border/80 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                        <tr>
+                          <th className="py-2.5 px-3.5">Fase / Evento</th>
+                          <th className="py-2.5 px-3.5">Categoria</th>
+                          <th className="py-2.5 px-3.5">Data Ufficiale</th>
+                          <th className="py-2.5 px-3.5">Stato</th>
+                          <th className="py-2.5 px-3.5">Note / Dettagli</th>
+                          {isAdmin && (
+                            <th className="py-2.5 px-3.5 text-right">
+                              Azioni Admin
+                            </th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/60">
+                        {specialSeasonEvents.map((ev) => {
+                          const isCurrent = ev.id === activeOffseasonEvent.id;
+                          const isDone = ev.event_date
+                            ? new Date(ev.event_date).getTime() <= Date.now()
+                            : false;
+
+                          return (
+                            <tr
+                              key={ev.id}
+                              onClick={() => {
+                                if (
+                                  offseasonEvents.some((o) => o.id === ev.id)
+                                ) {
+                                  setSelectedOffseasonId(ev.id);
+                                }
+                              }}
+                              className={`transition-colors cursor-pointer ${
+                                isCurrent
+                                  ? "bg-amber-500/10 font-semibold"
+                                  : "hover:bg-muted/30"
+                              }`}
+                            >
+                              <td className="py-2.5 px-3.5">
+                                <div className="flex items-center gap-2">
+                                  {getOffseasonEventIcon(ev.evento, ev.tipo)}
+                                  <span className="font-bold text-foreground">
+                                    {ev.evento}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3.5">
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] font-bold border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                                >
+                                  {ev.tipo}
+                                </Badge>
+                              </td>
+                              <td className="py-2.5 px-3.5 font-mono font-bold text-foreground">
+                                {ev.event_date
+                                  ? new Date(ev.event_date).toLocaleDateString(
+                                      "it-IT",
+                                      {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                      }
+                                    )
+                                  : "Da definire"}
+                              </td>
+                              <td className="py-2.5 px-3.5">
+                                {isDone ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Completato
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/30">
+                                    <Clock className="h-3 w-3" />
+                                    In programma
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3.5 text-muted-foreground">
+                                {ev.note || "—"}
+                              </td>
+                              {isAdmin && (
+                                <td
+                                  className="py-2.5 px-3.5 text-right"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div className="inline-flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => openEditEventModal(ev)}
+                                      className="h-7 w-7"
+                                      title="Modifica"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5 text-amber-500" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteEvent(ev)}
+                                      className="h-7 w-7"
+                                      title="Elimina"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
         ) : !currentRound ? (
           <Card className="p-12 text-center text-muted-foreground">
@@ -446,12 +1096,31 @@ const Calendario = () => {
                 const homeGoals = match.home_gol ?? 0;
                 const awayGoals = match.away_gol ?? 0;
 
-                // Find goalscorers if played
-                const homeScorers = match.home_player_stats?.filter(
-                  (p) => p.GOL && p.GOL > 0
+                // Find goalscorers if played (including ex-players via historical TEAM_ID)
+                const homeScorers =
+                  match.home_player_stats?.filter(
+                    (p) => p.GOL && p.GOL > 0
+                  ) || [];
+                const awayScorers =
+                  match.away_player_stats?.filter(
+                    (p) => p.GOL && p.GOL > 0
+                  ) || [];
+
+                const homePlayerGoalsSum = homeScorers.reduce(
+                  (acc, p) => acc + (p.GOL || 0),
+                  0
                 );
-                const awayScorers = match.away_player_stats?.filter(
-                  (p) => p.GOL && p.GOL > 0
+                const awayPlayerGoalsSum = awayScorers.reduce(
+                  (acc, p) => acc + (p.GOL || 0),
+                  0
+                );
+                const homeOwnGoalsInFavor = Math.max(
+                  0,
+                  homeGoals - homePlayerGoalsSum
+                );
+                const awayOwnGoalsInFavor = Math.max(
+                  0,
+                  awayGoals - awayPlayerGoalsSum
                 );
 
                 return (
@@ -472,7 +1141,9 @@ const Calendario = () => {
                               : "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30"
                           }`}
                         >
-                          {isPlayed ? "Terminata • Risultato Ufficiale" : "In programma"}
+                          {isPlayed
+                            ? "Terminata • Risultato Ufficiale"
+                            : "In programma"}
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1 font-medium">
@@ -590,23 +1261,43 @@ const Calendario = () => {
                       </div>
 
                       {/* Goalscorers Recap (if played) */}
-                      {isPlayed && (homeScorers?.length || awayScorers?.length) ? (
+                      {isPlayed &&
+                      (homeScorers.length > 0 ||
+                        awayScorers.length > 0 ||
+                        homeOwnGoalsInFavor > 0 ||
+                        awayOwnGoalsInFavor > 0) ? (
                         <div className="mt-3 pt-3 border-t border-border/60 grid grid-cols-2 gap-4 text-xs font-mono">
                           <div className="text-right text-muted-foreground truncate">
-                            {homeScorers?.map((p) => (
+                            {homeScorers.map((p) => (
                               <span key={p.ID} className="inline-block mr-2">
                                 ⚽ {p.Cognome}{" "}
                                 {p.GOL > 1 ? `(${p.GOL})` : ""}
                               </span>
                             ))}
+                            {homeOwnGoalsInFavor > 0 && (
+                              <span className="inline-block mr-2 text-amber-600 dark:text-amber-400">
+                                ⚽ Autogol{" "}
+                                {homeOwnGoalsInFavor > 1
+                                  ? `(${homeOwnGoalsInFavor})`
+                                  : ""}
+                              </span>
+                            )}
                           </div>
                           <div className="text-left text-muted-foreground truncate">
-                            {awayScorers?.map((p) => (
+                            {awayScorers.map((p) => (
                               <span key={p.ID} className="inline-block mr-2">
                                 ⚽ {p.Cognome}{" "}
                                 {p.GOL > 1 ? `(${p.GOL})` : ""}
                               </span>
                             ))}
+                            {awayOwnGoalsInFavor > 0 && (
+                              <span className="inline-block mr-2 text-amber-600 dark:text-amber-400">
+                                ⚽ Autogol{" "}
+                                {awayOwnGoalsInFavor > 1
+                                  ? `(${awayOwnGoalsInFavor})`
+                                  : ""}
+                              </span>
+                            )}
                           </div>
                         </div>
                       ) : null}
@@ -642,6 +1333,146 @@ const Calendario = () => {
         )}
       </main>
 
+      {/* ADMIN MODAL FOR ADDING / EDITING OFFSEASON & SEASON EVENTS */}
+      {eventModalOpen && isAdmin && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setEventModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-border/80 bg-card p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-foreground">
+                  {editingEventId
+                    ? "Modifica Data / Evento"
+                    : "Nuova Data Offseason / Evento"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Stagione {season} • Visibile nel carosello e nella tabella
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEventModalOpen(false)}
+                className="h-7 w-7 rounded-full"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-muted-foreground block mb-1">
+                  Scelta Rapida Evento:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {EVENT_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setEventName(preset);
+                        if (preset === "Draft") setEventType("Draft");
+                        else if (
+                          ["Play In", "Quarti", "Semifinali", "Finali"].includes(
+                            preset
+                          )
+                        )
+                          setEventType("Playoff");
+                        else setEventType("Offseason");
+                      }}
+                      className={`px-2 py-1 rounded-md border text-[10px] font-bold transition-colors cursor-pointer ${
+                        eventName === preset
+                          ? "bg-amber-500 text-black border-amber-500"
+                          : "bg-muted/40 border-border/80 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-muted-foreground block mb-1">
+                  Nome Evento *
+                </label>
+                <Input
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                  placeholder="Es. Taglio Giocatori, Apertura Mercato, Draft..."
+                  className="h-9 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-muted-foreground block mb-1">
+                    Categoria
+                  </label>
+                  <select
+                    value={eventType}
+                    onChange={(e) => setEventType(e.target.value)}
+                    className="w-full h-9 px-2.5 rounded-md border border-input bg-background text-xs font-semibold"
+                  >
+                    <option value="Offseason">Offseason</option>
+                    <option value="Draft">Draft</option>
+                    <option value="Playoff">Playoff</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-muted-foreground block mb-1">
+                    Data Ufficiale
+                  </label>
+                  <Input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="h-9 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-muted-foreground block mb-1">
+                  Note / Orario / Dettagli (opzionale)
+                </label>
+                <Input
+                  value={eventNote}
+                  onChange={(e) => setEventNote(e.target.value)}
+                  placeholder="Es. Scadenza ore 23:59 • Diretta Live ore 21:30..."
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEventModalOpen(false)}
+                className="h-8 text-xs"
+              >
+                Annulla
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveEvent}
+                disabled={savingEvent}
+                className="h-8 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-black"
+              >
+                {savingEvent ? "Salvataggio..." : "Salva nel Calendario"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MATCH CENTER POPUP CON FORMAZIONI TATTICHE SUL CAMPO */}
       {selected && (
         <div
@@ -676,7 +1507,11 @@ const Calendario = () => {
                       ? `${new Date(selected.match.date).toLocaleDateString(
                           "it-IT",
                           { day: "2-digit", month: "long", year: "numeric" }
-                        )}${selected.match.match_time ? ` • ${selected.match.match_time}` : ""}`
+                        )}${
+                          selected.match.match_time
+                            ? ` • ${selected.match.match_time}`
+                            : ""
+                        }`
                       : "Data da definire"}
                   </Badge>
                 </div>
@@ -834,7 +1669,12 @@ const Calendario = () => {
                           alt=""
                           className="h-4 w-4 object-contain"
                         />
-                        <span>{selected.match.home_team} {selected.match.is_neutral ? "(Campo Neutro)" : "(Casa)"}</span>
+                        <span>
+                          {selected.match.home_team}{" "}
+                          {selected.match.is_neutral
+                            ? "(Campo Neutro)"
+                            : "(Casa)"}
+                        </span>
                       </button>
 
                       <button
@@ -881,19 +1721,18 @@ const Calendario = () => {
                         ? selected.match.home
                         : selected.match.away;
 
-                    // Separate Starters (11) and Bench using SUB / POS_GIOCATA cross-referenced with official formations
+                    // Starters and Bench are accurately flagged by resolveStartersAndSubs in scheduleService
                     const explicitStarters = activePlayerStats.filter(
                       (p) => !p.SUB && p.POS_GIOCATA !== "SOS"
                     );
-                    const hasExplicitSubs = activePlayerStats.some(
-                      (p) => Boolean(p.SUB) || p.POS_GIOCATA === "SOS"
-                    );
                     const starters =
-                      hasExplicitSubs && explicitStarters.length > 0
+                      explicitStarters.length > 0
                         ? explicitStarters.slice(0, 11)
                         : activePlayerStats.slice(0, 11);
                     const starterIdSet = new Set(starters.map((p) => p.ID));
-                    const bench = activePlayerStats.filter((p) => !starterIdSet.has(p.ID));
+                    const bench = activePlayerStats.filter(
+                      (p) => !starterIdSet.has(p.ID)
+                    );
 
                     const pitchNodes = computePitchCoordinates(starters);
 
@@ -933,10 +1772,18 @@ const Calendario = () => {
 
                           {/* 11 STARTERS NODES ON PITCH */}
                           {pitchNodes.map(({ player, x, y }) => {
-                            const hasGoal = Boolean(player.GOL && Number(player.GOL) > 0);
-                            const hasAssist = Boolean(player.ASST && Number(player.ASST) > 0);
-                            const hasRed = Boolean(player.ROSSI && Number(player.ROSSI) > 0);
-                            const hasYellow = Boolean(player.GIALLI && Number(player.GIALLI) > 0);
+                            const hasGoal = Boolean(
+                              player.GOL && Number(player.GOL) > 0
+                            );
+                            const hasAssist = Boolean(
+                              player.ASST && Number(player.ASST) > 0
+                            );
+                            const hasRed = Boolean(
+                              player.ROSSI && Number(player.ROSSI) > 0
+                            );
+                            const hasYellow = Boolean(
+                              player.GIALLI && Number(player.GIALLI) > 0
+                            );
 
                             return (
                               <div
@@ -947,7 +1794,7 @@ const Calendario = () => {
                                   transform: "translate(-50%, -50%)",
                                 }}
                                 className="absolute flex flex-col items-center group cursor-pointer"
-                                title={`${player.Nome} ${player.Cognome} (${player.Posiz}) • Voto: ${Number(player.VOTO).toFixed(1)}`}
+                                title={`${player.Nome} ${player.Cognome} (${player.Posiz}) • ${player.MINUTI}' • Voto: ${Number(player.VOTO).toFixed(1)}`}
                               >
                                 {/* Player Avatar Circle */}
                                 <div className="relative">
@@ -989,7 +1836,8 @@ const Calendario = () => {
                                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
                                     {hasGoal && (
                                       <span className="text-[10px] drop-shadow-md">
-                                        ⚽{player.GOL > 1 ? `x${player.GOL}` : ""}
+                                        ⚽
+                                        {player.GOL > 1 ? `x${player.GOL}` : ""}
                                       </span>
                                     )}
                                     {hasAssist && (
@@ -998,9 +1846,13 @@ const Calendario = () => {
                                       </span>
                                     )}
                                     {hasRed ? (
-                                      <span className="text-[10px] drop-shadow-md">🟥</span>
+                                      <span className="text-[10px] drop-shadow-md">
+                                        🟥
+                                      </span>
                                     ) : hasYellow ? (
-                                      <span className="text-[10px] drop-shadow-md">🟨</span>
+                                      <span className="text-[10px] drop-shadow-md">
+                                        🟨
+                                      </span>
                                     ) : null}
                                   </div>
                                 </div>
@@ -1011,7 +1863,8 @@ const Calendario = () => {
                                     {player.Cognome}
                                   </span>
                                   <span className="text-[8px] font-bold text-emerald-200 drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
-                                    {player.POS_GIOCATA && player.POS_GIOCATA !== "SOS"
+                                    {player.POS_GIOCATA &&
+                                    player.POS_GIOCATA !== "SOS"
                                       ? player.POS_GIOCATA
                                       : player.Posiz}
                                   </span>
@@ -1032,14 +1885,17 @@ const Calendario = () => {
                             </div>
                             {activeTeamManager && (
                               <span className="text-xs text-muted-foreground font-medium">
-                                Allenatore: <strong>{formatCoachDisplay(activeTeamManager)}</strong>
+                                Allenatore:{" "}
+                                <strong>
+                                  {formatCoachDisplay(activeTeamManager)}
+                                </strong>
                               </span>
                             )}
                           </div>
 
                           {bench.length === 0 ? (
                             <div className="text-xs text-muted-foreground italic">
-                              Nessun giocatore in panchina a referto.
+                              Nessun giocatore subentrato o in panchina a referto.
                             </div>
                           ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -1120,7 +1976,6 @@ const Calendario = () => {
                       awayColor,
                       homeTextColor,
                       awayTextColor,
-                      isAwayUsingSecondary,
                     } = statsColors;
 
                     const renderStatBar = (
@@ -1230,31 +2085,46 @@ const Calendario = () => {
                           selected.match.home_pass_si,
                           selected.match.away_pass_si
                         )}
-                        {hasVal(selected.match.home_pass_tot, selected.match.away_pass_tot) &&
+                        {hasVal(
+                          selected.match.home_pass_tot,
+                          selected.match.away_pass_tot
+                        ) &&
                           renderStatBar(
                             "Passaggi Tentati",
                             selected.match.home_pass_tot,
                             selected.match.away_pass_tot
                           )}
-                        {hasVal(selected.match.home_drib_si, selected.match.away_drib_si) &&
+                        {hasVal(
+                          selected.match.home_drib_si,
+                          selected.match.away_drib_si
+                        ) &&
                           renderStatBar(
                             "Dribbling Riusciti",
                             selected.match.home_drib_si,
                             selected.match.away_drib_si
                           )}
-                        {hasVal(selected.match.home_drib_tot, selected.match.away_drib_tot) &&
+                        {hasVal(
+                          selected.match.home_drib_tot,
+                          selected.match.away_drib_tot
+                        ) &&
                           renderStatBar(
                             "Dribbling Tentati",
                             selected.match.home_drib_tot,
                             selected.match.away_drib_tot
                           )}
-                        {hasVal(selected.match.home_cros_si, selected.match.away_cros_si) &&
+                        {hasVal(
+                          selected.match.home_cros_si,
+                          selected.match.away_cros_si
+                        ) &&
                           renderStatBar(
                             "Cross Riusciti",
                             selected.match.home_cros_si,
                             selected.match.away_cros_si
                           )}
-                        {hasVal(selected.match.home_cros_tot, selected.match.away_cros_tot) &&
+                        {hasVal(
+                          selected.match.home_cros_tot,
+                          selected.match.away_cros_tot
+                        ) &&
                           renderStatBar(
                             "Cross Tentati",
                             selected.match.home_cros_tot,
@@ -1265,19 +2135,28 @@ const Calendario = () => {
                           selected.match.home_ctrs_si,
                           selected.match.away_ctrs_si
                         )}
-                        {hasVal(selected.match.home_ctrs_tot, selected.match.away_ctrs_tot) &&
+                        {hasVal(
+                          selected.match.home_ctrs_tot,
+                          selected.match.away_ctrs_tot
+                        ) &&
                           renderStatBar(
                             "Contrasti Tentati",
                             selected.match.home_ctrs_tot,
                             selected.match.away_ctrs_tot
                           )}
-                        {hasVal(selected.match.home_interc, selected.match.away_interc) &&
+                        {hasVal(
+                          selected.match.home_interc,
+                          selected.match.away_interc
+                        ) &&
                           renderStatBar(
                             "Intercettazioni",
                             Number(selected.match.home_interc ?? 0),
                             Number(selected.match.away_interc ?? 0)
                           )}
-                        {hasVal(selected.match.home_temporec, selected.match.away_temporec) &&
+                        {hasVal(
+                          selected.match.home_temporec,
+                          selected.match.away_temporec
+                        ) &&
                           renderStatBar(
                             "Tempo Recupero Palla (s)",
                             Number(selected.match.home_temporec ?? 0),
@@ -1299,51 +2178,76 @@ const Calendario = () => {
                           selected.match.home_falli,
                           selected.match.away_falli
                         )}
-                        {hasVal(selected.match.home_fgioco, selected.match.away_fgioco) &&
+                        {hasVal(
+                          selected.match.home_fgioco,
+                          selected.match.away_fgioco
+                        ) &&
                           renderStatBar(
                             "Fuorigioco",
                             selected.match.home_fgioco,
                             selected.match.away_fgioco
                           )}
-                        {hasVal(selected.match.home_gialli, selected.match.away_gialli) &&
+                        {hasVal(
+                          selected.match.home_gialli,
+                          selected.match.away_gialli
+                        ) &&
                           renderStatBar(
                             "Cartellini Gialli",
                             selected.match.home_gialli,
                             selected.match.away_gialli
                           )}
-                        {hasVal(selected.match.home_rossi, selected.match.away_rossi) &&
+                        {hasVal(
+                          selected.match.home_rossi,
+                          selected.match.away_rossi
+                        ) &&
                           renderStatBar(
                             "Cartellini Rossi",
                             selected.match.home_rossi,
                             selected.match.away_rossi
                           )}
-                        {hasVal(selected.match.home_tagli, selected.match.away_tagli) &&
+                        {hasVal(
+                          selected.match.home_tagli,
+                          selected.match.away_tagli
+                        ) &&
                           renderStatBar(
                             "Tagli Difesa",
                             Number(selected.match.home_tagli ?? 0),
                             Number(selected.match.away_tagli ?? 0)
                           )}
-                        {hasVal(selected.match.home_aggir, selected.match.away_aggir) &&
+                        {hasVal(
+                          selected.match.home_aggir,
+                          selected.match.away_aggir
+                        ) &&
                           renderStatBar(
                             "Aggiramenti Difesa",
                             Number(selected.match.home_aggir ?? 0),
                             Number(selected.match.away_aggir ?? 0)
                           )}
-                        {hasVal(selected.match.home_scaval, selected.match.away_scaval) &&
+                        {hasVal(
+                          selected.match.home_scaval,
+                          selected.match.away_scaval
+                        ) &&
                           renderStatBar(
                             "Scavalcamenti Difesa",
                             Number(selected.match.home_scaval ?? 0),
                             Number(selected.match.away_scaval ?? 0)
                           )}
-                        {hasVal(selected.match.home_incurs, selected.match.away_incurs) &&
+                        {hasVal(
+                          selected.match.home_incurs,
+                          selected.match.away_incurs
+                        ) &&
                           renderStatBar(
                             "Incursioni Tentate",
                             Number(selected.match.home_incurs ?? 0),
                             Number(selected.match.away_incurs ?? 0)
                           )}
                         {extraTeamKeys.map((extKey) => {
-                          const hVal = Number(selected.match.home_extra_stats?.[extKey] ?? 0);
-                          const aVal = Number(selected.match.away_extra_stats?.[extKey] ?? 0);
+                          const hVal = Number(
+                            selected.match.home_extra_stats?.[extKey] ?? 0
+                          );
+                          const aVal = Number(
+                            selected.match.away_extra_stats?.[extKey] ?? 0
+                          );
                           if (!hasVal(hVal, aVal)) return null;
                           return (
                             <div key={extKey}>
@@ -1396,21 +2300,38 @@ const Calendario = () => {
                             </h4>
                           </div>
                           <span className="text-[10px] font-mono text-muted-foreground">
-                            Titolari: {side.players.filter((p) => !p.SUB && p.POS_GIOCATA !== "SOS").length} • Sub: {side.players.filter((p) => p.SUB || p.POS_GIOCATA === "SOS").length}
+                            Titolari:{" "}
+                            {
+                              side.players.filter(
+                                (p) => !p.SUB && p.POS_GIOCATA !== "SOS"
+                              ).length
+                            }{" "}
+                            • Sub:{" "}
+                            {
+                              side.players.filter(
+                                (p) => p.SUB || p.POS_GIOCATA === "SOS"
+                              ).length
+                            }
                           </span>
                         </div>
 
                         <div className="divide-y divide-border/60">
                           {side.players.map((p) => {
-                            const isExpanded = Boolean(expandedRecapPlayerIds[p.ID]);
-                            const isSub = Boolean(p.SUB || p.POS_GIOCATA === "SOS");
+                            const isExpanded = Boolean(
+                              expandedRecapPlayerIds[p.ID]
+                            );
+                            const isSub = Boolean(
+                              p.SUB || p.POS_GIOCATA === "SOS"
+                            );
                             const playedRole =
                               !isSub && p.POS_GIOCATA && p.POS_GIOCATA !== "SOS"
                                 ? p.POS_GIOCATA
                                 : p.Posiz;
                             const extraStatsObj = p.EXTRA_STATS || {};
                             const extraKeys = Object.keys(extraStatsObj).filter(
-                              (k) => extraStatsObj[k] !== null && extraStatsObj[k] !== undefined
+                              (k) =>
+                                extraStatsObj[k] !== null &&
+                                extraStatsObj[k] !== undefined
                             );
                             const dynamicExtraKeys = extraKeys.filter(
                               (k) => !KNOWN_PLAYER_EXTRA_KEYS.has(k)
@@ -1482,8 +2403,12 @@ const Calendario = () => {
                                             ⚽ AG {p.AGOL}
                                           </span>
                                         )}
-                                        {p.GIALLI > 0 && <span>🟨 {p.GIALLI}</span>}
-                                        {p.ROSSI > 0 && <span>🟥 {p.ROSSI}</span>}
+                                        {p.GIALLI > 0 && (
+                                          <span>🟨 {p.GIALLI}</span>
+                                        )}
+                                        {p.ROSSI > 0 && (
+                                          <span>🟥 {p.ROSSI}</span>
+                                        )}
                                         {extraKeys.length > 0 && (
                                           <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
                                             • +{extraKeys.length} stat extra
@@ -1523,41 +2448,81 @@ const Calendario = () => {
                                       </div>
                                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono">
                                         <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
-                                          <span className="text-muted-foreground">Tiri (In/Tot):</span>
-                                          <span className="font-bold">{p.TIRI_IN ?? 0}/{p.TIRI_TOT ?? 0}</span>
+                                          <span className="text-muted-foreground">
+                                            Tiri (In/Tot):
+                                          </span>
+                                          <span className="font-bold">
+                                            {p.TIRI_IN ?? 0}/{p.TIRI_TOT ?? 0}
+                                          </span>
                                         </div>
                                         <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
-                                          <span className="text-muted-foreground">Passaggi:</span>
-                                          <span className="font-bold">{p.PASS_SI ?? 0}/{p.PASS_TOT ?? 0}</span>
+                                          <span className="text-muted-foreground">
+                                            Passaggi:
+                                          </span>
+                                          <span className="font-bold">
+                                            {p.PASS_SI ?? 0}/{p.PASS_TOT ?? 0}
+                                          </span>
                                         </div>
                                         <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
-                                          <span className="text-muted-foreground">Dribbling:</span>
-                                          <span className="font-bold">{p.DRIB_SI ?? 0}/{p.DRIB_TOT ?? 0}</span>
+                                          <span className="text-muted-foreground">
+                                            Dribbling:
+                                          </span>
+                                          <span className="font-bold">
+                                            {p.DRIB_SI ?? 0}/{p.DRIB_TOT ?? 0}
+                                          </span>
                                         </div>
                                         <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
-                                          <span className="text-muted-foreground">Cross:</span>
-                                          <span className="font-bold">{p.CROS_SI ?? 0}/{p.CROS_TOT ?? 0}</span>
+                                          <span className="text-muted-foreground">
+                                            Cross:
+                                          </span>
+                                          <span className="font-bold">
+                                            {p.CROS_SI ?? 0}/{p.CROS_TOT ?? 0}
+                                          </span>
                                         </div>
                                         <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
-                                          <span className="text-muted-foreground">Contrasti:</span>
-                                          <span className="font-bold">{p.CTRS_SI ?? 0}/{p.CTRS_TOT ?? 0}</span>
+                                          <span className="text-muted-foreground">
+                                            Contrasti:
+                                          </span>
+                                          <span className="font-bold">
+                                            {p.CTRS_SI ?? 0}/{p.CTRS_TOT ?? 0}
+                                          </span>
                                         </div>
                                         <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
-                                          <span className="text-muted-foreground">Poss. Vinti/Persi:</span>
-                                          <span className="font-bold">{p.POSS_VINTI ?? 0}/{p.PALLE_PERSE ?? 0}</span>
+                                          <span className="text-muted-foreground">
+                                            Poss. Vinti/Persi:
+                                          </span>
+                                          <span className="font-bold">
+                                            {p.POSS_VINTI ?? 0}/
+                                            {p.PALLE_PERSE ?? 0}
+                                          </span>
                                         </div>
                                         <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
-                                          <span className="text-muted-foreground">Km (Scatto):</span>
-                                          <span className="font-bold">{p.DIST_TOT ?? 0} ({p.DIST_SCATTO ?? 0})</span>
+                                          <span className="text-muted-foreground">
+                                            Km (Scatto):
+                                          </span>
+                                          <span className="font-bold">
+                                            {p.DIST_TOT ?? 0} (
+                                            {p.DIST_SCATTO ?? 0})
+                                          </span>
                                         </div>
                                         <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between">
-                                          <span className="text-muted-foreground">Falli / Fuorig.:</span>
-                                          <span className="font-bold">{p.FALLI ?? 0} / {p.FGIOCO ?? 0}</span>
+                                          <span className="text-muted-foreground">
+                                            Falli / Fuorig.:
+                                          </span>
+                                          <span className="font-bold">
+                                            {p.FALLI ?? 0} / {p.FGIOCO ?? 0}
+                                          </span>
                                         </div>
-                                        {(p.Posiz === "POR" || (p.PARA ?? 0) > 0 || (p.GSUB ?? 0) > 0) && (
+                                        {(p.Posiz === "POR" ||
+                                          (p.PARA ?? 0) > 0 ||
+                                          (p.GSUB ?? 0) > 0) && (
                                           <div className="px-2 py-1 rounded bg-card border border-border/60 flex justify-between col-span-2">
-                                            <span className="text-muted-foreground">Parate / Gol Subiti:</span>
-                                            <span className="font-bold">{p.PARA ?? 0} / {p.GSUB ?? 0}</span>
+                                            <span className="text-muted-foreground">
+                                              Parate / Gol Subiti:
+                                            </span>
+                                            <span className="font-bold">
+                                              {p.PARA ?? 0} / {p.GSUB ?? 0}
+                                            </span>
                                           </div>
                                         )}
                                       </div>
@@ -1566,40 +2531,48 @@ const Calendario = () => {
                                     {/* STATISTICHE EXTRA SUB-TAB DIVISE PER REPARTO */}
                                     {extraKeys.length > 0 && (
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {PLAYER_EXTRA_STAT_CATEGORIES.map((cat) => {
-                                          const populatedFields = cat.fields.filter(
-                                            (f) =>
-                                              extraStatsObj[f.key] !== null &&
-                                              extraStatsObj[f.key] !== undefined
-                                          );
-                                          if (populatedFields.length === 0) return null;
-                                          return (
-                                            <div
-                                              key={cat.id}
-                                              className="rounded-lg border border-border/70 bg-card p-2 space-y-1"
-                                            >
-                                              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/50 pb-0.5">
-                                                {cat.title}
+                                        {PLAYER_EXTRA_STAT_CATEGORIES.map(
+                                          (cat) => {
+                                            const populatedFields =
+                                              cat.fields.filter(
+                                                (f) =>
+                                                  extraStatsObj[f.key] !==
+                                                    null &&
+                                                  extraStatsObj[f.key] !==
+                                                    undefined
+                                              );
+                                            if (populatedFields.length === 0)
+                                              return null;
+                                            return (
+                                              <div
+                                                key={cat.id}
+                                                className="rounded-lg border border-border/70 bg-card p-2 space-y-1"
+                                              >
+                                                <div className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-border/50 pb-0.5">
+                                                  {cat.title}
+                                                </div>
+                                                <div className="space-y-0.5 font-mono text-[10px]">
+                                                  {populatedFields.map((f) => (
+                                                    <div
+                                                      key={f.key}
+                                                      className="flex items-center justify-between gap-2"
+                                                    >
+                                                      <span className="text-muted-foreground truncate">
+                                                        {f.label}
+                                                      </span>
+                                                      <span className="font-bold text-foreground">
+                                                        {extraStatsObj[f.key]}
+                                                        {f.unit
+                                                          ? ` ${f.unit}`
+                                                          : ""}
+                                                      </span>
+                                                    </div>
+                                                  ))}
+                                                </div>
                                               </div>
-                                              <div className="space-y-0.5 font-mono text-[10px]">
-                                                {populatedFields.map((f) => (
-                                                  <div
-                                                    key={f.key}
-                                                    className="flex items-center justify-between gap-2"
-                                                  >
-                                                    <span className="text-muted-foreground truncate">
-                                                      {f.label}
-                                                    </span>
-                                                    <span className="font-bold text-foreground">
-                                                      {extraStatsObj[f.key]}
-                                                      {f.unit ? ` ${f.unit}` : ""}
-                                                    </span>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
+                                            );
+                                          }
+                                        )}
 
                                         {dynamicExtraKeys.length > 0 && (
                                           <div className="rounded-lg border border-border/70 bg-card p-2 space-y-1">

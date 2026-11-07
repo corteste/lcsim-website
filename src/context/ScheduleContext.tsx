@@ -1,9 +1,10 @@
-import { fetchSeasonSchedule } from "@/services/scheduleService";
-import { Schedule } from "@/types/schedule";
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import { fetchSeasonSchedule, fetchSeasonEvents } from "@/services/scheduleService";
+import { Schedule, LeagueCalendarEvent } from "@/types/schedule";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface ScheduleContextType {
   schedule: Schedule[];
+  seasonEvents: LeagueCalendarEvent[];
   loaded: boolean; // Note: named 'loaded' in Calendario.tsx where true means 'isLoading'
   season: number;
   setSeason: (stag: number) => void;
@@ -12,6 +13,7 @@ interface ScheduleContextType {
 
 const ScheduleContext = createContext<ScheduleContextType>({
   schedule: [],
+  seasonEvents: [],
   loaded: false,
   season: 11,
   setSeason: () => {},
@@ -23,13 +25,18 @@ const DEFAULT_SEASON = 11;
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [season, setSeason] = useState<number>(DEFAULT_SEASON);
   const [schedule, setSchedule] = useState<Schedule[]>([]);
+  const [seasonEvents, setSeasonEvents] = useState<LeagueCalendarEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const loadSchedule = async (targetSeason = season) => {
     setLoaded(true);
     try {
-      const allWeeks = await fetchSeasonSchedule(targetSeason);
+      const [allWeeks, events] = await Promise.all([
+        fetchSeasonSchedule(targetSeason),
+        fetchSeasonEvents(targetSeason),
+      ]);
       setSchedule(allWeeks);
+      setSeasonEvents(events);
     } catch (err) {
       console.error("Error fetching season schedule:", err);
     } finally {
@@ -42,7 +49,16 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   }, [season]);
 
   return (
-    <ScheduleContext.Provider value={{ schedule, loaded, season, setSeason, reloadSchedule: () => loadSchedule(season) }}>
+    <ScheduleContext.Provider
+      value={{
+        schedule,
+        seasonEvents,
+        loaded,
+        season,
+        setSeason,
+        reloadSchedule: () => loadSchedule(season),
+      }}
+    >
       {children}
     </ScheduleContext.Provider>
   );

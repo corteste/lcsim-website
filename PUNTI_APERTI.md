@@ -1254,16 +1254,16 @@ Risolta la ridondanza nella categoria Media Voto della tabella Statistiche (`/st
 ---
 
 ## 📌 53. Calendario: Correzioni Referti, Formazioni e Tabella Offseason
-- **Stato**: 🟡 In attesa di implementazione
+- **Stato**: 🟢 Completato & Testato (Sviluppato su branch dev)
 - **Priorità**: Alta (Correttezza dei dati mostrati)
-- **Moduli coinvolti**: src/pages/Calendario.tsx
-- **Tabelle coinvolte**: an_schedule, "AS_TEAM_STAT", "AS_PLAYER_STAT", an_player, an_team
-Descrizione
-Etichetta Allenatore: correggere "Mister Signor" (vedi anche punto #44).
-Giocatore Subentrato Errato: nelle formazioni in campo, il giocatore indicato come subentrato è sbagliato.
-Gol di Ex Giocatori: mancano i gol dei giocatori che non fanno più parte della squadra.
-Terzini Invertiti: terzino destro e sinistro risultano scambiati nella formazione.
-Date Offseason: la tabella del calendario deve ospitare anche le date dell'offseason (mercato, draft, tagli, ecc.), non solo le partite.
+- **Moduli coinvolti**: `src/pages/Calendario.tsx`, `src/services/scheduleService.ts`, `src/context/ScheduleContext.tsx`, `supabase/migrations/20261107_calendar_offseason_events_and_fixes.sql`
+- **Tabelle coinvolte**: `an_schedule`, `as_team_stat`, `as_player_stat`, `an_player`, `an_team`, `an_league_events`
+Descrizione & Soluzione Implementata
+1. **Etichetta Allenatore**: perfezionata `formatCoachDisplay()` rimuovendo eventuali doppie occorrenze (`Mister Signor`, `Mister Sig.`) e normalizzando `Signor` in `Sig.`.
+2. **Giocatore Subentrato Corretto (`resolveStartersAndSubs`)**: risolto il bug per cui l'ordinamento per puro ruolo prima del taglio a 11 titolari spingeva gli attaccanti titolari (90'+) in panchina; ora gli 11 titolari e i subentrati vengono determinati tramite flag esplicito `SUB`, durata partita, portiere, giocatori a minutaggio pieno e coppie complementari di sostituzione (`min_A + min_B ≈ durata_partita`).
+3. **Gol di Ex Giocatori & Paginazione Completa**: implementato il fetch paginato completo di `view_player_stats` (superando il limite PostgREST di 1.000 righe che tagliava fuori 573 righe in S10 e 678 in S9) e dato priorità a `ps.TEAM_ID` storico della partita; aggiunta inoltre l'indicazione `⚽ Autogol` quando il totale reti di squadra supera la somma dei marcatori.
+4. **Terzini ed Esterni Allineati sul Campetto 2D**: introdotto `sortLineLeftToRight()` in `computePitchCoordinates()` per disporre in ogni reparto i ruoli mancini a sinistra (`TS`, `ES`, `AS` a `x=15%`), i centrali al centro e i destri a destra (`TD`, `ED`, `AD` a `x=85%`).
+5. **Carosello Unificato & Card Date Offseason + Gestione Admin**: integrate le tappe di `an_league_events` (Taglio Giocatori, Mercato, Draft, Supercoppa, Blocco Rose) nel carosello orizzontale prima di Giornata 1 con card e tabella riepilogativa dedicata, più modale e RPC `SECURITY DEFINER` per consentire all'Admin di creare, modificare o eliminare le date dell'Offseason direttamente dal Calendario.
 
 
 
