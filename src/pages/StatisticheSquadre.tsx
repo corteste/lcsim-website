@@ -30,6 +30,8 @@ import {
   Users,
   Flag,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Award,
   Sparkles,
   PieChart as PieChartIcon,
@@ -399,6 +401,7 @@ export default function StatisticheSquadre() {
   const [statCategory, setStatCategory] = useState<TeamStatCategory>("attack");
   const [statMode, setStatMode] = useState<StatMode>("total");
   const [chartViewMode, setChartViewMode] = useState<"bar" | "donut">("bar");
+  const [showKpiChart, setShowKpiChart] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<AggregatedTeamStats | null>(null);
   const [modalTab, setModalTab] = useState<"overview" | "seasons" | "matches">("overview");
@@ -1091,18 +1094,44 @@ export default function StatisticheSquadre() {
           </div>
         </div>
 
-        {/* CATEGORY SELECTOR PILLS BAR */}
-        <div className="space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Classifiche &amp; Quote di Squadra:
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {activeCategoryConfig.description}
-            </span>
+        {/* CATEGORY SELECTOR PILLS BAR (COMPACT) & KPI CHART TOGGLE */}
+        <div className="space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Categoria Statistica:
+              </span>
+              <span className="text-xs text-muted-foreground hidden md:inline">
+                • {activeCategoryConfig.description}
+              </span>
+            </div>
+
+            <Button
+              type="button"
+              variant={showKpiChart ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowKpiChart((prev) => !prev)}
+              className={`h-8 text-xs font-bold gap-1.5 shrink-0 cursor-pointer ${
+                showKpiChart
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                  : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+              }`}
+            >
+              <PieChartIcon className="h-3.5 w-3.5" />
+              <span>
+                {showKpiChart
+                  ? "Nascondi Grafico & KPI Quote"
+                  : "Mostra Grafico & KPI Quote (%)"}
+              </span>
+              {showKpiChart ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+            </Button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
             {TEAM_STAT_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isSelected = statCategory === cat.id;
@@ -1112,83 +1141,40 @@ export default function StatisticheSquadre() {
                   key={cat.id}
                   type="button"
                   onClick={() => setStatCategory(cat.id)}
-                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-bold transition-all duration-200 cursor-pointer text-center gap-1.5 ${
+                  className={`flex items-center justify-center px-2.5 py-2 rounded-xl border text-xs font-bold transition-all duration-150 cursor-pointer gap-1.5 ${
                     isSelected
-                      ? "bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500/30 scale-[1.02]"
+                      ? "bg-emerald-600 text-white border-emerald-500 shadow-sm"
                       : "bg-card border-border/80 text-foreground hover:bg-muted/60 hover:border-border"
                   }`}
                 >
                   <Icon
-                    className={`h-4 w-4 ${
+                    className={`h-3.5 w-3.5 shrink-0 ${
                       isSelected ? "text-white" : cat.accentColor
                     }`}
                   />
-                  <span className="leading-tight text-[11px] sm:text-xs">
-                    {cat.label}
-                  </span>
+                  <span className="truncate text-[11px]">{cat.label}</span>
                 </button>
               );
             })}
           </div>
-        </div>
 
-        {/* TEAM STAT PERCENTAGE SHARE CHART CARD */}
-        <Card className="border border-border/80 shadow-md bg-card overflow-hidden">
-          <div className="p-4 sm:p-5 border-b border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge
-                  variant="outline"
-                  className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold px-2 py-0.5 text-[10px] uppercase tracking-wider flex items-center gap-1"
-                >
-                  <activeCategoryConfig.icon className="h-3 w-3" />
-                  Distribuzione Percentuale
-                </Badge>
-                <span className="text-xs text-muted-foreground font-mono">
-                  Totale Registrato: <strong className="text-foreground">{statShareData.totalDisplay}</strong> {statShareData.metricUnit}
+          {/* Mini inline 100% distribution bar when full chart is collapsed */}
+          {!showKpiChart && statShareData.items.length > 0 && (
+            <div
+              onClick={() => setShowKpiChart(true)}
+              className="flex flex-col sm:flex-row sm:items-center gap-2.5 px-3.5 py-2 rounded-xl border border-border/70 bg-card/70 hover:bg-muted/30 transition-colors cursor-pointer"
+              title="Clicca per espandere il grafico completo delle quote percentuali"
+            >
+              <div className="flex items-center gap-2 shrink-0 text-[11px]">
+                <span className="font-bold text-muted-foreground uppercase tracking-wider">
+                  Totale {activeCategoryConfig.shortLabel}:
+                </span>
+                <span className="font-mono font-black text-foreground">
+                  {statShareData.totalDisplay} {statShareData.metricUnit}
                 </span>
               </div>
-              <h3 className="text-base sm:text-lg font-black text-foreground flex items-center gap-2">
-                <span>Quota Squadre • {activeCategoryConfig.label}</span>
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Percentuale di contribuzione di ciascun club rispetto al totale complessivo ({statShareData.metricLabel.toLowerCase()}).
-              </p>
-            </div>
 
-            {/* Toggle Bar vs Donut */}
-            <div className="flex items-center bg-muted/50 p-0.5 rounded-xl border border-border/60 self-start sm:self-auto shrink-0">
-              <button
-                type="button"
-                onClick={() => setChartViewMode("bar")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  chartViewMode === "bar"
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <BarChart3 className="h-3.5 w-3.5 text-emerald-500" />
-                <span>Barre</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartViewMode("donut")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  chartViewMode === "donut"
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <PieChartIcon className="h-3.5 w-3.5 text-amber-500" />
-                <span>Ciambella</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-5">
-            {/* Multi-segmented distribution strip */}
-            <div className="space-y-1.5">
-              <div className="h-3.5 w-full rounded-full overflow-hidden flex bg-muted/60 border border-border/60 shadow-inner">
+              <div className="h-2.5 flex-1 rounded-full overflow-hidden flex bg-muted/60 border border-border/50">
                 {statShareData.items.map((item) => {
                   if (item.percentage <= 0) return null;
                   return (
@@ -1198,132 +1184,143 @@ export default function StatisticheSquadre() {
                         width: `${item.percentage}%`,
                         backgroundColor: item.color,
                       }}
-                      className="h-full transition-all duration-300 hover:opacity-80 cursor-pointer relative group"
-                      onClick={() => handleOpenTeamModal(item.teamRef)}
-                      title={`${item.name} (${item.code}): ${item.percentage}% (${item.displayValue} ${statShareData.metricUnit})`}
+                      className="h-full"
+                      title={`${item.name}: ${item.percentage}%`}
                     />
                   );
                 })}
               </div>
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono px-0.5">
-                <span>0%</span>
-                <span>Distribuzione Relativa Quote Club (100%)</span>
-                <span>100%</span>
+
+              <div className="flex items-center gap-2 shrink-0 text-[10px] font-mono text-muted-foreground">
+                {statShareData.items.slice(0, 3).map((item) => (
+                  <span key={item.key} className="inline-flex items-center gap-1">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <strong className="text-foreground">{item.code}</strong>{" "}
+                    {item.percentage}%
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* COLLAPSIBLE TEAM STAT PERCENTAGE SHARE CHART CARD */}
+        {showKpiChart && (
+          <Card className="border border-border/80 shadow-md bg-card overflow-hidden">
+            <div className="p-3.5 sm:p-4 border-b border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold px-2 py-0 text-[10px] uppercase tracking-wider flex items-center gap-1"
+                  >
+                    <activeCategoryConfig.icon className="h-3 w-3" />
+                    Distribuzione Percentuale
+                  </Badge>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    Totale Registrato:{" "}
+                    <strong className="text-foreground">
+                      {statShareData.totalDisplay}
+                    </strong>{" "}
+                    {statShareData.metricUnit}
+                  </span>
+                </div>
+                <h3 className="text-sm sm:text-base font-black text-foreground">
+                  Quota Squadre • {activeCategoryConfig.label}
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                <div className="flex items-center bg-muted/50 p-0.5 rounded-xl border border-border/60">
+                  <button
+                    type="button"
+                    onClick={() => setChartViewMode("bar")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      chartViewMode === "bar"
+                        ? "bg-card text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <BarChart3 className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Barre</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartViewMode("donut")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      chartViewMode === "donut"
+                        ? "bg-card text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <PieChartIcon className="h-3.5 w-3.5 text-amber-500" />
+                    <span>Ciambella</span>
+                  </button>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowKpiChart(false)}
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                  title="Chiudi pannello grafico"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
-            {/* Main Chart Area */}
-            {statShareData.items.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground text-xs">
-                Nessun dato statistico disponibile per i filtri selezionati.
-              </div>
-            ) : chartViewMode === "bar" ? (
-              <div className="w-full h-[320px] pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={statShareData.items}
-                    margin={{ top: 20, right: 10, left: -15, bottom: 25 }}
-                  >
-                    <XAxis
-                      dataKey="code"
-                      tick={{ fill: "currentColor", fontSize: 11, fontWeight: 700 }}
-                      interval={0}
-                      axisLine={{ stroke: "rgba(128,128,128,0.2)" }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: "currentColor", fontSize: 10 }}
-                      tickFormatter={(val) => `${val}%`}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <RechartsTooltip
-                      content={({ active, payload }: any) => {
-                        if (active && payload && payload.length) {
-                          const d = payload[0].payload;
-                          return (
-                            <div className="rounded-xl border border-border/80 bg-popover/95 p-3 shadow-xl backdrop-blur-md text-xs space-y-1.5 z-50 min-w-[190px]">
-                              <div className="flex items-center gap-2">
-                                <TeamLogo
-                                  teamCode={d.code}
-                                  franchiseCode={d.franchiseCode}
-                                  className="h-5 w-5"
-                                />
-                                <span className="font-bold text-popover-foreground">{d.name}</span>
-                                <Badge variant="outline" className="text-[10px] font-mono px-1 py-0">
-                                  {d.code}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center justify-between gap-4 pt-1 border-t border-border/60">
-                                <span className="text-muted-foreground">Quota sulla Lega:</span>
-                                <span className="font-mono font-black text-sm" style={{ color: d.color }}>
-                                  {d.percentage}%
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between gap-4 text-muted-foreground text-[11px]">
-                                <span>Valore Registrato:</span>
-                                <span className="font-mono font-bold text-foreground">
-                                  {d.displayValue} {statShareData.metricUnit}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar
-                      dataKey="percentage"
-                      radius={[6, 6, 0, 0]}
-                      onClick={(data: any) => {
-                        if (data && data.teamRef) {
-                          handleOpenTeamModal(data.teamRef);
-                        }
-                      }}
-                      className="cursor-pointer"
-                    >
-                      {statShareData.items.map((entry) => (
-                        <Cell
-                          key={`cell-${entry.key}`}
-                          fill={entry.color}
-                          className="hover:opacity-85 transition-opacity cursor-pointer"
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              /* Donut Chart View */
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                <div className="lg:col-span-5 h-[280px] sm:h-[300px] relative flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statShareData.items}
-                        dataKey="percentage"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={65}
-                        outerRadius={105}
-                        paddingAngle={2}
-                        onClick={(data: any) => {
-                          if (data && data.teamRef) {
-                            handleOpenTeamModal(data.teamRef);
-                          }
+            <div className="p-4 sm:p-5 space-y-4">
+              {/* Multi-segmented distribution strip */}
+              <div className="space-y-1">
+                <div className="h-3 w-full rounded-full overflow-hidden flex bg-muted/60 border border-border/60 shadow-inner">
+                  {statShareData.items.map((item) => {
+                    if (item.percentage <= 0) return null;
+                    return (
+                      <div
+                        key={item.key}
+                        style={{
+                          width: `${item.percentage}%`,
+                          backgroundColor: item.color,
                         }}
-                        className="cursor-pointer"
-                      >
-                        {statShareData.items.map((entry) => (
-                          <Cell
-                            key={`slice-${entry.key}`}
-                            fill={entry.color}
-                            stroke="rgba(0,0,0,0.2)"
-                            className="hover:opacity-85 transition-opacity cursor-pointer"
-                          />
-                        ))}
-                      </Pie>
+                        className="h-full transition-all duration-300 hover:opacity-80 cursor-pointer"
+                        onClick={() => handleOpenTeamModal(item.teamRef)}
+                        title={`${item.name} (${item.code}): ${item.percentage}% (${item.displayValue} ${statShareData.metricUnit})`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Main Chart Area */}
+              {statShareData.items.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground text-xs">
+                  Nessun dato statistico disponibile per i filtri selezionati.
+                </div>
+              ) : chartViewMode === "bar" ? (
+                <div className="w-full h-[240px] pt-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={statShareData.items}
+                      margin={{ top: 10, right: 10, left: -15, bottom: 10 }}
+                    >
+                      <XAxis
+                        dataKey="code"
+                        tick={{ fill: "currentColor", fontSize: 11, fontWeight: 700 }}
+                        interval={0}
+                        axisLine={{ stroke: "rgba(128,128,128,0.2)" }}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fill: "currentColor", fontSize: 10 }}
+                        tickFormatter={(val) => `${val}%`}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <RechartsTooltip
                         content={({ active, payload }: any) => {
                           if (active && payload && payload.length) {
@@ -1336,14 +1333,24 @@ export default function StatisticheSquadre() {
                                     franchiseCode={d.franchiseCode}
                                     className="h-5 w-5"
                                   />
-                                  <span className="font-bold text-popover-foreground">{d.name}</span>
-                                  <Badge variant="outline" className="text-[10px] font-mono px-1 py-0">
+                                  <span className="font-bold text-popover-foreground">
+                                    {d.name}
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-mono px-1 py-0"
+                                  >
                                     {d.code}
                                   </Badge>
                                 </div>
                                 <div className="flex items-center justify-between gap-4 pt-1 border-t border-border/60">
-                                  <span className="text-muted-foreground">Quota sulla Lega:</span>
-                                  <span className="font-mono font-black text-sm" style={{ color: d.color }}>
+                                  <span className="text-muted-foreground">
+                                    Quota sulla Lega:
+                                  </span>
+                                  <span
+                                    className="font-mono font-black text-sm"
+                                    style={{ color: d.color }}
+                                  >
                                     {d.percentage}%
                                   </span>
                                 </div>
@@ -1359,268 +1366,247 @@ export default function StatisticheSquadre() {
                           return null;
                         }}
                       />
-                    </PieChart>
+                      <Bar
+                        dataKey="percentage"
+                        radius={[6, 6, 0, 0]}
+                        onClick={(data: any) => {
+                          if (data && data.teamRef) {
+                            handleOpenTeamModal(data.teamRef);
+                          }
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {statShareData.items.map((entry) => (
+                          <Cell
+                            key={`cell-${entry.key}`}
+                            fill={entry.color}
+                            className="hover:opacity-85 transition-opacity cursor-pointer"
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
-                  {/* Center Donut Label */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                      Quota Totale
-                    </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-                      100%
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      {statShareData.items.length} club
-                    </span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                  <div className="lg:col-span-5 h-[220px] relative flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statShareData.items}
+                          dataKey="percentage"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={88}
+                          paddingAngle={2}
+                          onClick={(data: any) => {
+                            if (data && data.teamRef) {
+                              handleOpenTeamModal(data.teamRef);
+                            }
+                          }}
+                          className="cursor-pointer"
+                        >
+                          {statShareData.items.map((entry) => (
+                            <Cell
+                              key={`slice-${entry.key}`}
+                              fill={entry.color}
+                              stroke="rgba(0,0,0,0.2)"
+                              className="hover:opacity-85 transition-opacity cursor-pointer"
+                            />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip
+                          content={({ active, payload }: any) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload;
+                              return (
+                                <div className="rounded-xl border border-border/80 bg-popover/95 p-3 shadow-xl backdrop-blur-md text-xs space-y-1.5 z-50 min-w-[190px]">
+                                  <div className="flex items-center gap-2">
+                                    <TeamLogo
+                                      teamCode={d.code}
+                                      franchiseCode={d.franchiseCode}
+                                      className="h-5 w-5"
+                                    />
+                                    <span className="font-bold text-popover-foreground">
+                                      {d.name}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] font-mono px-1 py-0"
+                                    >
+                                      {d.code}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4 pt-1 border-t border-border/60">
+                                    <span className="text-muted-foreground">
+                                      Quota sulla Lega:
+                                    </span>
+                                    <span
+                                      className="font-mono font-black text-sm"
+                                      style={{ color: d.color }}
+                                    >
+                                      {d.percentage}%
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4 text-muted-foreground text-[11px]">
+                                    <span>Valore Registrato:</span>
+                                    <span className="font-mono font-bold text-foreground">
+                                      {d.displayValue} {statShareData.metricUnit}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                      <span className="text-[9px] uppercase font-bold text-muted-foreground">
+                        Quota
+                      </span>
+                      <span className="text-lg font-black font-mono text-foreground">
+                        100%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[220px] overflow-y-auto pr-1">
+                    {statShareData.items.map((item, idx) => (
+                      <div
+                        key={item.key}
+                        onClick={() => handleOpenTeamModal(item.teamRef)}
+                        className="p-2 rounded-xl border border-border/70 bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer flex items-center justify-between gap-2 group"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <TeamLogo
+                            teamCode={item.code}
+                            franchiseCode={item.franchiseCode}
+                            className="h-5 w-5"
+                          />
+                          <div className="min-w-0">
+                            <span className="font-bold text-xs text-foreground block truncate group-hover:text-emerald-500 transition-colors">
+                              {item.name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono block">
+                              {item.displayValue} {statShareData.metricUnit}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0 flex items-center gap-1.5">
+                          <span
+                            className="font-mono font-black text-xs px-1.5 py-0.5 rounded-md border"
+                            style={{
+                              color: item.color,
+                              borderColor: `${item.color}40`,
+                              backgroundColor: `${item.color}15`,
+                            }}
+                          >
+                            {item.percentage}%
+                          </span>
+                          <span className="text-[9px] text-muted-foreground font-mono">
+                            #{idx + 1}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
+              )}
+            </div>
+          </Card>
+        )}
 
-                {/* Team percentage breakdown cards */}
-                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
-                  {statShareData.items.map((item, idx) => (
-                    <div
-                      key={item.key}
-                      onClick={() => handleOpenTeamModal(item.teamRef)}
-                      className="p-2.5 rounded-xl border border-border/70 bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer flex items-center justify-between gap-2.5 group"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="h-3 w-3 rounded-full shrink-0 shadow-xs"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <TeamLogo
-                          teamCode={item.code}
-                          franchiseCode={item.franchiseCode}
-                          className="h-6 w-6"
-                        />
-                        <div className="min-w-0">
-                          <span className="font-bold text-xs text-foreground block truncate group-hover:text-emerald-500 transition-colors">
-                            {item.name}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground font-mono block">
-                            {item.displayValue} {statShareData.metricUnit}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span
-                          className="font-mono font-black text-xs px-2 py-0.5 rounded-md border"
-                          style={{
-                            color: item.color,
-                            borderColor: `${item.color}40`,
-                            backgroundColor: `${item.color}15`,
-                          }}
-                        >
-                          {item.percentage}%
-                        </span>
-                        <span className="text-[9px] text-muted-foreground block mt-0.5 font-mono">
-                          #{idx + 1}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* PODIUM TOP 3 TEAMS SHOWCASE */}
+        {/* COMPACT HORIZONTAL PODIUM TOP 3 TEAMS SHOWCASE */}
         {podiumTeams.length >= 3 && !isLoading && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-amber-500" />
-              <h2 className="text-sm font-extrabold uppercase tracking-wider text-foreground">
-                Podio Club • {activeCategoryConfig.label} (
-                {selectedSeason === "all"
-                  ? "Storico S1–S11"
-                  : `Stagione ${selectedSeason}`}
-                )
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 items-end">
-              {/* 2ND PLACE (SILVER) */}
-              {(() => {
-                const team = podiumTeams[1];
-                const stat = getTeamStatDisplay(team);
-                return (
-                  <Card
-                    onClick={() => handleOpenTeamModal(team)}
-                    className="order-2 md:order-1 border-2 border-slate-300/60 dark:border-slate-600/60 bg-gradient-to-b from-card to-slate-500/5 hover:border-slate-400 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden p-4 group"
-                  >
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      <span className="px-3 py-0.5 rounded-full text-xs font-black bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 shadow-xs flex items-center gap-1">
-                        🥈 2° Posto
-                      </span>
-
-                      <div className="h-16 w-16 flex items-center justify-center rounded-2xl bg-muted/40 border border-border/60 p-2 group-hover:scale-105 transition-transform">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {[
+              {
+                team: podiumTeams[0],
+                rankLabel: "👑 1° Leader",
+                cardClass:
+                  "border-amber-500/60 bg-gradient-to-r from-amber-500/10 via-card to-card hover:border-amber-400",
+                badgeClass:
+                  "bg-gradient-to-r from-amber-500 to-yellow-500 text-black",
+                valClass: "text-amber-500",
+              },
+              {
+                team: podiumTeams[1],
+                rankLabel: "🥈 2° Posto",
+                cardClass:
+                  "border-slate-300/60 dark:border-slate-600/60 bg-card hover:border-slate-400",
+                badgeClass:
+                  "bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200",
+                valClass: "text-foreground",
+              },
+              {
+                team: podiumTeams[2],
+                rankLabel: "🥉 3° Posto",
+                cardClass:
+                  "border-amber-700/40 bg-card hover:border-amber-600",
+                badgeClass:
+                  "bg-amber-800/20 text-amber-700 dark:text-amber-400 border border-amber-700/30",
+                valClass: "text-foreground",
+              },
+            ].map(({ team, rankLabel, cardClass, badgeClass, valClass }) => {
+              const stat = getTeamStatDisplay(team);
+              return (
+                <Card
+                  key={team.key}
+                  onClick={() => handleOpenTeamModal(team)}
+                  className={`border ${cardClass} transition-all duration-150 cursor-pointer p-3.5 group shadow-xs`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-11 w-11 flex items-center justify-center rounded-xl bg-muted/40 border border-border/60 p-1.5 shrink-0 group-hover:scale-105 transition-transform">
                         <TeamLogo
                           teamCode={team.displayCode}
                           franchiseCode={team.franchiseCode}
-                          className="h-12 w-12"
+                          className="h-8 w-8"
                         />
                       </div>
-
-                      <div>
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          <span className="font-extrabold text-foreground text-base group-hover:text-emerald-500 transition-colors">
-                            {team.displayName}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span
+                            className={`px-2 py-0 rounded-full text-[10px] font-black ${badgeClass}`}
+                          >
+                            {rankLabel}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {team.matches}g
                           </span>
                         </div>
-                        <div className="flex items-center justify-center gap-1 mt-1 flex-wrap">
-                          {team.eraCodes.map((code) => (
-                            <Badge
-                              key={code}
-                              variant="outline"
-                              className="text-[10px] font-mono px-1.5 py-0"
-                            >
-                              {code}
-                            </Badge>
-                          ))}
-                          <span className="text-[11px] text-muted-foreground font-mono ml-1">
-                            • {team.matches} gare
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-border/60 w-full">
-                        <span className="text-2xl font-black font-mono text-foreground block">
-                          {stat.value}
+                        <span className="font-extrabold text-sm text-foreground block truncate group-hover:text-emerald-500 transition-colors">
+                          {team.displayName}
                         </span>
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                          {stat.label}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground mt-0.5 block font-mono">
+                        <span className="text-[10px] text-muted-foreground font-mono block truncate">
                           {stat.context}
                         </span>
                       </div>
                     </div>
-                  </Card>
-                );
-              })()}
 
-              {/* 1ST PLACE (GOLD) */}
-              {(() => {
-                const team = podiumTeams[0];
-                const stat = getTeamStatDisplay(team);
-                return (
-                  <Card
-                    onClick={() => handleOpenTeamModal(team)}
-                    className="order-1 md:order-2 border-2 border-amber-500/70 bg-gradient-to-b from-card via-amber-500/5 to-amber-500/15 hover:border-amber-400 hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden p-5 group md:-translate-y-2 ring-2 ring-amber-500/20"
-                  >
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      <span className="px-3.5 py-0.5 rounded-full text-xs font-black bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-md flex items-center gap-1 uppercase tracking-wider">
-                        👑 1° Posto • Club Leader
+                    <div className="text-right shrink-0 pl-2 border-l border-border/50">
+                      <span
+                        className={`text-xl font-black font-mono block leading-none ${valClass}`}
+                      >
+                        {stat.value}
                       </span>
-
-                      <div className="h-20 w-20 flex items-center justify-center rounded-2xl bg-amber-500/10 border-2 border-amber-400/60 p-2.5 shadow-lg group-hover:scale-105 transition-transform">
-                        <TeamLogo
-                          teamCode={team.displayCode}
-                          franchiseCode={team.franchiseCode}
-                          className="h-14 w-14"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          <span className="font-black text-foreground text-lg group-hover:text-amber-500 transition-colors">
-                            {team.displayName}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-center gap-1 mt-1 flex-wrap">
-                          {team.eraCodes.map((code) => (
-                            <Badge
-                              key={code}
-                              variant="outline"
-                              className="text-[10px] font-mono px-1.5 py-0 border-amber-500/40 text-amber-600 dark:text-amber-400"
-                            >
-                              {code}
-                            </Badge>
-                          ))}
-                          <span className="text-[11px] text-muted-foreground font-mono ml-1">
-                            • {team.matches} gare
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-amber-500/30 w-full">
-                        <span className="text-3xl font-black font-mono text-amber-500 block drop-shadow-xs">
-                          {stat.value}
-                        </span>
-                        <span className="text-[11px] uppercase font-black tracking-wider text-muted-foreground block">
-                          {stat.label}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground mt-0.5 block font-mono font-medium">
-                          {stat.context}
-                        </span>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })()}
-
-              {/* 3RD PLACE (BRONZE) */}
-              {(() => {
-                const team = podiumTeams[2];
-                const stat = getTeamStatDisplay(team);
-                return (
-                  <Card
-                    onClick={() => handleOpenTeamModal(team)}
-                    className="order-3 md:order-3 border-2 border-amber-700/40 bg-gradient-to-b from-card to-amber-900/5 hover:border-amber-600 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden p-4 group"
-                  >
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      <span className="px-3 py-0.5 rounded-full text-xs font-black bg-amber-800/20 text-amber-700 dark:text-amber-400 border border-amber-700/30 shadow-xs flex items-center gap-1">
-                        🥉 3° Posto
+                      <span className="text-[9px] uppercase font-bold text-muted-foreground block mt-1">
+                        {stat.label}
                       </span>
-
-                      <div className="h-16 w-16 flex items-center justify-center rounded-2xl bg-muted/40 border border-amber-700/30 p-2 group-hover:scale-105 transition-transform">
-                        <TeamLogo
-                          teamCode={team.displayCode}
-                          franchiseCode={team.franchiseCode}
-                          className="h-12 w-12"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          <span className="font-extrabold text-foreground text-base group-hover:text-emerald-500 transition-colors">
-                            {team.displayName}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-center gap-1 mt-1 flex-wrap">
-                          {team.eraCodes.map((code) => (
-                            <Badge
-                              key={code}
-                              variant="outline"
-                              className="text-[10px] font-mono px-1.5 py-0"
-                            >
-                              {code}
-                            </Badge>
-                          ))}
-                          <span className="text-[11px] text-muted-foreground font-mono ml-1">
-                            • {team.matches} gare
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-border/60 w-full">
-                        <span className="text-2xl font-black font-mono text-foreground block">
-                          {stat.value}
-                        </span>
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                          {stat.label}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground mt-0.5 block font-mono">
-                          {stat.context}
-                        </span>
-                      </div>
                     </div>
-                  </Card>
-                );
-              })()}
-            </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
 
