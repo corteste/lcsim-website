@@ -464,25 +464,6 @@ const Calendario = () => {
     return schedule.find((s) => s.week === activeWeek) || schedule[0];
   }, [schedule, activeWeek]);
 
-  // Overall telemetry summary of played matches
-  const telemetry = useMemo(() => {
-    let totalMatches = 0;
-    let playedMatches = 0;
-    let totalGoals = 0;
-
-    for (const round of schedule) {
-      for (const m of round.matches) {
-        totalMatches++;
-        if (m.home_minuti && m.home_minuti > 0) {
-          playedMatches++;
-          totalGoals += (m.home_gol ?? 0) + (m.away_gol ?? 0);
-        }
-      }
-    }
-
-    return { totalMatches, playedMatches, totalGoals };
-  }, [schedule]);
-
   // Admin handlers for Offseason Events
   const openCreateEventModal = () => {
     setEditingEventId(null);
@@ -620,56 +601,7 @@ const Calendario = () => {
           </div>
         </div>
 
-        {/* TELEMETRY KPI WIDGETS */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Tappa Selezionata
-            </span>
-            <span
-              className={`text-lg sm:text-xl font-black font-mono truncate block ${
-                activeOffseasonEvent
-                  ? "text-amber-600 dark:text-amber-400"
-                  : "text-emerald-600 dark:text-emerald-400"
-              }`}
-            >
-              {activeOffseasonEvent
-                ? activeOffseasonEvent.evento
-                : `Giornata ${activeWeek}`}
-            </span>
-          </Card>
-
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Partite Disputate
-            </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-              {telemetry.playedMatches} / {telemetry.totalMatches}
-            </span>
-          </Card>
-
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Gol Totali Stagione
-            </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-rose-600 dark:text-rose-400">
-              {telemetry.totalGoals}
-            </span>
-          </Card>
-
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Fasi &amp; Turni
-            </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-              {offseasonEvents.length > 0
-                ? `${offseasonEvents.length} Offs. + ${schedule.length || 9} G.`
-                : `${schedule.length || 9} Giornate`}
-            </span>
-          </Card>
-        </div>
-
-        {/* HORIZONTAL UNIFIED CAROUSEL SELECTOR (OFFSEASON + GIORNATE) */}
+        {/* UNIFIED MULTI-ROW STAGE SELECTOR (OFFSEASON + GIORNATE) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -709,8 +641,8 @@ const Calendario = () => {
             </div>
           </div>
 
-          {/* Carousel Buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {/* Multi-row Stage & Matchday Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
             {/* 1. OFFSEASON MILESTONES BEFORE GIORNATA 1 */}
             {offseasonEvents.map((ev) => {
               const isSelected = selectedOffseasonId === ev.id;
@@ -723,14 +655,14 @@ const Calendario = () => {
                   key={`offs-${ev.id}`}
                   type="button"
                   onClick={() => setSelectedOffseasonId(ev.id)}
-                  className={`group shrink-0 flex flex-col items-start px-3.5 py-2 rounded-xl border text-left transition-all duration-200 cursor-pointer min-w-[142px] ${
+                  className={`group flex flex-col items-start px-3.5 py-2 rounded-xl border text-left transition-all duration-200 cursor-pointer min-w-[142px] ${
                     isSelected
                       ? "bg-amber-600 text-white border-amber-500 shadow-md ring-2 ring-amber-500/30 scale-[1.02]"
                       : "bg-amber-500/5 border-amber-500/30 text-foreground hover:bg-amber-500/15 hover:border-amber-500/50"
                   }`}
                 >
                   <div className="flex items-center justify-between w-full gap-1.5 mb-1">
-                    <span className="font-extrabold text-xs tracking-tight truncate max-w-[95px]">
+                    <span className="font-extrabold text-xs tracking-tight truncate max-w-[120px]">
                       {ev.evento}
                     </span>
                     <span
@@ -766,7 +698,7 @@ const Calendario = () => {
 
             {/* Divider between Offseason and Regular Season */}
             {offseasonEvents.length > 0 && schedule.length > 0 && (
-              <div className="h-9 w-[2px] bg-border/80 shrink-0 mx-0.5 rounded-full" />
+              <div className="hidden sm:block h-9 w-[2px] bg-border/80 mx-0.5 rounded-full" />
             )}
 
             {/* 2. CHAMPIONSHIP ROUNDS (GIORNATA 1..N) */}
@@ -786,7 +718,7 @@ const Calendario = () => {
                     setSelectedOffseasonId(null);
                     setActiveWeek(round.week);
                   }}
-                  className={`group shrink-0 flex flex-col items-start px-3.5 py-2 rounded-xl border text-left transition-all duration-200 cursor-pointer min-w-[130px] ${
+                  className={`group flex flex-col items-start px-3.5 py-2 rounded-xl border text-left transition-all duration-200 cursor-pointer min-w-[130px] ${
                     isSelected
                       ? "bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500/30 scale-[1.02]"
                       : "bg-card border-border/80 text-foreground hover:bg-muted/60 hover:border-border"
