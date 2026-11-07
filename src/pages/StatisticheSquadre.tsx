@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -871,21 +870,6 @@ export default function StatisticheSquadre() {
             <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
               Analisi prestazionale comparativa, efficienza offensiva e difensiva, possesso palla, regia e storico tabellini ufficiali dei club della Lega.
             </p>
-          </div>
-
-          <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
-            <Button asChild variant="outline" size="sm" className="text-xs font-bold gap-1.5">
-              <Link to="/classifica">
-                <Trophy className="h-3.5 w-3.5 text-amber-500" />
-                Classifica
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm" className="text-xs font-bold gap-1.5">
-              <Link to="/statistiche">
-                <Users className="h-3.5 w-3.5 text-emerald-500" />
-                Statistiche Calciatori
-              </Link>
-            </Button>
           </div>
         </div>
 
