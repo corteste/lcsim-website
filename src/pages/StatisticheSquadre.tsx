@@ -358,13 +358,13 @@ export default function StatisticheSquadre() {
     return map;
   }, [dbTeams]);
 
-  // Available seasons in as_team_stat sorted descending
+  // Available seasons in as_team_stat sorted ascending (da meno recente a più recente: S1 -> S11)
   const availableSeasons = useMemo(() => {
     const set = new Set<number>();
     for (const r of statRows) {
       if (r.STAG) set.add(Number(r.STAG));
     }
-    return Array.from(set).sort((a, b) => b - a);
+    return Array.from(set).sort((a, b) => a - b);
   }, [statRows]);
 
   // Filter rows by selectedSeason and valid match played (MINUTI > 0 or VOTO != null)
