@@ -6,6 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -997,184 +1004,172 @@ export default function StatisticheSquadre() {
           </div>
         </div>
 
-        {/* SEASON SELECTOR & SCOPE BAR */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-card border border-border/80 rounded-2xl p-3.5 shadow-xs">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mr-1.5 flex items-center gap-1 shrink-0">
-              <Calendar className="h-3.5 w-3.5 text-emerald-500" />
-              Stagione:
-            </span>
-            <button
-              type="button"
-              onClick={() => setSelectedSeason("all")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
-                selectedSeason === "all"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60"
-              }`}
-            >
-              All-Time (S1–S11)
-            </button>
-            {availableSeasons.map((stag) => {
-              const isSelected = selectedSeason === String(stag);
-              return (
-                <button
-                  key={stag}
-                  type="button"
-                  onClick={() => setSelectedSeason(String(stag))}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold font-mono whitespace-nowrap transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50"
-                  }`}
+        {/* UNIFIED COMPACT FILTER & CATEGORY BAR */}
+        <Card className="border border-border/80 bg-card shadow-xs overflow-hidden">
+          <div className="p-3 sm:px-4 sm:py-3 flex flex-wrap items-center justify-between gap-2.5">
+            {/* Left Group: Season Select + Category Select */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Season Selector Dropdown */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground hidden sm:inline">
+                  Stagione:
+                </span>
+                <Select
+                  value={selectedSeason}
+                  onValueChange={(val) => setSelectedSeason(val)}
                 >
-                  S{stag}
-                </button>
-              );
-            })}
-          </div>
+                  <SelectTrigger className="h-8 w-[165px] sm:w-[180px] text-xs font-bold bg-muted/40 border-border/70">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      <SelectValue />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs font-bold">
+                      All-Time (S1–S11)
+                    </SelectItem>
+                    {availableSeasons.map((stag) => (
+                      <SelectItem
+                        key={stag}
+                        value={String(stag)}
+                        className="text-xs font-mono font-semibold"
+                      >
+                        Stagione {stag} (S{stag})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-border/60">
-            {/* Unify franchises toggle when in All-Time */}
-            {selectedSeason === "all" && (
-              <div className="flex items-center bg-muted/50 p-0.5 rounded-xl border border-border/60">
+              {/* Category Selector Dropdown */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground hidden sm:inline ml-1">
+                  Statistica:
+                </span>
+                <Select
+                  value={statCategory}
+                  onValueChange={(val) => setStatCategory(val as TeamStatCategory)}
+                >
+                  <SelectTrigger className="h-8 w-[195px] sm:w-[215px] text-xs font-bold bg-muted/40 border-border/70">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <SelectValue />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEAM_STAT_CATEGORIES.map((cat) => {
+                      const Icon = cat.icon;
+                      return (
+                        <SelectItem
+                          key={cat.id}
+                          value={cat.id}
+                          className="text-xs font-bold"
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <Icon className={`h-3.5 w-3.5 ${cat.accentColor}`} />
+                            <span>{cat.label}</span>
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Right Group: Franchises Toggle, Total/Per-Game Toggle, KPI Chart Button */}
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedSeason === "all" && (
+                <div className="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/60">
+                  <button
+                    type="button"
+                    onClick={() => setUnifyFranchises(true)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      unifyFranchises
+                        ? "bg-card text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Unisce i rebrand storici sotto la franchigia attuale (es. SBM + MAR)"
+                  >
+                    <Layers className="h-3 w-3 text-emerald-500" />
+                    Franchigie
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUnifyFranchises(false)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                      !unifyFranchises
+                        ? "bg-card text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Mostra separatamente ogni singolo codice storico"
+                  >
+                    Codici
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/60">
                 <button
                   type="button"
-                  onClick={() => setUnifyFranchises(true)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                    unifyFranchises
-                      ? "bg-card text-foreground shadow-xs"
+                  onClick={() => setStatMode("total")}
+                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                    statMode === "total"
+                      ? "bg-emerald-600 text-white shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
-                  title="Unisce i rebrand storici sotto la franchigia attuale (es. SBM + MAR)"
                 >
-                  <Layers className="h-3 w-3 text-emerald-500" />
-                  Franchigie Unificate
+                  Totali
                 </button>
                 <button
                   type="button"
-                  onClick={() => setUnifyFranchises(false)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    !unifyFranchises
-                      ? "bg-card text-foreground shadow-xs"
+                  onClick={() => setStatMode("per_game")}
+                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                    statMode === "per_game"
+                      ? "bg-emerald-600 text-white shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
-                  title="Mostra separatamente ogni singolo codice storico"
                 >
-                  Codici Separati
+                  Media/G
                 </button>
               </div>
-            )}
 
-            {/* Total vs Per-Game toggle */}
-            <div className="flex items-center bg-muted/50 p-0.5 rounded-xl border border-border/60">
-              <button
+              <Button
                 type="button"
-                onClick={() => setStatMode("total")}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                  statMode === "total"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                variant={showKpiChart ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowKpiChart((prev) => !prev)}
+                className={`h-8 text-xs font-bold gap-1.5 shrink-0 cursor-pointer ${
+                  showKpiChart
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                    : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
                 }`}
               >
-                Valori Totali
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatMode("per_game")}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                  statMode === "per_game"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Media / Partita
-              </button>
+                <PieChartIcon className="h-3.5 w-3.5" />
+                <span>{showKpiChart ? "Chiudi Grafico" : "Grafico Quote (%)"}</span>
+                {showKpiChart ? (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                )}
+              </Button>
             </div>
           </div>
-        </div>
 
-        {/* CATEGORY SELECTOR PILLS BAR (COMPACT) & KPI CHART TOGGLE */}
-        <div className="space-y-2.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Categoria Statistica:
-              </span>
-              <span className="text-xs text-muted-foreground hidden md:inline">
-                • {activeCategoryConfig.description}
-              </span>
-            </div>
-
-            <Button
-              type="button"
-              variant={showKpiChart ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowKpiChart((prev) => !prev)}
-              className={`h-8 text-xs font-bold gap-1.5 shrink-0 cursor-pointer ${
-                showKpiChart
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                  : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-              }`}
-            >
-              <PieChartIcon className="h-3.5 w-3.5" />
-              <span>
-                {showKpiChart
-                  ? "Nascondi Grafico & KPI Quote"
-                  : "Mostra Grafico & KPI Quote (%)"}
-              </span>
-              {showKpiChart ? (
-                <ChevronUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
-            {TEAM_STAT_CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              const isSelected = statCategory === cat.id;
-
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setStatCategory(cat.id)}
-                  className={`flex items-center justify-center px-2.5 py-2 rounded-xl border text-xs font-bold transition-all duration-150 cursor-pointer gap-1.5 ${
-                    isSelected
-                      ? "bg-emerald-600 text-white border-emerald-500 shadow-sm"
-                      : "bg-card border-border/80 text-foreground hover:bg-muted/60 hover:border-border"
-                  }`}
-                >
-                  <Icon
-                    className={`h-3.5 w-3.5 shrink-0 ${
-                      isSelected ? "text-white" : cat.accentColor
-                    }`}
-                  />
-                  <span className="truncate text-[11px]">{cat.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Mini inline 100% distribution bar when full chart is collapsed */}
+          {/* Mini inline 100% distribution footer strip when chart is closed */}
           {!showKpiChart && statShareData.items.length > 0 && (
             <div
               onClick={() => setShowKpiChart(true)}
-              className="flex flex-col sm:flex-row sm:items-center gap-2.5 px-3.5 py-2 rounded-xl border border-border/70 bg-card/70 hover:bg-muted/30 transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 border-t border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer flex items-center gap-3"
               title="Clicca per espandere il grafico completo delle quote percentuali"
             >
-              <div className="flex items-center gap-2 shrink-0 text-[11px]">
-                <span className="font-bold text-muted-foreground uppercase tracking-wider">
-                  Totale {activeCategoryConfig.shortLabel}:
-                </span>
-                <span className="font-mono font-black text-foreground">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider shrink-0">
+                Totale {activeCategoryConfig.shortLabel}:{" "}
+                <strong className="text-foreground font-mono">
                   {statShareData.totalDisplay} {statShareData.metricUnit}
-                </span>
-              </div>
+                </strong>
+              </span>
 
-              <div className="h-2.5 flex-1 rounded-full overflow-hidden flex bg-muted/60 border border-border/50">
+              <div className="h-2 flex-1 rounded-full overflow-hidden flex bg-muted/60">
                 {statShareData.items.map((item) => {
                   if (item.percentage <= 0) return null;
                   return (
@@ -1191,7 +1186,7 @@ export default function StatisticheSquadre() {
                 })}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0 text-[10px] font-mono text-muted-foreground">
+              <div className="hidden md:flex items-center gap-2 shrink-0 text-[10px] font-mono text-muted-foreground">
                 {statShareData.items.slice(0, 3).map((item) => (
                   <span key={item.key} className="inline-flex items-center gap-1">
                     <span
@@ -1205,7 +1200,7 @@ export default function StatisticheSquadre() {
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* COLLAPSIBLE TEAM STAT PERCENTAGE SHARE CHART CARD */}
         {showKpiChart && (
