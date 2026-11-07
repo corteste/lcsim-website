@@ -1508,3 +1508,103 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
   - Definizione e calcolo di una metrica sintetica avanzata d'impatto sul risultato (omologa alle **Win Shares** del basket o al **WAR - Wins Above Replacement** del baseball) adattata alle statistiche di calcio disponibili in lega (gol, assist, tiri, contrasti, passaggi riusciti, clean sheet, falli subiti, minutaggio e voti).
   - La statistica quantifica in modo oggettivo quante vittorie o punti in classifica un singolo calciatore ha generato per la propria squadra rispetto a un sostituto medio/rimpiazzo nel suo ruolo.
   - Integrazione della metrica nelle classifiche individuali, nei premi di fine stagione (MVP) e nelle schede di confronto giocatore.
+
+---
+
+## 📌 69. Sala Stampa: Sistema di Risposta Interattiva alle Interviste (Stile Football Manager)
+- **Stato**: 🟡 Da Progettare / In Backlog (Segnalazione Admin #3)
+- **Priorità**: Media-Alta (Coinvolgimento manageriale e Roleplay)
+- **Moduli previsti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`
+- **Tabelle coinvolte**: `press_conferences`, `an_team`
+- **Descrizione & Obiettivi**:
+  - Attualmente in `/sala-stampa` il manager può digitare liberamente una risposta testuale alla domanda della stampa.
+  - L'obiettivo è introdurre un'esperienza in pieno stile **Football Manager**:
+    1. **Opzioni a risposta multipla predefinite**: 3-4 risposte tipiche generate con tono differenziato (Trionfalista/Fiducioso, Equilibrato/Pragmatico, Critico/Rabbioso, No Comment/Diplomatico).
+    2. **Opzione risposta libera**: possibilità comunque mantenuta per il manager di inserire una dichiarazione personalizzata.
+    3. **Impatto sul contesto di lega**: le risposte fornite possono alimentare il tono dei successivi rumor di mercato, l'umore dello spogliatoio o i commenti del Giornalista AI nei turni successivi.
+
+---
+
+## 📌 70. Homepage: Doppia Modalità Grafica (Offseason vs Stagione In Corso)
+- **Stato**: 🟡 Da Progettare / In Backlog (Segnalazione Admin #4)
+- **Priorità**: Media
+- **Moduli previsti**: `src/pages/Home.tsx`, componenti hero e widget homepage
+- **Tabelle coinvolte**: `league_automation_state`, `an_league_events`, `an_schedule`
+- **Descrizione & Obiettivi**:
+  - Differenziare dinamicamente la Homepage (`/`) a seconda del periodo della lega:
+    - **Modalità Offseason**: quando il campionato è fermo e sono attivi tagli, draft o sessioni di mercato, la Home mette in primo piano lo stato delle tappe offseason (`an_league_events`), il countdown al Draft/Tagli, le ultime trattative di mercato e gli scoop del giornalista, nascondendo widget secondari di classifica o prossimo turno.
+    - **Modalità Stagione Regolare**: quando il campionato riparte, la Home mostra il blocco del prossimo avversario con scouting, l'ultima Top 11 di giornata (TOTW), i risultati recenti e la classifica in tempo reale.
+
+---
+
+## 📌 71. Statistiche TOTW: Squadra di Appartenenza Storica nella Top 11 Settimanale
+- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin #5 - Bug)
+- **Priorità**: Alta (Correttezza dei dati storici)
+- **Moduli coinvolti**: `src/services/totwService.ts`, `src/components/stats/TotwPitch.tsx`, `src/pages/Statistiche.tsx`
+- **Tabelle & Viste coinvolte**: `view_player_stats`, `as_player_stat`, `an_player`, `an_team`
+- **Descrizione & Obiettivi**:
+  - Attualmente nella schermata TOTW di `/statistiche?tab=totw`, la lista laterale di destra mostra il club attuale del calciatore (`an_player.Squadra`) invece del club per cui il calciatore ha effettivamente disputato la partita e totalizzato il voto (`as_player_stat.TEAM_ID` o `view_player_stats.TEAM_ID`).
+  - Se un giocatore ha cambiato maglia (scambio o svincolo) o si consulta una stagione passata, compare con il logo e l'abbreviazione errata.
+  - **Soluzione da adottare**: risolvere il logo e il nome squadra della TOTW direttamente dal campo storico `TEAM_ID` del referto gara, mostrando il club corretto per quella specifica giornata e stagione.
+
+---
+
+## 📌 72. Automazioni Admin: Procedura di Reset / Annullamento Risultati Partita
+- **Stato**: 🟡 Da Progettare / In Backlog (Segnalazione Admin #6)
+- **Priorità**: Media-Alta (Utilità gestione operativa Admin)
+- **Moduli previsti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/components/admin/MatchResultsManagerModal.tsx`, `src/services/matchStatsImportService.ts`
+- **Tabelle & Funzioni coinvolte**: `an_schedule`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`, `an_standings`, `refresh_standings_for_season`
+- **Descrizione & Obiettivi**:
+  - Fornire all'Amministratore uno strumento sicuro e controllato per azzerare o resettare i referti di una partita o di un'intera giornata caricata erroneamente:
+    1. Rimozione atomica dei record di prestazione giocatore (`"AS_PLAYER_STAT"`) e squadra (`"AS_TEAM_STAT"`).
+    2. Reset del record in `an_schedule` (azzeramento di `home_gol`, `away_gol`, `home_minuti`, `away_minuti`, marcatura `is_neutral` o status giocata).
+    3. Rimozione/pulizia degli screenshot allegati (o dei riferimenti salvati).
+    4. Ricalcolo automatico della classifica di lega (`refresh_standings_for_season`) per riallineare punti, gol e differenze reti allo stato precedente.
+
+---
+
+## 📌 73. Sezione Notifiche Dedicata a Pagina Intera ("Posta / Inbox" Stile Football Manager)
+- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin #10)
+- **Priorità**: Media (Miglioramento UX ed esperienza manageriale)
+- **Moduli previsti**: Nuova pagina `src/pages/Inbox.tsx` (`/inbox` o `/posta`), `src/components/Navbar.tsx`
+- **Tabelle coinvolte**: `league_announcements`, `announcement_reads`, `market_trades`, `trade_messages`
+- **Descrizione & Obiettivi**:
+  - Attualmente le notifiche vengono visualizzate unicamente nel menu a tendina compatto della campana nella Navbar (`NotificationsMenu`).
+  - Aggiungere una **pagina intera dedicata alla Posta** in stile Football Manager:
+    - Colonna sinistra: lista scorrevole dei messaggi e notifiche ordinati per data (Comunicati ufficiali di lega, notifiche di calciomercato, proposte di scambio, sanzioni disciplinari, scadenze formazioni).
+    - Pannello destro: lettura completa del comunicato o della notifica selezionata con pulsanti di azione rapida (es. "Vai alla Trattativa", "Visualizza Formazioni", "Segna come letto").
+
+---
+
+## 📌 74. Trattative di Mercato Mobile: Fix Riquadro Statistiche Calciatore
+- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin #14 - Bug UI Mobile)
+- **Priorità**: Alta (Usabilità da smartphone)
+- **Moduli coinvolti**: `src/pages/TrattativeMercato.tsx`, modale/drawer del dettaglio calciatore negli scambi
+- **Descrizione & Obiettivi**:
+  - Su dispositivi mobili, aprendo la scheda/statistiche di un giocatore durante una proposta di scambio (`/mia-squadra/trattative`), il riquadro delle statistiche appare minuscolo sul fondo dello schermo e scorre solo all'interno di una piccola finestra bloccata, lasciando il resto della pagina rigido e rendendo difficile la consultazione.
+  - **Soluzione da adottare**: trasformare il box mobile in un vero Drawer/BottomSheet fluido a tutto schermo o con altezza dinamica (`max-h-[85vh] overflow-y-auto`), garantendo scrolling naturale e leggibilità completa di attributi e rendimento.
+
+---
+
+## 📌 75. Homepage: Widget / Box Integrazione Community Discord
+- **Stato**: 💡 Future Improvement / Backlog (Segnalazione Admin #16)
+- **Priorità**: Bassa (Social & Community)
+- **Moduli previsti**: `src/pages/Home.tsx`, nuovo componente `src/components/home/DiscordCommunityWidget.tsx`
+- **Descrizione & Obiettivi**:
+  - Inserire nella Homepage (nella barra laterale o nel footer) un box dedicato alla community Discord della Lega LCSIM:
+    - Widget ufficiale Discord (o card custom stilizzata LCSIM con stato online e link d'invito).
+    - Conteggio membri attivi / online e collegamenti rapidi ai canali principali (#generale, #mercato, #risultati, #live-streaming).
+
+---
+
+## 📌 76. Profilo Giocatore: Sezione Palmarès, Premi Individuali & Titoli Vinti
+- **Stato**: 🟡 Da Progettare / In Backlog (Segnalazione Admin #17)
+- **Priorità**: Media (Profondità storica e immersione)
+- **Moduli previsti**: `src/components/player/playerDetails.tsx`, `src/pages/PlayerCareerArchive.tsx`, tabella Supabase `player_trophies` o `league_awards`
+- **Tabelle coinvolte**: `an_player`, `an_standings`, nuova tabella o vista premi
+- **Descrizione & Obiettivi**:
+  - Arricchire la scheda del calciatore (`PlayerDetails`) e la pagina archivio storico con una bacheca personale:
+    1. **Trofei di Squadra**: Scudetti Serie A vinti (con indicazione anno/stagione e squadra di appartenenza), Coppe di Lega e Supercoppe.
+    2. **Riconoscimenti Individuali**: Titolo di Capocannoniere, Miglior Assistman, Golden Glove (Miglior Portiere), MVP della Stagione, presenze nella Top 11 / TOTW.
+    3. Badge grafici o icone trofeo visualizzabili nell'header o in un tab dedicato "Palmarès & Riconoscimenti".
+
