@@ -32,7 +32,19 @@ import {
   ChevronRight,
   Award,
   Sparkles,
+  PieChart as PieChartIcon,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  Cell,
+  PieChart,
+  Pie,
+} from "recharts";
 import { supabase } from "@/supabaseClient";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import {
@@ -332,11 +344,61 @@ function TeamLogo({
   );
 }
 
+const TEAM_COLORS: Record<string, string> = {
+  APD: "#ec4899", // pink
+  ACD: "#ef4444", // red
+  GAP: "#b91c1c",
+  ACF: "#10b981", // emerald
+  QFM: "#059669",
+  PFC: "#f97316", // orange
+  PAN: "#ea580c",
+  HTV: "#c2410c",
+  MAR: "#f43f5e", // rose
+  SBM: "#be123c",
+  OLD: "#3b82f6", // blue
+  PRO: "#1d4ed8",
+  YBO: "#60a5fa",
+  VFC: "#f59e0b", // amber
+  ALV: "#0ea5e9", // sky
+  RMB: "#b91c1c", // dark red
+  BLA: "#71717a", // zinc
+  SKA: "#14b8a6", // teal
+  ASK: "#0f766e",
+  HVI: "#115e59",
+  COS: "#a855f7", // purple
+  EUR: "#6366f1", // indigo
+  KAR: "#64748b", // slate
+  FCP: "#94a3b8",
+};
+
+const DEFAULT_PALETTE = [
+  "#10b981",
+  "#3b82f6",
+  "#f59e0b",
+  "#ec4899",
+  "#8b5cf6",
+  "#06b6d4",
+  "#f43f5e",
+  "#14b8a6",
+  "#f97316",
+  "#6366f1",
+  "#84cc16",
+  "#a855f7",
+  "#eab308",
+  "#64748b",
+];
+
+function getTeamColor(code: string, index: number): string {
+  const clean = (code || "").trim().toUpperCase();
+  return TEAM_COLORS[clean] || DEFAULT_PALETTE[index % DEFAULT_PALETTE.length];
+}
+
 export default function StatisticheSquadre() {
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
   const [unifyFranchises, setUnifyFranchises] = useState<boolean>(true);
   const [statCategory, setStatCategory] = useState<TeamStatCategory>("attack");
   const [statMode, setStatMode] = useState<StatMode>("total");
+  const [chartViewMode, setChartViewMode] = useState<"bar" | "donut">("bar");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<AggregatedTeamStats | null>(null);
   const [modalTab, setModalTab] = useState<"overview" | "seasons" | "matches">("overview");
@@ -683,43 +745,102 @@ export default function StatisticheSquadre() {
     return result;
   }, [filteredRawRows, selectedSeason, unifyFranchises, dbTeamMap]);
 
-  // Global KPI summary for the selected scope
-  const leagueSummary = useMemo(() => {
-    let totalTeamMatches = 0;
-    let totalGoals = 0;
-    let totalAssists = 0;
-    let totalPassSi = 0;
-    let totalPassTot = 0;
-    let totalCleanSheets = 0;
-    let totalSaves = 0;
+  // Dynamic percentage share data based on selected category & statMode
+  const statShareData = useMemo(() => {
+    const isPerGame = statMode === "per_game";
 
-    for (const t of aggregatedTeams) {
-      totalTeamMatches += t.matches;
-      totalGoals += t.gol;
-      totalAssists += t.asst;
-      totalPassSi += t.passSi;
-      totalPassTot += t.passTot;
-      totalCleanSheets += t.cleanSheets;
-      totalSaves += t.para;
+    let metricLabel = "";
+    let metricUnit = "";
+    let getValue: (t: AggregatedTeamStats) => number;
+    let formatVal: (v: number) => string;
+
+    switch (statCategory) {
+      case "attack":
+        metricLabel = isPerGame ? "Media Gol a Partita" : "Gol Totali Realizzati";
+        metricUnit = isPerGame ? "gol/g" : "gol";
+        getValue = (t) => (isPerGame ? t.golPerGame : t.gol);
+        formatVal = (v) => (isPerGame ? v.toFixed(2) : String(Math.round(v)));
+        break;
+      case "defense":
+        metricLabel = isPerGame ? "Percentuale Clean Sheet" : "Clean Sheet Totali";
+        metricUnit = isPerGame ? "% CS" : "CS";
+        getValue = (t) => {
+          if (isPerGame) {
+            return t.matches > 0 ? (t.cleanSheets / t.matches) * 100 : 0;
+          }
+          return t.cleanSheets;
+        };
+        formatVal = (v) => (isPerGame ? `${v.toFixed(1)}%` : String(Math.round(v)));
+        break;
+      case "rating":
+        metricLabel = "Media Voto Pagelle";
+        metricUnit = "M.Voto";
+        getValue = (t) => t.avgVoto;
+        formatVal = (v) => v.toFixed(2);
+        break;
+      case "possession":
+        metricLabel = "Percentuale Media di Possesso";
+        metricUnit = "% Poss";
+        getValue = (t) => t.avgPoss;
+        formatVal = (v) => `${v.toFixed(1)}%`;
+        break;
+      case "passing":
+        metricLabel = isPerGame ? "Passaggi Riusciti / Gara" : "Passaggi Riusciti Totali";
+        metricUnit = isPerGame ? "pass/g" : "pass";
+        getValue = (t) => (isPerGame ? t.passSiPerGame : t.passSi);
+        formatVal = (v) => (isPerGame ? v.toFixed(1) : v.toLocaleString("it-IT"));
+        break;
+      case "shots":
+        metricLabel = isPerGame ? "Tiri in Porta / Gara" : "Tiri nello Specchio Totali";
+        metricUnit = isPerGame ? "tiri/g" : "tiri in porta";
+        getValue = (t) => (isPerGame ? t.tiriSiPerGame : t.tiriSi);
+        formatVal = (v) => (isPerGame ? v.toFixed(1) : String(Math.round(v)));
+        break;
+      case "duels":
+        metricLabel = isPerGame ? "Contrasti Vinti / Gara" : "Contrasti Difensivi Vinti";
+        metricUnit = isPerGame ? "ctrs/g" : "contrasti";
+        getValue = (t) => (isPerGame ? t.ctrsSiPerGame : t.ctrsSi);
+        formatVal = (v) => (isPerGame ? v.toFixed(1) : String(Math.round(v)));
+        break;
+      case "discipline":
+        metricLabel = isPerGame ? "Calci d'Angolo / Gara" : "Calci d'Angolo Totali";
+        metricUnit = isPerGame ? "corner/g" : "angoli";
+        getValue = (t) => (isPerGame ? t.canglPerGame : t.cangl);
+        formatVal = (v) => (isPerGame ? v.toFixed(2) : String(Math.round(v)));
+        break;
     }
 
-    const passAccuracy =
-      totalPassTot > 0 ? ((totalPassSi / totalPassTot) * 100).toFixed(1) : "0.0";
-    const avgGoalsPerTeamMatch =
-      totalTeamMatches > 0 ? (totalGoals / totalTeamMatches).toFixed(2) : "0.00";
+    const items = aggregatedTeams.map((t, index) => {
+      const val = getValue(t);
+      return {
+        key: t.key,
+        code: t.displayCode,
+        name: t.displayName,
+        franchiseCode: t.franchiseCode,
+        value: val,
+        displayValue: formatVal(val),
+        color: getTeamColor(t.displayCode, index),
+        teamRef: t,
+      };
+    });
+
+    const totalSum = items.reduce((acc, i) => acc + (i.value > 0 ? i.value : 0), 0);
+
+    const list = items
+      .map((item) => ({
+        ...item,
+        percentage: totalSum > 0 ? Math.round((item.value / totalSum) * 1000) / 10 : 0,
+      }))
+      .sort((a, b) => b.percentage - a.percentage || b.value - a.value);
 
     return {
-      totalTeamMatches,
-      totalMatchesEstimated: Math.round(totalTeamMatches / 2),
-      totalGoals,
-      totalAssists,
-      avgGoalsPerTeamMatch,
-      passAccuracy,
-      totalPassSi,
-      totalCleanSheets,
-      totalSaves,
+      metricLabel,
+      metricUnit,
+      totalSum,
+      totalDisplay: formatVal(totalSum),
+      items: list,
     };
-  }, [aggregatedTeams]);
+  }, [aggregatedTeams, statCategory, statMode]);
 
   const activeCategoryConfig = useMemo(
     () =>
@@ -970,62 +1091,11 @@ export default function StatisticheSquadre() {
           </div>
         </div>
 
-        {/* TELEMETRY KPI SUMMARY WIDGETS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Prestazioni Squadra Analizzate
-            </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-              {leagueSummary.totalTeamMatches.toLocaleString("it-IT")}
-            </span>
-            <span className="text-[11px] text-muted-foreground block mt-0.5">
-              ~{leagueSummary.totalMatchesEstimated} partite ufficiali ({aggregatedTeams.length} club)
-            </span>
-          </Card>
-
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Reti Realizzate &amp; Assist
-            </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-rose-600 dark:text-rose-400">
-              {leagueSummary.totalGoals.toLocaleString("it-IT")}
-            </span>
-            <span className="text-[11px] text-muted-foreground block mt-0.5 font-mono">
-              {leagueSummary.avgGoalsPerTeamMatch} gol/squadra • {leagueSummary.totalAssists} assist
-            </span>
-          </Card>
-
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Precisione Passaggi Lega
-            </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-blue-600 dark:text-blue-400">
-              {leagueSummary.passAccuracy}%
-            </span>
-            <span className="text-[11px] text-muted-foreground block mt-0.5 font-mono">
-              {leagueSummary.totalPassSi.toLocaleString("it-IT")} passaggi completati
-            </span>
-          </Card>
-
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Clean Sheet &amp; Parate
-            </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-              {leagueSummary.totalCleanSheets}
-            </span>
-            <span className="text-[11px] text-muted-foreground block mt-0.5 font-mono">
-              {leagueSummary.totalSaves.toLocaleString("it-IT")} parate complessive
-            </span>
-          </Card>
-        </div>
-
         {/* CATEGORY SELECTOR PILLS BAR */}
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Classifiche Speciali di Squadra:
+              Classifiche &amp; Quote di Squadra:
             </span>
             <span className="text-xs text-muted-foreground">
               {activeCategoryConfig.description}
@@ -1061,6 +1131,300 @@ export default function StatisticheSquadre() {
             })}
           </div>
         </div>
+
+        {/* TEAM STAT PERCENTAGE SHARE CHART CARD */}
+        <Card className="border border-border/80 shadow-md bg-card overflow-hidden">
+          <div className="p-4 sm:p-5 border-b border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge
+                  variant="outline"
+                  className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold px-2 py-0.5 text-[10px] uppercase tracking-wider flex items-center gap-1"
+                >
+                  <activeCategoryConfig.icon className="h-3 w-3" />
+                  Distribuzione Percentuale
+                </Badge>
+                <span className="text-xs text-muted-foreground font-mono">
+                  Totale Registrato: <strong className="text-foreground">{statShareData.totalDisplay}</strong> {statShareData.metricUnit}
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-foreground flex items-center gap-2">
+                <span>Quota Squadre • {activeCategoryConfig.label}</span>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Percentuale di contribuzione di ciascun club rispetto al totale complessivo ({statShareData.metricLabel.toLowerCase()}).
+              </p>
+            </div>
+
+            {/* Toggle Bar vs Donut */}
+            <div className="flex items-center bg-muted/50 p-0.5 rounded-xl border border-border/60 self-start sm:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => setChartViewMode("bar")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  chartViewMode === "bar"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <BarChart3 className="h-3.5 w-3.5 text-emerald-500" />
+                <span>Barre</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartViewMode("donut")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  chartViewMode === "donut"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <PieChartIcon className="h-3.5 w-3.5 text-amber-500" />
+                <span>Ciambella</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-5">
+            {/* Multi-segmented distribution strip */}
+            <div className="space-y-1.5">
+              <div className="h-3.5 w-full rounded-full overflow-hidden flex bg-muted/60 border border-border/60 shadow-inner">
+                {statShareData.items.map((item) => {
+                  if (item.percentage <= 0) return null;
+                  return (
+                    <div
+                      key={item.key}
+                      style={{
+                        width: `${item.percentage}%`,
+                        backgroundColor: item.color,
+                      }}
+                      className="h-full transition-all duration-300 hover:opacity-80 cursor-pointer relative group"
+                      onClick={() => handleOpenTeamModal(item.teamRef)}
+                      title={`${item.name} (${item.code}): ${item.percentage}% (${item.displayValue} ${statShareData.metricUnit})`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono px-0.5">
+                <span>0%</span>
+                <span>Distribuzione Relativa Quote Club (100%)</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            {/* Main Chart Area */}
+            {statShareData.items.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground text-xs">
+                Nessun dato statistico disponibile per i filtri selezionati.
+              </div>
+            ) : chartViewMode === "bar" ? (
+              <div className="w-full h-[320px] pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={statShareData.items}
+                    margin={{ top: 20, right: 10, left: -15, bottom: 25 }}
+                  >
+                    <XAxis
+                      dataKey="code"
+                      tick={{ fill: "currentColor", fontSize: 11, fontWeight: 700 }}
+                      interval={0}
+                      axisLine={{ stroke: "rgba(128,128,128,0.2)" }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: "currentColor", fontSize: 10 }}
+                      tickFormatter={(val) => `${val}%`}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <RechartsTooltip
+                      content={({ active, payload }: any) => {
+                        if (active && payload && payload.length) {
+                          const d = payload[0].payload;
+                          return (
+                            <div className="rounded-xl border border-border/80 bg-popover/95 p-3 shadow-xl backdrop-blur-md text-xs space-y-1.5 z-50 min-w-[190px]">
+                              <div className="flex items-center gap-2">
+                                <TeamLogo
+                                  teamCode={d.code}
+                                  franchiseCode={d.franchiseCode}
+                                  className="h-5 w-5"
+                                />
+                                <span className="font-bold text-popover-foreground">{d.name}</span>
+                                <Badge variant="outline" className="text-[10px] font-mono px-1 py-0">
+                                  {d.code}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center justify-between gap-4 pt-1 border-t border-border/60">
+                                <span className="text-muted-foreground">Quota sulla Lega:</span>
+                                <span className="font-mono font-black text-sm" style={{ color: d.color }}>
+                                  {d.percentage}%
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between gap-4 text-muted-foreground text-[11px]">
+                                <span>Valore Registrato:</span>
+                                <span className="font-mono font-bold text-foreground">
+                                  {d.displayValue} {statShareData.metricUnit}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar
+                      dataKey="percentage"
+                      radius={[6, 6, 0, 0]}
+                      onClick={(data: any) => {
+                        if (data && data.teamRef) {
+                          handleOpenTeamModal(data.teamRef);
+                        }
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {statShareData.items.map((entry) => (
+                        <Cell
+                          key={`cell-${entry.key}`}
+                          fill={entry.color}
+                          className="hover:opacity-85 transition-opacity cursor-pointer"
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              /* Donut Chart View */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <div className="lg:col-span-5 h-[280px] sm:h-[300px] relative flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statShareData.items}
+                        dataKey="percentage"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={105}
+                        paddingAngle={2}
+                        onClick={(data: any) => {
+                          if (data && data.teamRef) {
+                            handleOpenTeamModal(data.teamRef);
+                          }
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {statShareData.items.map((entry) => (
+                          <Cell
+                            key={`slice-${entry.key}`}
+                            fill={entry.color}
+                            stroke="rgba(0,0,0,0.2)"
+                            className="hover:opacity-85 transition-opacity cursor-pointer"
+                          />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip
+                        content={({ active, payload }: any) => {
+                          if (active && payload && payload.length) {
+                            const d = payload[0].payload;
+                            return (
+                              <div className="rounded-xl border border-border/80 bg-popover/95 p-3 shadow-xl backdrop-blur-md text-xs space-y-1.5 z-50 min-w-[190px]">
+                                <div className="flex items-center gap-2">
+                                  <TeamLogo
+                                    teamCode={d.code}
+                                    franchiseCode={d.franchiseCode}
+                                    className="h-5 w-5"
+                                  />
+                                  <span className="font-bold text-popover-foreground">{d.name}</span>
+                                  <Badge variant="outline" className="text-[10px] font-mono px-1 py-0">
+                                    {d.code}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center justify-between gap-4 pt-1 border-t border-border/60">
+                                  <span className="text-muted-foreground">Quota sulla Lega:</span>
+                                  <span className="font-mono font-black text-sm" style={{ color: d.color }}>
+                                    {d.percentage}%
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4 text-muted-foreground text-[11px]">
+                                  <span>Valore Registrato:</span>
+                                  <span className="font-mono font-bold text-foreground">
+                                    {d.displayValue} {statShareData.metricUnit}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Donut Label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                      Quota Totale
+                    </span>
+                    <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                      100%
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {statShareData.items.length} club
+                    </span>
+                  </div>
+                </div>
+
+                {/* Team percentage breakdown cards */}
+                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                  {statShareData.items.map((item, idx) => (
+                    <div
+                      key={item.key}
+                      onClick={() => handleOpenTeamModal(item.teamRef)}
+                      className="p-2.5 rounded-xl border border-border/70 bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer flex items-center justify-between gap-2.5 group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="h-3 w-3 rounded-full shrink-0 shadow-xs"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <TeamLogo
+                          teamCode={item.code}
+                          franchiseCode={item.franchiseCode}
+                          className="h-6 w-6"
+                        />
+                        <div className="min-w-0">
+                          <span className="font-bold text-xs text-foreground block truncate group-hover:text-emerald-500 transition-colors">
+                            {item.name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono block">
+                            {item.displayValue} {statShareData.metricUnit}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span
+                          className="font-mono font-black text-xs px-2 py-0.5 rounded-md border"
+                          style={{
+                            color: item.color,
+                            borderColor: `${item.color}40`,
+                            backgroundColor: `${item.color}15`,
+                          }}
+                        >
+                          {item.percentage}%
+                        </span>
+                        <span className="text-[9px] text-muted-foreground block mt-0.5 font-mono">
+                          #{idx + 1}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* PODIUM TOP 3 TEAMS SHOWCASE */}
         {podiumTeams.length >= 3 && !isLoading && (
