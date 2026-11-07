@@ -1196,12 +1196,10 @@ const ListaGiocatori = () => {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
           onClick={() => setSelectedPlayer(null)}
         >
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-7xl">
-            <PlayerDetails
-              currentPlayer={selectedPlayer}
-              onClose={() => setSelectedPlayer(null)}
-            />
-          </div>
+          <PlayerDetails
+            currentPlayer={selectedPlayer}
+            onClose={() => setSelectedPlayer(null)}
+          />
         </div>
       )}
     </div>
