@@ -534,33 +534,82 @@ export async function checkIsMarketOpen(): Promise<boolean> {
  * Controllo automatico per generare rumor randomici durante la giornata:
  * Viene eseguito in background quando un utente naviga sul sito (Home o Sala Stampa).
  * Se il mercato è aperto:
- * - Se c'è una nuova trattativa reale non ancora coperta dalla stampa, genera subito uno scoop!
- * - Altrimenti rispetta un intervallo naturale (ogni 4-8 ore con trattative attive, ogni 8-16 senza).
+ * - Senza trattative attive: ritmo rilassato, 1 notizia ogni 1-2 giorni (~36-48 ore).
+ * - Con trattative attive: la frequenza scala in modo dinamico in base al volume degli scambi in corso:
+ *   * 1-2 trattative: ~1 notizia al giorno (ogni 20-28 ore).
+ *   * 3-4 trattative: ~1-2 notizie al giorno (ogni 14-18 ore).
+ *   * 5+ trattative: fino a 2 notizie al giorno (ogni 8-12 ore).
+ * - Per le trattative nuove non ancora coperte dalla stampa, garantisce uno scoop dedicato rispettando
+ *   comunque un congruo intervallo minimo per evitare spam o raffiche ravvicinate.
  */
 export async function maybeTriggerRandomRumor(): Promise<void> {
   try {
     const isOpen = await checkIsMarketOpen();
     if (!isOpen) return;
 
-    // 1. Controlla trattative reali aperte
+    // 1. Data dell'ultimo rumor registrato
+    const { data: latest } = await supabase
+      .from('league_market_rumors')
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const now = Date.now();
+    const lastCreated = latest ? new Date(latest.created_at).getTime() : 0;
+    const hoursDiff = latest ? (now - lastCreated) / (1000 * 60 * 60) : 999;
+
+    // 2. Controlla trattative reali aperte (pending o pending_admin)
     const { data: realTrades } = await supabase
       .from('market_trades')
-      .select('id, sender_team, receiver_team, created_at, updated_at')
+      .select('id, sender_team, receiver_team, created_at, updated_at, offered_player_ids, requested_player_ids')
       .in('status', ['pending', 'pending_admin'])
       .order('updated_at', { ascending: false });
 
-    const hasRealTrades = Boolean(realTrades && realTrades.length > 0);
+    const activeTradeCount = realTrades ? realTrades.length : 0;
 
-    // 2. Controlla se una trattativa reale non è mai stata coperta da alcun rumor
-    if (hasRealTrades && realTrades) {
+    // 3. Cadenza dinamica proporzionale al fermento reale di mercato:
+    // Base: 1 ogni 1.5 - 2 giorni (28h min, 36h soft, 48h max)
+    let minQuietHours = 28;
+    let softThresholdHours = 36;
+    let maxHours = 48;
+    let softProbability = 0.12;
+
+    if (activeTradeCount >= 5) {
+      // Mercato frenetico (Deadline day o moltissime trattative in corso): fino a 2 al giorno
+      minQuietHours = 8;
+      softThresholdHours = 10;
+      maxHours = 12;
+      softProbability = 0.30;
+    } else if (activeTradeCount >= 3) {
+      // Mercato vivace (3-4 trattative attive): 1 o 2 al giorno
+      minQuietHours = 12;
+      softThresholdHours = 15;
+      maxHours = 18;
+      softProbability = 0.25;
+    } else if (activeTradeCount >= 1) {
+      // Mercato attivo (1-2 trattative attive): ~1 al giorno
+      minQuietHours = 18;
+      softThresholdHours = 22;
+      maxHours = 28;
+      softProbability = 0.20;
+    }
+
+    // Se non è ancora trascorso l'intervallo minimo di silenzio stampa, attendi
+    if (hoursDiff < minQuietHours) {
+      return;
+    }
+
+    // 4. Se ci sono trattative reali, individua se ce n'è qualcuna non ancora coperta dalla stampa
+    let uncoveredTrade = null;
+    if (activeTradeCount > 0 && realTrades) {
       const { data: recentRumors } = await supabase
         .from('league_market_rumors')
         .select('involved_team_ids, created_at')
         .order('created_at', { ascending: false })
         .limit(20);
 
-      // Cerca se c'è una trattativa recente non ancora coperta
-      const uncoveredTrade = realTrades.find((trade) => {
+      uncoveredTrade = realTrades.find((trade) => {
         const teams = [trade.sender_team, trade.receiver_team];
         const tradeTime = new Date(trade.created_at).getTime();
         const hasRumor = recentRumors?.some((r) => {
@@ -573,50 +622,25 @@ export async function maybeTriggerRandomRumor(): Promise<void> {
         });
         return !hasRumor;
       });
-
-      if (uncoveredTrade) {
-        // Genera subito uno scoop su questa trattativa non ancora coperta!
-        await generateRandomMarketRumors(1, false);
-        return;
-      }
     }
 
-    // 3. Altrimenti controlla data dell'ultimo rumor per la cadenza periodica
-    const { data: latest } = await supabase
-      .from('league_market_rumors')
-      .select('created_at')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const now = Date.now();
+    // 5. Valuta se pubblicare la notizia:
+    // Se c'è una trattativa scoperta e siamo oltre minQuietHours, scatta lo scoop su quella trattativa.
+    // Altrimenti scatta se siamo oltre maxHours o su roll di probabilità tra softThreshold e max.
     let shouldGenerate = false;
+    let targetTradeToCover = undefined;
 
-    if (!latest) {
+    if (uncoveredTrade) {
       shouldGenerate = true;
-    } else {
-      const lastCreated = new Date(latest.created_at).getTime();
-      const hoursDiff = (now - lastCreated) / (1000 * 60 * 60);
-
-      if (hasRealTrades) {
-        // Con trattative reali: genera notizie ogni 4-8 ore (oppure con probabilità 35% tra le 2 e le 4 ore)
-        if (hoursDiff >= 6) {
-          shouldGenerate = true;
-        } else if (hoursDiff >= 2 && Math.random() < 0.35) {
-          shouldGenerate = true;
-        }
-      } else {
-        // Senza trattative reali: notizie ogni 8-16 ore (oppure 25% tra le 4 e le 8 ore)
-        if (hoursDiff >= 12) {
-          shouldGenerate = true;
-        } else if (hoursDiff >= 4 && Math.random() < 0.25) {
-          shouldGenerate = true;
-        }
-      }
+      targetTradeToCover = uncoveredTrade;
+    } else if (hoursDiff >= maxHours) {
+      shouldGenerate = true;
+    } else if (hoursDiff >= softThresholdHours && Math.random() < softProbability) {
+      shouldGenerate = true;
     }
 
     if (shouldGenerate) {
-      await generateRandomMarketRumors(1, false);
+      await generateRandomMarketRumors(1, false, targetTradeToCover);
     }
   } catch (err) {
     // Silenzioso in background
@@ -625,7 +649,8 @@ export async function maybeTriggerRandomRumor(): Promise<void> {
 
 export async function generateRandomMarketRumors(
   count = 1,
-  force = false
+  force = false,
+  targetTrade?: any
 ): Promise<{ success: boolean; generated: number; error?: string }> {
   try {
     const isOpen = await checkIsMarketOpen();
@@ -707,10 +732,10 @@ export async function generateRandomMarketRumors(
       const hasActive = Boolean(activeTrades && activeTrades.length > 0);
       const roll = Math.random();
 
-      // Priorità alle trattative reali in corso (60% tra scoop reali e retroscena distorti), 40% fake news / colpi a sorpresa
-      if (hasActive && roll < 0.60) {
-        const pickedTrade = activeTrades![Math.floor(Math.random() * activeTrades!.length)];
-        const isDistorted = Math.random() < 0.50;
+      // Priorità alle trattative reali in corso (75% tra scoop reali e retroscena distorti quando ci sono trattative attive, oppure 100% se c'è un targetTrade specifico)
+      if (targetTrade || (hasActive && roll < 0.75)) {
+        const pickedTrade = targetTrade || activeTrades![Math.floor(Math.random() * activeTrades!.length)];
+        const isDistorted = targetTrade ? (Math.random() < 0.35) : (Math.random() < 0.45);
         internalCategory = isDistorted ? 'TRATTATIVA_DISTORTA' : 'TRATTATIVA_REALE';
 
         teamA = teamMap.get(pickedTrade.sender_team) || { TEAM_ID: pickedTrade.sender_team, NAME: pickedTrade.sender_team };

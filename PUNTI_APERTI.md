@@ -566,7 +566,12 @@ Tecnologie & Provider: Motore ibrido: Google Gemini Flash (memorizzato in league
 - **Tabelle coinvolte**: league_market_rumors, an_player, market_trades, team_market_needs, league_automation_state
 Migrazione SQL: supabase/migrations/20261025_press_and_ai_rumors.sql
 Descrizione & Risoluzione Tecnica
-Generazione Spontanea durante la Giornata: Rimossi i pulsanti manuali "a comando". Quando il mercato è aperto, i rumor emergono spontaneamente in background a intervalli temporali regolari durante la giornata.
+Generazione Spontanea & Cadenza Dinamica: Rimossi i pulsanti manuali a comando. Quando il mercato è aperto, i rumor emergono spontaneamente in background ma con cadenza calibrata sul fermento reale di mercato:
+  - Senza trattative aperte: ritmo rilassato, circa 1 notizia ogni 1.5 - 2 giorni (28-48 ore).
+  - Con 1-2 trattative attive: circa 1 notizia al giorno (20-28 ore).
+  - Con 3-4 trattative attive: 1-2 notizie al giorno (14-18 ore).
+  - Con 5+ trattative (mercato caldissimo): fino a 2 notizie al giorno (8-12 ore).
+  - Copertura Intelligente Trattative: le nuove proposte di scambio hanno la precedenza per scoop giornalistici autentici o distorti, rispettando comunque un intervallo minimo di silenzio per evitare raffiche o sovrapposizioni ravvicinate.
 Inclusione di Calciatori Reali di Serie A: Le notizie pescano ed integrano nomi e cognomi reali dei calciatori sotto contratto (an_player), ruoli e squadre di appartenenza (es. Dave Lancaster, Francesco Ambrosio, Manuel Perdomo, Lars Svensson, ecc.).
 Zero Spoiler & Badge Giornalistici Autentici: Rimossi filtri di categoria ed etichette rivelatrici (Fake News / Trattativa Distorta). Ogni indiscrezione si presenta con veste verosimile ("ESCLUSIVA", "INDISCREZIONE", "RETROSCENA", "RADAR MERCATO", "ULTIM'ORA"), lasciando ai manager il gusto del dibattito.
 Reazioni Live: I manager possono reagire istantaneamente ad ogni scoop con emoji (🔥 Fuoco, 😂 Fake, 😱 Shock, 🤔 Dubbio).
