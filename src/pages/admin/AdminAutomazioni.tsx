@@ -48,7 +48,7 @@ import { generatePressQuestionsForMatchday, generateRandomMarketRumors } from "@
 import { Newspaper, Mic2, Flame, Camera, Trophy, TrendingDown, UserCheck, Pencil } from "lucide-react";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
-import { getTestModeState, setTestModeState, TestModeState } from "@/services/testModeService";
+import { getDraftState, setDraftState, DraftState } from "@/services/draftStateService";
 import { fetchBugReports, updateBugReportStatus, BugReport, BUG_CATEGORIES } from "@/services/bugReportService";
 
 interface AutomationStateItem {
@@ -154,9 +154,9 @@ export default function AdminAutomazioni() {
     detailsToRecord?: Record<string, any>;
   } | null>(null);
 
-  // Test Mode State
-  const [testModeState, setTestModeStateData] = useState<TestModeState | null>(null);
-  const [isTogglingTestMode, setIsTogglingTestMode] = useState(false);
+  // Draft State (Aperto / Chiuso)
+  const [draftState, setDraftStateData] = useState<DraftState | null>(null);
+  const [isTogglingDraftState, setIsTogglingDraftState] = useState(false);
 
   // Bug Reports State
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
@@ -191,10 +191,10 @@ export default function AdminAutomazioni() {
 
   const loadTestModeAndBugs = async () => {
     try {
-      const tm = await getTestModeState();
-      setTestModeStateData(tm);
+      const ds = await getDraftState();
+      setDraftStateData(ds);
     } catch (e) {
-      console.warn("Error loading test mode:", e);
+      console.warn("Error loading draft state:", e);
     }
 
     try {
@@ -212,14 +212,15 @@ export default function AdminAutomazioni() {
     loadAutomationStates();
     loadTestModeAndBugs();
 
-    const handleTestModeUpdate = () => {
-      getTestModeState().then(setTestModeStateData);
+    const handleDraftStateUpdate = () => {
+      getDraftState().then(setDraftStateData);
     };
     const handleBugReportsUpdate = () => {
       fetchBugReports("all").then(setBugReports);
     };
 
-    window.addEventListener("lcsim-test-mode-updated", handleTestModeUpdate);
+    window.addEventListener("lcsim-draft-state-updated", handleDraftStateUpdate);
+    window.addEventListener("lcsim-test-mode-updated", handleDraftStateUpdate);
     window.addEventListener("lcsim-bug-report-created", handleBugReportsUpdate);
     window.addEventListener("lcsim-bug-report-updated", handleBugReportsUpdate);
 
@@ -230,7 +231,7 @@ export default function AdminAutomazioni() {
         { event: "*", schema: "public", table: "league_automation_state" },
         () => {
           loadAutomationStates();
-          getTestModeState().then(setTestModeStateData);
+          getDraftState().then(setDraftStateData);
         }
       )
       .on(
@@ -243,40 +244,41 @@ export default function AdminAutomazioni() {
       .subscribe();
 
     return () => {
-      window.removeEventListener("lcsim-test-mode-updated", handleTestModeUpdate);
+      window.removeEventListener("lcsim-draft-state-updated", handleDraftStateUpdate);
+      window.removeEventListener("lcsim-test-mode-updated", handleDraftStateUpdate);
       window.removeEventListener("lcsim-bug-report-created", handleBugReportsUpdate);
       window.removeEventListener("lcsim-bug-report-updated", handleBugReportsUpdate);
       supabase.removeChannel(channel);
     };
   }, []);
 
-  const handleToggleTestMode = async () => {
-    const nextState = !testModeState?.isActive;
-    setIsTogglingTestMode(true);
+  const handleToggleDraftState = async () => {
+    const nextIsOpen = !draftState?.isOpen;
+    setIsTogglingDraftState(true);
     try {
       const author = user?.name || user?.team || "Super Admin";
-      const res = await setTestModeState(nextState, author);
+      const res = await setDraftState(nextIsOpen, author);
       if (!res.success) {
-        throw new Error(res.error || "Errore aggiornamento modalità test");
+        throw new Error(res.error || "Errore aggiornamento stato draft");
       }
       if (res.state) {
-        setTestModeStateData(res.state);
+        setDraftStateData(res.state);
       }
-      if (nextState) {
-        toast.warning(
-          "Modalità Test ATTIVATA: la conferma scelte e l'autopick nel Draft sono ora bloccati per consentire il dry run.",
-          { icon: "🧪", duration: 5000 }
+      if (nextIsOpen) {
+        toast.success(
+          "DRAFT APERTO: le squadre possono ora effettuare le scelte e l'autopick è attivo.",
+          { icon: "🏆", duration: 5000 }
         );
       } else {
-        toast.success(
-          "Modalità Test DISATTIVATA: il Draft è tornato alla normale operatività ufficiale.",
-          { icon: "✅", duration: 5000 }
+        toast.warning(
+          "DRAFT CHIUSO: le scelte dei calciatori e l'autopick sono ora bloccati per tutte le squadre.",
+          { icon: "🔒", duration: 5000 }
         );
       }
     } catch (err: any) {
-      toast.error(err.message || "Errore durante il cambio della modalità test");
+      toast.error(err.message || "Errore durante il cambio di stato del draft");
     } finally {
-      setIsTogglingTestMode(false);
+      setIsTogglingDraftState(false);
     }
   };
 
@@ -1359,31 +1361,44 @@ export default function AdminAutomazioni() {
             </div>
           </Card>
 
-          {/* CARD 11: MODALITÀ TEST (DRY RUN) */}
+          {/* CARD 11: APERTURA / CHIUSURA DRAFT */}
           <Card className={`overflow-hidden border shadow-sm hover:shadow-md transition-all flex flex-col justify-between ${
-            testModeState?.isActive
+            draftState?.isClosed
               ? "border-amber-500/60 bg-gradient-to-br from-card via-card/95 to-amber-500/10 shadow-amber-500/10"
-              : "border-border/80 bg-card"
+              : "border-emerald-500/60 bg-gradient-to-br from-card via-card/95 to-emerald-500/10 shadow-emerald-500/10"
           }`}>
             <div>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-2">
                   <Badge
-                    variant={testModeState?.isActive ? "default" : "outline"}
+                    variant={draftState?.isClosed ? "outline" : "default"}
                     className={
-                      testModeState?.isActive
-                        ? "bg-amber-500 text-amber-950 font-black uppercase tracking-wider text-[10px] flex items-center gap-1 shadow-sm"
-                        : "text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
+                      draftState?.isClosed
+                        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 font-black uppercase tracking-wider text-[10px] flex items-center gap-1 shadow-xs"
+                        : "bg-emerald-600 text-white font-black uppercase tracking-wider text-[10px] flex items-center gap-1 shadow-xs"
                     }
                   >
-                    <FlaskConical className="h-3 w-3" />
-                    {testModeState?.isActive ? "Test Attivo (Dry Run)" : "Test Disattivo (Ufficiale)"}
+                    {draftState?.isClosed ? (
+                      <>
+                        <Lock className="h-3 w-3" />
+                        Draft Chiuso
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="h-3 w-3" />
+                        Draft Aperto
+                      </>
+                    )}
                   </Badge>
-                  <FlaskConical className={`h-6 w-6 ${testModeState?.isActive ? "text-amber-500 animate-pulse" : "text-muted-foreground"}`} />
+                  {draftState?.isClosed ? (
+                    <Lock className="h-6 w-6 text-amber-500" />
+                  ) : (
+                    <Trophy className="h-6 w-6 text-emerald-500" />
+                  )}
                 </div>
-                <CardTitle className="text-xl font-black">Modalità Test (Dry Run)</CardTitle>
+                <CardTitle className="text-xl font-black">Apertura / Chiusura Draft</CardTitle>
                 <CardDescription className="text-xs">
-                  Simula il Draft in produzione senza salvare scelte ed autopick, lasciando libere board, scouting e graduatorie.
+                  Controlla lo stato del Draft ufficiale. Quando il Draft è chiuso, le scelte e l'autopick sono bloccati per tutte le squadre, mentre board, scouting e graduatorie rimangono liberamente consultabili.
                 </CardDescription>
               </CardHeader>
 
@@ -1391,47 +1406,47 @@ export default function AdminAutomazioni() {
                 <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-[11px]">Conferma Scelta Draft:</span>
-                    <span className={`font-mono font-bold text-[11px] ${testModeState?.isActive ? "text-amber-500 font-black" : "text-emerald-500"}`}>
-                      {testModeState?.isActive ? "🔒 Disabilitata (Dry Run)" : "✅ Abilitata (Ufficiale)"}
+                    <span className={`font-mono font-bold text-[11px] ${draftState?.isClosed ? "text-amber-500 font-black" : "text-emerald-500 font-black"}`}>
+                      {draftState?.isClosed ? "🔒 Inibita (Draft Chiuso)" : "✅ Abilitata (Draft Aperto)"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-[11px]">Autopick Draft:</span>
-                    <span className={`font-mono font-bold text-[11px] ${testModeState?.isActive ? "text-amber-500" : "text-emerald-500"}`}>
-                      {testModeState?.isActive ? "🔒 Bloccato" : "✅ Attivo"}
+                    <span className={`font-mono font-bold text-[11px] ${draftState?.isClosed ? "text-amber-500 font-black" : "text-emerald-500 font-black"}`}>
+                      {draftState?.isClosed ? "🔒 Bloccato" : "✅ Attivo"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-[11px]">Feedback Tasto Destro:</span>
-                    <span className="font-mono font-bold text-[11px] text-rose-500">
-                      Sempre Attivo
+                    <span className="text-muted-foreground text-[11px]">Consultazione Board &amp; Scouting:</span>
+                    <span className="font-mono font-bold text-[11px] text-emerald-500">
+                      ✅ Sempre Attiva
                     </span>
                   </div>
                 </div>
 
                 <Button
-                  onClick={handleToggleTestMode}
-                  disabled={isTogglingTestMode}
+                  onClick={handleToggleDraftState}
+                  disabled={isTogglingDraftState}
                   className={`w-full font-bold gap-2 text-xs py-2.5 transition-all shadow-sm ${
-                    testModeState?.isActive
-                      ? "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20"
-                      : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
+                    draftState?.isClosed
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
+                      : "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20"
                   }`}
                 >
-                  {isTogglingTestMode ? (
+                  {isTogglingDraftState ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Aggiornamento in corso...
                     </>
-                  ) : testModeState?.isActive ? (
+                  ) : draftState?.isClosed ? (
                     <>
-                      <FlaskConical className="h-4 w-4" />
-                      Disattiva Modalità Test
+                      <Unlock className="h-4 w-4" />
+                      Apri Draft
                     </>
                   ) : (
                     <>
-                      <FlaskConical className="h-4 w-4" />
-                      Attiva Modalità Test (Dry Run)
+                      <Lock className="h-4 w-4" />
+                      Chiudi Draft
                     </>
                   )}
                 </Button>
@@ -1445,7 +1460,7 @@ export default function AdminAutomazioni() {
                 Ultima modifica:
               </span>
               <span className="font-semibold text-foreground truncate max-w-[200px]">
-                {formatLastRun(testModeState?.lastRunAt, testModeState?.lastRunBy)}
+                {formatLastRun(draftState?.lastRunAt, draftState?.lastRunBy)}
               </span>
             </div>
           </Card>

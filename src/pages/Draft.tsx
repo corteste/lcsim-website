@@ -73,7 +73,7 @@ import {
   isEmotionUnlocked,
 } from "@/utils/scoutingConfig";
 import { getEmotionLabel } from "@/constants/accessories";
-import { getTestModeState } from "@/services/testModeService";
+import { getDraftState } from "@/services/draftStateService";
 import { renderStars } from "@/components/scouting/StarRating";
 import { toast } from "sonner";
 import {
@@ -188,7 +188,7 @@ const Draft = () => {
   // Graduatoria personale (Punto 7 & 47)
   const [wishlistItems, setWishlistItems] = useState<DraftWishlistItem[]>([]);
   const [wishlistOnly, setWishlistOnly] = useState<boolean>(false);
-  const [isTestMode, setIsTestMode] = useState<boolean>(false);
+  const [isDraftClosed, setIsDraftClosed] = useState<boolean>(true);
 
   const wishlistMap = useMemo(() => {
     const map = new Map<number, number>();
@@ -532,14 +532,15 @@ const Draft = () => {
 
   // Supabase Realtime: aggiornamento automatico della Draft Board per tutti gli utenti connessi
   useEffect(() => {
-    // Caricamento iniziale stato Modalità Test (Dry Run)
-    getTestModeState().then((s) => setIsTestMode(s.isActive));
+    // Caricamento iniziale stato Apertura / Chiusura Draft
+    getDraftState().then((s) => setIsDraftClosed(s.isClosed));
 
-    const handleTestModeSync = (e: any) => {
-      if (e?.detail) setIsTestMode(Boolean(e.detail.isActive));
-      else getTestModeState().then((s) => setIsTestMode(s.isActive));
+    const handleDraftStateSync = (e: any) => {
+      if (e?.detail) setIsDraftClosed(Boolean(e.detail.isClosed ?? !e.detail.isOpen ?? e.detail.isActive));
+      else getDraftState().then((s) => setIsDraftClosed(s.isClosed));
     };
-    window.addEventListener("lcsim-test-mode-updated", handleTestModeSync);
+    window.addEventListener("lcsim-draft-state-updated", handleDraftStateSync);
+    window.addEventListener("lcsim-test-mode-updated", handleDraftStateSync);
 
     const channel = supabase
       .channel("lcsim-draft-board-realtime")
@@ -580,22 +581,31 @@ const Draft = () => {
         "postgres_changes",
         { event: "*", schema: "public", table: "league_automation_state", filter: "id=eq.test_mode" },
         (payload: any) => {
-          const nextActive = Boolean(payload?.new?.details?.is_active);
-          setIsTestMode(nextActive);
+          let closed = true;
+          const d = payload?.new?.details;
+          if (typeof d?.is_open === "boolean") {
+            closed = !d.is_open;
+          } else if (d?.status) {
+            closed = d.status === "closed";
+          } else if (typeof d?.is_active === "boolean") {
+            closed = Boolean(d.is_active);
+          }
+          setIsDraftClosed(closed);
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
-      window.removeEventListener("lcsim-test-mode-updated", handleTestModeSync);
+      window.removeEventListener("lcsim-draft-state-updated", handleDraftStateSync);
+      window.removeEventListener("lcsim-test-mode-updated", handleDraftStateSync);
     };
   }, [fetchDraftData, loadWishlist, loadAutopickSettings, triggerPickAnnouncement]);
 
   // Esecuzione Autopick (Punto 7)
   const handleTriggerAutopick = async (targetPick?: DraftPickRow | null) => {
-    if (isTestMode) {
-      toast.warning("Modalità Test (Dry Run) attiva: l'autopick è disabilitato per dry run.", {
+    if (isDraftClosed) {
+      toast.warning("Il Draft è attualmente chiuso dall'Amministrazione: l'autopick è disabilitato.", {
         icon: "🔒",
       });
       return;
@@ -830,8 +840,8 @@ const Draft = () => {
   // Confirm Draft Pick handler (supporta sia Rookie sia Svincolati)
   const handleConfirmPick = async () => {
     if (!user) return;
-    if (isTestMode) {
-      toast.warning("Modalità Test (Dry Run) attiva: la scelta al Draft è bloccata. Puoi comunque navigare, consultare lo scouting e impostare la graduatoria.", {
+    if (isDraftClosed) {
+      toast.warning("Il Draft è attualmente chiuso dall'Amministrazione: la scelta al Draft è bloccata. Puoi comunque navigare, consultare lo scouting e impostare la graduatoria.", {
         icon: "🔒",
         duration: 5000,
       });
@@ -1209,22 +1219,22 @@ const Draft = () => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* BANNER MODALITÀ TEST (DRY RUN) */}
-        {isTestMode && (
+        {/* BANNER DRAFT CHIUSO */}
+        {isDraftClosed && (
           <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md animate-in fade-in duration-200">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 shrink-0">
-                <AlertTriangle className="h-6 w-6" />
+                <Lock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-black text-sm">Modalità Test (Dry Run) Attiva</span>
+                  <span className="font-black text-sm">Draft Chiuso</span>
                   <Badge className="bg-amber-500 text-slate-950 font-black text-[9px] uppercase px-1.5 py-0">
-                    Simulazione
+                    In Attesa
                   </Badge>
                 </div>
                 <p className="text-xs text-amber-800/90 dark:text-amber-300/90 mt-0.5">
-                  Il Draft è in modalità test per il dry-run: puoi esplorare liberamente la Board, consultare lo Scouting e impostare la Graduatoria, ma l'assegnazione definitiva dei calciatori è bloccata.
+                  Il Draft è attualmente chiuso dall'Amministrazione. Puoi esplorare liberamente la Board, consultare lo Scouting e impostare la Graduatoria, ma l'effettuazione delle scelte e l'autopick sono temporaneamente inibiti.
                 </p>
               </div>
             </div>
@@ -2174,12 +2184,12 @@ const Draft = () => {
 
                     <Button
                       className={`w-full font-bold gap-2 ${
-                        isTestMode
+                        isDraftClosed
                           ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 hover:bg-amber-500/30 cursor-not-allowed"
                           : "bg-emerald-600 hover:bg-emerald-700 text-white"
                       }`}
                       disabled={
-                        isTestMode ||
+                        isDraftClosed ||
                         !selectedPlayerItem ||
                         !isUserTeamOnTheClock ||
                         !targetPickForConfirmation ||
@@ -2187,10 +2197,10 @@ const Draft = () => {
                       }
                       onClick={handleConfirmPick}
                     >
-                      {isTestMode ? (
+                      {isDraftClosed ? (
                         <>
                           <Lock className="h-4 w-4 text-amber-500" />
-                          Scelta Bloccata (Modalità Test / Dry Run)
+                          Scelta Bloccata (Draft Chiuso)
                         </>
                       ) : !isUserTeamOnTheClock ? (
                         <>
@@ -2207,9 +2217,9 @@ const Draft = () => {
                         "Draft Completato"
                       )}
                     </Button>
-                    {isTestMode && (
+                    {isDraftClosed && (
                       <div className="text-[11px] text-amber-600 dark:text-amber-400 text-center font-medium mt-1">
-                        🔒 La conferma delle scelte è disattivata dall'Admin per il dry-run.
+                        🔒 La conferma delle scelte è temporaneamente inibita dall'Amministrazione (Draft Chiuso).
                       </div>
                     )}
                   </div>

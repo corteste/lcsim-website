@@ -1660,3 +1660,26 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
     3. **Graduatoria Draft & Autopick** (`src/components/scouting/ScoutingAutopickTab.tsx`): avatar `h-9 w-9 rounded-lg` integrato sia nelle righe trascinabili/riordinabili della coda di priorità (wishlist), sia nei risultati di ricerca per l'aggiunta di rookie o svincolati.
   - Test di compilazione ed esecuzione (`npm run build`) superati con esito positivo.
 
+
+
+---
+
+## 📌 81. Amministrazione & Draft: Trasformazione Pulsante Dry Run in Controllo Apertura / Chiusura Draft
+- **Stato**: 🟢 Completato & Testato (08/11/2026)
+- **Priorità**: Alta (Controllo del flusso ufficiale della serata del Draft)
+- **Moduli coinvolti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/pages/Draft.tsx`, `src/services/draftStateService.ts`, `src/services/testModeService.ts`
+- **Tabelle coinvolte**: `league_automation_state`
+- **Descrizione & Implementazione**:
+  - Trasformato il controllo amministrativo di dry-run nel comando ufficiale di **Apertura / Chiusura Draft**:
+    1. **Pannello Admin (`AdminAutomazioni.tsx`)**:
+       - Card aggiornata con titolo *"Apertura / Chiusura Draft"*.
+       - Badge di stato: 🔒 *Draft Chiuso* (ambra) o ✅ *Draft Aperto* (verde).
+       - Pulsante contestuale: *"Apri Draft"* (verde) per avviare la sessione ufficiale, oppure *"Chiudi Draft"* (ambra) per sospendere le chiamate.
+       - Sincronizzazione Realtime via WebSocket (`league_automation_state`).
+    2. **Pagina Draft (`Draft.tsx`)**:
+       - A Draft Chiuso, viene mostrato il banner di avviso *"Draft Chiuso"* con badge *"In Attesa"*: esplorazione board, scouting e graduatoria rimangono aperte, mentre selezione e autopick sono inibiti.
+       - Il pulsante di conferma scelta mostra lo stato disabilitato: *"Scelta Bloccata (Draft Chiuso)"*.
+       - Notifiche toast e guard su chiamata e autopick bloccano qualsiasi tentativo se il draft è chiuso.
+    3. **Inizializzazione Stato**:
+       - Lo stato del draft è stato impostato a **CHIUSO** di default sia su Supabase (`league_automation_state`), sia nei valori di fallback locali.
+       - Creata la migrazione `supabase/migrations/20261108_init_draft_closed_state.sql` e lo script di rollback corrispondente.
