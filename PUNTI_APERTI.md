@@ -1608,3 +1608,48 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
     2. **Riconoscimenti Individuali**: Titolo di Capocannoniere, Miglior Assistman, Golden Glove (Miglior Portiere), MVP della Stagione, presenze nella Top 11 / TOTW.
     3. Badge grafici o icone trofeo visualizzabili nell'header o in un tab dedicato "Palmarès & Riconoscimenti".
 
+---
+
+## 📌 77. Archivio Giocatori: Sostituzione Targhetta Squadra con Logo Ufficiale del Club
+- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin del 07/11/2026 - UX/UI)
+- **Priorità**: Bassa-Media (Rifinitura grafica e usabilità)
+- **Moduli previsti**: `src/pages/ArchivioGiocatori.tsx`, `src/pages/PlayerCareerArchive.tsx`
+- **Tabelle coinvolte**: `an_team`, `as_player_stat`
+- **Descrizione & Obiettivi**:
+  - Nella schermata dell'archivio storico delle carriere dei calciatori (`/archivio/giocatori`), valutare la sostituzione o l'arricchimento della targhetta testuale della squadra con il logo ufficiale del club (`an_team.logo_url` o stemma vettoriale).
+  - Rende la cronistoria delle maglie e dei club di appartenenza graficamente più accattivante e immediatamente riconoscibile a colpo d'occhio.
+
+---
+
+## 📌 78. Archivio Storico Carriera: Verifica e Correzione Conteggio Presenze (Totali vs Titolare)
+- **Stato**: 🟡 Da Verificare / In Backlog (Segnalazione Admin del 07/11/2026 - Bug Dati)
+- **Priorità**: Alta (Integrità e affidabilità dei dati storici)
+- **Moduli coinvolti**: `src/pages/ArchivioGiocatori.tsx`, viste o query statistiche (`as_player_stat`, `VIEW_PLAYER_STATS`)
+- **Tabelle coinvolte**: `as_player_stat`, `an_schedule`
+- **Descrizione & Obiettivi**:
+  - Nella scheda carriera dell'archivio (`/archivio/giocatori?player=50266`), per alcuni calciatori (es. Paolo Vitale) risultano presenze totali coincidenti con quelle da titolare (es. 59 su 59), oppure conteggi non coerenti con il minutaggio effettivo o i ruoli da subentrato.
+  - Verificare l'aggregazione dei record partita in `as_player_stat` (logica di discriminazione tra titolari e subentrati, minutaggio e formazioni) e correggere il calcolo affinché rifletta fedelmente le partite iniziate dal 1' minuto rispetto a quelle a gara in corso.
+
+---
+
+## 📌 79. Scheda Giocatore / Archivio: Disattivazione Metrica Clean Sheet per i Giocatori di Movimento
+- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin del 07/11/2026 - Bug Dati/UI)
+- **Priorità**: Media (Accuratezza statistiche di ruolo)
+- **Moduli coinvolti**: `src/pages/ArchivioGiocatori.tsx`, `src/components/player/playerDetails.tsx`, `src/components/player/playerAdvancedStats.tsx`
+- **Tabelle coinvolte**: `as_player_stat`, `an_player`
+- **Descrizione & Obiettivi**:
+  - Nelle schede carriera dell'archivio e nei riepiloghi statistici dei calciatori, il contatore dei "Clean Sheet" viene attualmente mostrato o conteggiato anche per i giocatori di movimento (es. Paolo Vitale con 15 clean sheet indicati).
+  - La casella e il computo dei Clean Sheet devono essere riservati esclusivamente ai portieri (`Posiz === 'POR'`).
+  - Per i giocatori di movimento la casella va disattivata/nascosta o sostituita con una statistica di rendimento propria del reparto (es. Contrasti vinti, Tiri in porta o Gol decisivi).
+
+---
+
+## 📌 80. Centro Scouting Rookie: Visualizzazione Volto / Miniface nella Scheda Atleta
+- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin del 07/11/2026 - Proposta UX)
+- **Priorità**: Media (Coinvolgimento visivo e usabilità)
+- **Moduli coinvolti**: `src/pages/Scouting.tsx`, `src/components/scouting/ScoutingAutopickTab.tsx`
+- **Tabelle coinvolte**: `an_rookie`
+- **Descrizione & Obiettivi**:
+  - Aggiungere il volto/miniface del prospetto nella colonna di selezione dei rookie e nella testata della scheda dettagliata di scouting (`/mia-squadra/scouting`).
+  - Permette ai manager di associare immediatamente i volti in campo e l'identità visiva del calciatore durante le sessioni di valutazione e l'assegnazione dei gettoni scouting in preparazione al Draft.
+
