@@ -1649,11 +1649,14 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 80. Centro Scouting Rookie: Visualizzazione Volto / Miniface nella Scheda Atleta
-- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin del 07/11/2026 - Proposta UX)
+- **Stato**: 🟢 Completato & Testato (Segnalazione Admin del 07/11/2026 - Proposta UX)
 - **Priorità**: Media (Coinvolgimento visivo e usabilità)
 - **Moduli coinvolti**: `src/pages/Scouting.tsx`, `src/components/scouting/ScoutingAutopickTab.tsx`
-- **Tabelle coinvolte**: `an_rookie`
-- **Descrizione & Obiettivi**:
-  - Aggiungere il volto/miniface del prospetto nella colonna di selezione dei rookie e nella testata della scheda dettagliata di scouting (`/mia-squadra/scouting`).
-  - Permette ai manager di associare immediatamente i volti in campo e l'identità visiva del calciatore durante le sessioni di valutazione e l'assegnazione dei gettoni scouting in preparazione al Draft.
+- **Tabelle coinvolte**: `an_rookie`, `ea_player_db`
+- **Descrizione & Implementazione**:
+  - Aggiunta la miniface/avatar del calciatore rookie (tramite `getPlayerImage(id)` e i componenti `Avatar`, `AvatarImage`, `AvatarFallback`) nei tre punti concordati della sezione Scouting:
+    1. **Testata della scheda del singolo rookie** (`src/pages/Scouting.tsx`): riquadro avatar `h-20 w-20 rounded-2xl` affiancato al badge OVR/stelle e ai dati anagrafici del profilo selezionato.
+    2. **Tab Panoramica scoutati** (`src/pages/Scouting.tsx`): avatar compatto `h-11 w-11 rounded-xl` nell'intestazione di ciascuna card riassuntiva dei rookie su cui sono stati investiti gettoni.
+    3. **Graduatoria Draft & Autopick** (`src/components/scouting/ScoutingAutopickTab.tsx`): avatar `h-9 w-9 rounded-lg` integrato sia nelle righe trascinabili/riordinabili della coda di priorità (wishlist), sia nei risultati di ricerca per l'aggiunta di rookie o svincolati.
+  - Test di compilazione ed esecuzione (`npm run build`) superati con esito positivo.
 

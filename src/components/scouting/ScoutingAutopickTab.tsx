@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Bot,
   ListOrdered,
@@ -41,7 +42,7 @@ import {
 } from "@/services/draftWishlistService";
 import { DraftWishlistItem } from "@/types/draftWishlist";
 import { Player } from "@/types/player";
-import { getRoleColor, getValueColor, getNationalityFlag } from "@/utils/functions";
+import { getRoleColor, getValueColor, getNationalityFlag, getPlayerImage } from "@/utils/functions";
 // renderStars removed to avoid confusing tokens with stars
 import { getTierFromTokens, getTierBadgeStyle, getTopUnlockedAttributes, getOvrDisplayByTokens } from "@/utils/scoutingConfig";
 
@@ -425,7 +426,17 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                     key={p.ID}
                     className="p-2.5 rounded-xl border border-border/80 bg-card flex items-center justify-between gap-2 hover:border-emerald-500/40 transition-all shadow-xs"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Avatar className="h-9 w-9 rounded-lg border border-border shrink-0 bg-muted overflow-hidden">
+                        <AvatarImage
+                          src={getPlayerImage(pId)}
+                          alt={`${p.Nome} ${p.Cognome}`}
+                          className="object-cover object-top"
+                        />
+                        <AvatarFallback className="text-[10px] font-bold">
+                          {p.Nome?.[0]}{p.Cognome?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
                       <Badge
                         variant="secondary"
                         className={`text-[10px] font-bold shrink-0 ${getRoleColor(p.Posiz)}`}
@@ -555,6 +566,18 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                   <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-mono font-black text-sm shrink-0 shadow-xs">
                     #{index + 1}
                   </div>
+
+                  {/* Avatar Calciatore */}
+                  <Avatar className="h-9 w-9 rounded-lg border border-border shrink-0 bg-muted overflow-hidden">
+                    <AvatarImage
+                      src={getPlayerImage(pId)}
+                      alt={`${player.Nome} ${player.Cognome}`}
+                      className="object-cover object-top"
+                    />
+                    <AvatarFallback className="text-[10px] font-bold">
+                      {player.Nome?.[0]}{player.Cognome?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
 
                   {/* Ruolo */}
                   <Badge

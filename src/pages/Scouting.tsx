@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Compass,
   Search,
@@ -53,6 +54,7 @@ import {
   getRoleColor,
   getValueColor,
   getNationalityFlag,
+  getPlayerImage,
 } from "@/utils/functions";
 import {
   SCOUTING_TIERS,
@@ -858,6 +860,19 @@ const Scouting = () => {
                     <div className="p-5 md:p-6 bg-gradient-to-br from-emerald-500/10 via-card to-muted/30 border-b border-border/70">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
                         <div className="flex items-start sm:items-center gap-4">
+                          {/* Avatar Rookie */}
+                          <Avatar className="h-20 w-20 rounded-2xl border-2 border-border/80 shadow-md shrink-0 bg-muted overflow-hidden">
+                            <AvatarImage
+                              src={getPlayerImage(Number(selectedRookie.ID))}
+                              alt={`${selectedRookie.Nome} ${selectedRookie.Cognome}`}
+                              className="object-cover object-top"
+                            />
+                            <AvatarFallback className="rounded-2xl text-base font-bold bg-muted text-muted-foreground">
+                              {selectedRookie.Nome?.[0]}
+                              {selectedRookie.Cognome?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+
                           {/* OVR / Star System Badge */}
                           {(() => {
                             const ovrInfo = getOvrDisplayByTokens(
@@ -1568,7 +1583,20 @@ const Scouting = () => {
                       <div>
                         {/* Card Header */}
                         <div className="p-4 bg-muted/30 border-b border-border/60 flex items-start justify-between gap-3">
-                          <div className="space-y-1 min-w-0">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <Avatar className="h-11 w-11 rounded-xl border border-border shadow-2xs shrink-0 bg-muted overflow-hidden">
+                              <AvatarImage
+                                src={getPlayerImage(rId)}
+                                alt={`${r.Nome} ${r.Cognome}`}
+                                className="object-cover object-top"
+                              />
+                              <AvatarFallback className="rounded-xl text-xs font-bold bg-muted text-muted-foreground">
+                                {r.Nome?.[0]}
+                                {r.Cognome?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+
+                            <div className="space-y-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <Badge
                                 variant="outline"
@@ -1621,6 +1649,7 @@ const Scouting = () => {
                                 </Badge>
                               )}
                             </div>
+                          </div>
                           </div>
 
                           <div className="flex flex-col items-end gap-1.5 shrink-0">
