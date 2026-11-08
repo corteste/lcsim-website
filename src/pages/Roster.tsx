@@ -52,6 +52,7 @@ import {
   TrendingUp,
   Scissors,
   Loader2,
+  Lock,
 } from "lucide-react";
 import {
   getRoleColor,
