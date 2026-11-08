@@ -1633,14 +1633,18 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 79. Scheda Giocatore / Archivio: Disattivazione Metrica Clean Sheet per i Giocatori di Movimento
-- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin del 07/11/2026 - Bug Dati/UI)
+- **Stato**: 🟢 Completato & Testato (08/11/2026)
 - **Priorità**: Media (Accuratezza statistiche di ruolo)
-- **Moduli coinvolti**: `src/pages/ArchivioGiocatori.tsx`, `src/components/player/playerDetails.tsx`, `src/components/player/playerAdvancedStats.tsx`
-- **Tabelle coinvolte**: `as_player_stat`, `an_player`
-- **Descrizione & Obiettivi**:
-  - Nelle schede carriera dell'archivio e nei riepiloghi statistici dei calciatori, il contatore dei "Clean Sheet" viene attualmente mostrato o conteggiato anche per i giocatori di movimento (es. Paolo Vitale con 15 clean sheet indicati).
-  - La casella e il computo dei Clean Sheet devono essere riservati esclusivamente ai portieri (`Posiz === 'POR'`).
-  - Per i giocatori di movimento la casella va disattivata/nascosta o sostituita con una statistica di rendimento propria del reparto (es. Contrasti vinti, Tiri in porta o Gol decisivi).
+- **Moduli coinvolti**: `src/pages/ArchivioGiocatori.tsx`, `supabase/migrations/20261108_clean_sheets_goalkeeper_only.sql`
+- **Tabelle & Viste coinvolte**: `view_player_season_summary`, `view_player_career_summary`, `as_player_stat`, `an_player`
+- **Descrizione & Implementazione**:
+  1. **Viste Database Postgres**:
+     - Aggiornate sia `view_player_season_summary` che `view_player_career_summary` collegando `an_player` per verificare la posizione (`pl."Posiz" = 'POR'`).
+     - `clean_sheets`, `parate` e `gol_subiti` vengono calcolati e valorizzati esclusivamente per i portieri (`pl."Posiz" = 'POR'`), mentre per tutti i giocatori di movimento vengono impostati a 0.
+     - Paolo Vitale (`ATT`) passa correttamente da 15 a 0 clean sheet, mentre i portieri mantengono inalterati i loro record effettivi.
+     - Creata la migrazione e il relativo script di rollback in `supabase/migrations/20261108_clean_sheets_goalkeeper_only.sql`.
+  2. **Interfaccia Grafica (`src/pages/ArchivioGiocatori.tsx`)**:
+     - Nel tab 3 *"Totali Carriera"*, i due riquadri stat *"Parate"* e *"Gol Subiti / Clean Sheet"* vengono renderizzati unicamente se `selectedPlayer.posiz === "POR"`, lasciando la griglia snella, pulita e priva di metriche non pertinenti per i giocatori di movimento.
 
 ---
 

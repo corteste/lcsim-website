@@ -899,12 +899,16 @@ const ArchivioGiocatori = () => {
                         value={`${selectedPlayer.ctrs_si}/${selectedPlayer.ctrs_tot}`}
                         subValue={pct(selectedPlayer.ctrs_si, selectedPlayer.ctrs_tot)}
                       />
-                      <StatBox label="Parate" value={selectedPlayer.parate} />
-                      <StatBox
-                        label="Gol Subiti / Clean Sheet"
-                        value={`${selectedPlayer.gol_subiti} / ${selectedPlayer.clean_sheets}`}
-                        subValue="Portiere"
-                      />
+                      {selectedPlayer.posiz === "POR" && (
+                        <>
+                          <StatBox label="Parate" value={selectedPlayer.parate} />
+                          <StatBox
+                            label="Gol Subiti / Clean Sheet"
+                            value={`${selectedPlayer.gol_subiti} / ${selectedPlayer.clean_sheets}`}
+                            subValue="Portiere"
+                          />
+                        </>
+                      )}
                       <StatBox label="Autogol" value={selectedPlayer.autogol} />
                       <StatBox label="Falli Commessi" value={selectedPlayer.falli} />
                       <StatBox
