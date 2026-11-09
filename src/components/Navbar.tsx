@@ -29,6 +29,7 @@ import {
   Newspaper,
   KeyRound,
   UserCheck,
+  ListOrdered,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -236,6 +237,13 @@ const Navbar = () => {
       description: "Osservazione e sblocco attributi dei 72 Rookie",
       icon: Target,
       colorClass: "text-teal-500",
+    },
+    {
+      path: "/mia-squadra/scouting?tab=autopick",
+      label: "Graduatoria Draft",
+      description: "Ordine di priorità e preferenze per le chiamate",
+      icon: ListOrdered,
+      colorClass: "text-purple-500",
     },
     {
       path: "/mia-squadra/confronto-giocatori",
@@ -690,7 +698,10 @@ const Navbar = () => {
                   <div className="py-1">
                     {miaSquadraItems.map((item) => {
                       const Icon = item.icon;
-                      const isCurrent = location.pathname === item.path;
+                      const currentFull = `${location.pathname}${location.search}`;
+                      const isCurrent = item.path.includes("?")
+                        ? currentFull === item.path
+                        : location.pathname === item.path && !location.search.includes("tab=autopick");
                       return (
                         <DropdownMenuItem key={item.path} asChild>
                           <Link
@@ -960,21 +971,27 @@ const Navbar = () => {
                             <span>Automazioni Lega</span>
                           </Link>
                         )}
-                        {miaSquadraItems.map((item) => (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            onClick={() => setIsOpen(false)}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                              location.pathname === item.path
-                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                                : "text-foreground hover:bg-muted/50"
-                            }`}
-                          >
-                            <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                            <span>{item.label}</span>
-                          </Link>
-                        ))}
+                        {miaSquadraItems.map((item) => {
+                          const currentFull = `${location.pathname}${location.search}`;
+                          const isCurrent = item.path.includes("?")
+                            ? currentFull === item.path
+                            : location.pathname === item.path && !location.search.includes("tab=autopick");
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              onClick={() => setIsOpen(false)}
+                              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
+                                isCurrent
+                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                                  : "text-foreground hover:bg-muted/50"
+                              }`}
+                            >
+                              <item.icon className={`h-4 w-4 ${item.colorClass}`} />
+                              <span>{item.label}</span>
+                            </Link>
+                          );
+                        })}
                       </div>
                     )}
 

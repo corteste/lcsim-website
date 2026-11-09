@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import Home from "./pages/Home";
 import Classifica from "./pages/Classifica";
@@ -67,6 +67,8 @@ const App = () => (
                 <Route path="/mia-squadra/tattica" element={<Tattica />} />
                 <Route path="/mia-squadra/allenamenti" element={<Allenamenti />} />
                 <Route path="/mia-squadra/scouting" element={<Scouting />} />
+                <Route path="/mia-squadra/graduatoria" element={<Navigate to="/mia-squadra/scouting?tab=autopick" replace />} />
+                <Route path="/mia-squadra/graduatoria-draft" element={<Navigate to="/mia-squadra/scouting?tab=autopick" replace />} />
                 <Route path="/mia-squadra/confronto-giocatori" element={<ConfrontoGiocatori />} />
                 <Route path="/mia-squadra/trattative" element={<Trattative />} />
                 <Route path="/admin/automazioni" element={<AdminAutomazioni />} />

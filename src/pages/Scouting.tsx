@@ -206,8 +206,8 @@ const Scouting = () => {
   const [activeTab, setActiveTab] = useState<string>(initialTab);
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get("tab");
-    if (tabFromUrl && tabFromUrl !== activeTab) {
+    const tabFromUrl = searchParams.get("tab") || "single";
+    if (tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
     }
   }, [searchParams]);
