@@ -18,6 +18,7 @@ import {
   FC25_ROLES_BY_POSITION,
   getRolesForPosition,
 } from "@/types/tactics";
+import { PlayerDisciplinaryStatus } from "@/services/disciplineService";
 import { TeamTacticsCard } from "@/components/tactics/TeamTacticsCard";
 import { SetPiecesCard } from "@/components/tactics/SetPiecesCard";
 import { getPlayerImage, getRoleColor } from "@/utils/functions";
@@ -36,6 +37,7 @@ interface TacticsEditorTabProps {
   onChangeTacticalSettings: (settings: TacticalSettings) => void;
   onOpenInstructionModal: (slotIndex: number) => void;
   disabled?: boolean;
+  disciplinaryMap?: Record<number, PlayerDisciplinaryStatus>;
 }
 
 export const TacticsEditorTab: React.FC<TacticsEditorTabProps> = ({
@@ -46,6 +48,7 @@ export const TacticsEditorTab: React.FC<TacticsEditorTabProps> = ({
   onChangeTacticalSettings,
   onOpenInstructionModal,
   disabled = false,
+  disciplinaryMap,
 }) => {
   const handleRoleChange = (slotIndex: number, newRoleId: string) => {
     if (disabled) return;
@@ -108,6 +111,7 @@ export const TacticsEditorTab: React.FC<TacticsEditorTabProps> = ({
         roster={roster}
         onChange={handleSetPiecesChange}
         disabled={disabled}
+        disciplinaryMap={disciplinaryMap}
       />
 
       {/* 3. ISTRUZIONI INDIVIDUALI FC IQ - UNA RIGA PER OGNI GIOCATORE */}

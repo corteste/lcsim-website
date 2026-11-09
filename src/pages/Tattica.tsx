@@ -57,6 +57,8 @@ import { FormationCountdown } from "@/components/FormationCountdown";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TacticsOverviewTab } from "@/components/tactics/TacticsOverviewTab";
 import { TacticsEditorTab } from "@/components/tactics/TacticsEditorTab";
+import { validateFormationLineup, FormationValidationResult } from "@/utils/formationValidation";
+import { FormationValidationModal } from "@/components/tactics/FormationValidationModal";
 import { TeamTacticsCard } from "@/components/tactics/TeamTacticsCard";
 import { PlayerInstructionsModal } from "@/components/tactics/PlayerInstructionsModal";
 import {
@@ -801,6 +803,38 @@ const Tattica = () => {
       toast.warning("Uno o più calciatori squalificati sono stati rimossi dalla distinta e confinati in Tribuna.");
     }
   }, [disciplinaryMap]);
+
+  // Rimozione automatica da calci piazzati per calciatori squalificati o non più titolari (Punto #82)
+  useEffect(() => {
+    // Non azzerare se i titolari non sono ancora stati caricati dal DB
+    if (!starterIds.some((id) => id !== null)) return;
+
+    const currentStarterSet = new Set(
+      starterIds.filter((id): id is number => id !== null && id !== undefined)
+    );
+    const sp = tacticalSettings.setPieces;
+    if (!sp) return;
+
+    let spChanged = false;
+    const nextSP = { ...sp };
+
+    for (const key of Object.keys(nextSP) as (keyof typeof nextSP)[]) {
+      const pId = nextSP[key];
+      if (pId) {
+        if (!currentStarterSet.has(pId) || disciplinaryMap[pId]?.isSuspended) {
+          nextSP[key] = null;
+          spChanged = true;
+        }
+      }
+    }
+
+    if (spChanged) {
+      setTacticalSettings((prev) => ({
+        ...prev,
+        setPieces: nextSP,
+      }));
+    }
+  }, [starterIds, disciplinaryMap]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Modulo selezionato e 11 slot titolari (ID giocatore o null)
@@ -820,6 +854,10 @@ const Tattica = () => {
   const [instructionSlotIndex, setInstructionSlotIndex] = useState<number | null>(null);
 
   // Snapshot salvato nel DB per rilevare modifiche non salvate
+  // Stato Modale di Verifica e Validazione Formazione (Punto #82)
+  const [validationResult, setValidationResult] = useState<FormationValidationResult | null>(null);
+  const [isValidationModalOpen, setIsValidationModalOpen] = useState<boolean>(false);
+
   const [savedState, setSavedState] = useState<{
     formation: string;
     starters: (number | null)[];
@@ -1190,8 +1228,8 @@ const Tattica = () => {
     toast.info("Formazione titolare svuotata.");
   };
 
-  // Salvataggio su Supabase nella tabella an_team_tactic
-  const handleSaveFormation = async () => {
+  // Avvia il controllo di integrità e apre la modale di verifica (Punto #82)
+  const handleInitiateSave = () => {
     if (!currentTeam) return;
 
     if (isDeadlineClosed && !isAdmin) {
@@ -1200,13 +1238,27 @@ const Tattica = () => {
     }
 
     const currentBenchIds = benchPlayers.map((p) => Number(p.ID));
-    const suspendedInLineup = [...starterIds, ...currentBenchIds].filter(
-      (id) => id && disciplinaryMap[id]?.isSuspended
-    );
-    if (suspendedInLineup.length > 0) {
-      toast.error("Impossibile salvare la formazione: sono presenti calciatori squalificati in distinta (titolari o panchina). Spostali in Tribuna.");
-      return;
-    }
+
+    const result = validateFormationLineup({
+      starters: formationSlots,
+      starterIds,
+      benchIds: currentBenchIds,
+      roster: orderedRoster,
+      tacticalSettings,
+      disciplinaryMap,
+      isDeadlineClosed,
+      isAdmin,
+    });
+
+    setValidationResult(result);
+    setIsValidationModalOpen(true);
+  };
+
+  // Esecuzione effettiva del salvataggio su Supabase dopo conferma da modale di verifica
+  const handleConfirmSaveFormation = async () => {
+    if (!currentTeam) return;
+
+    const currentBenchIds = benchPlayers.map((p) => Number(p.ID));
 
     setIsSaving(true);
     try {
@@ -1267,7 +1319,8 @@ const Tattica = () => {
         updatedAt: nowIso,
       });
 
-      toast.success(`Formazione di ${effectiveTeamFullName || currentTeam} salvata con successo!`);
+      setIsValidationModalOpen(false);
+      toast.success(`Formazione di ${effectiveTeamFullName || currentTeam} verificata e salvata con successo!`);
     } catch (err: any) {
       console.error("Errore salvataggio formazione:", err);
       toast.error(err?.message || "Errore durante il salvataggio della formazione.");
@@ -1572,7 +1625,7 @@ const Tattica = () => {
 
                 <Button
                   size="sm"
-                  onClick={handleSaveFormation}
+                  onClick={handleInitiateSave}
                   disabled={loading || isSaving || (isDeadlineClosed && !isAdmin)}
                   title={isDeadlineClosed && !isAdmin ? "Formazioni chiuse per la giornata in corso" : undefined}
                   className="h-9 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md disabled:opacity-50 disabled:pointer-events-none"
@@ -2713,6 +2766,7 @@ const Tattica = () => {
                   onChangeTacticalSettings={setTacticalSettings}
                   onOpenInstructionModal={(slotIdx) => setInstructionSlotIndex(slotIdx)}
                   disabled={loading || isSaving}
+                  disciplinaryMap={disciplinaryMap}
                 />
               </TabsContent>
             </Tabs>
@@ -2761,6 +2815,20 @@ const Tattica = () => {
           />
         </div>
       )}
+
+      {/* Modale di Verifica e Conferma Schieramento Formazione (Punto #82) */}
+      <FormationValidationModal
+        isOpen={isValidationModalOpen}
+        onClose={() => setIsValidationModalOpen(false)}
+        validationResult={validationResult}
+        onConfirmSave={handleConfirmSaveFormation}
+        isSaving={isSaving}
+        teamName={effectiveTeamFullName || currentTeam || undefined}
+        onNavigateToTab={(tab) => {
+          setIsValidationModalOpen(false);
+          setActiveTab(tab);
+        }}
+      />
     </div>
   );
 };

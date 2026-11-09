@@ -1711,23 +1711,29 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 82. Tattica & Formazione: Controlli di Integrità, Validazione Calci Piazzati, Squalificati e Popup di Verifica
-- **Stato**: 🟡 Da Implementare / In Backlog (Segnalazione del 09/11/2026)
+- **Stato**: 🟢 Completato & Integrato (Branch `dev`)
 - **Priorità**: Alta (Integrità dello schieramento ufficiale e regolarità delle partite)
-- **Moduli coinvolti**: `src/pages/Tattica.tsx`, componenti popup/dialog di validazione formazione
+- **Moduli coinvolti**: `src/pages/Tattica.tsx`, `src/components/tactics/FormationValidationModal.tsx`, `src/components/tactics/SetPiecesCard.tsx`, `src/utils/formationValidation.ts`
 - **Tabelle coinvolte**: `an_team_tactic`, `team_lineup_snapshots`, `an_player`, `as_player_stat`
-- **Descrizione & Regole di Validazione Richieste**:
+- **Descrizione & Regole di Validazione Implementate**:
   1. **Capitano e Tiratori Titolari Obbligatori**:
-     - Il Capitano e tutti i tiratori/incaricati dei calci piazzati (Rigori, Punizione corta DX/SX, Punizione lunga, Corner DX/SX) devono obbligatoriamente far parte degli **11 calciatori titolari** schierati in campo. Non è consentito assegnare un incarico a giocatori in panchina o in tribuna.
+     - Il Capitano e tutti i 10 ruoli di calci piazzati (Rigore, Punizione corta DX/SX, Punizione lunga, Corner DX/SX, Torre d'angolo, Primo palo, Secondo palo) devono essere **tutti assegnati** ed esclusivamente a **calciatori titolari** schierati in campo.
+     - Nei menu a tendina di `SetPiecesCard.tsx` compaiono esclusivamente gli 11 titolari arruolabili; se un giocatore viene tolto dai titolari o risulta squalificato, il suo incarico viene automaticamente rimosso.
+     - Aggiunta funzione rapida *"Auto-assegna Titolari"* per compilare automaticamente gli slot mancanti con i migliori titolari evitando qualsiasi conflitto.
   2. **Incompatibilità Ruoli Calcio d'Angolo**:
-     - Il battitore del corner non può saltare in area per colpire di testa sulla propria battuta:
-       - Il tiratore del **Corner Destro** non può essere designato contemporaneamente come *Torre d'angolo*, *Primo palo* o *Secondo palo*.
-       - Il tiratore del **Corner Sinistro** non può essere designato contemporaneamente come *Torre d'angolo*, *Primo palo* o *Secondo palo*.
+     - Un battitore di calcio d'angolo non può saltare in area sulla propria battuta:
+       - Il tiratore del **Corner Destro** e del **Corner Sinistro** non può essere selezionato per *Torre d'angolo*, *Primo palo* o *Secondo palo* (opzione disabilitata nel dropdown con motivo esplicito e bloccata a livello di validazione).
   3. **Gestione Rigorosa Giocatori Squalificati**:
-     - Se un calciatore risulta squalificato per la giornata di campionato in programma:
-       - **Deve essere perentoriamente escluso sia dagli 11 titolari che dalla panchina** (spostamento forzato in Tribuna).
-       - **Deve essere obbligatoriamente rimosso da tutti i ruoli di Capitano e dai tiratori/incaricati dei calci piazzati**.
-  4. **Popup di Verifica e Check Formazione**:
-     - Integrazione di un check visivo con popup/modale (es. richiamabile tramite pulsante dedicato *"Verifica Formazione"* o all'atto del salvataggio):
-       - Elenco puntuale dei controlli effettuati (11 titolari completi, capitano valido, tiratori titolari, nessun conflitto nei corner, assenza di squalificati).
-       - Evidenziazione immediata di eventuali anomalie/errori bloccanti con spiegazione e guida alla risoluzione.
-       - Badge verde di conformità se tutti i vincoli sono rispettati.
+     - Esclusione automatica sia dagli 11 titolari che dalla panchina (confinamento forzato in Tribuna).
+     - Esclusione automatica da Capitano e da tutti gli incarichi dei calci piazzati.
+  4. **Popup di Verifica e Check Formazione all'Atto del Salvataggio**:
+     - Cliccando su *"Salva Formazione"*, si apre la modale `FormationValidationModal` con la checklist completa:
+       - 11 titolari completi (nessun buco o duplicato).
+       - Assenza di squalificati in distinta o piazzati.
+       - Capitano designato e titolare.
+       - Tutti i tiratori di rigori e punizioni assegnati a titolari.
+       - Battitori corner assegnati a titolari.
+       - Saltatori d'area (Torre, Primo palo, Secondo palo) assegnati a titolari.
+       - Assenza di conflitti tra battitori di corner e saltatori d'area.
+     - Se sono presenti errori bloccanti: badge rosso, elenco dettagliato dei problemi e guida rapida per correggerli. Il salvataggio definitivo è inibito fino alla risoluzione.
+     - Se tutti i controlli sono superati: badge verde *"Conforme"*, checklist verde e pulsante *"Conferma e Salva Formazione"*.
