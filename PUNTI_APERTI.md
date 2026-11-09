@@ -1701,3 +1701,28 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
     3. **Inizializzazione Stato**:
        - Lo stato del draft è stato impostato a **CHIUSO** di default sia su Supabase (`league_automation_state`), sia nei valori di fallback locali.
        - Creata la migrazione `supabase/migrations/20261108_init_draft_closed_state.sql` e lo script di rollback corrispondente.
+
+
+---
+
+## 📌 82. Tattica & Formazione: Controlli di Integrità, Validazione Calci Piazzati, Squalificati e Popup di Verifica
+- **Stato**: 🟡 Da Implementare / In Backlog (Segnalazione del 09/11/2026)
+- **Priorità**: Alta (Integrità dello schieramento ufficiale e regolarità delle partite)
+- **Moduli coinvolti**: `src/pages/Tattica.tsx`, componenti popup/dialog di validazione formazione
+- **Tabelle coinvolte**: `an_team_tactic`, `team_lineup_snapshots`, `an_player`, `as_player_stat`
+- **Descrizione & Regole di Validazione Richieste**:
+  1. **Capitano e Tiratori Titolari Obbligatori**:
+     - Il Capitano e tutti i tiratori/incaricati dei calci piazzati (Rigori, Punizione corta DX/SX, Punizione lunga, Corner DX/SX) devono obbligatoriamente far parte degli **11 calciatori titolari** schierati in campo. Non è consentito assegnare un incarico a giocatori in panchina o in tribuna.
+  2. **Incompatibilità Ruoli Calcio d'Angolo**:
+     - Il battitore del corner non può saltare in area per colpire di testa sulla propria battuta:
+       - Il tiratore del **Corner Destro** non può essere designato contemporaneamente come *Torre d'angolo*, *Primo palo* o *Secondo palo*.
+       - Il tiratore del **Corner Sinistro** non può essere designato contemporaneamente come *Torre d'angolo*, *Primo palo* o *Secondo palo*.
+  3. **Gestione Rigorosa Giocatori Squalificati**:
+     - Se un calciatore risulta squalificato per la giornata di campionato in programma:
+       - **Deve essere perentoriamente escluso sia dagli 11 titolari che dalla panchina** (spostamento forzato in Tribuna).
+       - **Deve essere obbligatoriamente rimosso da tutti i ruoli di Capitano e dai tiratori/incaricati dei calci piazzati**.
+  4. **Popup di Verifica e Check Formazione**:
+     - Integrazione di un check visivo con popup/modale (es. richiamabile tramite pulsante dedicato *"Verifica Formazione"* o all'atto del salvataggio):
+       - Elenco puntuale dei controlli effettuati (11 titolari completi, capitano valido, tiratori titolari, nessun conflitto nei corner, assenza di squalificati).
+       - Evidenziazione immediata di eventuali anomalie/errori bloccanti con spiegazione e guida alla risoluzione.
+       - Badge verde di conformità se tutti i vincoli sono rispettati.
