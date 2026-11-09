@@ -366,7 +366,8 @@ export function TotwPitch({ initialSeason = 11, initialWeek, onSelectPlayer }: T
                       {/* Team Logo Badge (Top-Left) */}
                       <img
                         src={`${SUPABASE_STORAGE_URL}/images/teams/${p.team}_Logo.png`}
-                        alt={p.team}
+                        alt={p.teamName || p.team}
+                        title={`Club: ${p.teamName || p.team}`}
                         className="absolute -top-1 -left-1.5 h-5 w-5 object-contain drop-shadow-md rounded-full bg-slate-950/80 p-0.5 border border-white/20"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
@@ -459,7 +460,7 @@ export function TotwPitch({ initialSeason = 11, initialWeek, onSelectPlayer }: T
                           {totwData.mvp.position}
                         </Badge>
                         <span className="text-xs font-semibold text-muted-foreground truncate">
-                          {totwData.mvp.team}
+                          {totwData.mvp.teamName || totwData.mvp.team}
                         </span>
                       </div>
                       <h3 className="text-base font-black text-foreground truncate mt-0.5">
@@ -506,7 +507,8 @@ export function TotwPitch({ initialSeason = 11, initialWeek, onSelectPlayer }: T
                       </Badge>
                       <img
                         src={`${SUPABASE_STORAGE_URL}/images/teams/${p.team}_Logo.png`}
-                        alt={p.team}
+                        alt={p.teamName || p.team}
+                        title={p.teamName || p.team}
                         className="h-5 w-5 object-contain shrink-0"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;

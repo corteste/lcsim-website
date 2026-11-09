@@ -5,7 +5,8 @@ export interface TotwPlayer {
   name: string;
   surname: string;
   fullName: string;
-  team: string;
+  team: string; // Historical TEAM_ID
+  teamName?: string; // Decoded full club name
   position: string; // "POR", "DC", "TD", "TS", "CC", "COC", "ATT", etc.
   slotLabel: string; // "POR", "TS", "DC", "DC", "TD", "CC", "CDC", "COC", "AS", "ATT", "AD"
   ovr: number;
@@ -45,6 +46,24 @@ const FORMATION_433_COORDINATES: Record<string, { x: number; y: number }> = {
   AD: { x: 80, y: 18 },
 };
 
+let teamCache: Map<string, string> | null = null;
+async function getTeamNameMap(): Promise<Map<string, string>> {
+  if (teamCache) return teamCache;
+  try {
+    const { data } = await supabase.from("an_team").select("TEAM_ID, NAME, NAME_ABBR");
+    const map = new Map<string, string>();
+    (data || []).forEach((t: any) => {
+      if (t.TEAM_ID) {
+        map.set(t.TEAM_ID.trim(), t.NAME || t.NAME_ABBR || t.TEAM_ID);
+      }
+    });
+    teamCache = map;
+    return map;
+  } catch (_) {
+    return new Map();
+  }
+}
+
 export async function fetchAvailableTotwWeeks(season: number): Promise<number[]> {
   try {
     const { data, error } = await supabase
@@ -81,14 +100,19 @@ export async function fetchTotwForWeek(season: number, week: number): Promise<To
     const rows = data.filter((r) => typeof r.VOTO === "number" && r.VOTO > 0);
     if (rows.length === 0) return null;
 
-    // Helper to map DB row to partial object
-    const mapRow = (r: any) => ({
-      id: Number(r.ID),
-      name: r.Nome || "",
-      surname: r.Cognome || "",
-      fullName: `${r.Nome || ""} ${r.Cognome || ""}`.trim(),
-      team: r.Squadra || "",
-      position: r.Posiz || "CC",
+    const teamNameMap = await getTeamNameMap();
+
+    // Helper to map DB row to partial object (Punto #71: usa il TEAM_ID storico del referto gara)
+    const mapRow = (r: any) => {
+      const historicalTeam = (r.TEAM_ID || r.Squadra || "").trim();
+      return {
+        id: Number(r.ID),
+        name: r.Nome || "",
+        surname: r.Cognome || "",
+        fullName: `${r.Nome || ""} ${r.Cognome || ""}`.trim(),
+        team: historicalTeam,
+        teamName: teamNameMap.get(historicalTeam) || historicalTeam,
+        position: r.Posiz || "CC",
       ovr: Number(r.OVR) || 75,
       vote: Number(r.VOTO) || 6.0,
       minutes: Number(r.MINUTI) || 0,
@@ -99,7 +123,8 @@ export async function fetchTotwForWeek(season: number, week: number): Promise<To
       tackles: Number(r.CTRS_SI) || 0,
       yellows: Number(r.GIALLI) || 0,
       reds: Number(r.ROSSI) || 0,
-    });
+    };
+  };
 
     const allMapped = rows.map(mapRow);
 
@@ -230,6 +255,7 @@ export async function fetchTotwForWeek(season: number, week: number): Promise<To
         surname: p.surname,
         fullName: p.fullName,
         team: p.team,
+        teamName: p.teamName,
         position: p.position,
         slotLabel: slot.replace(/\d+$/, ""),
         ovr: p.ovr,

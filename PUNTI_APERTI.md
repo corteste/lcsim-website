@@ -1538,14 +1538,16 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 71. Statistiche TOTW: Squadra di Appartenenza Storica nella Top 11 Settimanale
-- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin #5 - Bug)
+- **Stato**: 🟢 Completato & Testato (09/11/2026 - Segnalazione Admin #5)
 - **Priorità**: Alta (Correttezza dei dati storici)
-- **Moduli coinvolti**: `src/services/totwService.ts`, `src/components/stats/TotwPitch.tsx`, `src/pages/Statistiche.tsx`
+- **Moduli coinvolti**: `src/services/totwService.ts`, `src/components/stats/TotwPitch.tsx`, `src/components/home/TotwHomeCard.tsx`, `src/pages/Statistiche.tsx`
 - **Tabelle & Viste coinvolte**: `view_player_stats`, `as_player_stat`, `an_player`, `an_team`
-- **Descrizione & Obiettivi**:
-  - Attualmente nella schermata TOTW di `/statistiche?tab=totw`, la lista laterale di destra mostra il club attuale del calciatore (`an_player.Squadra`) invece del club per cui il calciatore ha effettivamente disputato la partita e totalizzato il voto (`as_player_stat.TEAM_ID` o `view_player_stats.TEAM_ID`).
-  - Se un giocatore ha cambiato maglia (scambio o svincolo) o si consulta una stagione passata, compare con il logo e l'abbreviazione errata.
-  - **Soluzione da adottare**: risolvere il logo e il nome squadra della TOTW direttamente dal campo storico `TEAM_ID` del referto gara, mostrando il club corretto per quella specifica giornata e stagione.
+- **Descrizione & Implementazione**:
+  - In `src/services/totwService.ts`, la mappatura della squadra di ciascun calciatore della Top 11 è stata aggiornata per risolvere prioritariamente il club storico con cui ha disputato la partita (`r.TEAM_ID || r.Squadra`), evitando l'abbinamento al club attuale in `an_player.Squadra` (che poteva essere errato in caso di scambi, svincoli o consultazione di stagioni passate).
+  - Integrata la decodifica dei club tramite la tabella `an_team` (`teamName`), associando il nome completo ufficiale sia per la card MVP sia per i tooltip e gli attributi accessibilità.
+  - In `src/components/stats/TotwPitch.tsx` (Opzione 2 concordata), confermato il layout visivo con logo del club storico e cognome del calciatore nella lista laterale destra, e aggiornati i badge logo sul campo tattico 2D e il box MVP.
+  - Aggiornato anche il widget compatto in Home (`TotwHomeCard.tsx`) per riflettere il club storico dell'MVP.
+  - Verificato con `npm run build` superato con zero errori.
 
 ---
 

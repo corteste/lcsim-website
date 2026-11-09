@@ -136,7 +136,7 @@ export function TotwHomeCard() {
                 {mvp.fullName}
               </h3>
               <p className="text-[11px] text-muted-foreground truncate">
-                {mvp.team} • OVR {mvp.ovr}
+                {mvp.teamName || mvp.team} • OVR {mvp.ovr}
               </p>
             </div>
 
