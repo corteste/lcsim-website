@@ -4,6 +4,7 @@ import { supabase } from "@/supabaseClient";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
+import { ClubProfileTab } from "@/components/team/ClubProfileTab";
 import {
   ClubHistoryInlineControls,
   ClubHistoryExpandedDrawer,
@@ -219,6 +220,25 @@ const Rose = () => {
   }, [sortedTeams, teamParam]);
 
   // Team Jerseys & Lightbox Dialog
+  // Tab navigazione club: Rosa vs Profilo Club, Palmarès & Stadio (Punto #45)
+  const tabParam = searchParams.get("tab") as "roster" | "profile" | null;
+  const [activeClubTab, setActiveClubTab] = useState<"roster" | "profile">(
+    tabParam === "profile" ? "profile" : "roster"
+  );
+
+  const handleSelectClubTab = (tab: "roster" | "profile") => {
+    setActiveClubTab(tab);
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      if (tab === "profile") {
+        updated.set("tab", "profile");
+      } else {
+        updated.delete("tab");
+      }
+      return updated;
+    });
+  };
+
   const [selectedJersey, setSelectedJersey] = useState<TeamJersey | null>(null);
   const currentJerseys = useMemo(() => getTeamJerseys(currentTeam?.TEAM_ID), [currentTeam?.TEAM_ID]);
 
@@ -244,6 +264,9 @@ const Rose = () => {
     }
     setIsPlayingAnthem(false);
     setIsClubHistoryOpen(false);
+    if (!searchParams.get("tab")) {
+      setActiveClubTab("roster");
+    }
   }, [currentTeam?.TEAM_ID]);
 
   // Clean up audio element on unmount
@@ -653,12 +676,16 @@ const Rose = () => {
                             </button>
                           ) : null}
 
-                          {/* Inline Club History & Bench Controls */}
-                          <ClubHistoryInlineControls
-                            teamId={currentTeam.TEAM_ID}
-                            isOpen={isClubHistoryOpen}
-                            onToggle={() => setIsClubHistoryOpen((prev) => !prev)}
-                          />
+                          {/* Pulsante rapido Profilo Club & Palmarès */}
+                          <button
+                            type="button"
+                            onClick={() => handleSelectClubTab("profile")}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 border cursor-pointer select-none shadow-sm bg-muted/50 dark:bg-black/25 hover:bg-muted/80 dark:hover:bg-black/40 text-foreground dark:text-white border-border/70 dark:border-white/20"
+                            title="Apri Profilo Club, Palmarès e Stadio"
+                          >
+                            <Landmark className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                            <span>Profilo &amp; Palmarès</span>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -719,6 +746,66 @@ const Rose = () => {
                 </div>
               </div>
 
+        {/* BARRA NAVIGAZIONE TAB SQUADRA (STILE FOOTBALL MANAGER - PUNTO #45) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-3">
+          <div className="flex items-center gap-2 p-1 rounded-xl bg-muted/50 border border-border/60">
+            <button
+              type="button"
+              onClick={() => handleSelectClubTab("roster")}
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeClubTab === "roster"
+                  ? "bg-card text-foreground shadow-sm border border-border/80 font-black"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Users className="w-4 h-4 text-primary" />
+              <span>Rosa Calciatori</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-muted font-bold text-muted-foreground">
+                {rawPlayers.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectClubTab("profile")}
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeClubTab === "profile"
+                  ? "bg-card text-foreground shadow-sm border border-border/80 font-black"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Landmark className="w-4 h-4 text-emerald-500" />
+              <span>Profilo Club &amp; Palmarès</span>
+              {(currentTeam.scudetto > 0 || currentTeam.supercoppa > 0) && (
+                <Badge className="bg-amber-500 text-black text-[10px] font-black px-1.5 py-0 h-4">
+                  🏆 {currentTeam.scudetto + currentTeam.supercoppa}
+                </Badge>
+              )}
+            </button>
+          </div>
+
+          <div className="text-xs text-muted-foreground font-medium hidden md:block">
+            {activeClubTab === "roster" ? (
+              <span>Organico ufficiale Serie A • {rawPlayers.length} calciatori</span>
+            ) : (
+              <span>Impianto di gioco, albo d'oro e storia societaria</span>
+            )}
+          </div>
+        </div>
+
+        {/* CONTENUTO TAB 2: PROFILO CLUB, PALMARÈS & STADIO (PUNTO #45) */}
+        {activeClubTab === "profile" && (
+          <ClubProfileTab
+            team={currentTeam}
+            presidentName={presidentMap[currentTeam.TEAM_ID]}
+            canEdit={isAdmin || user?.team === currentTeam.TEAM_ID}
+            onEditStaff={() => setIsEditCoachOpen(true)}
+          />
+        )}
+
+        {/* CONTENUTO TAB 1: ROSA CALCIATORI */}
+        {activeClubTab === "roster" && (
+          <div className="space-y-6">
         {/* CONTROLS & FILTERS BAR */}
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1081,6 +1168,8 @@ const Rose = () => {
             </CardContent>
           </Card>
         )}
+          </div>
+        )}
           </>
         )}
       </main>
@@ -1163,6 +1252,11 @@ const Rose = () => {
           teamName={currentTeam.NAME}
           currentCoachName={currentTeam.MANAGER}
           currentPresidentName={presidentMap[currentTeam.TEAM_ID]}
+          currentStadiumName={currentTeam.stadium_name}
+          currentStadiumCity={currentTeam.stadium_city}
+          currentStadiumCapacity={currentTeam.stadium_capacity}
+          currentStadiumSurface={currentTeam.stadium_surface}
+          currentStadiumYear={currentTeam.stadium_year}
         />
       )}
     </div>

@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserCheck, Shield, Sparkles, Loader2, Crown } from "lucide-react";
+import { UserCheck, Shield, Sparkles, Loader2, Crown, Landmark, MapPin, Users } from "lucide-react";
 import { supabase } from "@/supabaseClient";
 import { TEAM_TABLE } from "@/constants/App";
-import { updateTeamStaff } from "@/services/teamService";
+import { updateTeamProfile } from "@/services/teamService";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 
@@ -18,6 +18,11 @@ interface EditCoachModalProps {
   teamName?: string;
   currentCoachName?: string | null;
   currentPresidentName?: string | null;
+  currentStadiumName?: string | null;
+  currentStadiumCity?: string | null;
+  currentStadiumCapacity?: number | null;
+  currentStadiumSurface?: string | null;
+  currentStadiumYear?: number | null;
   onSuccess?: (newCoachName: string, newPresidentName?: string) => void;
 }
 
@@ -46,6 +51,11 @@ export function EditCoachModal({
   teamName,
   currentCoachName,
   currentPresidentName,
+  currentStadiumName,
+  currentStadiumCity,
+  currentStadiumCapacity,
+  currentStadiumSurface,
+  currentStadiumYear,
   onSuccess,
 }: EditCoachModalProps) {
   const { user } = useAuth();
@@ -54,11 +64,17 @@ export function EditCoachModal({
   const [presidentName, setPresidentName] = useState<string>("");
   const [prefix, setPrefix] = useState<"Sig." | "Mister">("Sig.");
   const [surname, setSurname] = useState<string>("");
+  const [stadiumName, setStadiumName] = useState<string>("");
+  const [stadiumCity, setStadiumCity] = useState<string>("");
+  const [stadiumCapacity, setStadiumCapacity] = useState<string>("40000");
+  const [stadiumSurface, setStadiumSurface] = useState<string>("Erba Naturale");
+  const [stadiumYear, setStadiumYear] = useState<string>("2018");
+
   const [isLoadingInitial, setIsLoadingInitial] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasRegisteredUser, setHasRegisteredUser] = useState<boolean>(true);
 
-  // Initialize or fetch current coach and president names when modal opens
+  // Initialize or fetch current coach, president and stadium when modal opens
   useEffect(() => {
     if (!open || !teamId) return;
 
@@ -69,24 +85,32 @@ export function EditCoachModal({
       try {
         let loadedCoach = currentCoachName;
         let loadedPresident = currentPresidentName;
+        let loadedStadiumName = currentStadiumName;
+        let loadedStadiumCity = currentStadiumCity;
+        let loadedStadiumCapacity = currentStadiumCapacity;
+        let loadedStadiumSurface = currentStadiumSurface;
+        let loadedStadiumYear = currentStadiumYear;
 
-        // If coach or president not provided directly, fetch from Supabase
-        if (loadedCoach === undefined || loadedPresident === undefined) {
-          const [teamRes, statusRes] = await Promise.all([
-            supabase.from(TEAM_TABLE).select("MANAGER").eq("TEAM_ID", teamId).maybeSingle(),
-            supabase.rpc("rpc_get_all_teams_status"),
-          ]);
+        // Fetch from Supabase
+        const [teamRes, statusRes] = await Promise.all([
+          supabase.from(TEAM_TABLE).select("*").eq("TEAM_ID", teamId).maybeSingle(),
+          supabase.rpc("rpc_get_all_teams_status"),
+        ]);
 
-          if (!isCancelled && teamRes.data) {
-            loadedCoach = teamRes.data.MANAGER;
-          }
+        if (!isCancelled && teamRes.data) {
+          loadedCoach = teamRes.data.MANAGER;
+          loadedStadiumName = teamRes.data.stadium_name || loadedStadiumName;
+          loadedStadiumCity = teamRes.data.stadium_city || loadedStadiumCity;
+          loadedStadiumCapacity = teamRes.data.stadium_capacity || loadedStadiumCapacity;
+          loadedStadiumSurface = teamRes.data.stadium_surface || loadedStadiumSurface;
+          loadedStadiumYear = teamRes.data.stadium_year || loadedStadiumYear;
+        }
 
-          if (!isCancelled && statusRes.data) {
-            const foundStatus = (statusRes.data as any[]).find((t) => t.team_id === teamId);
-            if (foundStatus) {
-              setHasRegisteredUser(Boolean(foundStatus.is_claimed));
-              loadedPresident = foundStatus.claimed_by_name || "";
-            }
+        if (!isCancelled && statusRes.data) {
+          const foundStatus = (statusRes.data as any[]).find((t) => t.team_id === teamId);
+          if (foundStatus) {
+            setHasRegisteredUser(Boolean(foundStatus.is_claimed));
+            loadedPresident = foundStatus.claimed_by_name || "";
           }
         }
 
@@ -95,6 +119,11 @@ export function EditCoachModal({
           setPrefix(parsed.prefix);
           setSurname(parsed.surname);
           setPresidentName(loadedPresident || "");
+          setStadiumName(loadedStadiumName || "");
+          setStadiumCity(loadedStadiumCity || "");
+          setStadiumCapacity(String(loadedStadiumCapacity || 40000));
+          setStadiumSurface(loadedStadiumSurface || "Erba Naturale");
+          setStadiumYear(String(loadedStadiumYear || 2018));
         }
       } catch (err) {
         console.error("Errore caricamento staff squadra:", err);
@@ -108,7 +137,7 @@ export function EditCoachModal({
     return () => {
       isCancelled = true;
     };
-  }, [open, teamId, currentCoachName, currentPresidentName]);
+  }, [open, teamId, currentCoachName, currentPresidentName, currentStadiumName]);
 
   const handleSurnameChange = (val: string) => {
     let cleaned = val;
@@ -133,19 +162,27 @@ export function EditCoachModal({
 
     setIsSaving(true);
     try {
-      const res = await updateTeamStaff({
+      const parsedCapacity = parseInt(stadiumCapacity, 10);
+      const parsedYear = parseInt(stadiumYear, 10);
+
+      const res = await updateTeamProfile({
         teamId,
         coachName: fullFormattedCoach,
         presidentName: presidentName.trim() || undefined,
+        stadiumName: stadiumName.trim() || undefined,
+        stadiumCity: stadiumCity.trim() || undefined,
+        stadiumCapacity: isNaN(parsedCapacity) ? undefined : parsedCapacity,
+        stadiumSurface: stadiumSurface.trim() || undefined,
+        stadiumYear: isNaN(parsedYear) ? undefined : parsedYear,
         actingUsername: user?.username,
       });
 
       if (!res.success) {
-        toast.error(res.error || "Impossibile aggiornare lo staff.");
+        toast.error(res.error || "Impossibile aggiornare le informazioni del club.");
         return;
       }
 
-      toast.success(`Staff aggiornato con successo!`);
+      toast.success(`Profilo club e stadio aggiornati con successo!`);
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["teams"] });
       queryClient.invalidateQueries({ queryKey: ["all_teams_status"] });
@@ -164,18 +201,18 @@ export function EditCoachModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2.5 mb-1">
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <UserCheck className="h-5 w-5" />
+              <Landmark className="h-5 w-5" />
             </div>
             <div>
               <DialogTitle className="text-base font-black">
-                Staff Societario &amp; Tecnico
+                Staff &amp; Informazioni Impianto
               </DialogTitle>
               <DialogDescription className="text-xs">
-                {teamName ? `${teamName} (${teamId})` : `Squadra ${teamId}`}
+                {teamName ? `${teamName} (${teamId})` : `Squadra ${teamId}`} • Serie A
               </DialogDescription>
             </div>
           </div>
@@ -184,7 +221,7 @@ export function EditCoachModal({
         {isLoadingInitial ? (
           <div className="py-8 flex flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
-            <span>Caricamento dati staff...</span>
+            <span>Caricamento dati club...</span>
           </div>
         ) : (
           <div className="space-y-4 py-2">
@@ -259,12 +296,6 @@ export function EditCoachModal({
                   onChange={(e) => handleSurnameChange(e.target.value)}
                   placeholder="Es. Guardiola, Rossi, Brown"
                   className="h-9 text-xs font-semibold bg-background"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleSave();
-                    }
-                  }}
                 />
               </div>
 
@@ -279,6 +310,65 @@ export function EditCoachModal({
                 >
                   {fullFormattedCoach || "(Cognome mancante)"}
                 </Badge>
+              </div>
+            </div>
+
+            {/* SEZIONE 3: STADIO (PUNTO #45) */}
+            <div className="p-3.5 rounded-xl bg-muted/30 border border-border/70 space-y-3">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                <Landmark className="h-4 w-4 text-sky-500 shrink-0" />
+                <span>Impianto di Gioco &amp; Stadio:</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-muted-foreground">
+                    Nome Stadio:
+                  </label>
+                  <Input
+                    value={stadiumName}
+                    onChange={(e) => setStadiumName(e.target.value)}
+                    placeholder="Es. Arena Conti"
+                    className="h-8 text-xs font-semibold bg-background"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-muted-foreground">
+                    Città:
+                  </label>
+                  <Input
+                    value={stadiumCity}
+                    onChange={(e) => setStadiumCity(e.target.value)}
+                    placeholder="Es. Roma, Milano"
+                    className="h-8 text-xs font-semibold bg-background"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-muted-foreground">
+                    Capienza (Spettatori):
+                  </label>
+                  <Input
+                    type="number"
+                    value={stadiumCapacity}
+                    onChange={(e) => setStadiumCapacity(e.target.value)}
+                    placeholder="Es. 45000"
+                    className="h-8 text-xs font-semibold bg-background"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-muted-foreground">
+                    Terreno di Gioco:
+                  </label>
+                  <Input
+                    value={stadiumSurface}
+                    onChange={(e) => setStadiumSurface(e.target.value)}
+                    placeholder="Es. Erba Naturale"
+                    className="h-8 text-xs font-semibold bg-background"
+                  />
+                </div>
               </div>
             </div>
           </div>

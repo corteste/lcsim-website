@@ -1,6 +1,6 @@
 import { supabase } from "@/supabaseClient";
 import { TEAM_TABLE } from "@/constants/App";
-import { Team } from "@/types/team";
+import { Team, TeamTrophy } from "@/types/team";
 
 export async function fetchTeams(): Promise<Team[]> {
   const { data, error } = await supabase
@@ -35,9 +35,23 @@ export async function fetchTeamById(team?: string): Promise<Team | null> {
 }
 
 /**
+ * Recupera l'Albo d'Oro / Bacheca trofei di una o tutte le squadre (Punto #45)
+ */
+export async function fetchTeamTrophies(teamId?: string): Promise<TeamTrophy[]> {
+  let query = supabase.from("team_trophies").select("*").order("season_number", { ascending: true });
+  if (teamId) {
+    query = query.eq("team_id", teamId.toUpperCase().trim());
+  }
+  const { data, error } = await query;
+  if (error) {
+    console.error("Error fetching trophies:", error);
+    return [];
+  }
+  return (data || []) as TeamTrophy[];
+}
+
+/**
  * Aggiorna il nome dell'allenatore del club (campo an_team.MANAGER).
- * Prova prima tramite RPC SECURITY DEFINER (rpc_update_team_coach)
- * con fallback diretto su an_team.
  */
 export async function updateTeamCoach(
   teamId: string,
@@ -53,7 +67,6 @@ export async function updateTeamCoach(
 
 /**
  * Aggiorna lo staff del club (Allenatore e Presidente).
- * Utilizza la RPC SECURITY DEFINER (rpc_update_team_staff)
  */
 export async function updateTeamStaff(params: {
   teamId: string;
@@ -61,29 +74,59 @@ export async function updateTeamStaff(params: {
   presidentName?: string;
   actingUsername?: string;
 }): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { teamId, coachName, presidentName, actingUsername } = params;
-    const cleanCoach = coachName?.trim() || "";
-    const cleanPresident = presidentName?.trim() || "";
+  return updateTeamProfile(params);
+}
 
-    const { data: rpcData, error: rpcError } = await supabase.rpc("rpc_update_team_staff", {
+/**
+ * Aggiorna profilo completo club (Staff, Presidente e Stadio) tramite RPC SECURITY DEFINER (Punto #45)
+ */
+export async function updateTeamProfile(params: {
+  teamId: string;
+  coachName?: string;
+  presidentName?: string;
+  stadiumName?: string;
+  stadiumCity?: string;
+  stadiumCapacity?: number;
+  stadiumSurface?: string;
+  stadiumYear?: number;
+  actingUsername?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const {
+      teamId,
+      coachName,
+      presidentName,
+      stadiumName,
+      stadiumCity,
+      stadiumCapacity,
+      stadiumSurface,
+      stadiumYear,
+      actingUsername,
+    } = params;
+
+    const { data: rpcData, error: rpcError } = await supabase.rpc("rpc_update_team_profile", {
       p_team_id: teamId.trim(),
-      p_coach_name: cleanCoach,
-      p_president_name: cleanPresident || null,
+      p_coach_name: coachName?.trim() || null,
+      p_president_name: presidentName?.trim() || null,
+      p_stadium_name: stadiumName?.trim() || null,
+      p_stadium_city: stadiumCity?.trim() || null,
+      p_stadium_capacity: stadiumCapacity || null,
+      p_stadium_surface: stadiumSurface?.trim() || null,
+      p_stadium_year: stadiumYear || null,
       p_acting_username: actingUsername?.trim() || null,
     });
 
     if (rpcError) {
-      console.error("Errore rpc_update_team_staff:", rpcError);
-      return { success: false, error: rpcError.message || "Errore durante l'aggiornamento dello staff." };
+      console.error("Errore rpc_update_team_profile:", rpcError);
+      return { success: false, error: rpcError.message || "Errore durante l'aggiornamento del profilo squadra." };
     }
 
     if (rpcData && !rpcData.success) {
-      return { success: false, error: rpcData.error || "Impossibile aggiornare lo staff." };
+      return { success: false, error: rpcData.error || "Impossibile aggiornare il profilo squadra." };
     }
 
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err?.message || "Errore durante l'aggiornamento dello staff." };
+    return { success: false, error: err?.message || "Errore durante l'aggiornamento del profilo squadra." };
   }
 }
