@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import {
   Dialog,
   DialogContent,
@@ -411,9 +412,7 @@ export default function Comunicati() {
                       <h2 className="text-lg sm:text-xl font-black tracking-tight text-foreground">
                         {ann.title}
                       </h2>
-                      <div className="mt-2 text-xs sm:text-sm text-foreground/90 whitespace-pre-line leading-relaxed">
-                        {ann.content}
-                      </div>
+                      <MarkdownRenderer content={ann.content} className="mt-2 text-xs sm:text-sm" />
                     </div>
 
                     {/* Footer: Author & Admin Controls */}
