@@ -42,7 +42,9 @@ import {
   getPlayerImage,
   getNationalityFlag,
   getValueColor,
+  LCSIM_LOGO_SMALL,
 } from "@/utils/functions";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import {
   fetchAllPlayersCareerSummary,
   fetchPlayerArchiveDetail,
@@ -107,21 +109,21 @@ const HistoricalTeamBadge = ({
   }
   if (teamCode === "Rookie") {
     return (
-      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold">
+      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold text-xs">
         🎓 Rookie
       </Badge>
     );
   }
   if (teamCode === "Svincolati") {
     return (
-      <Badge variant="outline" className="bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30 font-semibold">
+      <Badge variant="outline" className="bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30 font-semibold text-xs">
         Svincolati
       </Badge>
     );
   }
   if (teamCode === "Ritiro" || teamCode === "Ritirati" || teamCode === "RITIRATO") {
     return (
-      <Badge variant="outline" className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 font-semibold">
+      <Badge variant="outline" className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 font-semibold text-xs">
         Ritirato
       </Badge>
     );
@@ -133,29 +135,51 @@ const HistoricalTeamBadge = ({
     <Tooltip>
       <TooltipTrigger asChild>
         <div className="inline-flex items-center gap-1.5 cursor-help">
-          <Badge className={`${meta.badgeClass} font-bold tracking-wide px-2 py-0.5 text-xs border`}>
-            {meta.code}
-          </Badge>
+          <div className="h-7 w-7 rounded-lg bg-card/80 border border-border/70 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-2xs hover:border-primary/50 transition-colors">
+            <img
+              src={`${SUPABASE_STORAGE_URL}/images/teams/${meta.code}_Logo.png`}
+              alt={meta.fullName || meta.code}
+              className="h-full w-full object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (meta.franchiseCode && !target.src.includes(`${meta.franchiseCode}_Logo.png`)) {
+                  target.src = `${SUPABASE_STORAGE_URL}/images/teams/${meta.franchiseCode}_Logo.png`;
+                } else {
+                  target.src = LCSIM_LOGO_SMALL;
+                }
+              }}
+            />
+          </div>
           {showFranchiseHint && meta.isHistoricalRebrand && (
-            <span className="text-[11px] text-muted-foreground font-medium">
-              (ora {meta.franchiseCode})
+            <span className="text-[10px] text-muted-foreground font-mono font-medium">
+              ({meta.code})
             </span>
           )}
         </div>
       </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs space-y-0.5">
-        <p className="font-bold">
-          {meta.fullName} ({meta.code})
-        </p>
+      <TooltipContent side="top" className="text-xs space-y-1 p-2.5 shadow-md">
+        <div className="flex items-center gap-2">
+          <img
+            src={`${SUPABASE_STORAGE_URL}/images/teams/${meta.code}_Logo.png`}
+            alt={meta.code}
+            className="h-4 w-4 object-contain shrink-0"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
+            }}
+          />
+          <p className="font-bold text-foreground">
+            {meta.fullName} ({meta.code})
+          </p>
+        </div>
         {meta.isHistoricalRebrand ? (
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-[11px]">
             Denominazione storica ({meta.eraSeasons}) • Franchigia attuale:{" "}
             <strong className="text-foreground">
               {meta.franchiseName} ({meta.franchiseCode})
             </strong>
           </p>
         ) : (
-          <p className="text-muted-foreground">Attiva in {meta.eraSeasons}</p>
+          <p className="text-muted-foreground text-[11px]">Attiva in {meta.eraSeasons}</p>
         )}
       </TooltipContent>
     </Tooltip>

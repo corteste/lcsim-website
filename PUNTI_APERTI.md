@@ -1613,13 +1613,17 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 77. Archivio Giocatori: Sostituzione Targhetta Squadra con Logo Ufficiale del Club
-- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin del 07/11/2026 - UX/UI)
+- **Stato**: 🟢 Completato & Testato (09/11/2026 - Segnalazione Admin UX/UI)
 - **Priorità**: Bassa-Media (Rifinitura grafica e usabilità)
-- **Moduli previsti**: `src/pages/ArchivioGiocatori.tsx`, `src/pages/PlayerCareerArchive.tsx`
+- **Moduli coinvolti**: `src/pages/ArchivioGiocatori.tsx`
 - **Tabelle coinvolte**: `an_team`, `as_player_stat`
-- **Descrizione & Obiettivi**:
-  - Nella schermata dell'archivio storico delle carriere dei calciatori (`/archivio/giocatori`), valutare la sostituzione o l'arricchimento della targhetta testuale della squadra con il logo ufficiale del club (`an_team.logo_url` o stemma vettoriale).
-  - Rende la cronistoria delle maglie e dei club di appartenenza graficamente più accattivante e immediatamente riconoscibile a colpo d'occhio.
+- **Descrizione & Implementazione**:
+  - In `src/pages/ArchivioGiocatori.tsx`, aggiornato il componente `HistoricalTeamBadge` adottando l'**Opzione 2 (sostituzione completa)**:
+    1. Sostituita la targhetta testuale colorata con lo stemma ufficiale del club (`h-7 w-7 rounded-lg` con bordo e sfondo delicato).
+    2. Integrato sistema di fallback automatico a cascata: tenta lo stemma storico (`{code}_Logo.png`), poi quello della franchigia attuale (`{franchiseCode}_Logo.png`) e infine il placeholder `LCSIM_LOGO_SMALL` in attesa del caricamento dei loghi d'archivio rimanenti.
+    3. Il tooltip al passaggio del mouse mantiene l'anagrafica completa: denominazione storica, franchigia attuale (per rebrand come `BLA ➔ RMB` o `ASK ➔ SKA`) e stagioni di attività.
+    4. Il nuovo badge si applica coerentemente alla colonna *"Squadra Storica"* delle stagioni, alla cronistoria trasferimenti, all'header del giocatore e alla tabella di ricerca dell'archivio.
+  - Verificato con `npm run build` superato con zero errori.
 
 ---
 
