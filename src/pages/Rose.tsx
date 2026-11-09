@@ -683,7 +683,7 @@ const Rose = () => {
                             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 border cursor-pointer select-none shadow-sm bg-muted/50 dark:bg-black/25 hover:bg-muted/80 dark:hover:bg-black/40 text-foreground dark:text-white border-border/70 dark:border-white/20"
                             title="Apri Profilo Club, Palmarès e Stadio"
                           >
-                            <Landmark className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                            <Trophy className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                             <span>Profilo &amp; Palmarès</span>
                           </button>
                         </div>
@@ -774,13 +774,8 @@ const Rose = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Landmark className="w-4 h-4 text-emerald-500" />
+              <Trophy className="w-4 h-4 text-amber-500" />
               <span>Profilo Club &amp; Palmarès</span>
-              {(currentTeam.scudetto > 0 || currentTeam.supercoppa > 0) && (
-                <Badge className="bg-amber-500 text-black text-[10px] font-black px-1.5 py-0 h-4">
-                  🏆 {currentTeam.scudetto + currentTeam.supercoppa}
-                </Badge>
-              )}
             </button>
           </div>
 
