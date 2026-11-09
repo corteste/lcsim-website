@@ -1120,7 +1120,7 @@ Il valore deve alimentare scheda squadra, calendario e referti partita.
 ---
 
 ## 📌 45. Scheda Squadra Ampliata con Palmarès e Stadio (Stile Football Manager)
-- **Stato**: 🟢 Completato & Rilasciato (Branch `dev`)
+- **Stato**: 🟢 Completato & Rilasciato (Branch `main` & `dev`)
 - **Priorità**: Media (Immersione e identità del club)
 - **Moduli coinvolti**: `src/pages/Rose.tsx` (`/squadre` e `/rose`), `src/components/team/ClubProfileTab.tsx`, `src/components/team/EditCoachModal.tsx`, `src/services/teamService.ts`
 - **Tabelle coinvolte**: `an_team`, `team_trophies`, `an_standings`
@@ -1128,9 +1128,9 @@ Il valore deve alimentare scheda squadra, calendario e referti partita.
   1. **Layout a Tab stile Football Manager in `/squadre` (`Rose.tsx`)**:
      - **Tab 1 — Rosa Calciatori**: Organico ufficiale, filtri di ruolo, ricerca, griglia/tabella e visualizzazione maglie da gara.
      - **Tab 2 — Profilo Club & Palmarès**:
-       - 🏟️ **Scheda Stadio**: Nome ufficiale impianto, città, capienza spettatori con barra di riempimento, tipologia terreno e anno di inaugurazione. Modificabile dall'Admin o dal Manager della squadra tramite modale dedicata.
+       - 🏟️ **Scheda Stadio**: Nome ufficiale impianto, città, capienza spettatori con barra di riempimento, tipologia terreno e anno di inaugurazione. Modifica da parte di Admin/Manager limitata a Nome e Città (capienza e terreno preservati). Card con grafica pulita coordinata con i temi chiaro/scuro.
        - 🏆 **Bacheca & Palmarès Ufficiale**: Albo d'oro completo con elenco per stagione di tutti i 10 Scudetti di Serie A (inclusi i 2 vinti da Sbinnala Madrid per la franchigia Mar's Attack) e delle 6 Supercoppe di Lega (Pre-S5..Pre-S10) con badge grafici.
-       - 📜 **Storia & Identità Societaria**: Cronologia dettagliata delle ridenominazioni del club (rebrand storici), cronologia allenatori sulla panchina e longevità della franchigia.
+       - 📜 **Storia & Identità Societaria**: Cronologia dettagliata delle ridenominazioni del club (rebrand storici), cronologia allenatori sulla panchina (`an_coach_history` con badge Assunzione/Esonero, stagione, giornata, data ed eventuali note) e longevità della franchigia.
   2. **Database & Migrazione SQL**:
      - Colonne stadio su `an_team` (`stadium_name`, `stadium_city`, `stadium_capacity`, `stadium_surface`, `stadium_year`).
      - Creata tabella `team_trophies` con RLS di lettura pubblica e popolata con l'albo d'oro ufficiale.
