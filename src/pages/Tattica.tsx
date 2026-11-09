@@ -727,6 +727,28 @@ const Tattica = () => {
   const [activeDeadline, setActiveDeadline] = useState<LeagueDeadline | null>(null);
   const [isDeadlineClosed, setIsDeadlineClosed] = useState<boolean>(false);
 
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Modulo selezionato e 11 slot titolari (ID giocatore o null)
+  const [formationId, setFormationId] = useState<string>("4-4-2");
+  const [starterIds, setStarterIds] = useState<(number | null)[]>(Array(11).fill(null));
+  const [benchOrderIds, setBenchOrderIds] = useState<number[]>([]);
+
+  // Impostazioni Tattiche FC IQ EA Sports FC 25 (Squadra + Istruzioni Giocatori)
+  const [tacticalSettings, setTacticalSettings] = useState<TacticalSettings>(() =>
+    getDefaultTacticalSettings(EA_FC25_FORMATIONS[0].positions)
+  );
+
+  // Tab attiva (overview: Panoramica Titolari | lineup: Schiera Formazione | tactics: Tattiche & Istruzioni)
+  const [activeTab, setActiveTab] = useState<string>("overview");
+
+  // Modale istruzioni per uno specifico slot (0..10)
+  const [instructionSlotIndex, setInstructionSlotIndex] = useState<number | null>(null);
+
+  // Stato Modale di Verifica e Validazione Formazione (Punto #82)
+  const [validationResult, setValidationResult] = useState<FormationValidationResult | null>(null);
+  const [isValidationModalOpen, setIsValidationModalOpen] = useState<boolean>(false);
+
   // Stato disciplinare (Squalifiche e Diffide da cartellini #38)
   const [disciplinaryMap, setDisciplinaryMap] = useState<Record<number, PlayerDisciplinaryStatus>>({});
   const [targetMatchWeek, setTargetMatchWeek] = useState<number>(1);
@@ -835,28 +857,7 @@ const Tattica = () => {
       }));
     }
   }, [starterIds, disciplinaryMap]);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  // Modulo selezionato e 11 slot titolari (ID giocatore o null)
-  const [formationId, setFormationId] = useState<string>("4-4-2");
-  const [starterIds, setStarterIds] = useState<(number | null)[]>(Array(11).fill(null));
-  const [benchOrderIds, setBenchOrderIds] = useState<number[]>([]);
-
-  // Impostazioni Tattiche FC IQ EA Sports FC 25 (Squadra + Istruzioni Giocatori)
-  const [tacticalSettings, setTacticalSettings] = useState<TacticalSettings>(() =>
-    getDefaultTacticalSettings(EA_FC25_FORMATIONS[0].positions)
-  );
-
-  // Tab attiva (overview: Panoramica Titolari | lineup: Schiera Formazione | tactics: Tattiche & Istruzioni)
-  const [activeTab, setActiveTab] = useState<string>("overview");
-
-  // Modale istruzioni per uno specifico slot (0..10)
-  const [instructionSlotIndex, setInstructionSlotIndex] = useState<number | null>(null);
-
-  // Snapshot salvato nel DB per rilevare modifiche non salvate
-  // Stato Modale di Verifica e Validazione Formazione (Punto #82)
-  const [validationResult, setValidationResult] = useState<FormationValidationResult | null>(null);
-  const [isValidationModalOpen, setIsValidationModalOpen] = useState<boolean>(false);
 
   const [savedState, setSavedState] = useState<{
     formation: string;
