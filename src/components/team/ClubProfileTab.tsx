@@ -54,7 +54,7 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
       // Se il team è MAR, includi anche eventuali trofei associati a SBM
       const teamIds = [team.TEAM_ID.toUpperCase()];
       if (team.TEAM_ID.toUpperCase() === "MAR") teamIds.push("SBM");
-      
+
       const { data, error } = await supabase
         .from("team_trophies")
         .select("*")
@@ -124,9 +124,6 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
                     Impianto Ufficiale di Gioco • Serie A LCSIM
                   </span>
-                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[10px] font-bold">
-                    Omologato
-                  </Badge>
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
                   {stadiumName}
@@ -178,10 +175,6 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                 </span>
               </div>
               <Progress value={capacityPercent} className="h-2 bg-muted" />
-              <div className="text-[10px] text-muted-foreground flex justify-between">
-                <span>Posti a sedere coperti</span>
-                <span className="font-bold text-foreground">{capacityPercent}% scala Lega</span>
-              </div>
             </div>
 
             {/* Città e Sede */}
@@ -196,9 +189,6 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                 <strong className="text-sm font-black text-foreground">
                   {stadiumCity}
                 </strong>
-                <span className="text-[11px] text-muted-foreground block">
-                  Italia • Serie A
-                </span>
               </div>
             </div>
 
@@ -214,9 +204,6 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                 <strong className="text-sm font-black text-foreground">
                   {stadiumSurface}
                 </strong>
-                <span className="text-[11px] text-muted-foreground block">
-                  Drenaggio riscaldato
-                </span>
               </div>
             </div>
 
@@ -232,9 +219,6 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                 <strong className="text-sm font-black text-foreground truncate block">
                   {team.NAME}
                 </strong>
-                <span className="text-[11px] text-muted-foreground block">
-                  Impianto Esclusivo
-                </span>
               </div>
             </div>
           </div>
@@ -255,13 +239,13 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                 </div>
                 <div>
                   <CardTitle className="text-base sm:text-lg font-black tracking-tight text-foreground flex items-center gap-2">
-                    <span>Scudetto di Serie A</span>
+                    <span>Scudetto</span>
                     <Badge className="bg-amber-500 text-black font-black text-xs px-2 py-0">
                       {scudetti.length} {scudetti.length === 1 ? "Titolo" : "Titoli"}
                     </Badge>
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Campione d'Italia LCSIM • Campionato Ufficiale
+                    Campione LCSIM
                   </CardDescription>
                 </div>
               </div>
@@ -295,7 +279,7 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                   ))}
                 </div>
                 <p className="text-[11px] text-muted-foreground italic pt-1">
-                  I titoli vinti rimangono indelebili nell'albo d'oro della franchigia.
+                  Vittorie totali degli scudetti.
                 </p>
               </div>
             ) : (
@@ -330,7 +314,7 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                     </Badge>
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Vincitore della Supercoppa Ufficiale Pre-Campionato
+                    Vincitore della Supercoppa di Lega
                   </CardDescription>
                 </div>
               </div>
@@ -362,7 +346,7 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                   ))}
                 </div>
                 <p className="text-[11px] text-muted-foreground italic pt-1">
-                  Trionfo nella competizione che apre la stagione ufficiale di Lega.
+                  Vittorie totali della Supercoppa di Lega.
                 </p>
               </div>
             ) : (
