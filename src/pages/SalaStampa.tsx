@@ -39,7 +39,12 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  CornerDownRight,
 } from "lucide-react";
+import { getTeamLogo } from "@/utils/functions";
+import { supabase } from "@/supabaseClient";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -150,7 +155,7 @@ export default function SalaStampa() {
       const managerDisplayName =
         user?.name ||
         user?.username ||
-        (effectiveTeam ? availableTeams.find((t) => t.id === effectiveTeam)?.name : undefined) ||
+        (effectiveTeam ? availableTeams.find((t) => (t.team_id || (t as any).id) === effectiveTeam)?.name : undefined) ||
         "Presidente";
 
       const res = await submitPressAnswer(
@@ -405,11 +410,14 @@ export default function SalaStampa() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">Tutti i Club</SelectItem>
-                    {availableTeams.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
+                    {availableTeams.map((t) => {
+                      const tId = t.team_id || (t as any).id;
+                      return (
+                        <SelectItem key={tId} value={tId}>
+                          {t.name}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
