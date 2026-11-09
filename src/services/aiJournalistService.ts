@@ -1,5 +1,19 @@
 import { supabase } from "@/supabaseClient";
 
+export interface PressConferenceReply {
+  id: number;
+  conference_id: number;
+  team_id: string;
+  manager_name: string | null;
+  reply_text: string;
+  created_at: string;
+  team?: {
+    NAME: string;
+    MANAGER: string;
+    LOGO?: string;
+  };
+}
+
 export interface PressConference {
   id: number;
   season: number;
@@ -24,6 +38,7 @@ export interface PressConference {
     MANAGER: string;
     LOGO?: string;
   };
+  replies?: PressConferenceReply[];
 }
 
 export type RumorCategory = 'TRATTATIVA_REALE' | 'TRATTATIVA_DISTORTA' | 'FAKE_NEWS' | 'COLPO_A_SORPRESA';
@@ -153,7 +168,7 @@ export async function fetchPressConferences(
   try {
     let query = supabase
       .from('press_conferences')
-      .select('*, team:an_team!press_conferences_team_id_fkey(NAME, MANAGER), opponent:an_team!press_conferences_opponent_team_id_fkey(NAME, MANAGER)')
+      .select('*, team:an_team!press_conferences_team_id_fkey(NAME, MANAGER), opponent:an_team!press_conferences_opponent_team_id_fkey(NAME, MANAGER), replies:press_conference_replies(*, team:an_team!press_conference_replies_team_id_fkey(NAME, MANAGER))')
       .eq('season', season)
       .order('matchday', { ascending: false })
       .order('answered_at', { ascending: false, nullsFirst: false })
@@ -172,7 +187,13 @@ export async function fetchPressConferences(
       console.error('Errore fetchPressConferences:', error);
       return [];
     }
-    return (data as PressConference[]) || [];
+    const list = (data as PressConference[]) || [];
+    list.forEach(c => {
+      if (Array.isArray(c.replies)) {
+        c.replies.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      }
+    });
+    return list;
   } catch (err) {
     console.error('Errore imprevisto fetchPressConferences:', err);
     return [];
@@ -201,6 +222,54 @@ export async function fetchPendingConferenceForTeam(
     return (data as PressConference) || null;
   } catch {
     return null;
+  }
+}
+
+export async function submitConferenceReply(
+  conferenceId: number,
+  teamId: string,
+  replyText: string,
+  managerName?: string
+): Promise<{ success: boolean; error?: string; reply_id?: number }> {
+  try {
+    if (!replyText || replyText.trim().length === 0) {
+      return { success: false, error: 'Il commento non può essere vuoto.' };
+    }
+
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('rpc_submit_conference_reply', {
+      p_conference_id: conferenceId,
+      p_team_id: teamId,
+      p_reply_text: replyText.trim(),
+      p_manager_name: managerName || null,
+    });
+
+    if (!rpcErr && rpcData) {
+      const res = rpcData as { success: boolean; error?: string; reply_id?: number };
+      if (!res.success) {
+        return { success: false, error: res.error || 'Errore durante il salvataggio della replica.' };
+      }
+      return { success: true, reply_id: res.reply_id };
+    }
+
+    // Fallback diretto con insert
+    const { data: insertData, error: insertErr } = await supabase
+      .from('press_conference_replies')
+      .insert({
+        conference_id: conferenceId,
+        team_id: teamId,
+        manager_name: managerName || null,
+        reply_text: replyText.trim(),
+      })
+      .select('id')
+      .single();
+
+    if (insertErr) {
+      return { success: false, error: insertErr.message };
+    }
+
+    return { success: true, reply_id: insertData?.id };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Eccezione imprevista durante l\'invio della replica.' };
   }
 }
 

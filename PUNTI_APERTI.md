@@ -1511,17 +1511,22 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 
 ---
 
-## 📌 69. Sala Stampa: Sistema di Risposta Interattiva alle Interviste (Stile Football Manager)
-- **Stato**: 🟡 Da Progettare / In Backlog (Segnalazione Admin #3)
-- **Priorità**: Media-Alta (Coinvolgimento manageriale e Roleplay)
-- **Moduli previsti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`
-- **Tabelle coinvolte**: `press_conferences`, `an_team`
-- **Descrizione & Obiettivi**:
-  - Attualmente in `/sala-stampa` il manager può digitare liberamente una risposta testuale alla domanda della stampa.
-  - L'obiettivo è introdurre un'esperienza in pieno stile **Football Manager**:
-    1. **Opzioni a risposta multipla predefinite**: 3-4 risposte tipiche generate con tono differenziato (Trionfalista/Fiducioso, Equilibrato/Pragmatico, Critico/Rabbioso, No Comment/Diplomatico).
-    2. **Opzione risposta libera**: possibilità comunque mantenuta per il manager di inserire una dichiarazione personalizzata.
-    3. **Impatto sul contesto di lega**: le risposte fornite possono alimentare il tono dei successivi rumor di mercato, l'umore dello spogliatoio o i commenti del Giornalista AI nei turni successivi.
+## 📌 69. Sala Stampa: Botta e Risposta e Repliche tra Presidenti alle Interviste Rilasciate
+- **Stato**: 🟢 Completato & Testato (09/11/2026 - Segnalazione Admin #3)
+- **Priorità**: Media-Alta (Coinvolgimento manageriale, dibattito e Roleplay)
+- **Moduli coinvolti**: `src/pages/SalaStampa.tsx`, `src/services/aiJournalistService.ts`, `supabase/migrations/20261109_press_conference_replies.sql`
+- **Tabelle coinvolte**: `press_conferences`, `press_conference_replies`, `an_team`
+- **Descrizione & Implementazione**:
+  1. **Tabella Database & RPC (`press_conference_replies`)**:
+     - Creata la tabella `public.press_conference_replies` per memorizzare le repliche dei manager alle interviste ufficiali rilasciate da altri club.
+     - Implementata funzione protetta `rpc_submit_conference_reply` ed abilitata la pubblicazione Realtime (`supabase_realtime`) per visualizzare istantaneamente i nuovi commenti in diretta.
+     - Script di migrazione e rollback salvati in `supabase/migrations/20261109_press_conference_replies.sql`.
+  2. **Interfaccia Utente Sala Stampa (`SalaStampa.tsx` - Opzione A concordata)**:
+     - In calce a ciascuna card dell'intervista compare il selettore espandibile: *"💬 Repliche & Commenti (X)"*.
+     - Apertura del thread con la cronistoria dei botta-e-risposta tra presidenti: logo ufficiale del club, nome squadra, nome manager, data/ora e virgolettato.
+     - Box di invio della contro-dichiarazione per qualsiasi manager di squadra autenticato, senza limiti sul numero di risposte consentite.
+  3. **Verifica & Compilazione**:
+     - Testato invio e caricamento repliche con esito positivo e verificata build di produzione (`npm run build`).
 
 ---
 

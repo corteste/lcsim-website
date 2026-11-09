@@ -47,6 +47,7 @@ import {
   fetchPendingConferenceForTeam,
   fetchMarketRumors,
   submitPressAnswer,
+  submitConferenceReply,
   generatePressQuestionsForMatchday,
   maybeTriggerRandomRumor,
   reactToRumor,
@@ -70,6 +71,20 @@ export default function SalaStampa() {
   // Filtri Sala Stampa (mostrate solo interviste a cui un manager ha risposto)
   const [selectedMatchday, setSelectedMatchday] = useState<string>("ALL");
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
+
+  // Repliche e commenti alle interviste rilasciate (#69)
+  const [expandedConferenceIds, setExpandedConferenceIds] = useState<Set<number>>(new Set());
+  const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
+  const [isSubmittingReply, setIsSubmittingReply] = useState<Record<number, boolean>>({});
+
+  const toggleRepliesThread = (confId: number) => {
+    setExpandedConferenceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(confId)) next.delete(confId);
+      else next.add(confId);
+      return next;
+    });
+  };
 
   // Intervista in attesa per la squadra del manager loggato
   const [pendingForMyTeam, setPendingForMyTeam] = useState<PressConference | null>(null);
@@ -491,6 +506,113 @@ export default function SalaStampa() {
                             {conf.answered_at ? new Date(conf.answered_at).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" }) : ""}
                           </div>
                         </div>
+                      </div>
+
+                      {/* Sezione Repliche & Contro-dichiarazioni (#69 Opzione A) */}
+                      <div className="pt-2 border-t border-border/70 space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleRepliesThread(conf.id)}
+                          className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                            <span>Repliche & Commenti ({conf.replies?.length ?? 0})</span>
+                          </span>
+                          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            {expandedConferenceIds.has(conf.id) ? (
+                              <>Nascondi <ChevronUp className="h-3.5 w-3.5" /></>
+                            ) : (
+                              <>Espandi <ChevronDown className="h-3.5 w-3.5" /></>
+                            )}
+                          </span>
+                        </button>
+
+                        {expandedConferenceIds.has(conf.id) && (
+                          <div className="space-y-3 pt-1 animate-in fade-in-50 duration-200">
+                            {/* Cronistoria Repliche */}
+                            {(!conf.replies || conf.replies.length === 0) ? (
+                              <p className="text-[11px] italic text-muted-foreground text-center py-2.5 bg-muted/20 rounded-md border border-dashed border-border/60">
+                                Nessuna contro-dichiarazione rilasciata. Sii il primo presidente a replicare!
+                              </p>
+                            ) : (
+                              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                {conf.replies.map((rep) => (
+                                  <div
+                                    key={rep.id}
+                                    className="p-2.5 rounded-lg bg-muted/40 border border-border/60 text-xs space-y-1.5 hover:border-primary/30 transition-colors"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <div className="h-4 w-4 rounded shrink-0 overflow-hidden flex items-center justify-center bg-card">
+                                          <img
+                                            src={getTeamLogo(rep.team_id)}
+                                            alt={rep.team_id}
+                                            className="h-full w-full object-contain"
+                                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                          />
+                                        </div>
+                                        <span className="font-bold text-foreground truncate">
+                                          {rep.team?.NAME || rep.team_id}
+                                        </span>
+                                        <span className="text-[11px] text-muted-foreground truncate">
+                                          • {rep.manager_name || rep.team?.MANAGER || "Presidente"}
+                                        </span>
+                                      </div>
+                                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                                        {new Date(rep.created_at).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}
+                                      </span>
+                                    </div>
+                                    <p className="text-foreground/90 pl-3 italic text-[11.5px] border-l-2 border-primary/50 leading-relaxed">
+                                      "{rep.reply_text}"
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Form Invio Nuova Replica */}
+                            {effectiveTeam ? (
+                              <div className="pt-2 border-t border-dashed border-border/60 space-y-2">
+                                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+                                  <CornerDownRight className="h-3 w-3 text-primary shrink-0" />
+                                  <span>Replica come <strong>{effectiveTeam}</strong>:</span>
+                                </div>
+                                <div className="flex gap-2 items-end">
+                                  <Textarea
+                                    rows={2}
+                                    placeholder="Rilascia la tua contro-dichiarazione da presidente..."
+                                    value={replyDrafts[conf.id] || ""}
+                                    onChange={(e) =>
+                                      setReplyDrafts((prev) => ({ ...prev, [conf.id]: e.target.value }))
+                                    }
+                                    className="text-xs resize-none min-h-[46px]"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleReplySubmit(conf.id)}
+                                    disabled={
+                                      isSubmittingReply[conf.id] ||
+                                      !(replyDrafts[conf.id] || "").trim()
+                                    }
+                                    className="shrink-0 h-9 px-3 gap-1"
+                                  >
+                                    {isSubmittingReply[conf.id] ? (
+                                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <Send className="h-3.5 w-3.5" />
+                                    )}
+                                    <span className="hidden sm:inline">Invia</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-[10.5px] text-muted-foreground italic text-center py-1">
+                                Effettua il login come manager di una squadra per replicare a questa intervista.
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
