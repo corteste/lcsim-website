@@ -66,9 +66,6 @@ export function EditCoachModal({
   const [surname, setSurname] = useState<string>("");
   const [stadiumName, setStadiumName] = useState<string>("");
   const [stadiumCity, setStadiumCity] = useState<string>("");
-  const [stadiumCapacity, setStadiumCapacity] = useState<string>("40000");
-  const [stadiumSurface, setStadiumSurface] = useState<string>("Erba Naturale");
-  const [stadiumYear, setStadiumYear] = useState<string>("2018");
 
   const [isLoadingInitial, setIsLoadingInitial] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -121,9 +118,6 @@ export function EditCoachModal({
           setPresidentName(loadedPresident || "");
           setStadiumName(loadedStadiumName || "");
           setStadiumCity(loadedStadiumCity || "");
-          setStadiumCapacity(String(loadedStadiumCapacity || 40000));
-          setStadiumSurface(loadedStadiumSurface || "Erba Naturale");
-          setStadiumYear(String(loadedStadiumYear || 2018));
         }
       } catch (err) {
         console.error("Errore caricamento staff squadra:", err);
@@ -162,18 +156,12 @@ export function EditCoachModal({
 
     setIsSaving(true);
     try {
-      const parsedCapacity = parseInt(stadiumCapacity, 10);
-      const parsedYear = parseInt(stadiumYear, 10);
-
       const res = await updateTeamProfile({
         teamId,
         coachName: fullFormattedCoach,
         presidentName: presidentName.trim() || undefined,
         stadiumName: stadiumName.trim() || undefined,
         stadiumCity: stadiumCity.trim() || undefined,
-        stadiumCapacity: isNaN(parsedCapacity) ? undefined : parsedCapacity,
-        stadiumSurface: stadiumSurface.trim() || undefined,
-        stadiumYear: isNaN(parsedYear) ? undefined : parsedYear,
         actingUsername: user?.username,
       });
 
@@ -341,31 +329,6 @@ export function EditCoachModal({
                     value={stadiumCity}
                     onChange={(e) => setStadiumCity(e.target.value)}
                     placeholder="Es. Roma, Milano"
-                    className="h-8 text-xs font-semibold bg-background"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground">
-                    Capienza (Spettatori):
-                  </label>
-                  <Input
-                    type="number"
-                    value={stadiumCapacity}
-                    onChange={(e) => setStadiumCapacity(e.target.value)}
-                    placeholder="Es. 45000"
-                    className="h-8 text-xs font-semibold bg-background"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground">
-                    Terreno di Gioco:
-                  </label>
-                  <Input
-                    value={stadiumSurface}
-                    onChange={(e) => setStadiumSurface(e.target.value)}
-                    placeholder="Es. Erba Naturale"
                     className="h-8 text-xs font-semibold bg-background"
                   />
                 </div>

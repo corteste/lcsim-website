@@ -22,6 +22,8 @@ import {
   Pencil,
   CheckCircle2,
   TrendingUp,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { useClubHistory } from "@/components/team/ClubHistoryCard";
 import { getHistoricalTeamMeta } from "@/services/archiveService";
@@ -110,43 +112,37 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
       {/* 1. SEZIONE STADIO (STILE FOOTBALL MANAGER)                           */}
       {/* ===================================================================== */}
       <Card className="overflow-hidden border-border/80 shadow-xl bg-card">
-        {/* Banner superiore con grafica stadio notturno e luci */}
-        <div className="relative bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 p-6 sm:p-8 text-white border-b border-border/60 overflow-hidden">
-          {/* Riflessi e texture campo */}
-          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-400 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute -right-12 -bottom-12 opacity-10 pointer-events-none">
-            <Landmark className="w-80 h-80 text-white" />
-          </div>
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        {/* Banner superiore senza gradiente */}
+        <div className="p-5 sm:p-6 bg-card border-b border-border/60">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-start gap-4">
-              <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl shrink-0">
-                <Landmark className="w-8 h-8 text-emerald-400" />
+              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                <Landmark className="w-7 h-7" />
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
                     Impianto Ufficiale di Gioco • Serie A LCSIM
                   </span>
-                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 text-[10px] font-bold">
+                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[10px] font-bold">
                     Omologato
                   </Badge>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-md">
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
                   {stadiumName}
                 </h3>
-                <div className="flex items-center gap-3 text-xs text-white/80 pt-0.5 flex-wrap">
-                  <span className="flex items-center gap-1 font-semibold">
-                    <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <div className="flex items-center gap-3 text-xs text-muted-foreground pt-0.5 flex-wrap">
+                  <span className="flex items-center gap-1 font-semibold text-foreground/80">
+                    <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                     {stadiumCity}
                   </span>
                   <span>•</span>
-                  <span className="flex items-center gap-1 font-semibold">
-                    <Calendar className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span className="flex items-center gap-1 font-semibold text-foreground/80">
+                    <Calendar className="w-3.5 h-3.5 text-sky-500 shrink-0" />
                     Inaugurato nel {stadiumYear}
                   </span>
                   <span>•</span>
-                  <span className="font-semibold text-emerald-300">
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                     🌱 {stadiumSurface}
                   </span>
                 </div>
@@ -158,9 +154,9 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={() => (onEditStaff ? onEditStaff() : setIsEditModalOpen(true))}
-                className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs font-bold gap-1.5 self-start md:self-center h-8"
+                className="text-xs font-bold gap-1.5 self-start md:self-center h-8"
               >
-                <Pencil className="w-3.5 h-3.5 text-emerald-400" />
+                <Pencil className="w-3.5 h-3.5 text-primary" />
                 <span>Modifica Info Stadio</span>
               </Button>
             )}
@@ -465,29 +461,56 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
 
               {coaches.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
-                  {coaches.map((c) => (
-                    <div
-                      key={c.id}
-                      className="p-3.5 rounded-xl bg-muted/40 border border-border/60 flex items-start gap-3 hover:border-border transition-colors"
-                    >
-                      <div className="p-2 rounded-lg bg-background border border-border/70 shrink-0 text-primary font-bold">
-                        👔
-                      </div>
-                      <div className="min-w-0 space-y-0.5">
-                        <strong className="text-xs font-bold text-foreground block truncate">
-                          {c.coach_name}
-                        </strong>
-                        <div className="text-[11px] text-muted-foreground">
-                          {c.start_date} {c.end_date ? `— ${c.end_date}` : "— Attuale"}
-                        </div>
-                        {c.notes && (
-                          <span className="text-[10px] text-primary/80 font-medium italic block truncate">
-                            {c.notes}
+                  {coaches.map((c) => {
+                    const isHired = c.effetto?.toLowerCase().includes("assunz");
+                    const tMeta = getHistoricalTeamMeta(c.team_id);
+                    return (
+                      <div
+                        key={c.id}
+                        className="p-3 rounded-xl bg-muted/40 border border-border/60 flex flex-col justify-between gap-1.5 hover:border-border transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {isHired ? (
+                              <Badge className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0">
+                                <UserCheck className="h-3 w-3 mr-1" />
+                                Assunzione
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 text-[10px] font-bold px-1.5 py-0">
+                                <UserX className="h-3 w-3 mr-1" />
+                                Esonero / Addio
+                              </Badge>
+                            )}
+                            <Badge className={`${tMeta.badgeClass} text-[10px] px-1.5 py-0 font-bold`}>
+                              {c.team_id}
+                            </Badge>
+                          </div>
+                          <span className="text-[11px] font-bold text-muted-foreground font-mono">
+                            S{c.stagione}
+                            {c.giornata ? ` • G${c.giornata}` : ""}
                           </span>
+                        </div>
+
+                        <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                          <span className="text-xs sm:text-sm font-black text-foreground">
+                            {c.nome}
+                          </span>
+                          {c.event_date && (
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {c.event_date}
+                            </span>
+                          )}
+                        </div>
+
+                        {c.note && (
+                          <p className="text-[11px] text-muted-foreground italic border-t border-border/50 pt-1 mt-0.5">
+                            "{c.note}"
+                          </p>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="p-4 rounded-xl bg-muted/30 border border-border/60 text-xs text-muted-foreground">
