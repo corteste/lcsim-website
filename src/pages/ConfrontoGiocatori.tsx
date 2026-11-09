@@ -57,10 +57,12 @@ import AdminTeamSelector from "@/components/AdminTeamSelector";
 import RequireAuthPrompt from "@/components/RequireAuthPrompt";
 import { Player } from "@/types/player";
 import { supabase } from "@/supabaseClient";
-import { PLAYER_TABLE,
+import {
+  PLAYER_TABLE,
   TEAM_TABLE,
   ROOKIE_TABLE,
-  ROOKIE_SCOUTING_TABLE, SUPABASE_STORAGE_URL } from "@/constants/App";
+  ROOKIE_SCOUTING_TABLE, SUPABASE_STORAGE_URL
+} from "@/constants/App";
 import { renderStars } from "@/components/scouting/StarRating";
 import {
   isDepartmentUnlocked,
@@ -103,129 +105,129 @@ const STAT_CATEGORIES: {
   colorClass: string;
   stats: StatDef[];
 }[] = [
-  {
-    id: "ALL",
-    label: "Tutti gli Attributi",
-    icon: Activity,
-    colorClass: "text-primary",
-    stats: [
-      // Fisico
-      { key: "VELO", label: "Velocità Scatto", dept: "FIS" },
-      { key: "ACCL", label: "Accelerazione", dept: "FIS" },
-      { key: "FRZA", label: "Forza Fisica", dept: "FIS" },
-      { key: "RESI", label: "Resistenza", dept: "FIS" },
-      { key: "AGIL", label: "Agilità", dept: "FIS" },
-      { key: "ELEV", label: "Elevazione", dept: "FIS" },
-      { key: "RIFL", label: "Riflessi Generali", dept: "FIS" },
-      { key: "EQLB", label: "Equilibrio", dept: "FIS" },
-      // Difesa
-      { key: "CONT", label: "Contrasto", dept: "DIF" },
-      { key: "MARC", label: "Marcatura", dept: "DIF" },
-      { key: "INTR", label: "Intercettazione", dept: "DIF" },
-      { key: "SCIV", label: "Scivolata", dept: "DIF" },
-      { key: "AGGR", label: "Aggressività", dept: "DIF" },
-      // Passaggi
-      { key: "PASC", label: "Passaggio Corto", dept: "PAS" },
-      { key: "PASL", label: "Passaggio Lungo", dept: "PAS" },
-      { key: "CTRP", label: "Controllo Palla", dept: "PAS" },
-      { key: "VISI", label: "Visione di Gioco", dept: "PAS" },
-      { key: "CRSS", label: "Cross", dept: "PAS" },
-      { key: "EFFT", label: "Effetto", dept: "PAS" },
-      // Attacco
-      { key: "FINA", label: "Finalizzazione", dept: "ATT" },
-      { key: "PTIR", label: "Potenza Tiro", dept: "ATT" },
-      { key: "TIRD", label: "Tiro dalla Distanza", dept: "ATT" },
-      { key: "DRBL", label: "Dribbling", dept: "ATT" },
-      { key: "TSTA", label: "Colpo di Testa", dept: "ATT" },
-      { key: "PIAZ", label: "Piazzamento Offensivo", dept: "ATT" },
-      { key: "TIRV", label: "Tiro al Volo", dept: "ATT" },
-      // Calci Piazzati
-      { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
-      { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
-      { key: "FRED", label: "Freddezza", dept: "CPZ" },
-      // Portiere
-      { key: "TUFP", label: "Tuffo Portiere", dept: "POR" },
-      { key: "PREP", label: "Presa Portiere", dept: "POR" },
-      { key: "RINP", label: "Rinvio Portiere", dept: "POR" },
-      { key: "RIFP", label: "Riflessi Portiere", dept: "POR" },
-      { key: "POSP", label: "Posizionamento Portiere", dept: "POR" },
-    ],
-  },
-  {
-    id: "FIS",
-    label: "Fisico & Velocità",
-    icon: Zap,
-    colorClass: "text-purple-500",
-    stats: [
-      { key: "VELO", label: "Velocità Scatto", dept: "FIS" },
-      { key: "ACCL", label: "Accelerazione", dept: "FIS" },
-      { key: "FRZA", label: "Forza Fisica", dept: "FIS" },
-      { key: "RESI", label: "Resistenza", dept: "FIS" },
-      { key: "AGIL", label: "Agilità", dept: "FIS" },
-      { key: "ELEV", label: "Elevazione", dept: "FIS" },
-      { key: "RIFL", label: "Riflessi Generali", dept: "FIS" },
-      { key: "EQLB", label: "Equilibrio", dept: "FIS" },
-    ],
-  },
-  {
-    id: "DIF",
-    label: "Difesa & Marcatura",
-    icon: Shield,
-    colorClass: "text-blue-500",
-    stats: [
-      { key: "CONT", label: "Contrasto", dept: "DIF" },
-      { key: "MARC", label: "Marcatura", dept: "DIF" },
-      { key: "INTR", label: "Intercettazione", dept: "DIF" },
-      { key: "SCIV", label: "Scivolata", dept: "DIF" },
-      { key: "AGGR", label: "Aggressività", dept: "DIF" },
-    ],
-  },
-  {
-    id: "PAS",
-    label: "Passaggi & Regia",
-    icon: Compass,
-    colorClass: "text-cyan-500",
-    stats: [
-      { key: "PASC", label: "Passaggio Corto", dept: "PAS" },
-      { key: "PASL", label: "Passaggio Lungo", dept: "PAS" },
-      { key: "CTRP", label: "Controllo Palla", dept: "PAS" },
-      { key: "VISI", label: "Visione di Gioco", dept: "PAS" },
-      { key: "CRSS", label: "Cross", dept: "PAS" },
-      { key: "EFFT", label: "Effetto", dept: "PAS" },
-    ],
-  },
-  {
-    id: "ATT",
-    label: "Attacco & Calci piazzati",
-    icon: Target,
-    colorClass: "text-rose-500",
-    stats: [
-      { key: "FINA", label: "Finalizzazione", dept: "ATT" },
-      { key: "PTIR", label: "Potenza Tiro", dept: "ATT" },
-      { key: "TIRD", label: "Tiro dalla Distanza", dept: "ATT" },
-      { key: "DRBL", label: "Dribbling", dept: "ATT" },
-      { key: "TSTA", label: "Colpo di Testa", dept: "ATT" },
-      { key: "PIAZ", label: "Piazzamento Offensivo", dept: "ATT" },
-      { key: "TIRV", label: "Tiro al Volo", dept: "ATT" },
-      { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
-      { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
-      { key: "FRED", label: "Freddezza", dept: "CPZ" },
-    ],
-  },
-  {
-    id: "POR",
-    label: "Portiere",
-    icon: Shield,
-    colorClass: "text-amber-500",
-    stats: [
-      { key: "TUFP", label: "Tuffo Portiere", dept: "POR" },
-      { key: "PREP", label: "Presa Portiere", dept: "POR" },
-      { key: "RINP", label: "Rinvio Portiere", dept: "POR" },
-      { key: "RIFP", label: "Riflessi Portiere", dept: "POR" },
-      { key: "POSP", label: "Posizionamento Portiere", dept: "POR" },
-    ],
-  },
-];
+    {
+      id: "ALL",
+      label: "Tutti gli Attributi",
+      icon: Activity,
+      colorClass: "text-primary",
+      stats: [
+        // Fisico
+        { key: "VELO", label: "Velocità Scatto", dept: "FIS" },
+        { key: "ACCL", label: "Accelerazione", dept: "FIS" },
+        { key: "FRZA", label: "Forza Fisica", dept: "FIS" },
+        { key: "RESI", label: "Resistenza", dept: "FIS" },
+        { key: "AGIL", label: "Agilità", dept: "FIS" },
+        { key: "ELEV", label: "Elevazione", dept: "FIS" },
+        { key: "RIFL", label: "Riflessi Generali", dept: "FIS" },
+        { key: "EQLB", label: "Equilibrio", dept: "FIS" },
+        // Difesa
+        { key: "CONT", label: "Contrasto", dept: "DIF" },
+        { key: "MARC", label: "Marcatura", dept: "DIF" },
+        { key: "INTR", label: "Intercettazione", dept: "DIF" },
+        { key: "SCIV", label: "Scivolata", dept: "DIF" },
+        { key: "AGGR", label: "Aggressività", dept: "DIF" },
+        // Passaggi
+        { key: "PASC", label: "Passaggio Corto", dept: "PAS" },
+        { key: "PASL", label: "Passaggio Lungo", dept: "PAS" },
+        { key: "CTRP", label: "Controllo Palla", dept: "PAS" },
+        { key: "VISI", label: "Visione di Gioco", dept: "PAS" },
+        { key: "CRSS", label: "Cross", dept: "PAS" },
+        { key: "EFFT", label: "Effetto", dept: "PAS" },
+        // Attacco
+        { key: "FINA", label: "Finalizzazione", dept: "ATT" },
+        { key: "PTIR", label: "Potenza Tiro", dept: "ATT" },
+        { key: "TIRD", label: "Tiro dalla Distanza", dept: "ATT" },
+        { key: "DRBL", label: "Dribbling", dept: "ATT" },
+        { key: "TSTA", label: "Colpo di Testa", dept: "ATT" },
+        { key: "PIAZ", label: "Piazzamento Offensivo", dept: "ATT" },
+        { key: "TIRV", label: "Tiro al Volo", dept: "ATT" },
+        // Calci Piazzati
+        { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
+        { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
+        { key: "FRED", label: "Freddezza", dept: "CPZ" },
+        // Portiere
+        { key: "TUFP", label: "Tuffo Portiere", dept: "POR" },
+        { key: "PREP", label: "Presa Portiere", dept: "POR" },
+        { key: "RINP", label: "Rinvio Portiere", dept: "POR" },
+        { key: "RIFP", label: "Riflessi Portiere", dept: "POR" },
+        { key: "POSP", label: "Posizionamento Portiere", dept: "POR" },
+      ],
+    },
+    {
+      id: "FIS",
+      label: "Fisico & Velocità",
+      icon: Zap,
+      colorClass: "text-purple-500",
+      stats: [
+        { key: "VELO", label: "Velocità Scatto", dept: "FIS" },
+        { key: "ACCL", label: "Accelerazione", dept: "FIS" },
+        { key: "FRZA", label: "Forza Fisica", dept: "FIS" },
+        { key: "RESI", label: "Resistenza", dept: "FIS" },
+        { key: "AGIL", label: "Agilità", dept: "FIS" },
+        { key: "ELEV", label: "Elevazione", dept: "FIS" },
+        { key: "RIFL", label: "Riflessi Generali", dept: "FIS" },
+        { key: "EQLB", label: "Equilibrio", dept: "FIS" },
+      ],
+    },
+    {
+      id: "DIF",
+      label: "Difesa & Marcatura",
+      icon: Shield,
+      colorClass: "text-blue-500",
+      stats: [
+        { key: "CONT", label: "Contrasto", dept: "DIF" },
+        { key: "MARC", label: "Marcatura", dept: "DIF" },
+        { key: "INTR", label: "Intercettazione", dept: "DIF" },
+        { key: "SCIV", label: "Scivolata", dept: "DIF" },
+        { key: "AGGR", label: "Aggressività", dept: "DIF" },
+      ],
+    },
+    {
+      id: "PAS",
+      label: "Passaggi & Regia",
+      icon: Compass,
+      colorClass: "text-cyan-500",
+      stats: [
+        { key: "PASC", label: "Passaggio Corto", dept: "PAS" },
+        { key: "PASL", label: "Passaggio Lungo", dept: "PAS" },
+        { key: "CTRP", label: "Controllo Palla", dept: "PAS" },
+        { key: "VISI", label: "Visione di Gioco", dept: "PAS" },
+        { key: "CRSS", label: "Cross", dept: "PAS" },
+        { key: "EFFT", label: "Effetto", dept: "PAS" },
+      ],
+    },
+    {
+      id: "ATT",
+      label: "Attacco & Calci piazzati",
+      icon: Target,
+      colorClass: "text-rose-500",
+      stats: [
+        { key: "FINA", label: "Finalizzazione", dept: "ATT" },
+        { key: "PTIR", label: "Potenza Tiro", dept: "ATT" },
+        { key: "TIRD", label: "Tiro dalla Distanza", dept: "ATT" },
+        { key: "DRBL", label: "Dribbling", dept: "ATT" },
+        { key: "TSTA", label: "Colpo di Testa", dept: "ATT" },
+        { key: "PIAZ", label: "Piazzamento Offensivo", dept: "ATT" },
+        { key: "TIRV", label: "Tiro al Volo", dept: "ATT" },
+        { key: "PNIZ", label: "Calci di Punizione", dept: "CPZ" },
+        { key: "CRIG", label: "Calci di Rigore", dept: "CPZ" },
+        { key: "FRED", label: "Freddezza", dept: "CPZ" },
+      ],
+    },
+    {
+      id: "POR",
+      label: "Portiere",
+      icon: Shield,
+      colorClass: "text-amber-500",
+      stats: [
+        { key: "TUFP", label: "Tuffo Portiere", dept: "POR" },
+        { key: "PREP", label: "Presa Portiere", dept: "POR" },
+        { key: "RINP", label: "Rinvio Portiere", dept: "POR" },
+        { key: "RIFP", label: "Riflessi Portiere", dept: "POR" },
+        { key: "POSP", label: "Posizionamento Portiere", dept: "POR" },
+      ],
+    },
+  ];
 
 const ROLE_GROUPS: { id: string; label: string; roles: string[] }[] = [
   { id: "ALL", label: "Tutti i Ruoli", roles: [] },
@@ -399,41 +401,41 @@ function getMacroPillars(player: ComparisonPlayer) {
     : velStat;
   const tir = tirStat.isRevealed
     ? calcAvg([
-        tirStat,
-        getPlayerStatValue(player, "PTIR", "ATT"),
-        getPlayerStatValue(player, "TIRD", "ATT"),
-        getPlayerStatValue(player, "PIAZ", "ATT"),
-      ])
+      tirStat,
+      getPlayerStatValue(player, "PTIR", "ATT"),
+      getPlayerStatValue(player, "TIRD", "ATT"),
+      getPlayerStatValue(player, "PIAZ", "ATT"),
+    ])
     : tirStat;
   const pas = pasStat.isRevealed
     ? calcAvg([
-        pasStat,
-        getPlayerStatValue(player, "PASL", "PAS"),
-        getPlayerStatValue(player, "CTRP", "PAS"),
-        getPlayerStatValue(player, "VISI", "PAS"),
-      ])
+      pasStat,
+      getPlayerStatValue(player, "PASL", "PAS"),
+      getPlayerStatValue(player, "CTRP", "PAS"),
+      getPlayerStatValue(player, "VISI", "PAS"),
+    ])
     : pasStat;
   const drb = drbStat.isRevealed
     ? calcAvg([
-        drbStat,
-        getPlayerStatValue(player, "CTRP", "PAS"),
-        getPlayerStatValue(player, "AGIL", "FIS"),
-      ])
+      drbStat,
+      getPlayerStatValue(player, "CTRP", "PAS"),
+      getPlayerStatValue(player, "AGIL", "FIS"),
+    ])
     : drbStat;
   const dif = difStat.isRevealed
     ? calcAvg([
-        difStat,
-        getPlayerStatValue(player, "MARC", "DIF"),
-        getPlayerStatValue(player, "INTR", "DIF"),
-        getPlayerStatValue(player, "SCIV", "DIF"),
-      ])
+      difStat,
+      getPlayerStatValue(player, "MARC", "DIF"),
+      getPlayerStatValue(player, "INTR", "DIF"),
+      getPlayerStatValue(player, "SCIV", "DIF"),
+    ])
     : difStat;
   const fis = fisStat.isRevealed
     ? calcAvg([
-        fisStat,
-        getPlayerStatValue(player, "RESI", "FIS"),
-        getPlayerStatValue(player, "ELEV", "FIS"),
-      ])
+      fisStat,
+      getPlayerStatValue(player, "RESI", "FIS"),
+      getPlayerStatValue(player, "ELEV", "FIS"),
+    ])
     : fisStat;
 
   return [
@@ -769,38 +771,6 @@ const ConfrontoGiocatori = () => {
                       </p>
                     </div>
                   </div>
-
-                  {/* Quick Telemetry Strip */}
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                        Rosa {currentTeam}
-                      </span>
-                      <span className="text-lg sm:text-xl font-black font-mono text-foreground">
-                        {teamPlayers.length}{" "}
-                        <span className="text-xs font-normal text-muted-foreground">giocatori</span>
-                      </span>
-                    </div>
-
-                    <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                        Rookie Draft
-                      </span>
-                      <span className="text-lg sm:text-xl font-black font-mono text-amber-500">
-                        {rookies.length}{" "}
-                        <span className="text-xs font-normal text-muted-foreground">prospetti</span>
-                      </span>
-                    </div>
-
-                    <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                        Rookie Scoutati
-                      </span>
-                      <span className="text-lg sm:text-xl font-black font-mono text-emerald-500">
-                        {Object.keys(scoutingMap).length}/{rookies.length}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </Card>
@@ -835,35 +805,6 @@ const ConfrontoGiocatori = () => {
                 </div>
 
                 {/* Telemetria Serie A */}
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      Squadre Serie A
-                    </span>
-                    <span className="text-lg sm:text-xl font-black font-mono text-foreground">
-                      12 <span className="text-xs font-normal text-muted-foreground">club</span>
-                    </span>
-                  </div>
-
-                  <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      Calciatori Attivi
-                    </span>
-                    <span className="text-lg sm:text-xl font-black font-mono text-emerald-500">
-                      {teamPlayers.length}{" "}
-                      <span className="text-xs font-normal text-muted-foreground">atleti</span>
-                    </span>
-                  </div>
-
-                  <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      Statistiche
-                    </span>
-                    <span className="text-lg sm:text-xl font-black font-mono text-blue-500">
-                      100% <span className="text-xs font-normal text-muted-foreground">visibili</span>
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
           </Card>
@@ -1138,33 +1079,30 @@ const ConfrontoGiocatori = () => {
                 <button
                   type="button"
                   onClick={() => setSelectorSource("ALL")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    selectorSource === "ALL"
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "bg-muted/40 text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${selectorSource === "ALL"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   Tutti ({availablePlayers.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectorSource("TEAM")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    selectorSource === "TEAM"
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "bg-muted/40 text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${selectorSource === "TEAM"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   Rosa {currentTeam} ({teamPlayers.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectorSource("ROOKIE")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    selectorSource === "ROOKIE"
-                      ? "bg-amber-500 text-white shadow-sm"
-                      : "bg-muted/40 text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${selectorSource === "ROOKIE"
+                    ? "bg-amber-500 text-white shadow-sm"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   Rookies Draft ({rookies.length})
                 </button>
@@ -1201,11 +1139,10 @@ const ConfrontoGiocatori = () => {
                   key={g.id}
                   type="button"
                   onClick={() => setSelectorRole(g.id)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
-                    selectorRole === g.id
-                      ? "bg-foreground text-background font-bold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${selectorRole === g.id
+                    ? "bg-foreground text-background font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   {g.label}
                 </button>
@@ -1222,117 +1159,116 @@ const ConfrontoGiocatori = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {dialogFilteredPlayers.map((player) => {
-                const isSelected =
-                  (selectorTarget === "left" && player.uniqueKey === leftKey) ||
-                  (selectorTarget === "right" && player.uniqueKey === rightKey);
-                const ovrInfo = getPlayerOvr(player);
+                  const isSelected =
+                    (selectorTarget === "left" && player.uniqueKey === leftKey) ||
+                    (selectorTarget === "right" && player.uniqueKey === rightKey);
+                  const ovrInfo = getPlayerOvr(player);
 
-                return (
-                  <div
-                    key={player.uniqueKey}
-                    onClick={() => handleSelectFromDialog(player)}
-                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                      isSelected
+                  return (
+                    <div
+                      key={player.uniqueKey}
+                      onClick={() => handleSelectFromDialog(player)}
+                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${isSelected
                         ? "border-emerald-500 bg-emerald-500/10 shadow-sm"
                         : "border-border/70 bg-card hover:bg-muted/40 hover:border-border"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Avatar className="h-10 w-10 border border-border shrink-0">
-                        <AvatarImage
-                          src={getPlayerImage(player.ID)}
-                          alt={`${player.Nome} ${player.Cognome}`}
-                        />
-                        <AvatarFallback className="text-[10px] font-bold">
-                          {player.Nome?.[0]}
-                          {player.Cognome?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-foreground text-sm truncate">
-                            {player.Nome} {player.Cognome}
-                          </span>
-                          <Badge
-                            variant="outline"
-                            className={`text-[9px] font-bold px-1.5 py-0 ${getRoleColor(
-                              player.Posiz
-                            )}`}
-                          >
-                            {player.Posiz}
-                          </Badge>
-                          <img
-                            src={getNationalityFlag(player.Nazionalità)}
-                            alt={player.Nazionalità}
-                            className="h-3 w-4 object-cover rounded-sm shrink-0"
+                        }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-10 w-10 border border-border shrink-0">
+                          <AvatarImage
+                            src={getPlayerImage(player.ID)}
+                            alt={`${player.Nome} ${player.Cognome}`}
                           />
-                        </div>
+                          <AvatarFallback className="text-[10px] font-bold">
+                            {player.Nome?.[0]}
+                            {player.Cognome?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
 
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                          {player.isRookie ? (
-                            <span className="flex items-center gap-1 text-amber-500 font-semibold text-[11px]">
-                              {renderStars(player.Stelle, "h-2.5 w-2.5")}
-                              <span>•</span>
-                              <span
-                                className={`text-[10px] px-1 py-0 rounded border ${getTierBadgeStyle(
-                                  player.scoutingTokens
-                                )}`}
-                              >
-                                {player.scoutingTokens}G
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-foreground text-sm truncate">
+                              {player.Nome} {player.Cognome}
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] font-bold px-1.5 py-0 ${getRoleColor(
+                                player.Posiz
+                              )}`}
+                            >
+                              {player.Posiz}
+                            </Badge>
+                            <img
+                              src={getNationalityFlag(player.Nazionalità)}
+                              alt={player.Nazionalità}
+                              className="h-3 w-4 object-cover rounded-sm shrink-0"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                            {player.isRookie ? (
+                              <span className="flex items-center gap-1 text-amber-500 font-semibold text-[11px]">
+                                {renderStars(player.Stelle, "h-2.5 w-2.5")}
+                                <span>•</span>
+                                <span
+                                  className={`text-[10px] px-1 py-0 rounded border ${getTierBadgeStyle(
+                                    player.scoutingTokens
+                                  )}`}
+                                >
+                                  {player.scoutingTokens}G
+                                </span>
                               </span>
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                              {player.Squadra && (
-                                <img
-                                  src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
-                                  alt={player.Squadra}
-                                  className="h-3.5 w-3.5 object-contain"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = "none";
-                                  }}
-                                />
-                              )}
-                              <span>{player.Squadra}</span>
-                              {player.NumeroMaglia ? ` #${player.NumeroMaglia}` : ""}
-                            </span>
-                          )}
-                          <span>•</span>
-                          <span>{player.Età} anni</span>
-                          {isRetiringSoon(player) && <RetiringBadge variant="compact" />}
+                            ) : (
+                              <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                {player.Squadra && (
+                                  <img
+                                    src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
+                                    alt={player.Squadra}
+                                    className="h-3.5 w-3.5 object-contain"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = "none";
+                                    }}
+                                  />
+                                )}
+                                <span>{player.Squadra}</span>
+                                {player.NumeroMaglia ? ` #${player.NumeroMaglia}` : ""}
+                              </span>
+                            )}
+                            <span>•</span>
+                            <span>{player.Età} anni</span>
+                            {isRetiringSoon(player) && <RetiringBadge variant="compact" />}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* OVR Pill */}
-                    <div className="shrink-0 text-right">
-                      {ovrInfo.isRevealed ? (
-                        <Badge
-                          variant="outline"
-                          className={`${getValueColor(
-                            player.OVR ?? 0
-                          )} text-sm font-black font-mono px-2 py-0.5 border`}
-                        >
-                          {ovrInfo.displayVal}
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="bg-muted text-muted-foreground font-mono text-xs px-2 py-0.5 flex items-center gap-1"
-                        >
-                          <Lock className="h-2.5 w-2.5" /> ?
-                        </Badge>
-                      )}
-                      <span className="text-[9px] uppercase font-bold text-muted-foreground block mt-0.5">
-                        OVR
-                      </span>
+                      {/* OVR Pill */}
+                      <div className="shrink-0 text-right">
+                        {ovrInfo.isRevealed ? (
+                          <Badge
+                            variant="outline"
+                            className={`${getValueColor(
+                              player.OVR ?? 0
+                            )} text-sm font-black font-mono px-2 py-0.5 border`}
+                          >
+                            {ovrInfo.displayVal}
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-muted text-muted-foreground font-mono text-xs px-2 py-0.5 flex items-center gap-1"
+                          >
+                            <Lock className="h-2.5 w-2.5" /> ?
+                          </Badge>
+                        )}
+                        <span className="text-[9px] uppercase font-bold text-muted-foreground block mt-0.5">
+                          OVR
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1453,11 +1389,10 @@ const PlayerComparisonCard = ({
 
             {/* OVR Floating Badge */}
             <div
-              className={`absolute -bottom-2 -right-2 h-8 min-w-[32px] px-1.5 rounded-lg flex items-center justify-center font-mono font-black text-sm border shadow-md ${
-                ovrInfo.isRevealed
-                  ? getValueColor(player.OVR ?? 0)
-                  : "bg-muted text-muted-foreground border-border text-xs"
-              }`}
+              className={`absolute -bottom-2 -right-2 h-8 min-w-[32px] px-1.5 rounded-lg flex items-center justify-center font-mono font-black text-sm border shadow-md ${ovrInfo.isRevealed
+                ? getValueColor(player.OVR ?? 0)
+                : "bg-muted text-muted-foreground border-border text-xs"
+                }`}
               title={ovrInfo.isRevealed ? `Overall: ${ovrInfo.displayVal}` : "OVR da scoprire"}
             >
               {ovrInfo.isRevealed ? (
@@ -1493,7 +1428,7 @@ const PlayerComparisonCard = ({
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1.5">
               <span>{player.Età} anni</span>
-                          {isRetiringSoon(player) && <RetiringBadge variant="compact" />}
+              {isRetiringSoon(player) && <RetiringBadge variant="compact" />}
               <span>•</span>
               <span>{player.Altezza ? `${player.Altezza} cm` : "—"}</span>
               <span>•</span>
@@ -1542,17 +1477,16 @@ const PlayerComparisonCard = ({
                 {p.label}
               </span>
               <span
-                className={`text-sm font-black font-mono block mt-0.5 ${
-                  p.isRevealed
-                    ? p.numericVal !== null
-                      ? p.numericVal >= 80
-                        ? "text-emerald-500"
-                        : p.numericVal >= 70
+                className={`text-sm font-black font-mono block mt-0.5 ${p.isRevealed
+                  ? p.numericVal !== null
+                    ? p.numericVal >= 80
+                      ? "text-emerald-500"
+                      : p.numericVal >= 70
                         ? "text-foreground"
                         : "text-muted-foreground"
-                      : "text-muted-foreground"
-                    : "text-amber-500 flex items-center justify-center gap-0.5"
-                }`}
+                    : "text-muted-foreground"
+                  : "text-amber-500 flex items-center justify-center gap-0.5"
+                  }`}
               >
                 {p.isRevealed ? (
                   p.displayVal
@@ -1659,13 +1593,12 @@ const StatComparisonRow = ({
         {/* Left Player Value */}
         <div className="flex items-center gap-1.5 w-1/3 justify-start font-mono">
           <span
-            className={`font-black text-sm ${
-              left.isRevealed
-                ? aWins
-                  ? "text-blue-500 font-black"
-                  : "text-foreground"
-                : "text-amber-500 font-bold flex items-center gap-0.5"
-            }`}
+            className={`font-black text-sm ${left.isRevealed
+              ? aWins
+                ? "text-blue-500 font-black"
+                : "text-foreground"
+              : "text-amber-500 font-bold flex items-center gap-0.5"
+              }`}
           >
             {left.isRevealed ? (
               left.displayVal
@@ -1704,13 +1637,12 @@ const StatComparisonRow = ({
             </Badge>
           )}
           <span
-            className={`font-black text-sm ${
-              right.isRevealed
-                ? bWins
-                  ? "text-emerald-500 font-black"
-                  : "text-foreground"
-                : "text-amber-500 font-bold flex items-center gap-0.5"
-            }`}
+            className={`font-black text-sm ${right.isRevealed
+              ? bWins
+                ? "text-emerald-500 font-black"
+                : "text-foreground"
+              : "text-amber-500 font-bold flex items-center gap-0.5"
+              }`}
           >
             {right.isRevealed ? (
               right.displayVal
@@ -1729,23 +1661,21 @@ const StatComparisonRow = ({
       {/* Two-Sided Visual Comparison Bar */}
       <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden flex">
         <div
-          className={`h-full transition-all duration-300 ${
-            left.isRevealed
-              ? aWins
-                ? "bg-blue-500"
-                : "bg-blue-400/40"
-              : "bg-amber-500/30"
-          }`}
+          className={`h-full transition-all duration-300 ${left.isRevealed
+            ? aWins
+              ? "bg-blue-500"
+              : "bg-blue-400/40"
+            : "bg-amber-500/30"
+            }`}
           style={{ width: `${percentA}%` }}
         />
         <div
-          className={`h-full transition-all duration-300 ${
-            right.isRevealed
-              ? bWins
-                ? "bg-emerald-500"
-                : "bg-emerald-400/40"
-              : "bg-amber-500/30"
-          }`}
+          className={`h-full transition-all duration-300 ${right.isRevealed
+            ? bWins
+              ? "bg-emerald-500"
+              : "bg-emerald-400/40"
+            : "bg-amber-500/30"
+            }`}
           style={{ width: `${percentB}%` }}
         />
       </div>
@@ -1759,14 +1689,14 @@ const StatComparisonRow = ({
 interface TraitComparisonRowProps {
   label: string;
   field:
-    | "Role1"
-    | "Role2"
-    | "Trait1"
-    | "Trait2"
-    | "IconTrait1"
-    | "IconTrait2"
-    | "PiedeDebole"
-    | "MABI";
+  | "Role1"
+  | "Role2"
+  | "Trait1"
+  | "Trait2"
+  | "IconTrait1"
+  | "IconTrait2"
+  | "PiedeDebole"
+  | "MABI";
   isIcon?: boolean;
   leftPlayer: ComparisonPlayer;
   rightPlayer: ComparisonPlayer;
@@ -1910,56 +1840,56 @@ const PlayerComparisonRadar = ({
   // Se entrambi sono portieri o entrambi sono di movimento: radar unico classico
   const radarData = !isGkVsOutfield
     ? leftPillars.map((lp, idx) => {
-        const rp = rightPillars[idx];
-        const valA = lp.isRevealed ? (lp.numericVal ?? 0) : 25;
-        const valB = rp.isRevealed ? (rp.numericVal ?? 0) : 25;
+      const rp = rightPillars[idx];
+      const valA = lp.isRevealed ? (lp.numericVal ?? 0) : 25;
+      const valB = rp.isRevealed ? (rp.numericVal ?? 0) : 25;
 
-        let winnerText: string | null = null;
-        if (lp.isRevealed && rp.isRevealed && lp.numericVal !== null && rp.numericVal !== null) {
-          if (lp.numericVal > rp.numericVal) {
-            winnerText = `+${lp.numericVal - rp.numericVal} ${leftPlayer.Cognome}`;
-          } else if (rp.numericVal > lp.numericVal) {
-            winnerText = `+${rp.numericVal - lp.numericVal} ${rightPlayer.Cognome}`;
-          } else {
-            winnerText = "Parità perfetta";
-          }
-        } else if (!lp.isRevealed || !rp.isRevealed) {
-          winnerText = "Statistica non svelata (Richiede Scouting)";
+      let winnerText: string | null = null;
+      if (lp.isRevealed && rp.isRevealed && lp.numericVal !== null && rp.numericVal !== null) {
+        if (lp.numericVal > rp.numericVal) {
+          winnerText = `+${lp.numericVal - rp.numericVal} ${leftPlayer.Cognome}`;
+        } else if (rp.numericVal > lp.numericVal) {
+          winnerText = `+${rp.numericVal - lp.numericVal} ${rightPlayer.Cognome}`;
+        } else {
+          winnerText = "Parità perfetta";
         }
+      } else if (!lp.isRevealed || !rp.isRevealed) {
+        winnerText = "Statistica non svelata (Richiede Scouting)";
+      }
 
-        return {
-          pillar: lp.label,
-          pillarName: lp.name,
-          valA,
-          valB,
-          displayA: lp.displayVal,
-          displayB: rp.displayVal,
-          isRevealedA: lp.isRevealed,
-          isRevealedB: rp.isRevealed,
-          winner: winnerText,
-        };
-      })
+      return {
+        pillar: lp.label,
+        pillarName: lp.name,
+        valA,
+        valB,
+        displayA: lp.displayVal,
+        displayB: rp.displayVal,
+        isRevealedA: lp.isRevealed,
+        isRevealedB: rp.isRevealed,
+        winner: winnerText,
+      };
+    })
     : [];
 
   // Se POR vs Movimento: prepariamo i dati separati per i 2 radar individuali
   const leftSingleRadarData = isGkVsOutfield
     ? leftPillars.map((p) => ({
-        pillar: p.label,
-        pillarName: p.name,
-        val: p.isRevealed ? (p.numericVal ?? 0) : 25,
-        display: p.displayVal,
-        isRevealed: p.isRevealed,
-      }))
+      pillar: p.label,
+      pillarName: p.name,
+      val: p.isRevealed ? (p.numericVal ?? 0) : 25,
+      display: p.displayVal,
+      isRevealed: p.isRevealed,
+    }))
     : [];
 
   const rightSingleRadarData = isGkVsOutfield
     ? rightPillars.map((p) => ({
-        pillar: p.label,
-        pillarName: p.name,
-        val: p.isRevealed ? (p.numericVal ?? 0) : 25,
-        display: p.displayVal,
-        isRevealed: p.isRevealed,
-      }))
+      pillar: p.label,
+      pillarName: p.name,
+      val: p.isRevealed ? (p.numericVal ?? 0) : 25,
+      display: p.displayVal,
+      isRevealed: p.isRevealed,
+    }))
     : [];
 
   return (
@@ -2214,13 +2144,12 @@ const PlayerComparisonRadar = ({
                         <div className="flex items-center gap-2 font-mono text-xs">
                           {/* Left Player Value */}
                           <span
-                            className={`font-black ${
-                              item.isRevealedA
-                                ? aWins
-                                  ? "text-blue-500"
-                                  : "text-foreground"
-                                : "text-amber-500"
-                            }`}
+                            className={`font-black ${item.isRevealedA
+                              ? aWins
+                                ? "text-blue-500"
+                                : "text-foreground"
+                              : "text-amber-500"
+                              }`}
                           >
                             {item.displayA}
                           </span>
@@ -2257,13 +2186,12 @@ const PlayerComparisonRadar = ({
 
                           {/* Right Player Value */}
                           <span
-                            className={`font-black ${
-                              item.isRevealedB
-                                ? bWins
-                                  ? "text-emerald-500"
-                                  : "text-foreground"
-                                : "text-amber-500"
-                            }`}
+                            className={`font-black ${item.isRevealedB
+                              ? bWins
+                                ? "text-emerald-500"
+                                : "text-foreground"
+                              : "text-amber-500"
+                              }`}
                           >
                             {item.displayB}
                           </span>
@@ -2273,35 +2201,31 @@ const PlayerComparisonRadar = ({
                       {/* Micro duel progress bar */}
                       <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden flex">
                         <div
-                          className={`h-full transition-all duration-300 ${
-                            item.isRevealedA
-                              ? aWins
-                                ? "bg-blue-500"
-                                : "bg-blue-400/40"
-                              : "bg-amber-500/30"
-                          }`}
+                          className={`h-full transition-all duration-300 ${item.isRevealedA
+                            ? aWins
+                              ? "bg-blue-500"
+                              : "bg-blue-400/40"
+                            : "bg-amber-500/30"
+                            }`}
                           style={{
-                            width: `${
-                              bothRevealed && numA + numB > 0
-                                ? Math.round((numA / (numA + numB)) * 100)
-                                : 50
-                            }%`,
+                            width: `${bothRevealed && numA + numB > 0
+                              ? Math.round((numA / (numA + numB)) * 100)
+                              : 50
+                              }%`,
                           }}
                         />
                         <div
-                          className={`h-full transition-all duration-300 ${
-                            item.isRevealedB
-                              ? bWins
-                                ? "bg-emerald-500"
-                                : "bg-emerald-400/40"
-                              : "bg-amber-500/30"
-                          }`}
+                          className={`h-full transition-all duration-300 ${item.isRevealedB
+                            ? bWins
+                              ? "bg-emerald-500"
+                              : "bg-emerald-400/40"
+                            : "bg-amber-500/30"
+                            }`}
                           style={{
-                            width: `${
-                              bothRevealed && numA + numB > 0
-                                ? Math.round((numB / (numA + numB)) * 100)
-                                : 50
-                            }%`,
+                            width: `${bothRevealed && numA + numB > 0
+                              ? Math.round((numB / (numA + numB)) * 100)
+                              : 50
+                              }%`,
                           }}
                         />
                       </div>
