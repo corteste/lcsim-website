@@ -30,6 +30,10 @@ import { getHistoricalTeamMeta } from "@/services/archiveService";
 import { getTeamLogo, LCSIM_LOGO_SMALL } from "@/utils/functions";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
 import { useAuth } from "@/context/AuthContext";
+import { SUPABASE_STORAGE_URL } from "@/constants/App";
+
+const TROPHY_CMP_URL = `${SUPABASE_STORAGE_URL}/images/trophies/CMP.png`;
+const TROPHY_SCP_URL = `${SUPABASE_STORAGE_URL}/images/trophies/SCP.png`;
 
 interface ClubProfileTabProps {
   team: Team;
@@ -234,8 +238,12 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
           <CardHeader className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border-b border-border/60 py-4 px-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500 border border-amber-500/30 shrink-0 shadow-sm">
-                  <Trophy className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 shrink-0 shadow-sm flex items-center justify-center p-1">
+                  <img
+                    src={TROPHY_CMP_URL}
+                    alt="Scudetto"
+                    className="w-full h-full object-contain drop-shadow-sm"
+                  />
                 </div>
                 <div>
                   <CardTitle className="text-base sm:text-lg font-black tracking-tight text-foreground flex items-center gap-2">
@@ -262,8 +270,12 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                       key={t.id}
                       className="p-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/30 flex items-center gap-3 hover:border-amber-500/50 transition-colors"
                     >
-                      <div className="p-2 rounded-lg bg-amber-500 text-slate-950 font-black shrink-0 text-xs shadow-xs">
-                        🏆
+                      <div className="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/30 shrink-0 shadow-2xs flex items-center justify-center p-1">
+                        <img
+                          src={TROPHY_CMP_URL}
+                          alt="Scudetto"
+                          className="w-full h-full object-contain"
+                        />
                       </div>
                       <div className="min-w-0">
                         <strong className="text-sm font-extrabold text-foreground block truncate">
@@ -284,8 +296,12 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
               </div>
             ) : (
               <div className="p-6 rounded-xl bg-muted/20 border border-dashed border-border/80 text-center space-y-2">
-                <div className="p-3 rounded-full bg-muted/50 text-muted-foreground mx-auto w-fit">
-                  <Trophy className="w-6 h-6 opacity-40" />
+                <div className="p-3 rounded-2xl bg-muted/40 border border-border/60 mx-auto w-fit">
+                  <img
+                    src={TROPHY_CMP_URL}
+                    alt="Nessuno Scudetto"
+                    className="w-8 h-8 object-contain opacity-30 grayscale"
+                  />
                 </div>
                 <div className="text-xs font-bold text-foreground">
                   Nessuno Scudetto conquistato finora
@@ -303,8 +319,12 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
           <CardHeader className="bg-gradient-to-r from-blue-500/15 via-blue-500/5 to-transparent border-b border-border/60 py-4 px-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-blue-500/20 text-blue-500 border border-blue-500/30 shrink-0 shadow-sm">
-                  <ShieldCheck className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 shrink-0 shadow-sm flex items-center justify-center p-1">
+                  <img
+                    src={TROPHY_SCP_URL}
+                    alt="Supercoppa di Lega"
+                    className="w-full h-full object-contain drop-shadow-sm"
+                  />
                 </div>
                 <div>
                   <CardTitle className="text-base sm:text-lg font-black tracking-tight text-foreground flex items-center gap-2">
@@ -331,8 +351,12 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                       key={t.id}
                       className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/30 flex items-center gap-3 hover:border-blue-500/50 transition-colors"
                     >
-                      <div className="p-2 rounded-lg bg-blue-600 text-white font-black shrink-0 text-xs shadow-xs">
-                        🛡️
+                      <div className="w-9 h-9 rounded-lg bg-blue-500/15 border border-blue-500/30 shrink-0 shadow-2xs flex items-center justify-center p-1">
+                        <img
+                          src={TROPHY_SCP_URL}
+                          alt="Supercoppa"
+                          className="w-full h-full object-contain"
+                        />
                       </div>
                       <div className="min-w-0">
                         <strong className="text-sm font-extrabold text-foreground block truncate">
@@ -351,8 +375,12 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
               </div>
             ) : (
               <div className="p-6 rounded-xl bg-muted/20 border border-dashed border-border/80 text-center space-y-2">
-                <div className="p-3 rounded-full bg-muted/50 text-muted-foreground mx-auto w-fit">
-                  <ShieldCheck className="w-6 h-6 opacity-40" />
+                <div className="p-3 rounded-2xl bg-muted/40 border border-border/60 mx-auto w-fit">
+                  <img
+                    src={TROPHY_SCP_URL}
+                    alt="Nessuna Supercoppa"
+                    className="w-8 h-8 object-contain opacity-30 grayscale"
+                  />
                 </div>
                 <div className="text-xs font-bold text-foreground">
                   Nessuna Supercoppa in bacheca
