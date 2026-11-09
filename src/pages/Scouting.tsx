@@ -136,7 +136,7 @@ const ScoutingStatBar = ({
     return (
       <div className="p-2.5 rounded-lg bg-muted/25 border border-dashed border-border/60 flex items-center justify-between gap-2 opacity-75">
         <div className="flex items-center gap-2 min-w-0">
-          
+
           <span className="text-xs font-medium text-muted-foreground truncate">
             {label}
           </span>
@@ -154,13 +154,13 @@ const ScoutingStatBar = ({
     <div className="p-2.5 rounded-lg bg-card/80 border border-border/70 shadow-sm">
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
-          
+
           <span className="text-xs font-semibold text-foreground truncate">
             {label}
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          
+
           <span
             className={`text-xs sm:text-sm font-black font-mono ${getValueColor(
               displayInfo.midpoint
@@ -596,9 +596,6 @@ const Scouting = () => {
                     <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
                       <Compass className="h-3 w-3" /> La Mia Squadra • Intelligence &amp; Osservatori
                     </span>
-                    <Badge variant="outline" className="font-mono text-[11px]">
-                      Squadra: {activeTeamId}
-                    </Badge>
                   </div>
                   <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-3">
                     <Eye className="h-7 w-7 text-emerald-500 shrink-0" />
@@ -920,6 +917,16 @@ const Scouting = () => {
                                 {selectedRookie.Nome} {selectedRookie.Cognome}
                               </h2>
 
+                              {selectedRookie.Nazionalità && (
+                                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted border border-border/60 text-xs font-semibold">
+                                  <img
+                                    src={getNationalityFlag(selectedRookie.Nazionalità)}
+                                    alt={selectedRookie.Nazionalità}
+                                    className="h-3.5 w-5 object-cover rounded-sm"
+                                  />
+                                  <span>{selectedRookie.Nazionalità}</span>
+                                </div>
+                              )}
                               {/* PULSANTE GRADUATORIA BEN VISIBILE */}
                               <Button
                                 type="button"
@@ -943,16 +950,7 @@ const Scouting = () => {
                                   </>
                                 )}
                               </Button>
-                              {selectedRookie.Nazionalità && (
-                                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted border border-border/60 text-xs font-semibold">
-                                  <img
-                                    src={getNationalityFlag(selectedRookie.Nazionalità)}
-                                    alt={selectedRookie.Nazionalità}
-                                    className="h-3.5 w-5 object-cover rounded-sm"
-                                  />
-                                  <span>{selectedRookie.Nazionalità}</span>
-                                </div>
-                              )}
+
                               {selectedRookie.Squadra && (
                                 <Badge variant="secondary" className="font-mono text-xs">
                                   Draftato: {selectedRookie.Squadra}
@@ -992,32 +990,6 @@ const Scouting = () => {
                                 <strong className="text-foreground">
                                   {selectedRookie.Piede}
                                 </strong>
-                              </div>
-
-                              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-                                  Stelle:
-                                </span>
-                                {renderStars(selectedRookie.Stelle, "h-4 w-4")}
-                                {isAdmin && (
-                                  <select
-                                    value={selectedRookie.Stelle ?? 3}
-                                    onChange={(e) =>
-                                      handleAdminUpdateStars(
-                                        selectedRookie,
-                                        Number(e.target.value)
-                                      )
-                                    }
-                                    title="Modifica Stelle (Admin)"
-                                    className="ml-1 bg-background border border-border rounded px-1 py-0 text-[11px] font-mono"
-                                  >
-                                    {[1, 2, 3, 4, 5].map((s) => (
-                                      <option key={s} value={s}>
-                                        {s}★
-                                      </option>
-                                    ))}
-                                  </select>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1597,59 +1569,59 @@ const Scouting = () => {
                             </Avatar>
 
                             <div className="space-y-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] font-extrabold px-2 py-0 ${getRoleColor(
-                                  r.Posiz
-                                )}`}
-                              >
-                                {r.Posiz}
-                              </Badge>
-                              <h3 className="font-extrabold text-base truncate">
-                                {r.Nome} {r.Cognome}
-                              </h3>
-                              {wishlistMap.has(rId) ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleWishlist(rId)}
-                                  className="px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] hover:bg-destructive/15 hover:text-destructive hover:border-destructive/30 transition-all"
-                                  title={`Posizione #${wishlistMap.get(rId)} in Graduatoria. Clicca per rimuovere.`}
-                                >
-                                  #{wishlistMap.get(rId)}
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleWishlist(rId)}
-                                  className="p-1 rounded hover:bg-muted text-muted-foreground/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                                  title="Aggiungi alla Graduatoria di priorità"
-                                >
-                                  <ListPlus className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                              <span>{r.Età} anni</span>
-                              <span>•</span>
-                              <span>{r.Altezza} cm</span>
-                              <span>•</span>
-                              <span>{r.Peso} kg</span>
-                              <span>•</span>
-                              <span>Piede {r.Piede}</span>
-                            </div>
-                            <div className="pt-0.5 flex items-center gap-2">
-                              {renderStars(r.Stelle, "h-3.5 w-3.5")}
-                              {r.Squadra && (
+                              <div className="flex items-center gap-2">
                                 <Badge
-                                  variant="secondary"
-                                  className="text-[10px] font-mono"
+                                  variant="outline"
+                                  className={`text-[10px] font-extrabold px-2 py-0 ${getRoleColor(
+                                    r.Posiz
+                                  )}`}
                                 >
-                                  Draft: {r.Squadra}
+                                  {r.Posiz}
                                 </Badge>
-                              )}
+                                <h3 className="font-extrabold text-base truncate">
+                                  {r.Nome} {r.Cognome}
+                                </h3>
+                                {wishlistMap.has(rId) ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleWishlist(rId)}
+                                    className="px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] hover:bg-destructive/15 hover:text-destructive hover:border-destructive/30 transition-all"
+                                    title={`Posizione #${wishlistMap.get(rId)} in Graduatoria. Clicca per rimuovere.`}
+                                  >
+                                    #{wishlistMap.get(rId)}
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleWishlist(rId)}
+                                    className="p-1 rounded hover:bg-muted text-muted-foreground/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                    title="Aggiungi alla Graduatoria di priorità"
+                                  >
+                                    <ListPlus className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                <span>{r.Età} anni</span>
+                                <span>•</span>
+                                <span>{r.Altezza} cm</span>
+                                <span>•</span>
+                                <span>{r.Peso} kg</span>
+                                <span>•</span>
+                                <span>Piede {r.Piede}</span>
+                              </div>
+                              <div className="pt-0.5 flex items-center gap-2">
+                                {renderStars(r.Stelle, "h-3.5 w-3.5")}
+                                {r.Squadra && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] font-mono"
+                                  >
+                                    Draft: {r.Squadra}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                          </div>
                           </div>
 
                           <div className="flex flex-col items-end gap-1.5 shrink-0">

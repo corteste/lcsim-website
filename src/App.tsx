@@ -31,7 +31,6 @@ import StatisticheSquadre from "./pages/StatisticheSquadre";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
 import { queryClient } from "@/queryClient";
-import { FloatingBugReportButton } from "./components/FloatingBugReportButton";
 
 const App = () => (
   <AuthProvider>
@@ -77,7 +76,6 @@ const App = () => (
                 <Route path="/archivio/record" element={<RecordAllTime />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              <FloatingBugReportButton />
             </BrowserRouter>
           </TooltipProvider>
         </ThemeProvider>
