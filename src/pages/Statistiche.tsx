@@ -276,7 +276,7 @@ const Statistiche = () => {
         const map = new Map<number, number>();
         (data || []).forEach((row: any) => {
           const pId = Number(row.ID);
-          const isStarter = row.SUB === true ? false : Number(row.MINUTI || 0) >= 45;
+          const isStarter = !row.SUB && Number(row.MINUTI || 0) > 0;
           if (isStarter) {
             map.set(pId, (map.get(pId) || 0) + 1);
           }

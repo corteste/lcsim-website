@@ -1628,13 +1628,25 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 78. Archivio Storico Carriera: Verifica e Correzione Conteggio Presenze (Totali vs Titolare)
-- **Stato**: 🟡 Da Verificare / In Backlog (Segnalazione Admin del 07/11/2026 - Bug Dati)
+- **Stato**: 🟢 Completato & Testato (09/11/2026)
 - **Priorità**: Alta (Integrità e affidabilità dei dati storici)
-- **Moduli coinvolti**: `src/pages/ArchivioGiocatori.tsx`, viste o query statistiche (`as_player_stat`, `VIEW_PLAYER_STATS`)
-- **Tabelle coinvolte**: `as_player_stat`, `an_schedule`
-- **Descrizione & Obiettivi**:
-  - Nella scheda carriera dell'archivio (`/archivio/giocatori?player=50266`), per alcuni calciatori (es. Paolo Vitale) risultano presenze totali coincidenti con quelle da titolare (es. 59 su 59), oppure conteggi non coerenti con il minutaggio effettivo o i ruoli da subentrato.
-  - Verificare l'aggregazione dei record partita in `as_player_stat` (logica di discriminazione tra titolari e subentrati, minutaggio e formazioni) e correggere il calcolo affinché rifletta fedelmente le partite iniziate dal 1' minuto rispetto a quelle a gara in corso.
+- **Moduli coinvolti**: `src/pages/ArchivioGiocatori.tsx`, `src/pages/Statistiche.tsx`, `supabase/migrations/20261109_fix_player_stats_sub_and_starters.sql`
+- **Tabelle & Viste coinvolte**: `as_player_stat`, `view_player_season_summary`, `view_player_career_summary`
+- **Descrizione & Implementazione**:
+  1. **Diagnosi e Causa Radice**:
+     - Nella tabella `as_player_stat`, la colonna `"SUB"` conteneva il valore `false` per tutti i 14.761 record storici (S1-S11), azzerando la distinzione tra titolari e subentrati e facendo coincidere le presenze totali con quelle da titolare per ogni calciatore.
+  2. **Migrazione Database Postgres (`20261109_fix_player_stats_sub_and_starters.sql`)**:
+     - Eseguito script SQL che calcola retroattivamente gli 11 titolari effettivi di ciascuna partita (1.078 incontri totali):
+       - Priorità assoluta al Portiere di ruolo (`pl."Posiz" = 'POR'`).
+       - Ordinamento per minutaggio decrescente (`MINUTI DESC`).
+       - Risoluzione parità al 45' tramite ordine naturale di inserimento a referto (`ctid ASC`).
+     - Assegnato `"SUB" = false` agli 11 titolari (11.858 record) e `"SUB" = true` ai subentrati e giocatori con 0 minuti (2.903 record).
+     - Creato rispettivo script di rollback (`20261109_fix_player_stats_sub_and_starters_rollback.sql`).
+  3. **Verifica & Dati Paolo Vitale (`player_id = 50266`)**:
+     - Il conteggio riflette fedelmente la carriera reale: su **59 presenze totali**, risultano ora **14 da titolare** (S3: 11, S4: 2, S5: 1) e **45 da subentrato**, correggendo le incongruenze di minutaggio.
+  4. **Frontend & Pagine Statistiche**:
+     - In `src/pages/Statistiche.tsx`, rimossa la vecchia euristica `>= 45 minuti` e collegata la verifica diretta a `!row.SUB && MINUTI > 0`.
+     - `src/pages/ArchivioGiocatori.tsx` e `src/pages/RecordAllTime.tsx` leggono i dati perfetti e ricalcolati in tempo reale dalle viste database.
 
 ---
 
