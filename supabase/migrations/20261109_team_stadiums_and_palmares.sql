@@ -139,14 +139,14 @@ INSERT INTO public.team_trophies (team_id, trophy_type, season_label, season_num
 ('PFC', 'scudetto', 'Stagione 9', 9, FALSE, 'Panormus FC', 'Campione di Serie A LCSIM S9'),
 ('OLD', 'scudetto', 'Stagione 10', 10, FALSE, 'Old Bois', 'Campione di Serie A LCSIM S10');
 
--- SUPERCOPPE DI LEGA (Pre-Stagioni 5 - 10)
+-- SUPERCOPPE DI LEGA (Stagioni 4 - 9)
 INSERT INTO public.team_trophies (team_id, trophy_type, season_label, season_number, is_pre_season, won_as_team_name, notes) VALUES
-('ACD', 'supercoppa', 'Pre-Stagione 5', 5, TRUE, 'AC Denti', 'Vincitore Supercoppa di Lega Pre-S5'),
-('VFC', 'supercoppa', 'Pre-Stagione 6', 6, TRUE, 'Valle FC', 'Vincitore Supercoppa di Lega Pre-S6'),
-('ACD', 'supercoppa', 'Pre-Stagione 7', 7, TRUE, 'AC Denti', 'Vincitore Supercoppa di Lega Pre-S7'),
-('APD', 'supercoppa', 'Pre-Stagione 8', 8, TRUE, 'Average Pegiò Drivers', 'Vincitore Supercoppa di Lega Pre-S8'),
-('ACD', 'supercoppa', 'Pre-Stagione 9', 9, TRUE, 'AC Denti', 'Vincitore Supercoppa di Lega Pre-S9'),
-('ALV', 'supercoppa', 'Pre-Stagione 10', 10, TRUE, 'Alvisopoli FC', 'Vincitore Supercoppa di Lega Pre-S10');
+('ACD', 'supercoppa', 'Stagione 4', 4, FALSE, 'AC Denti', 'Vincitore Supercoppa di Lega S4'),
+('VFC', 'supercoppa', 'Stagione 5', 5, FALSE, 'Valle FC', 'Vincitore Supercoppa di Lega S5'),
+('ACD', 'supercoppa', 'Stagione 6', 6, FALSE, 'AC Denti', 'Vincitore Supercoppa di Lega S6'),
+('APD', 'supercoppa', 'Stagione 7', 7, FALSE, 'Average Pegiò Drivers', 'Vincitore Supercoppa di Lega S7'),
+('ACD', 'supercoppa', 'Stagione 8', 8, FALSE, 'AC Denti', 'Vincitore Supercoppa di Lega S8'),
+('ALV', 'supercoppa', 'Stagione 9', 9, FALSE, 'Alvisopoli FC', 'Vincitore Supercoppa di Lega S9');
 
 -- 5. Abilita RLS con policy di lettura pubblica
 ALTER TABLE public.team_trophies ENABLE ROW LEVEL SECURITY;
