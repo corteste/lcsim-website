@@ -140,7 +140,21 @@ export default function SalaStampa() {
 
   useEffect(() => {
     loadData();
-    
+
+    const channel = supabase
+      .channel("press-replies-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "press_conference_replies" },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [effectiveTeam]);
 
   // Invio Risposta Manager
@@ -176,6 +190,48 @@ export default function SalaStampa() {
       toast.error(err.message || "Errore imprevisto.");
     } finally {
       setIsSubmittingAnswer(false);
+    }
+  };
+
+  // Invio Replica di un altro manager (#69)
+  const handleReplySubmit = async (confId: number) => {
+    const draft = (replyDrafts[confId] || "").trim();
+    if (!draft) {
+      toast.error("Inserisci una risposta prima di inviare.");
+      return;
+    }
+    if (!effectiveTeam) {
+      toast.error("Devi possedere o selezionare una squadra per rilasciare una dichiarazione.");
+      return;
+    }
+
+    try {
+      setIsSubmittingReply((prev) => ({ ...prev, [confId]: true }));
+      const managerDisplayName =
+        user?.name ||
+        user?.username ||
+        availableTeams.find((t) => (t.team_id || (t as any).id) === effectiveTeam)?.name ||
+        "Presidente";
+
+      const res = await submitConferenceReply(
+        confId,
+        effectiveTeam,
+        draft,
+        managerDisplayName
+      );
+
+      if (res.success) {
+        toast.success("Replica inviata con successo!");
+        setReplyDrafts((prev) => ({ ...prev, [confId]: "" }));
+        setExpandedConferenceIds((prev) => new Set(prev).add(confId));
+        await loadData();
+      } else {
+        toast.error(res.error || "Errore durante l'invio della replica.");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Errore durante l'invio della replica.");
+    } finally {
+      setIsSubmittingReply((prev) => ({ ...prev, [confId]: false }));
     }
   };
 
