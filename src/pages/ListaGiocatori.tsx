@@ -83,7 +83,7 @@ export const getMarketLabel = (code: string | null) => {
     case "ced":
       return "In Cessione";
     case "tra":
-      return "In Trattativa";
+      return "Possibili Trattative";
     case "fis":
       return "Elemento Fisso";
     default:
