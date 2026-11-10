@@ -339,6 +339,15 @@ export async function generatePressQuestionsForMatchday(
       return { generated: 0, skipped: 0, error: 'Nessuna squadra attiva trovata.' };
     }
 
+    // 1b. Recupera info stato squadre per avere il nome attuale del Presidente
+    const { data: teamsStatus } = await supabase.rpc('rpc_get_all_teams_status');
+    const presidentMap = new Map<string, string>();
+    (teamsStatus || []).forEach((st: any) => {
+      if (st.team_id && st.claimed_by_name) {
+        presidentMap.set(st.team_id, st.claimed_by_name);
+      }
+    });
+
     // 2. Recupera schedule per determinare l'avversaria di giornata
     const { data: schedule } = await supabase
       .from('an_schedule')
@@ -409,7 +418,8 @@ export async function generatePressQuestionsForMatchday(
       const st = standingsMap.get(team.TEAM_ID);
       const rankText = st ? `${st.rank}° in classifica con ${st.points} pt` : 'inizio campionato';
       const oppText = oppTeam ? `${oppTeam.NAME} (${isHome ? 'in casa' : 'in trasferta'})` : 'prossima avversaria';
-      const managerName = team.MANAGER || 'Presidente';
+      const presidentName = presidentMap.get(team.TEAM_ID) || team.MANAGER || 'Presidente';
+      const coachName = team.MANAGER || 'Mister';
 
       const teamStarPlayer = (playersByTeam.get(team.TEAM_ID) || [])[0];
       const starPlayerText = teamStarPlayer ? `${teamStarPlayer.Nome} ${teamStarPlayer.Cognome} (${teamStarPlayer.Posiz})` : 'i suoi uomini chiave';
@@ -419,17 +429,19 @@ export async function generatePressQuestionsForMatchday(
       // Prompt unico e fortemente differenziato
       let question: string | null = null;
       const geminiPrompt = `Sei un giornalista sportivo di spicco della Lega LCSIM.
-Fai UNA SOLA domanda giornalistica ORIGINALE, pungente e su misura per il Presidente/Mister ${managerName} del "${team.NAME}".
+Fai UNA SOLA domanda giornalistica ORIGINALE, pungente e su misura per il Presidente ${presidentName} del "${team.NAME}".
 Contesto:
 - Turno di Serie A: Giornata ${matchday}
 - Situazione attuale della squadra: ${rankText}
+- Allenatore in panchina: ${coachName}
 - Prossima partita in programma: contro ${oppText}
 - Calciatore faro della rosa: ${starPlayerText}
 - Indice squadra nel turno: ${i + 1} di 12
 
 Istruzioni speciali per differenziare le domande tra i manager:
+- Rivolgiti sempre al Presidente chiamandolo "Presidente ${presidentName}, ...".
 - NON fare domande standard o generiche tipo "quali sono i vostri obiettivi?".
-- Alterna temi diversi per ciascun presidente: tattica e modulo, pressione psicologica della piazza, rivalità con ${oppText}, dipendenza dai gol di ${starPlayerText}, turnover, mercato e futuro della panchina.
+- Alterna temi diversi per ciascun presidente: ambizioni stagionali, fiducia nello staff tecnico guidato da ${coachName}, pressione psicologica della piazza, rivalità con ${oppText}, dipendenza dai gol di ${starPlayerText}, turnover, mercato e futuro della franchigia.
 - Rispondi ESCLUSIVAMENTE con il testo della domanda tra virgolette, senza frasi di contorno.`;
 
       const aiText = await callGeminiApi(geminiPrompt);
@@ -441,11 +453,11 @@ Istruzioni speciali per differenziare le domande tra i manager:
         question = generateDifferentiatedProceduralPressQuestion(
           i,
           team.NAME,
-          managerName,
+          presidentName,
           rankText,
           oppText,
           starPlayerText,
-          st?.rank || 6
+          coachName
         );
       }
 
@@ -453,7 +465,7 @@ Istruzioni speciali per differenziare le domande tra i manager:
         season,
         matchday,
         team_id: team.TEAM_ID,
-        manager_name: managerName,
+        manager_name: presidentName,
         opponent_team_id: opponentId,
         context_summary: contextSummary,
         question,
@@ -475,42 +487,42 @@ Istruzioni speciali per differenziare le domande tra i manager:
 }
 
 /**
- * Generatore procedurale con 12 angolazioni giornalistiche completamente diverse
+ * Generatore procedurale con 12 angolazioni giornalistiche completamente diverse rivolte al Presidente
  */
 function generateDifferentiatedProceduralPressQuestion(
   teamIndex: number,
   teamName: string,
-  managerName: string,
+  presidentName: string,
   rankText: string,
   oppText: string,
   starPlayerText: string,
-  rank: number
+  coachName: string
 ): string {
   const angles = [
     // 0: Pressione e ambizioni
-    `Presidente ${managerName}, il ${teamName} viaggia ${rankText}. La sfida con ${oppText} è considerata da tutti la prova del nove per capire se potete puntare al titolo: avverte la pressione dello spogliatoio?`,
+    `Presidente ${presidentName}, il ${teamName} viaggia ${rankText}. La sfida con ${oppText} è considerata da tutti la prova del nove per capire se potete puntare al titolo: avverte la pressione dello spogliatoio?`,
     // 1: Tattica e modulo
-    `Mister ${managerName}, contro ${oppText} vedremo un atteggiamento coraggioso a viso aperto o punterete su compattezza e ripartenze veloci per imbrigliare il loro gioco?`,
+    `Presidente ${presidentName}, con mister ${coachName} alla guida tecnica, contro ${oppText} vedremo un atteggiamento coraggioso a viso aperto o punterete su compattezza e ripartenze veloci?`,
     // 2: Dipendenza dal leader
-    `${managerName}, tutti gli occhi sono puntati su ${starPlayerText}. Non teme che la squadra rischi di diventare troppo prevedibile appoggiandosi sempre alle sue giocate?`,
+    `Presidente ${presidentName}, tutti gli occhi sono puntati su ${starPlayerText}. Non teme che la squadra rischi di diventare troppo prevedibile appoggiandosi sempre alle sue giocate?`,
     // 3: Calciomercato & rosa
-    `Presidente ${managerName}, in vista del big match contro ${oppText}, si ritiene pienamente soddisfatto della profondità della rosa o sfrutterà queste ore di mercato per qualche innesto last-minute?`,
+    `Presidente ${presidentName}, in vista del big match contro ${oppText}, si ritiene pienamente soddisfatto della profondità della rosa o sfrutterà queste ore di mercato per qualche innesto last-minute?`,
     // 4: Clima e psicologia
-    `Alla vigilia della gara contro ${oppText}, quale messaggio ha voluto dare al gruppo nei giorni scorsi per tenere alta la concentrazione ed evitare cali di tensione?`,
+    `Presidente ${presidentName}, alla vigilia della gara contro ${oppText}, quale messaggio ha voluto dare alla squadra e all'ambiente per tenere alta la concentrazione ed evitare cali di tensione?`,
     // 5: Scontro diretto
-    `${managerName}, i tre punti contro ${oppText} varrebbero doppio per la classifica. Firmerebbe per un pareggio o giocherete soltanto per vincere?`,
+    `Presidente ${presidentName}, i tre punti contro ${oppText} varrebbero doppio per la classifica. Ha chiesto alla squadra di giocare soltanto per vincere o firmerebbe per un pareggio?`,
     // 6: Gestione delle energie
-    `Mister ${managerName}, con il calendario serrato della Lega, contro ${oppText} ci sarà spazio per qualche rotazione a sorpresa o confermerà in blocco i fedelissimi?`,
+    `Presidente ${presidentName}, con il calendario serrato della Lega, contro ${oppText} si aspetta qualche rotazione a sorpresa da parte di ${coachName} o scenderanno in campo i fedelissimi?`,
     // 7: Reazione d'orgoglio
-    `Presidente ${managerName}, i tifosi del ${teamName} chiedono una prestazione di carattere. Contro ${oppText} che tipo di risposta si aspetta dai leader storici della squadra?`,
+    `Presidente ${presidentName}, i tifosi del ${teamName} chiedono una prestazione di carattere. Contro ${oppText} che tipo di risposta si aspetta dai leader storici della squadra?`,
     // 8: Fase difensiva
-    `${managerName}, l'attacco di ${oppText} fa paura a mezza lega. Avete studiato contromisure specifiche per neutralizzare le loro bocche di fuoco?`,
+    `Presidente ${presidentName}, l'attacco di ${oppText} fa paura a mezza lega. Avete studiato con lo staff tecnico contromisure specifiche per neutralizzare le loro bocche di fuoco?`,
     // 9: Filosofia di gioco
-    `Mister ${managerName}, preferisce vedere un ${teamName} bello e spettacolare o una squadra cinica capace di portare a casa il risultato sporco contro ${oppText}?`,
+    `Presidente ${presidentName}, preferisce vedere un ${teamName} bello e spettacolare o una squadra cinica capace di portare a casa il risultato sporco contro ${oppText}?`,
     // 10: Rivalità accesa
-    `Presidente ${managerName}, la sfida contro ${oppText} è tradizionalmente ricca di tensione e scintille. Che clima si aspetta in campo e sugli spalti?`,
+    `Presidente ${presidentName}, la sfida contro ${oppText} è tradizionalmente ricca di tensione e scintille. Che clima si aspetta in campo e sugli spalti?`,
     // 11: Fiducia nel progetto
-    `${managerName}, ${rankText} è il vostro attuale biglietto da visita. Dove può arrivare realmente questo ${teamName} al termine della stagione?`,
+    `Presidente ${presidentName}, ${rankText} è il vostro attuale biglietto da visita. Dove può arrivare realmente questo ${teamName} al termine della stagione sotto la sua gestione?`,
   ];
 
   const chosenAngle = angles[teamIndex % angles.length];

@@ -177,6 +177,9 @@ export function EditCoachModal({
       queryClient.invalidateQueries({ queryKey: ["team", teamId] });
       queryClient.invalidateQueries({ queryKey: ["all_teams_stadiums"] });
       queryClient.invalidateQueries({ queryKey: ["admin_teams_coach_list"] });
+      queryClient.invalidateQueries({ queryKey: ["press_conferences"] });
+      queryClient.invalidateQueries({ queryKey: ["pending_conference"] });
+      queryClient.invalidateQueries({ queryKey: ["press_conferences_replies"] });
 
       onSuccess?.(fullFormattedCoach, presidentName.trim());
       onOpenChange(false);
