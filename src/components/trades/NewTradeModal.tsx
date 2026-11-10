@@ -177,12 +177,21 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
 
   const gkError = useMemo(() => {
     if (!targetTeam) return null;
+    if (myCurGK <= 1) {
+      if (myPostGK < 1) return `La tua squadra (${currentTeam}) rimarrebbe con 0 portieri in rosa (vietato).`;
+    } else {
+      if (myPostGK < 2) return `La tua squadra (${currentTeam}) avrebbe ${myPostGK} portieri (minimo 2 obbligatori).`;
+    }
     if (myPostGK > 3) return `La tua squadra (${currentTeam}) avrebbe ${myPostGK} portieri (massimo 3 consentiti).`;
-    if (myPostGK < 2) return `La tua squadra (${currentTeam}) avrebbe ${myPostGK} portieri (minimo 2 obbligatori).`;
+
+    if (targetCurGK <= 1) {
+      if (targetPostGK < 1) return `La squadra avversaria (${targetTeam}) rimarrebbe con 0 portieri in rosa (vietato).`;
+    } else {
+      if (targetPostGK < 2) return `La squadra avversaria (${targetTeam}) avrebbe ${targetPostGK} portieri (minimo 2 obbligatori).`;
+    }
     if (targetPostGK > 3) return `La squadra avversaria (${targetTeam}) avrebbe ${targetPostGK} portieri (massimo 3 consentiti).`;
-    if (targetPostGK < 2) return `La squadra avversaria (${targetTeam}) avrebbe ${targetPostGK} portieri (minimo 2 obbligatori).`;
     return null;
-  }, [targetTeam, currentTeam, myPostGK, targetPostGK]);
+  }, [targetTeam, currentTeam, myCurGK, targetCurGK, myPostGK, targetPostGK]);
 
   const isGkRuleValid = !gkError;
 

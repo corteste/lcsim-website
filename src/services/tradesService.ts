@@ -337,28 +337,47 @@ export async function createTrade(payload: CreateTradePayload): Promise<{
       const senderPostGK = senderCurGK - offeredGK + requestedGK;
       const receiverPostGK = receiverCurGK - requestedGK + offeredGK;
 
+      if (senderCurGK <= 1) {
+        if (senderPostGK < 1) {
+          return {
+            success: false,
+            error: `Operazione non consentita: la tua squadra (${payload.sender_team}) rimarrebbe con 0 portieri in rosa (vietato).`,
+          };
+        }
+      } else {
+        if (senderPostGK < 2) {
+          return {
+            success: false,
+            error: `Operazione non consentita: la tua squadra (${payload.sender_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${senderPostGK}).`,
+          };
+        }
+      }
       if (senderPostGK > 3) {
         return {
           success: false,
           error: `Operazione non consentita: la tua squadra (${payload.sender_team}) supererebbe il limite massimo di 3 portieri in rosa (ne avrebbe ${senderPostGK}).`,
         };
       }
-      if (senderPostGK < 2) {
-        return {
-          success: false,
-          error: `Operazione non consentita: la tua squadra (${payload.sender_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${senderPostGK}).`,
-        };
+
+      if (receiverCurGK <= 1) {
+        if (receiverPostGK < 1) {
+          return {
+            success: false,
+            error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) rimarrebbe con 0 portieri in rosa (vietato).`,
+          };
+        }
+      } else {
+        if (receiverPostGK < 2) {
+          return {
+            success: false,
+            error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
+          };
+        }
       }
       if (receiverPostGK > 3) {
         return {
           success: false,
           error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) supererebbe il limite massimo di 3 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
-        };
-      }
-      if (receiverPostGK < 2) {
-        return {
-          success: false,
-          error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
         };
       }
     }
@@ -490,28 +509,47 @@ export async function sendCounterProposal(payload: SendCounterProposalPayload): 
       const senderPostGK = senderCurGK - offeredGK + requestedGK;
       const receiverPostGK = receiverCurGK - requestedGK + offeredGK;
 
+      if (senderCurGK <= 1) {
+        if (senderPostGK < 1) {
+          return {
+            success: false,
+            error: `Operazione non consentita: la tua squadra (${payload.sender_team}) rimarrebbe con 0 portieri in rosa (vietato).`,
+          };
+        }
+      } else {
+        if (senderPostGK < 2) {
+          return {
+            success: false,
+            error: `Operazione non consentita: la tua squadra (${payload.sender_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${senderPostGK}).`,
+          };
+        }
+      }
       if (senderPostGK > 3) {
         return {
           success: false,
           error: `Operazione non consentita: la tua squadra (${payload.sender_team}) supererebbe il limite massimo di 3 portieri in rosa (ne avrebbe ${senderPostGK}).`,
         };
       }
-      if (senderPostGK < 2) {
-        return {
-          success: false,
-          error: `Operazione non consentita: la tua squadra (${payload.sender_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${senderPostGK}).`,
-        };
+
+      if (receiverCurGK <= 1) {
+        if (receiverPostGK < 1) {
+          return {
+            success: false,
+            error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) rimarrebbe con 0 portieri in rosa (vietato).`,
+          };
+        }
+      } else {
+        if (receiverPostGK < 2) {
+          return {
+            success: false,
+            error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
+          };
+        }
       }
       if (receiverPostGK > 3) {
         return {
           success: false,
           error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) supererebbe il limite massimo di 3 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
-        };
-      }
-      if (receiverPostGK < 2) {
-        return {
-          success: false,
-          error: `Operazione non consentita: la squadra destinataria (${payload.receiver_team}) scenderebbe sotto il minimo obbligatorio di 2 portieri in rosa (ne avrebbe ${receiverPostGK}).`,
         };
       }
     }
@@ -628,10 +666,13 @@ export async function acceptTrade(tradeId: string, teamId: string): Promise<{ su
       const senderPostGK = senderCurGK - offeredGK + requestedGK;
       const receiverPostGK = receiverCurGK - requestedGK + offeredGK;
 
-      if (senderPostGK > 3 || senderPostGK < 2 || receiverPostGK > 3 || receiverPostGK < 2) {
+      const senderViolatesMin = senderCurGK <= 1 ? senderPostGK < 1 : senderPostGK < 2;
+      const receiverViolatesMin = receiverCurGK <= 1 ? receiverPostGK < 1 : receiverPostGK < 2;
+
+      if (senderPostGK > 3 || senderViolatesMin || receiverPostGK > 3 || receiverViolatesMin) {
         return {
           success: false,
-          error: "Impossibile accettare lo scambio: una delle due squadre violerebbe il limite regolamentare sui portieri (minimo 2, massimo 3).",
+          error: "Impossibile accettare lo scambio: una delle due squadre violerebbe il limite regolamentare sui portieri (minimo 2 se ne possiede >= 2, non scendere a 0 se ne possiede 1, massimo 3).",
         };
       }
     }

@@ -102,12 +102,22 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
         const senderPost = senderCur - offeredGK + requestedGK;
         const receiverPost = receiverCur - requestedGK + offeredGK;
 
-        if (senderPost > 3 || senderPost < 2 || receiverPost > 3 || receiverPost < 2) {
-          const reasons: string[] = [];
-          if (senderPost > 3) reasons.push(`${trade.sender_team} avrebbe ${senderPost} portieri (max 3)`);
+        const reasons: string[] = [];
+        if (senderCur <= 1) {
+          if (senderPost < 1) reasons.push(`${trade.sender_team} rimarrebbe con 0 portieri (vietato)`);
+        } else {
           if (senderPost < 2) reasons.push(`${trade.sender_team} avrebbe ${senderPost} portieri (min 2)`);
-          if (receiverPost > 3) reasons.push(`${trade.receiver_team} avrebbe ${receiverPost} portieri (max 3)`);
+        }
+        if (senderPost > 3) reasons.push(`${trade.sender_team} avrebbe ${senderPost} portieri (max 3)`);
+
+        if (receiverCur <= 1) {
+          if (receiverPost < 1) reasons.push(`${trade.receiver_team} rimarrebbe con 0 portieri (vietato)`);
+        } else {
           if (receiverPost < 2) reasons.push(`${trade.receiver_team} avrebbe ${receiverPost} portieri (min 2)`);
+        }
+        if (receiverPost > 3) reasons.push(`${trade.receiver_team} avrebbe ${receiverPost} portieri (max 3)`);
+
+        if (reasons.length > 0) {
           setGkValidationNotice(reasons.join(", "));
         } else {
           setGkValidationNotice(null);
