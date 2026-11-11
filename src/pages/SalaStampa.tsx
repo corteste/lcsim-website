@@ -354,7 +354,7 @@ export default function SalaStampa() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg sm:text-xl font-black text-foreground tracking-tight flex items-center gap-2">
-                    Inbox di Lega
+                    Inbox Personale
                   </h1>
                   <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
                     FM24 Edition

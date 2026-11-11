@@ -107,7 +107,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
           </div>
           <div className="min-w-0">
             <CardTitle className="text-xs sm:text-sm font-bold flex items-center gap-2 truncate">
-              <span>Inbox di Lega & Media</span>
+              <span>Inbox Personale</span>
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             </CardTitle>
             <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
