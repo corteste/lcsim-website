@@ -52,6 +52,18 @@ import { toast } from "sonner";
 import PlayerDetails from "@/components/player/playerDetails";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import { isEligibleForMarketStatus } from "@/types/marketStatus";
+import { OFFICIAL_SUBROLES } from "@/types/training";
+
+// Helper per ripulire la specializzazione rimuovendo '+' e '++' e spazi multipli
+export const cleanSubRole = (r?: string | null): string => {
+  if (!r) return "";
+  return r.replace(/\s*\+{1,2}\s*$/, "").replace(/\s+/g, " ").trim();
+};
+
+// Elenco unico alfabetico di tutti i ruoli/specializzazioni ufficiali
+export const UNIQUE_SUBROLES = Array.from(
+  new Set(OFFICIAL_SUBROLES.map((s) => s.name.trim()))
+).sort((a, b) => a.localeCompare(b, "it"));
 
 // Helper per estrarre il codice dello stato mercato
 export const extractMarketStatusCode = (market: any, squadra?: string | null): string | null => {
@@ -98,13 +110,52 @@ type SortDir = "asc" | "desc";
 type ScopeTab = "LCSIM" | "ALL" | "SVINCOLATI" | "RITIRATI" | "SERIE_B" | "ROOKIES";
 type ViewMode = "table" | "grid";
 
-const ROLE_GROUPS = [
-  { id: "all", label: "Tutti i Ruoli" },
-  { id: "POR", label: "Portieri" },
-  { id: "DIF", label: "Difensori" },
-  { id: "CEN", label: "Centrocampisti" },
-  { id: "ATT", label: "Attaccanti" },
+// Posizioni generiche (reparti) e specifiche (ruoli in campo)
+export interface PositionOption {
+  value: string;
+  label: string;
+  type: "all" | "group" | "specific";
+}
+
+export const POSITION_OPTIONS: PositionOption[] = [
+  { value: "all", label: "Tutte le Posizioni", type: "all" },
+
+  // Macro-reparti (Generici)
+  { value: "GROUP_POR", label: "Portieri (Generico)", type: "group" },
+  { value: "GROUP_DIF", label: "Difensori (Generico)", type: "group" },
+  { value: "GROUP_CEN", label: "Centrocampisti (Generico)", type: "group" },
+  { value: "GROUP_ATT", label: "Attaccanti (Generico)", type: "group" },
+
+  // Posizioni Specifiche
+  { value: "POR", label: "POR - Portiere", type: "specific" },
+  { value: "DC", label: "DC - Difensore Centrale", type: "specific" },
+  { value: "TD", label: "TD - Terzino Destro", type: "specific" },
+  { value: "TS", label: "TS - Terzino Sinistro", type: "specific" },
+  { value: "CDC", label: "CDC - Centrocampista Difensivo", type: "specific" },
+  { value: "CC", label: "CC - Centrocampista Centrale", type: "specific" },
+  { value: "ED", label: "ED - Esterno Destro", type: "specific" },
+  { value: "ES", label: "ES - Esterno Sinistro", type: "specific" },
+  { value: "COC", label: "COC - Centrocampista Offensivo", type: "specific" },
+  { value: "AD", label: "AD - Ala Destra", type: "specific" },
+  { value: "AS", label: "AS - Ala Sinistra", type: "specific" },
+  { value: "ATT", label: "ATT - Attaccante", type: "specific" },
 ];
+
+// Mappa per ordinamento cronologico/tattico delle posizioni (da POR ad ATT)
+export const POSITION_SORT_ORDER: Record<string, number> = {
+  POR: 1,
+  DC: 2,
+  TD: 3,
+  TS: 4,
+  CDC: 5,
+  CC: 6,
+  ED: 7,
+  ES: 8,
+  COC: 9,
+  AD: 10,
+  AS: 11,
+  ATT: 12,
+};
 
 const ListaGiocatori = () => {
   const { effectiveTeam } = useAuth();
@@ -156,6 +207,7 @@ const ListaGiocatori = () => {
   // Filtri integrati sempre visibili
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [subRoleFilter, setSubRoleFilter] = useState<string>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [marketFilter, setMarketFilter] = useState<string>("all");
 
@@ -219,12 +271,13 @@ const ListaGiocatori = () => {
   // Reset pagina al variare dei filtri
   useEffect(() => {
     setCurrentPage(1);
-  }, [scopeTab, searchQuery, roleFilter, teamFilter, marketFilter, sortField, sortDir, pageSize]);
+  }, [scopeTab, searchQuery, roleFilter, subRoleFilter, teamFilter, marketFilter, sortField, sortDir, pageSize]);
 
   // Reset completo dei filtri
   const handleResetFilters = () => {
     setSearchQuery("");
     setRoleFilter("all");
+    setSubRoleFilter("all");
     setTeamFilter("all");
     setMarketFilter("all");
     setSortField("OVR");
@@ -234,6 +287,7 @@ const ListaGiocatori = () => {
   const hasActiveFilters =
     searchQuery.trim() !== "" ||
     roleFilter !== "all" ||
+    subRoleFilter !== "all" ||
     teamFilter !== "all" ||
     marketFilter !== "all" ||
     sortField !== "OVR" ||
@@ -276,9 +330,30 @@ const ListaGiocatori = () => {
         if (!matches) return false;
       }
 
-      // 3. Filtro Ruolo
+      // 3. Filtro Posizione (Generico o Specifico)
       if (roleFilter !== "all") {
-        if (getPosGroup(player.Posiz) !== roleFilter) return false;
+        if (roleFilter.startsWith("GROUP_")) {
+          const groupTarget = roleFilter.replace("GROUP_", "");
+          if (getPosGroup(player.Posiz) !== groupTarget) return false;
+        } else {
+          // Posizione specifica (es. POR, DC, TD, TS, CC, ATT...)
+          if ((player.Posiz || "").trim().toUpperCase() !== roleFilter.toUpperCase()) {
+            return false;
+          }
+        }
+      }
+
+      // 3b. Filtro Ruolo (Specializzazione Primaria, Secondaria o Terziaria, es. "Attaccante Interno")
+      if (subRoleFilter !== "all") {
+        const clean1 = cleanSubRole(player.Role1);
+        const clean2 = cleanSubRole(player.Role2);
+        const clean3 = cleanSubRole((player as any).Role3);
+        const target = subRoleFilter.trim().toLowerCase();
+        const matchesSubRole =
+          clean1.toLowerCase() === target ||
+          clean2.toLowerCase() === target ||
+          clean3.toLowerCase() === target;
+        if (!matchesSubRole) return false;
       }
 
       // 4. Filtro Squadra (non applicabile alla classe Rookie)
@@ -326,17 +401,20 @@ const ListaGiocatori = () => {
           valA = `${a.Cognome || ""} ${a.Nome || ""}`.toLowerCase();
           valB = `${b.Cognome || ""} ${b.Nome || ""}`.toLowerCase();
           break;
-        case "Posiz":
-          valA = a.Posiz || "";
-          valB = b.Posiz || "";
+        case "Posiz": {
+          const pA = (a.Posiz || "").trim().toUpperCase();
+          const pB = (b.Posiz || "").trim().toUpperCase();
+          valA = POSITION_SORT_ORDER[pA] ?? 99;
+          valB = POSITION_SORT_ORDER[pB] ?? 99;
           break;
+        }
       }
 
       if (valA < valB) return sortDir === "asc" ? -1 : 1;
       if (valA > valB) return sortDir === "asc" ? 1 : -1;
       return (b.OVR ?? 0) - (a.OVR ?? 0);
     });
-  }, [players, rookies, scopeTab, searchQuery, roleFilter, teamFilter, marketFilter, sortField, sortDir, teamsMap]);
+  }, [players, rookies, scopeTab, searchQuery, roleFilter, subRoleFilter, teamFilter, marketFilter, sortField, sortDir, teamsMap]);
 
   // Calcolo paginazione
   const totalItems = filteredAndSorted.length;
@@ -602,7 +680,7 @@ const ListaGiocatori = () => {
             <div className="relative flex-1">
               <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
-                placeholder="Cerca per nome, cognome, squadra, ruolo o numero maglia..."
+                placeholder="Cerca per nome, cognome, squadra, posizione o numero maglia..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-9 h-10 text-xs sm:text-sm bg-muted/20 border-border/70 rounded-xl"
@@ -662,28 +740,55 @@ const ListaGiocatori = () => {
             </div>
           </div>
 
-          {/* Riga 2: Pillole Ruoli + Tendine Squadra, Mercato e Ordinamento */}
+          {/* Riga 2: Tendine Posizione, Ruolo, Squadra, Mercato e Ordinamento */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center pt-1 border-t border-border/50">
-            {/* Pillole Reparto Ruolo (POR, DIF, CEN, ATT) */}
-            <div className="md:col-span-5 flex flex-wrap gap-1.5 items-center">
-              {ROLE_GROUPS.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setRoleFilter(r.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    roleFilter === r.id
-                      ? "bg-foreground text-background font-extrabold shadow-sm"
-                      : "bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
+            {/* Tendina Posizione (Generica o Specifica) */}
+            <div className="md:col-span-3">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="h-9 text-xs bg-muted/20 border-border/70 rounded-xl">
+                  <SelectValue placeholder="Tutte le Posizioni" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  <SelectItem value="all">Tutte le Posizioni</SelectItem>
+                  <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                    Reparti Generici
+                  </div>
+                  {POSITION_OPTIONS.filter((p) => p.type === "group").map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                  <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 mt-1">
+                    Posizioni Specifiche
+                  </div>
+                  {POSITION_OPTIONS.filter((p) => p.type === "specific").map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Tendina Ruolo (Specializzazione Primaria o Secondaria) */}
+            <div className="md:col-span-3">
+              <Select value={subRoleFilter} onValueChange={setSubRoleFilter}>
+                <SelectTrigger className="h-9 text-xs bg-muted/20 border-border/70 rounded-xl">
+                  <SelectValue placeholder="Tutti i Ruoli (Specializzazioni)" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  <SelectItem value="all">Tutti i Ruoli ({UNIQUE_SUBROLES.length})</SelectItem>
+                  {UNIQUE_SUBROLES.map((roleName) => (
+                    <SelectItem key={roleName} value={roleName}>
+                      {roleName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Tendina Squadra */}
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <Select
                 value={teamFilter}
                 onValueChange={setTeamFilter}
@@ -743,7 +848,7 @@ const ListaGiocatori = () => {
                   <SelectItem value="OVR">Ordina: OVR</SelectItem>
                   <SelectItem value="Età">Ordina: Età</SelectItem>
                   <SelectItem value="Nome">Ordina: Nome</SelectItem>
-                  <SelectItem value="Posiz">Ordina: Ruolo</SelectItem>
+                  <SelectItem value="Posiz">Ordina: Posizione</SelectItem>
                   <SelectItem value="XP">Ordina: XP</SelectItem>
                 </SelectContent>
               </Select>
@@ -862,12 +967,13 @@ const ListaGiocatori = () => {
                         onClick={() => toggleSort("Posiz")}
                       >
                         <div className="flex items-center gap-1">
-                          <span>Ruolo</span>
+                          <span>Posizione</span>
                           {sortField === "Posiz" && (
                             sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                           )}
                         </div>
                       </th>
+                      <th className="py-3 px-4">Ruolo</th>
                       <th className="py-3 px-4">Squadra</th>
                       <th
                         className="py-3 px-4 text-center cursor-pointer hover:text-foreground transition-colors"
@@ -980,7 +1086,7 @@ const ListaGiocatori = () => {
                             </div>
                           </td>
 
-                          {/* Colonna Ruolo */}
+                          {/* Colonna Posizione */}
                           <td className="py-2.5 px-4">
                             <Badge
                               variant="outline"
@@ -990,6 +1096,24 @@ const ListaGiocatori = () => {
                             >
                               {player.Posiz}
                             </Badge>
+                          </td>
+
+                          {/* Colonna Ruolo (Specializzazioni) */}
+                          <td className="py-2.5 px-4 min-w-[150px]">
+                            <div className="flex flex-col gap-1 text-[11px]">
+                              {player.Role1 ? (
+                                <span className="font-semibold text-primary truncate">
+                                  {player.Role1}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground/60 text-[10px]">-</span>
+                              )}
+                              {player.Role2 && (
+                                <span className="text-[10px] text-muted-foreground truncate">
+                                  {player.Role2}
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* Colonna Squadra */}
