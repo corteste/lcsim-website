@@ -133,8 +133,8 @@ const Navbar = () => {
     },
     {
       path: "/giocatori/confronto-giocatori",
-      label: "Confronto Serie A",
-      description: "Testa a testa tra calciatori del campionato",
+      label: "Confronto Calciatori",
+      description: "Testa a testa tra calciatori di Serie A, Serie B e svincolati",
       icon: Swords,
       colorClass: "text-rose-500",
     },

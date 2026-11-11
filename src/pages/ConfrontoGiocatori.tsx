@@ -479,7 +479,7 @@ const ConfrontoGiocatori = () => {
   // Active Category Tab
   const [activeTab, setActiveTab] = useState<string>("ALL");
 
-  // Load Data: user's team squad + all rookies (Team Mode) OR active Serie A players (Serie A Mode)
+  // Load Data: user's team squad + all rookies (Team Mode) OR all players (Serie A, Serie B, Svincolati) (Global Mode)
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -515,30 +515,33 @@ const ConfrontoGiocatori = () => {
         setRookies((rookiesRes.data as Player[]) ?? []);
         setScoutingMap(sMap);
       } else {
-        // Modalità Serie A (/giocatori/confronto-giocatori):
-        // Carica SOLO i calciatori attivi nelle squadre di Serie A (nessun rookie)
-        const { data: teamsData, error: teamsError } = await supabase
-          .from(TEAM_TABLE)
-          .select("TEAM_ID, NAME")
-          .eq("ACTIVE", true)
-          .order("NAME", { ascending: true });
+        // Modalità Globale (/giocatori/confronto-giocatori):
+        // Carica tutti i calciatori di Serie A, Serie B e svincolati (esclusi solo i ritirati)
+        const [teamsRes, playersRes] = await Promise.all([
+          supabase
+            .from(TEAM_TABLE)
+            .select("TEAM_ID, NAME")
+            .eq("ACTIVE", true)
+            .order("NAME", { ascending: true }),
+          supabase
+            .from(PLAYER_TABLE)
+            .select("*")
+            .order("OVR", { ascending: false }),
+        ]);
 
-        if (teamsError) throw teamsError;
+        if (teamsRes.error) throw teamsRes.error;
+        if (playersRes.error) throw playersRes.error;
 
-        const activeTeamsList = (teamsData || []) as { TEAM_ID: string; NAME: string }[];
+        const activeTeamsList = (teamsRes.data || []) as { TEAM_ID: string; NAME: string }[];
         setSerieATeams(activeTeamsList);
-        const activeTeamIds = activeTeamsList.map((t) => t.TEAM_ID);
 
-        const { data: playersData, error: playersError } = await supabase
-          .from(PLAYER_TABLE)
-          .select("*")
-          .in("Squadra", activeTeamIds)
-          .order("OVR", { ascending: false });
+        // Escludi solo i giocatori ritirati
+        const eligiblePlayers = ((playersRes.data as Player[]) ?? []).filter(
+          (p) => p.Squadra !== "RITIRATO"
+        );
 
-        if (playersError) throw playersError;
-
-        setTeamPlayers((playersData as Player[]) ?? []);
-        setRookies([]); // Nessun rookie in Serie A
+        setTeamPlayers(eligiblePlayers);
+        setRookies([]); // Nessun rookie in questa modalità
         setScoutingMap({});
       }
     } catch (err) {
@@ -624,6 +627,28 @@ const ConfrontoGiocatori = () => {
     setRightKey(temp);
   };
 
+  // Set di ID squadre Serie A per lookup veloce
+  const serieATeamIdsSet = useMemo(() => {
+    return new Set(serieATeams.map((t) => t.TEAM_ID));
+  }, [serieATeams]);
+
+  // Conteggi per i raggruppamenti del selettore
+  const { serieAPlayersCount, svincolatiCount, serieBCount } = useMemo(() => {
+    let sa = 0;
+    let sv = 0;
+    let sb = 0;
+    for (const p of teamPlayers) {
+      if (!p.Squadra || p.Squadra === "SVINCOLATO") {
+        sv++;
+      } else if (p.Squadra.includes("B -")) {
+        sb++;
+      } else if (serieATeamIdsSet.has(p.Squadra)) {
+        sa++;
+      }
+    }
+    return { serieAPlayersCount: sa, svincolatiCount: sv, serieBCount: sb };
+  }, [teamPlayers, serieATeamIdsSet]);
+
   // Filter candidates for Player Selector Dialog
   const dialogFilteredPlayers = useMemo(() => {
     return availablePlayers.filter((p) => {
@@ -632,8 +657,22 @@ const ConfrontoGiocatori = () => {
         if (selectorSource === "TEAM" && p.isRookie) return false;
         if (selectorSource === "ROOKIE" && !p.isRookie) return false;
       } else {
-        // Team filter in Serie A mode
-        if (selectorTeam !== "ALL" && p.Squadra !== selectorTeam) return false;
+        // Team / Ambito filter in Confronto Calciatori mode
+        if (selectorTeam !== "ALL") {
+          if (selectorTeam === "SVINCOLATI") {
+            const isFa = !p.Squadra || p.Squadra === "SVINCOLATO" || p.Squadra === "";
+            if (!isFa) return false;
+          } else if (selectorTeam === "SERIE_B") {
+            const isB = Boolean(p.Squadra?.includes("B -"));
+            if (!isB) return false;
+          } else if (selectorTeam === "SERIE_A_ALL") {
+            const isSerieA = serieATeamIdsSet.has(p.Squadra || "");
+            if (!isSerieA) return false;
+          } else {
+            // Singola squadra di Serie A
+            if (p.Squadra !== selectorTeam) return false;
+          }
+        }
       }
 
       // Role filter
@@ -649,14 +688,20 @@ const ConfrontoGiocatori = () => {
         const q = selectorSearch.toLowerCase().trim();
         const fullName = `${p.Nome} ${p.Cognome}`.toLowerCase();
         const role = (p.Posiz || "").toLowerCase();
-        const team = (p.Squadra || "").toLowerCase();
+        const teamLabel = (
+          !p.Squadra || p.Squadra === "SVINCOLATO"
+            ? "svincolato svincolati"
+            : p.Squadra.includes("B -")
+            ? `serie b ${p.Squadra}`
+            : p.Squadra
+        ).toLowerCase();
         const num = p.NumeroMaglia ? String(p.NumeroMaglia) : "";
-        return fullName.includes(q) || role.includes(q) || team.includes(q) || num.includes(q);
+        return fullName.includes(q) || role.includes(q) || teamLabel.includes(q) || num.includes(q);
       }
 
       return true;
     });
-  }, [availablePlayers, isTeamMode, selectorSource, selectorTeam, selectorRole, selectorSearch]);
+  }, [availablePlayers, isTeamMode, selectorSource, selectorTeam, selectorRole, selectorSearch, serieATeamIdsSet]);
 
   const handleSelectFromDialog = (player: ComparisonPlayer) => {
     if (selectorTarget === "left") {
@@ -789,17 +834,17 @@ const ConfrontoGiocatori = () => {
                         variant="outline"
                         className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-mono font-bold"
                       >
-                        Serie A LCSIM
+                        Database LCSIM
                       </Badge>
                       <span className="text-xs text-muted-foreground font-mono">
                         Stagione 2026/2027
                       </span>
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 mt-0.5">
-                      Confronto Calciatori Serie A
+                      Confronto Calciatori
                     </h1>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                      Metti a confronto testa a testa i calciatori attivi delle squadre di Serie A.
+                      Metti a confronto testa a testa i calciatori di Serie A, Serie B e svincolati.
                     </p>
                   </div>
                 </div>
@@ -1108,21 +1153,34 @@ const ConfrontoGiocatori = () => {
                 </button>
               </div>
             ) : (
-              /* In Serie A Mode: Team Filter Selector */
+              /* In Confronto Calciatori Mode: Ambito / Team Filter Selector */
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-muted-foreground shrink-0">Squadra:</span>
+                  <span className="text-xs font-bold text-muted-foreground shrink-0">Ambito / Club:</span>
                   <Select value={selectorTeam} onValueChange={setSelectorTeam}>
                     <SelectTrigger className="h-8 text-xs bg-muted/30 w-full sm:w-64">
-                      <SelectValue placeholder="Tutte le squadre" />
+                      <SelectValue placeholder="Tutti i calciatori" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">Tutte le squadre ({teamPlayers.length})</SelectItem>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="ALL">Tutti i calciatori ({teamPlayers.length})</SelectItem>
+                      <SelectItem value="SERIE_A_ALL" className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        Serie A ({serieAPlayersCount})
+                      </SelectItem>
+                      <SelectItem value="SVINCOLATI" className="font-semibold text-slate-500">
+                        🆓 Svincolati ({svincolatiCount})
+                      </SelectItem>
+                      <SelectItem value="SERIE_B" className="font-semibold text-amber-500">
+                        ⚡ Serie B ({serieBCount})
+                      </SelectItem>
+
+                      <div className="pt-2 pb-1 px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t border-border/50">
+                        Squadre di Serie A
+                      </div>
                       {serieATeams.map((t) => {
                         const count = teamPlayers.filter((p) => p.Squadra === t.TEAM_ID).length;
                         return (
                           <SelectItem key={t.TEAM_ID} value={t.TEAM_ID}>
-                            {t.NAME} ({t.TEAM_ID}) - {count} giocatori
+                            {t.NAME} ({t.TEAM_ID}) - {count} calciatori
                           </SelectItem>
                         );
                       })}
@@ -1220,7 +1278,7 @@ const ConfrontoGiocatori = () => {
                               </span>
                             ) : (
                               <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                {player.Squadra && (
+                                {player.Squadra && !player.Squadra.includes("B -") && player.Squadra !== "SVINCOLATO" ? (
                                   <img
                                     src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                                     alt={player.Squadra}
@@ -1229,8 +1287,14 @@ const ConfrontoGiocatori = () => {
                                       (e.target as HTMLImageElement).style.display = "none";
                                     }}
                                   />
-                                )}
-                                <span>{player.Squadra}</span>
+                                ) : null}
+                                <span>
+                                  {!player.Squadra || player.Squadra === "SVINCOLATO"
+                                    ? "Svincolato"
+                                    : player.Squadra.includes("B -")
+                                    ? `Serie B (${player.Squadra.replace("B - ", "")})`
+                                    : player.Squadra}
+                                </span>
                                 {player.NumeroMaglia ? ` #${player.NumeroMaglia}` : ""}
                               </span>
                             )}
@@ -1345,9 +1409,15 @@ const PlayerComparisonCard = ({
           ) : (
             <Badge
               variant="outline"
-              className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[11px] font-bold flex items-center gap-1.5"
+              className={`text-[11px] font-bold flex items-center gap-1.5 ${
+                !player.Squadra || player.Squadra === "SVINCOLATO"
+                  ? "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30"
+                  : player.Squadra.includes("B -")
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                  : "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30"
+              }`}
             >
-              {player.Squadra && (
+              {player.Squadra && !player.Squadra.includes("B -") && player.Squadra !== "SVINCOLATO" && (
                 <img
                   src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
                   alt={player.Squadra}
@@ -1357,7 +1427,14 @@ const PlayerComparisonCard = ({
                   }}
                 />
               )}
-              <span>{player.Squadra} {player.NumeroMaglia ? `#${player.NumeroMaglia}` : ""}</span>
+              <span>
+                {!player.Squadra || player.Squadra === "SVINCOLATO"
+                  ? "Svincolato"
+                  : player.Squadra.includes("B -")
+                  ? `Serie B (${player.Squadra.replace("B - ", "")})`
+                  : player.Squadra}{" "}
+                {player.NumeroMaglia ? `#${player.NumeroMaglia}` : ""}
+              </span>
             </Badge>
           )}
 
