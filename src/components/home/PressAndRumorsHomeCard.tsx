@@ -1,23 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Newspaper,
+  Inbox,
   Mic2,
   Flame,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  Swords,
+  ArrowLeftRight,
 } from "lucide-react";
-import {
-  fetchPressConferences,
-  fetchMarketRumors,
-  maybeTriggerRandomRumor,
-  PressConference,
-  MarketRumor,
-} from "@/services/aiJournalistService";
+import { useAuth } from "@/context/AuthContext";
+import { fetchInboxFeed, InboxItem } from "@/services/inboxService";
+import { getTeamLogo } from "@/utils/functions";
 
 interface PressAndRumorsHomeCardProps {
   className?: string;
@@ -28,30 +26,28 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
   className = "",
   layout = "side-by-side",
 }) => {
-  const [conferences, setConferences] = useState<PressConference[]>([]);
-  const [rumors, setRumors] = useState<MarketRumor[]>([]);
-  const [pressIndex, setPressIndex] = useState(0);
-  const [rumorIndex, setRumorIndex] = useState(0);
-  const [isPressPaused, setIsPressPaused] = useState(false);
-  const [isRumorPaused, setIsRumorPaused] = useState(false);
+  const { effectiveTeam, isAdmin } = useAuth();
+  const [items, setItems] = useState<InboxItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
-      maybeTriggerRandomRumor();
       try {
-        const [press, rumorsData] = await Promise.all([
-          fetchPressConferences(undefined, 11, true),
-          fetchMarketRumors(10),
-        ]);
+        setLoading(true);
+        const feed = await fetchInboxFeed({
+          teamId: effectiveTeam,
+          isAdmin,
+          season: 11,
+        });
         if (isMounted) {
-          const answered = press.filter((p) => p.status === "ANSWERED");
-          setConferences(answered.slice(0, 8));
-          setRumors(rumorsData.slice(0, 8));
+          // Mostra le prime 10 notizie più rilevanti dell'inbox
+          setItems(feed.slice(0, 10));
         }
       } catch (e) {
-        console.error("Errore caricamento widget home Sala Stampa:", e);
+        console.error("Errore caricamento widget home Inbox:", e);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -60,289 +56,203 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [effectiveTeam, isAdmin]);
 
-  // Timer automatico carosello Sala Stampa (30s)
+  // Rotazione automatica carosello (ogni 10 secondi, con pausa on hover)
   useEffect(() => {
-    if (conferences.length <= 1 || isPressPaused) return;
+    if (items.length <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
-      setPressIndex((prev) => (prev + 1) % conferences.length);
-    }, 30000);
+      setCurrentIndex((prev) => (prev + 1) % items.length);
+    }, 10000);
 
     return () => clearInterval(timer);
-  }, [conferences.length, isPressPaused, pressIndex]);
+  }, [items.length, isPaused, currentIndex]);
 
-  // Timer automatico carosello Notizie di Mercato (30s)
-  useEffect(() => {
-    if (rumors.length <= 1 || isRumorPaused) return;
-
-    const timer = setInterval(() => {
-      setRumorIndex((prev) => (prev + 1) % rumors.length);
-    }, 30000);
-
-    return () => clearInterval(timer);
-  }, [rumors.length, isRumorPaused, rumorIndex]);
-
-  const handlePrevPress = () => {
-    if (conferences.length <= 1) return;
-    setPressIndex((prev) => (prev - 1 + conferences.length) % conferences.length);
+  const handlePrev = () => {
+    if (items.length <= 1) return;
+    setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
   };
 
-  const handleNextPress = () => {
-    if (conferences.length <= 1) return;
-    setPressIndex((prev) => (prev + 1) % conferences.length);
+  const handleNext = () => {
+    if (items.length <= 1) return;
+    setCurrentIndex((prev) => (prev + 1) % items.length);
   };
 
-  const handlePrevRumor = () => {
-    if (rumors.length <= 1) return;
-    setRumorIndex((prev) => (prev - 1 + rumors.length) % rumors.length);
-  };
+  const currentItem = items[currentIndex] || null;
 
-  const handleNextRumor = () => {
-    if (rumors.length <= 1) return;
-    setRumorIndex((prev) => (prev + 1) % rumors.length);
+  // Icona categoria dinamica
+  const getCategoryIcon = (category?: string) => {
+    switch (category) {
+      case "press":
+        return <Mic2 className="h-3 w-3" />;
+      case "rumors":
+        return <Flame className="h-3 w-3" />;
+      case "preview":
+        return <Swords className="h-3 w-3" />;
+      case "trades":
+        return <ArrowLeftRight className="h-3 w-3" />;
+      default:
+        return <Inbox className="h-3 w-3" />;
+    }
   };
-
-  const currentPress = conferences[pressIndex] || null;
-  const currentRumor = rumors[rumorIndex] || null;
-  const isStacked = layout === "stacked";
 
   return (
     <Card className={`border border-border/80 bg-card shadow-sm overflow-hidden flex flex-col justify-between ${className}`}>
+      {/* Header Widget */}
       <CardHeader className="py-3 px-4 sm:px-5 border-b border-border/60 bg-muted/20 flex flex-row items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-            <Newspaper className="h-4 w-4" />
+            <Inbox className="h-4 w-4" />
           </div>
           <div className="min-w-0">
             <CardTitle className="text-xs sm:text-sm font-bold flex items-center gap-2 truncate">
-              <span>LCSIM Media & Sala Stampa</span>
+              <span>Inbox di Lega & Media</span>
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             </CardTitle>
             <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
-              Dichiarazioni ufficiali e indiscrezioni di mercato.
+              Notizie ufficiali, rumor, anteprime e trattative.
             </p>
           </div>
         </div>
 
         <Link to="/sala-stampa" className="shrink-0">
-          <Button variant="ghost" size="sm" className="h-7 text-[11px] gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 font-bold px-2">
-            Apri <ArrowRight className="h-3 w-3" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 font-bold px-2"
+          >
+            Apri Inbox <ArrowRight className="h-3 w-3" />
           </Button>
         </Link>
       </CardHeader>
 
+      {/* Contenuto Carosello Notizie Unificate */}
       <CardContent
-        className={`p-3.5 sm:p-4 flex-1 min-h-0 flex flex-col justify-between overflow-hidden ${
-          isStacked ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 gap-3"
-        }`}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        className="p-4 flex-1 flex flex-col justify-between min-h-[220px]"
       >
-        {/* Blocco 1: Sala Stampa */}
-        <div
-          onMouseEnter={() => setIsPressPaused(true)}
-          onMouseLeave={() => setIsPressPaused(false)}
-          className={`p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between relative overflow-hidden transition-all ${
-            isStacked ? "h-[195px] min-h-[195px] max-h-[195px]" : "min-h-[180px]"
-          }`}
-        >
-          {/* Header Sub-Card */}
-          <div className="flex items-center justify-between gap-2 shrink-0 h-6">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <Badge
-                variant="outline"
-                className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold flex items-center gap-1 py-0 px-1.5 shrink-0"
-              >
-                <Mic2 className="h-2.5 w-2.5" />
-                Sala Stampa
-              </Badge>
-              {currentPress?.matchday && (
-                <span className="text-[10px] font-mono text-muted-foreground/80 shrink-0">
-                  G{currentPress.matchday}
-                </span>
+        {loading ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-xs text-muted-foreground italic">
+            <div className="h-5 w-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin mb-2" />
+            <p>Caricamento notizie dell'Inbox...</p>
+          </div>
+        ) : currentItem ? (
+          <div key={currentItem.id} className="flex-1 flex flex-col justify-between space-y-3 animate-in fade-in duration-300">
+            {/* Top Row: Badge Categoria + Controlli Carosello */}
+            <div className="flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] font-bold flex items-center gap-1 py-0.5 px-2 border ${currentItem.badgeColor || ""}`}
+                >
+                  {getCategoryIcon(currentItem.category)}
+                  <span>{currentItem.badgeText || "Notizia"}</span>
+                </Badge>
+                {currentItem.matchday && (
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    G{currentItem.matchday}
+                  </span>
+                )}
+              </div>
+
+              {items.length > 1 && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
+                    {currentIndex + 1}/{items.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handlePrev}
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                    title="Notizia precedente"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                    title="Notizia successiva"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               )}
             </div>
 
-            {/* Controlli manuali carosello */}
-            {conferences.length > 1 && (
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
-                  {pressIndex + 1}/{conferences.length}
-                </span>
-                <button
-                  type="button"
-                  onClick={handlePrevPress}
-                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                  title="Dichiarazione precedente"
-                  aria-label="Precedente"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextPress}
-                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                  title="Dichiarazione successiva"
-                  aria-label="Successiva"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Area Contenuto (Altezza Controllata e Fissa) */}
-          <div className="flex-1 min-h-0 my-1.5 flex flex-col justify-center overflow-hidden">
-            {loading ? (
-              <p className="text-xs text-muted-foreground italic py-1">Caricamento...</p>
-            ) : currentPress ? (
-              <div key={currentPress.id || pressIndex} className="animate-in fade-in duration-300">
-                <p className="text-xs sm:text-[13px] font-bold text-foreground truncate" title={`${currentPress.team?.NAME || currentPress.team_id} (${currentPress.manager_name || currentPress.team?.MANAGER || "Presidente"})`}>
-                  {currentPress.team?.NAME || currentPress.team_id}
-                  <span className="text-muted-foreground font-normal ml-1">
-                    ({currentPress.manager_name || currentPress.team?.MANAGER || "Presidente"})
-                  </span>
-                </p>
-                <p className="text-xs sm:text-[13px] italic text-muted-foreground mt-1 line-clamp-3 leading-relaxed">
-                  "{currentPress.answer || currentPress.question}"
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic py-1">
-                Nessuna dichiarazione recente registrata.
-              </p>
-            )}
-          </div>
-
-          {/* Footer Sub-Card */}
-          <div className="flex items-center justify-between pt-1.5 border-t border-border/40 shrink-0 h-6">
-            <Link
-              to="/sala-stampa"
-              className="text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-            >
-              Tutte le interviste &rarr;
-            </Link>
-
-            {/* Indicatori a pallini */}
-            {conferences.length > 1 && (
-              <div className="flex items-center gap-1">
-                {conferences.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setPressIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all ${
-                      idx === pressIndex
-                        ? "w-4 bg-emerald-500"
-                        : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                    }`}
-                    title={`Vai a dichiarazione ${idx + 1}`}
-                    aria-label={`Dichiarazione ${idx + 1}`}
+            {/* Mittente + Titolo + Snippet */}
+            <div className="flex-1 min-h-0 space-y-2">
+              <div className="flex items-center gap-2.5">
+                {currentItem.senderTeamId ? (
+                  <img
+                    src={getTeamLogo(currentItem.senderTeamId)}
+                    alt={currentItem.senderTeamId}
+                    className="h-7 w-7 object-contain rounded-md shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
                   />
-                ))}
+                ) : (
+                  <div className="h-7 w-7 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    {getCategoryIcon(currentItem.category)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-foreground truncate">
+                    {currentItem.senderName}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {currentItem.senderRole || "Notifica di Lega"}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Blocco 2: Gossip di Mercato */}
-        <div
-          onMouseEnter={() => setIsRumorPaused(true)}
-          onMouseLeave={() => setIsRumorPaused(false)}
-          className={`p-3.5 sm:p-4 rounded-xl bg-muted/30 border border-border/70 flex flex-col justify-between relative overflow-hidden transition-all ${
-            isStacked ? "h-[195px] min-h-[195px] max-h-[195px]" : "min-h-[180px]"
-          }`}
-        >
-          {/* Header Sub-Card */}
-          <div className="flex items-center justify-between gap-2 shrink-0 h-6">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <Badge
-                variant="outline"
-                className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold flex items-center gap-1 py-0 px-1.5 shrink-0"
-              >
-                <Flame className="h-2.5 w-2.5 text-amber-500" />
-                Ultime Notizie
-              </Badge>
+              <h4 className="text-sm font-black text-foreground leading-snug line-clamp-2">
+                {currentItem.title}
+              </h4>
+
+              <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                {currentItem.snippet}
+              </p>
             </div>
 
-            {/* Controlli manuali carosello */}
-            {rumors.length > 1 && (
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
-                  {rumorIndex + 1}/{rumors.length}
-                </span>
-                <button
-                  type="button"
-                  onClick={handlePrevRumor}
-                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                  title="Notizia precedente"
-                  aria-label="Precedente"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextRumor}
-                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                  title="Notizia successiva"
-                  aria-label="Successiva"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
+            {/* Footer Widget con Link e Indicatori Pallini */}
+            <div className="flex items-center justify-between pt-2 border-t border-border/50 shrink-0">
+              <Link
+                to="/sala-stampa"
+                className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+              >
+                <span>Leggi nell'Inbox</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
 
-          {/* Area Contenuto (Altezza Controllata e Fissa) */}
-          <div className="flex-1 min-h-0 my-1.5 flex flex-col justify-center overflow-hidden">
-            {loading ? (
-              <p className="text-xs text-muted-foreground italic py-1">Caricamento...</p>
-            ) : currentRumor ? (
-              <div key={currentRumor.id || rumorIndex} className="animate-in fade-in duration-300">
-                <p className="text-xs sm:text-[13px] font-bold text-foreground truncate" title={currentRumor.headline}>
-                  {currentRumor.headline}
-                </p>
-                <p className="text-xs sm:text-[13px] text-muted-foreground mt-1 line-clamp-3 leading-relaxed">
-                  {currentRumor.content}
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic py-1">
-                Nessun rumor recente. Entra in Sala Stampa!
-              </p>
-            )}
+              {items.length > 1 && (
+                <div className="flex items-center gap-1">
+                  {items.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCurrentIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === currentIndex
+                          ? "w-4 bg-emerald-500"
+                          : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                      }`}
+                      title={`Vai a notizia ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Footer Sub-Card */}
-          <div className="flex items-center justify-between pt-1.5 border-t border-border/40 shrink-0 h-6">
-            <Link
-              to="/sala-stampa"
-              className="text-[10px] sm:text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
-            >
-              Leggi le indiscrezioni &rarr;
-            </Link>
-
-            {/* Indicatori a pallini */}
-            {rumors.length > 1 && (
-              <div className="flex items-center gap-1">
-                {rumors.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setRumorIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all ${
-                      idx === rumorIndex
-                        ? "w-4 bg-amber-500"
-                        : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                    }`}
-                    title={`Vai a notizia ${idx + 1}`}
-                    aria-label={`Notizia ${idx + 1}`}
-                  />
-                ))}
-              </div>
-            )}
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-xs text-muted-foreground text-center">
+            <Inbox className="h-8 w-8 text-muted-foreground/40 mb-1" />
+            <p>Nessuna notizia recente nell'Inbox.</p>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,27 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Navbar from "@/components/Navbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
+  Inbox,
   Newspaper,
   Mic2,
   Sparkles,
@@ -31,133 +16,193 @@ import {
   Radio,
   Send,
   RefreshCw,
-  Key,
   Clock,
   CheckCircle2,
+  Search,
   Filter,
   MessageSquare,
   Zap,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
+  ArrowLeft,
+  ArrowRight,
+  ArrowLeftRight,
+  Swords,
+  Trophy,
+  Shield,
+  ExternalLink,
   CornerDownRight,
+  AlertCircle,
+  User,
+  MapPin,
+  Calendar,
 } from "lucide-react";
 import { getTeamLogo } from "@/utils/functions";
 import { supabase } from "@/supabaseClient";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  fetchPressConferences,
-  fetchPendingConferenceForTeam,
-  fetchMarketRumors,
+  fetchInboxFeed,
+  InboxItem,
+  InboxCategory,
+} from "@/services/inboxService";
+import {
   submitPressAnswer,
   submitConferenceReply,
+  reactToRumor,
   generatePressQuestionsForMatchday,
   maybeTriggerRandomRumor,
-  reactToRumor,
-  getGeminiApiKey,
-  setGeminiApiKey,
   checkIsMarketOpen,
-  PressConference,
-  MarketRumor,
 } from "@/services/aiJournalistService";
 
 export default function SalaStampa() {
   const { user, isAdmin, effectiveTeam, availableTeams } = useAuth();
+  const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<"press" | "rumors">("press");
-  const [conferences, setConferences] = useState<PressConference[]>([]);
-  const [rumors, setRumors] = useState<MarketRumor[]>([]);
-  const [loadingPress, setLoadingPress] = useState(true);
-  const [loadingRumors, setLoadingRumors] = useState(true);
-  const [isMarketOpen, setIsMarketOpen] = useState(true);
+  // Stato Feed & Notizie
+  const [items, setItems] = useState<InboxItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  // Filtri Sala Stampa (mostrate solo interviste a cui un manager ha risposto)
-  const [selectedMatchday, setSelectedMatchday] = useState<string>("ALL");
-  const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
+  // Filtri Inbox
+  const [selectedCategory, setSelectedCategory] = useState<InboxCategory>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [readItemIds, setReadItemIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("lcsim_fm24_inbox_read");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
 
-  // Repliche e commenti alle interviste rilasciate (#69)
-  const [expandedConferenceIds, setExpandedConferenceIds] = useState<Set<number>>(new Set());
-  const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
-  const [isSubmittingReply, setIsSubmittingReply] = useState<Record<number, boolean>>({});
-
-  const toggleRepliesThread = (confId: number) => {
-    setExpandedConferenceIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(confId)) next.delete(confId);
-      else next.add(confId);
-      return next;
-    });
-  };
-
-  // Intervista in attesa per la squadra del manager loggato
-  const [pendingForMyTeam, setPendingForMyTeam] = useState<PressConference | null>(null);
+  // Stato Risposta Intervista Pending
   const [myAnswerText, setMyAnswerText] = useState("");
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
 
-  // Paginazione Gossip & Rumor (5 rumor per pagina)
-  const [rumorPage, setRumorPage] = useState(1);
-  const RUMORS_PER_PAGE = 5;
+  // Stato Repliche Sala Stampa (#69)
+  const [replyDraft, setReplyDraft] = useState("");
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
-  const totalRumorPages = Math.max(1, Math.ceil(rumors.length / RUMORS_PER_PAGE));
-  const paginatedRumors = useMemo(() => {
-    const start = (rumorPage - 1) * RUMORS_PER_PAGE;
-    return rumors.slice(start, start + RUMORS_PER_PAGE);
-  }, [rumors, rumorPage]);
-
-  // Azioni Amministrazione (solo per generare le domande di inizio giornata per i club)
+  // Amministrazione
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [isMarketOpen, setIsMarketOpen] = useState(true);
 
-  // Caricamento Dati
-  const loadData = async () => {
-    setLoadingPress(true);
-    setLoadingRumors(true);
-
+  // Caricamento Notizie Unificate
+  const loadInbox = async () => {
+    setLoading(true);
     try {
-      // Trigger automatico silenzioso per rumor randomici durante la giornata se il mercato è aperto
       maybeTriggerRandomRumor();
-
-      const [pressData, rumorsData, marketStatus, myPending] = await Promise.all([
-        fetchPressConferences(undefined, 11, true), // onlyAnswered = true
-        fetchMarketRumors(40),
+      const [feed, marketStatus] = await Promise.all([
+        fetchInboxFeed({
+          teamId: effectiveTeam,
+          isAdmin,
+          season: 11,
+        }),
         checkIsMarketOpen(),
-        effectiveTeam ? fetchPendingConferenceForTeam(effectiveTeam, 11) : Promise.resolve(null),
       ]);
 
-      setConferences(pressData);
-      setRumors(rumorsData);
+      setItems(feed);
       setIsMarketOpen(marketStatus);
-      setPendingForMyTeam(myPending);
+
+      // Seleziona la prima notizia di default su desktop
+      setSelectedItemId((prev) => {
+        if (prev && feed.some((it) => it.id === prev)) return prev;
+        return feed[0]?.id || null;
+      });
     } catch (err) {
-      console.error("Errore caricamento Sala Stampa:", err);
-      toast.error("Errore durante il caricamento dei contenuti.");
+      console.error("Errore caricamento Inbox FM24:", err);
+      toast.error("Impossibile caricare l'Inbox delle notizie.");
     } finally {
-      setLoadingPress(false);
-      setLoadingRumors(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadInbox();
 
+    // Sottoscrizione realtime a nuove repliche o interviste
     const channel = supabase
-      .channel("press-replies-live")
+      .channel("inbox-live")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "press_conference_replies" },
-        () => {
-          loadData();
-        }
+        () => loadInbox()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "press_conferences" },
+        () => loadInbox()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "market_rumors" },
+        () => loadInbox()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [effectiveTeam]);
+  }, [effectiveTeam, isAdmin]);
 
-  // Invio Risposta Manager
+  // Gestione Letto / Non Letto
+  const markAsRead = (id: string) => {
+    setReadItemIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev).add(id);
+      try {
+        localStorage.setItem("lcsim_fm24_inbox_read", JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleSelectItem = (id: string) => {
+    setSelectedItemId(id);
+    markAsRead(id);
+  };
+
+  // Notizia Selezionata
+  const selectedItem = useMemo(() => {
+    return items.find((it) => it.id === selectedItemId) || items[0] || null;
+  }, [items, selectedItemId]);
+
+  // Filtro Notizie
+  const filteredItems = useMemo(() => {
+    return items.filter((it) => {
+      if (selectedCategory !== "all" && it.category !== selectedCategory) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = it.title.toLowerCase().includes(q);
+        const matchesSender = it.senderName.toLowerCase().includes(q);
+        const matchesSnippet = it.snippet.toLowerCase().includes(q);
+        const matchesTeam = (it.senderTeamId || "").toLowerCase().includes(q);
+        if (!matchesTitle && !matchesSender && !matchesSnippet && !matchesTeam) return false;
+      }
+      return true;
+    });
+  }, [items, selectedCategory, searchQuery]);
+
+  // Conteggi per categoria
+  const counts = useMemo(() => {
+    const c = {
+      all: items.length,
+      trades: 0,
+      press: 0,
+      rumors: 0,
+      preview: 0,
+    };
+    items.forEach((it) => {
+      if (it.category in c) {
+        c[it.category]++;
+      }
+    });
+    return c;
+  }, [items]);
+
+  // Invio Risposta Intervista Ufficiale (Pending)
   const handleAnswerSubmit = async (conferenceId: number) => {
     if (!myAnswerText.trim()) {
       toast.error("Inserisci una dichiarazione valida prima di inviare.");
@@ -172,17 +217,12 @@ export default function SalaStampa() {
         (effectiveTeam ? availableTeams.find((t) => (t.team_id || (t as any).id) === effectiveTeam)?.name : undefined) ||
         "Presidente";
 
-      const res = await submitPressAnswer(
-        conferenceId,
-        myAnswerText.trim(),
-        managerDisplayName
-      );
+      const res = await submitPressAnswer(conferenceId, myAnswerText.trim(), managerDisplayName);
 
       if (res.success) {
-        toast.success("Dichiarazione ufficiale registrata! Ora è visibile nella Sala Stampa pubblica.");
+        toast.success("Dichiarazione ufficiale registrata e pubblicata in Sala Stampa!");
         setMyAnswerText("");
-        setPendingForMyTeam(null);
-        await loadData();
+        await loadInbox();
       } else {
         toast.error(res.error || "Errore durante il salvataggio.");
       }
@@ -193,75 +233,74 @@ export default function SalaStampa() {
     }
   };
 
-  // Invio Replica di un altro manager (#69)
+  // Invio Replica Presidente (#69)
   const handleReplySubmit = async (confId: number) => {
-    const draft = (replyDrafts[confId] || "").trim();
+    const draft = replyDraft.trim();
     if (!draft) {
-      toast.error("Inserisci una risposta prima di inviare.");
+      toast.error("Inserisci una replica prima di inviare.");
       return;
     }
     if (!effectiveTeam) {
-      toast.error("Devi possedere o selezionare una squadra per rilasciare una dichiarazione.");
+      toast.error("Devi possedere o selezionare una squadra per replicare.");
       return;
     }
 
     try {
-      setIsSubmittingReply((prev) => ({ ...prev, [confId]: true }));
+      setIsSubmittingReply(true);
       const managerDisplayName =
         user?.name ||
         user?.username ||
         availableTeams.find((t) => (t.team_id || (t as any).id) === effectiveTeam)?.name ||
         "Presidente";
 
-      const res = await submitConferenceReply(
-        confId,
-        effectiveTeam,
-        draft,
-        managerDisplayName
-      );
+      const res = await submitConferenceReply(confId, effectiveTeam, draft, managerDisplayName);
 
       if (res.success) {
-        toast.success("Replica inviata con successo!");
-        setReplyDrafts((prev) => ({ ...prev, [confId]: "" }));
-        setExpandedConferenceIds((prev) => new Set(prev).add(confId));
-        await loadData();
+        toast.success("Replica ufficiale registrata!");
+        setReplyDraft("");
+        await loadInbox();
       } else {
         toast.error(res.error || "Errore durante l'invio della replica.");
       }
     } catch (err: any) {
       toast.error(err?.message || "Errore durante l'invio della replica.");
     } finally {
-      setIsSubmittingReply((prev) => ({ ...prev, [confId]: false }));
+      setIsSubmittingReply(false);
     }
   };
 
   // Reazione al Rumor
-  const handleReaction = async (
-    rumorId: number,
-    type: "fire" | "laugh" | "shock" | "doubt"
-  ) => {
+  const handleReaction = async (rumorId: number, type: "fire" | "laugh" | "shock" | "doubt") => {
     const res = await reactToRumor(rumorId, type);
     if (res.success && res.reactions) {
-      setRumors((prev) =>
-        prev.map((r) => (r.id === rumorId ? { ...r, reactions: res.reactions! } : r))
+      setItems((prev) =>
+        prev.map((it) => {
+          if (it.rumorData && it.rumorData.id === rumorId) {
+            return {
+              ...it,
+              rumorData: {
+                ...it.rumorData,
+                reactions: res.reactions!,
+              },
+            };
+          }
+          return it;
+        })
       );
     }
   };
 
-  // Generazione Domande (Solo Admin da interfaccia o automazione turno)
+  // Generazione Domande (Admin)
   const handleGenerateQuestions = async () => {
     try {
       setIsGeneratingQuestions(true);
-      toast.info("Generazione domande differenziate per ciascun club in corso...");
-      const matchday = selectedMatchday !== "ALL" ? Number(selectedMatchday) : 1;
-      const res = await generatePressQuestionsForMatchday(matchday);
+      toast.info("Generazione domande differenziate per i club in corso...");
+      const res = await generatePressQuestionsForMatchday(1);
       if (res.error) {
         toast.error(res.error);
       } else {
-        toast.success(
-          `Generate ${res.generated} domande personalizzate (${res.skipped} già inviate ai manager).`
-        );
-        loadData();
+        toast.success(`Generate ${res.generated} domande personalizzate (${res.skipped} già presenti).`);
+        await loadInbox();
       }
     } catch (err: any) {
       toast.error(err.message || "Errore imprevisto.");
@@ -270,659 +309,834 @@ export default function SalaStampa() {
     }
   };
 
-  // Filtro Conferenze (mostrate solo le interviste con risposta effettiva)
-  const filteredConferences = useMemo(() => {
-    return conferences.filter((c) => {
-      if (selectedMatchday !== "ALL" && String(c.matchday) !== selectedMatchday) return false;
-      if (selectedTeam !== "ALL" && c.team_id !== selectedTeam) return false;
-      return true;
-    });
-  }, [conferences, selectedMatchday, selectedTeam]);
+  // Formattazione data orario stile FM24
+  const formatFMDate = (isoString?: string) => {
+    if (!isoString) return "";
+    try {
+      const d = new Date(isoString);
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
-  // Giornate disponibili per dropdown
-  const matchdaysList = useMemo(() => {
-    const set = new Set(conferences.map((c) => c.matchday));
-    if (set.size === 0) return [1];
-    return Array.from(set).sort((a, b) => b - a);
-  }, [conferences]);
-
-  const getJournalisticBadgeStyle = (badge: string) => {
-    switch (badge) {
-      case "ESCLUSIVA":
-        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30";
-      case "ULTIM'ORA":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
-      case "RETROSCENA":
-        return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30";
-      case "RADAR MERCATO":
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
-      default:
-        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30";
+      if (diffHours < 24 && d.getDate() === now.getDate()) {
+        return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+      }
+      return d.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+    } catch {
+      return "";
     }
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* ========================================================= */}
-        {/* HEADER SALA STAMPA & MEDIA */}
-        {/* ========================================================= */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border/80">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
-                <Radio className="h-3 w-3 animate-pulse text-emerald-500" />
-                LCSIM Media Hub • Live
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Conferenze Stampa Ufficiali & Notiziario Calciomercato
-              </span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
-              <Newspaper className="h-8 w-8 text-primary" />
-              Sala Stampa & Rumor di Mercato
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Spazio ufficiale dedicato alle interviste dei presidenti e alle indiscrezioni esclusive del Giornalista AI.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadData}
-              className="gap-1.5 text-xs"
-              title="Aggiorna contenuti"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Aggiorna
-            </Button>
-          </div>
-        </div>
-
-        {/* ========================================================= */}
-        {/* BOX INTERATTIVO PER IL MANAGER SE HA UNA DOMANDA DA RISPONDERE */}
-        {/* ========================================================= */}
-        {pendingForMyTeam && (
-          <Card className="border-2 border-primary/40 bg-gradient-to-r from-primary/5 via-card to-primary/10 shadow-lg animate-in fade-in">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-sm">
-                    <Mic2 className="h-5 w-5 animate-pulse" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-bold">
-                      Microfono Aperto: Intervista Giornata {pendingForMyTeam.matchday}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      Il Giornalista AI della Lega ti ha rivolto una domanda ufficiale. Rilascia la tua dichiarazione per pubblicarla in Sala Stampa.
-                    </CardDescription>
-                  </div>
-                </div>
-                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold">
-                  In Attesa della tua risposta
-                </Badge>
+      <main className="container mx-auto px-2 sm:px-4 py-4 flex-1 flex flex-col max-w-7xl">
+        {/* ========================================================================= */}
+        {/* TOP COMMAND BAR (FM24 STYLE HEADER & CONTROLS)                            */}
+        {/* ========================================================================= */}
+        <div className="mb-3 p-3 sm:p-4 rounded-2xl border border-border/80 bg-card/95 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs">
+                <Inbox className="h-5 w-5 text-emerald-500" />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-xl bg-background/80 border border-border/80 relative">
-                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  Domanda del Giornalista AI
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg sm:text-xl font-black text-foreground tracking-tight flex items-center gap-2">
+                    Inbox di Lega
+                  </h1>
+                  <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                    FM24 Edition
+                  </Badge>
                 </div>
-                <p className="text-sm font-medium italic text-foreground">
-                  "{pendingForMyTeam.question}"
+                <p className="text-[11px] text-muted-foreground truncate">
+                  Comunicazioni ufficiali, interviste, gossip di mercato e report tattici unificati.
                 </p>
-                {pendingForMyTeam.context_summary && (
-                  <div className="mt-2 text-[11px] text-muted-foreground border-t border-border/40 pt-1.5">
-                    <strong>Focus:</strong> {pendingForMyTeam.context_summary}
-                  </div>
-                )}
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground flex items-center justify-between">
-                  <span>La tua risposta ufficiale da Presidente / Allenatore:</span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {myAnswerText.length}/400 caratteri
-                  </span>
-                </label>
-                <Textarea
-                  placeholder="Inserisci la tua dichiarazione (es. 'Siamo pienamente focalizzati sulla prestazione. In campo vogliamo imporre la nostra identità e daremo tutto fino all'ultimo minuto...')"
-                  value={myAnswerText}
-                  onChange={(e) => setMyAnswerText(e.target.value.slice(0, 400))}
-                  rows={3}
-                  className="resize-none"
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0 justify-end">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
-                onClick={() => handleAnswerSubmit(pendingForMyTeam.id)}
-                disabled={isSubmittingAnswer || !myAnswerText.trim()}
-                className="gap-2 font-bold"
+                variant="outline"
+                size="sm"
+                onClick={loadInbox}
+                disabled={loading}
+                className="h-8 text-xs font-semibold gap-1.5 rounded-xl border-border/70"
               >
-                {isSubmittingAnswer ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-                Pubblica Dichiarazione Ufficiale
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Aggiorna</span>
               </Button>
-            </CardFooter>
-          </Card>
-        )}
 
-        {/* ========================================================= */}
-        {/* TABS PRINCIPALI: SALA STAMPA vs GOSSIP & RUMOR */}
-        {/* ========================================================= */}
-        <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
-          <TabsList className="grid grid-cols-2 max-w-md h-11 p-1 bg-muted/60 border border-border/80">
-            <TabsTrigger value="press" className="gap-2 text-xs font-bold">
-              <Mic2 className="h-4 w-4 text-primary" />
-              Interviste & Conferenze ({conferences.length})
-            </TabsTrigger>
-            <TabsTrigger value="rumors" className="gap-2 text-xs font-bold">
-              <Flame className="h-4 w-4 text-amber-500" />
-              Gossip & Rumor ({rumors.length})
-            </TabsTrigger>
-          </TabsList>
-
-          {/* ------------------------------------------------------------- */}
-          {/* TAB 1: INTERVISTE & CONFERENZE STAMPA (SOLO RISPOSTE) */}
-          {/* ------------------------------------------------------------- */}
-          <TabsContent value="press" className="space-y-6">
-            {/* Barra filtri */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-card border border-border/80 shadow-sm">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-muted-foreground">Filtra dichiarazioni:</span>
-                </div>
-
-                {/* Filtro Giornata */}
-                <Select value={selectedMatchday} onValueChange={setSelectedMatchday}>
-                  <SelectTrigger className="w-[150px] h-8 text-xs">
-                    <SelectValue placeholder="Giornata" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">Tutte le Giornate</SelectItem>
-                    {matchdaysList.map((m) => (
-                      <SelectItem key={m} value={String(m)}>
-                        Giornata {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* Filtro Squadra */}
-                <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger className="w-[170px] h-8 text-xs">
-                    <SelectValue placeholder="Squadra" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">Tutti i Club</SelectItem>
-                    {availableTeams.map((t) => {
-                      const tId = t.team_id || (t as any).id;
-                      return (
-                        <SelectItem key={tId} value={tId}>
-                          {t.name}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Azione Admin per generare il blocco domande di un turno */}
               {isAdmin && (
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={handleGenerateQuestions}
                   disabled={isGeneratingQuestions}
-                  className="gap-2 text-xs border-primary/30 text-primary hover:bg-primary/5 self-start md:self-auto font-bold"
+                  className="h-8 text-xs font-bold gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-xs"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  {isGeneratingQuestions ? "Generazione in corso..." : "Genera Domande Giornata"}
+                  <span className="hidden sm:inline">Genera Domande AI</span>
                 </Button>
               )}
             </div>
+          </div>
 
-            {/* Griglia Conferenze (Vengono mostrate ESCLUSIVAMENTE quelle risposte) */}
-            {loadingPress ? (
-              <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Caricamento dichiarazioni ufficiali...</p>
-              </div>
-            ) : filteredConferences.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-border/80 bg-muted/20">
-                <Mic2 className="h-12 w-12 text-muted-foreground/40 mb-3" />
-                <h3 className="text-base font-semibold">Nessuna conferenza stampa rilasciata al momento</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mt-1">
-                  Vengono pubblicate qui solo le interviste a cui i presidenti hanno effettivamente risposto.
-                  {pendingForMyTeam ? " Puoi rilasciare subito la tua dichiarazione nel box in alto!" : " Le risposte dei manager compariranno qui non appena registrate."}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredConferences.map((conf) => (
-                  <Card
-                    key={conf.id}
-                    className="border border-border/80 bg-card transition-all duration-200 hover:shadow-md"
+          {/* Filtri Categoria a Pillole + Search Box */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 pt-2 border-t border-border/50">
+            {/* Pillole Categoria */}
+            <div className="flex flex-wrap gap-1.5 items-center">
+              {[
+                { id: "all", label: "Tutte le Notizie", count: counts.all, icon: Inbox },
+                { id: "trades", label: "Trattative", count: counts.trades, icon: ArrowLeftRight },
+                { id: "press", label: "Sala Stampa", count: counts.press, icon: Mic2 },
+                { id: "rumors", label: "Voci di Mercato", count: counts.rumors, icon: Flame },
+                { id: "preview", label: "Match Preview", count: counts.preview, icon: Swords },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = selectedCategory === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setSelectedCategory(tab.id as InboxCategory)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                      isActive
+                        ? "bg-foreground text-background shadow-xs font-black"
+                        : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                    }`}
                   >
-                    <CardHeader className="pb-3 border-b border-border/60 bg-muted/10">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary font-black text-xs flex items-center justify-center border border-primary/20">
-                            {conf.team_id}
-                          </div>
-                          <div>
-                            <CardTitle className="text-sm font-bold leading-tight">
-                              {conf.team?.NAME || conf.team_id}
-                            </CardTitle>
-                            <CardDescription className="text-[11px]">
-                              {conf.manager_name || conf.team?.MANAGER || "Presidente"}
-                            </CardDescription>
-                          </div>
-                        </div>
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{tab.label}</span>
+                    <span
+                      className={`text-[10px] font-mono px-1 rounded ${
+                        isActive ? "bg-background text-foreground" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] font-bold">
-                            Giornata {conf.matchday}
-                          </Badge>
-                          <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="h-2.5 w-2.5" />
-                            Ufficiale
-                          </Badge>
-                        </div>
+            {/* Ricerca Rapida */}
+            <div className="relative w-full md:w-64">
+              <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                placeholder="Cerca nella inbox..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 pl-8 text-xs bg-muted/20 border-border/60 rounded-xl"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* SPLIT SCREEN INBOX FM24 (COLONNA SINISTRA FEED + COLONNA DESTRA DETTAGLIO) */}
+        {/* ========================================================================= */}
+        <div className="flex-1 min-h-[580px] grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
+          {/* ------------------------------------------------------------- */}
+          {/* COLONNA SINISTRA: ELENCO NOTIZIE (40% desktop, full su mobile)*/}
+          {/* ------------------------------------------------------------- */}
+          <div
+            className={`md:col-span-5 lg:col-span-4 rounded-2xl border border-border/80 bg-card overflow-hidden flex flex-col shadow-sm ${
+              selectedItemId && "hidden md:flex"
+            }`}
+          >
+            <div className="p-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                {filteredItems.length} {filteredItems.length === 1 ? "Notizia" : "Notizie"}
+              </span>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                {readItemIds.size}/{items.length} lette
+              </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto divide-y divide-border/50 max-h-[calc(100vh-250px)]">
+              {loading ? (
+                <div className="p-8 text-center text-xs text-muted-foreground italic space-y-2">
+                  <RefreshCw className="h-5 w-5 animate-spin mx-auto text-emerald-500" />
+                  <p>Caricamento messaggi e notizie...</p>
+                </div>
+              ) : filteredItems.length === 0 ? (
+                <div className="p-8 text-center text-xs text-muted-foreground space-y-2">
+                  <Inbox className="h-8 w-8 mx-auto text-muted-foreground/40" />
+                  <p className="font-semibold text-foreground">Nessuna notizia trovata</p>
+                  <p className="text-[11px]">Prova a reimpostare i filtri o la ricerca.</p>
+                </div>
+              ) : (
+                filteredItems.map((item) => {
+                  const isSelected = item.id === selectedItemId;
+                  const isRead = readItemIds.has(item.id);
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectItem(item.id)}
+                      className={`p-3.5 cursor-pointer transition-all flex items-start gap-3 relative ${
+                        isSelected
+                          ? "bg-muted/70 border-l-4 border-l-emerald-500 shadow-xs"
+                          : "hover:bg-muted/30"
+                      }`}
+                    >
+                      {/* Pallino di lettura o urgenza */}
+                      <div className="pt-1 shrink-0">
+                        {item.priority === "urgent" ? (
+                          <span
+                            title="Azione Urgente"
+                            className="h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-rose-500/30 animate-pulse block"
+                          />
+                        ) : !isRead ? (
+                          <span
+                            title="Nuovo / Non Letto"
+                            className="h-2 w-2 rounded-full bg-blue-500 block"
+                          />
+                        ) : (
+                          <span className="h-2 w-2 rounded-full bg-muted-foreground/20 block" />
+                        )}
                       </div>
-                    </CardHeader>
 
-                    <CardContent className="pt-4 space-y-4">
-                      {/* Domanda Giornalista */}
-                      <div className="space-y-1.5">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                          <Mic2 className="h-3 w-3 text-primary" />
-                          Domanda Giornalista AI:
-                        </div>
-                        <p className="text-xs font-semibold italic text-foreground bg-muted/30 p-2.5 rounded-lg border border-border/60">
-                          "{conf.question}"
-                        </p>
-                      </div>
-
-                      {/* Risposta Presidente */}
-                      <div className="space-y-1.5">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" />
-                          Dichiarazione Presidente:
-                        </div>
-
-                        <div className="text-xs text-foreground bg-primary/5 border border-primary/20 p-3 rounded-lg relative">
-                          <p className="font-normal leading-relaxed">
-                            "{conf.answer}"
-                          </p>
-                          <div className="text-[10px] text-muted-foreground text-right mt-1.5 font-mono">
-                            {conf.answered_at ? new Date(conf.answered_at).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" }) : ""}
+                      {/* Logo club o Icona Notizia */}
+                      <div className="shrink-0 pt-0.5">
+                        {item.senderTeamId ? (
+                          <img
+                            src={getTeamLogo(item.senderTeamId)}
+                            alt={item.senderTeamId}
+                            className="h-7 w-7 object-contain rounded-md"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = "none";
+                            }}
+                          />
+                        ) : item.category === "rumors" ? (
+                          <div className="h-7 w-7 rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                            <Flame className="h-4 w-4" />
                           </div>
-                        </div>
+                        ) : item.category === "preview" ? (
+                          <div className="h-7 w-7 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                            <Swords className="h-4 w-4" />
+                          </div>
+                        ) : (
+                          <div className="h-7 w-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                            <Mic2 className="h-4 w-4" />
+                          </div>
+                        )}
                       </div>
 
-                      {/* Sezione Repliche & Contro-dichiarazioni (#69 Opzione A) */}
-                      <div className="pt-2 border-t border-border/70 space-y-2">
-                        <button
-                          type="button"
-                          onClick={() => toggleRepliesThread(conf.id)}
-                          className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                      {/* Info sintetiche riga */}
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span
+                            className={`text-xs truncate ${
+                              !isRead ? "font-black text-foreground" : "font-medium text-muted-foreground"
+                            }`}
+                          >
+                            {item.senderName}
+                          </span>
+                          <span className="text-[10px] font-mono text-muted-foreground/70 shrink-0">
+                            {formatFMDate(item.timestamp)}
+                          </span>
+                        </div>
+
+                        <p
+                          className={`text-xs line-clamp-1 leading-snug ${
+                            !isRead ? "font-bold text-foreground" : "text-foreground/90 font-medium"
+                          }`}
                         >
-                          <span className="flex items-center gap-1.5">
-                            <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                            <span>Repliche & Commenti ({conf.replies?.length ?? 0})</span>
-                          </span>
-                          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                            {expandedConferenceIds.has(conf.id) ? (
-                              <>Nascondi <ChevronUp className="h-3.5 w-3.5" /></>
-                            ) : (
-                              <>Espandi <ChevronDown className="h-3.5 w-3.5" /></>
-                            )}
-                          </span>
-                        </button>
+                          {item.title}
+                        </p>
 
-                        {expandedConferenceIds.has(conf.id) && (
-                          <div className="space-y-3 pt-1 animate-in fade-in-50 duration-200">
-                            {/* Cronistoria Repliche */}
-                            {(!conf.replies || conf.replies.length === 0) ? (
-                              <p className="text-[11px] italic text-muted-foreground text-center py-2.5 bg-muted/20 rounded-md border border-dashed border-border/60">
-                                Nessuna contro-dichiarazione rilasciata. Sii il primo presidente a replicare!
-                              </p>
-                            ) : (
-                              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                                {conf.replies.map((rep) => (
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <p className="text-[11px] text-muted-foreground truncate flex-1">
+                            {item.snippet}
+                          </p>
+                          {item.badgeText && (
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] px-1.5 py-0 shrink-0 font-bold border ${item.badgeColor || ""}`}
+                            >
+                              {item.badgeText}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* ------------------------------------------------------------- */}
+          {/* COLONNA DESTRA: DETTAGLIO NOTIZIA SELEZIONATA (60-65% desktop) */}
+          {/* ------------------------------------------------------------- */}
+          <div
+            className={`md:col-span-7 lg:col-span-8 rounded-2xl border border-border/80 bg-card overflow-hidden flex flex-col shadow-sm ${
+              !selectedItemId && "hidden md:flex"
+            }`}
+          >
+            {selectedItem ? (
+              <div className="flex-1 flex flex-col min-h-0 overflow-y-auto max-h-[calc(100vh-250px)]">
+                {/* Header Pannello Dettaglio */}
+                <div className="p-4 sm:p-6 border-b border-border/60 bg-muted/20 space-y-3 shrink-0">
+                  {/* Mobile Back Button */}
+                  <div className="md:hidden flex items-center gap-2 mb-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedItemId(null)}
+                      className="h-8 text-xs font-bold gap-1 pl-1"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      <span>Torna alla lista</span>
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-bold border ${selectedItem.badgeColor || ""}`}
+                      >
+                        {selectedItem.badgeText || selectedItem.category.toUpperCase()}
+                      </Badge>
+                      {selectedItem.matchday && (
+                        <span className="text-xs font-mono text-muted-foreground">
+                          Giornata {selectedItem.matchday}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>
+                        {new Date(selectedItem.timestamp).toLocaleDateString("it-IT", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h2 className="text-lg sm:text-2xl font-black text-foreground tracking-tight leading-snug">
+                    {selectedItem.title}
+                  </h2>
+
+                  {/* Scheda Mittente */}
+                  <div className="p-3 rounded-xl bg-card border border-border/70 flex items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {selectedItem.senderTeamId ? (
+                        <img
+                          src={getTeamLogo(selectedItem.senderTeamId)}
+                          alt={selectedItem.senderTeamId}
+                          className="h-10 w-10 object-contain rounded-lg shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                          <User className="h-5 w-5" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-extrabold text-sm text-foreground truncate">
+                          {selectedItem.senderName}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {selectedItem.senderRole || "Notifica di Lega"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedItem.tradeData && (
+                      <Button
+                        size="sm"
+                        asChild
+                        className="h-8 text-xs font-bold gap-1 bg-blue-600 hover:bg-blue-500 text-white shrink-0"
+                      >
+                        <Link to="/mia-squadra/trattative">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span>Vai alle Trattative</span>
+                        </Link>
+                      </Button>
+                    )}
+
+                    {selectedItem.previewData && (
+                      <Button
+                        size="sm"
+                        asChild
+                        className="h-8 text-xs font-bold gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 shrink-0"
+                      >
+                        <Link to="/prossimo-avversario">
+                          <Swords className="h-3.5 w-3.5" />
+                          <span>Report Tattico Completo</span>
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contenuto Dinamico Notizia */}
+                <div className="p-4 sm:p-6 space-y-6 flex-1">
+                  {/* ========================================================= */}
+                  {/* TIPO 1: RUMOR & GOSSIP DI CALCIOMERCATO                   */}
+                  {/* ========================================================= */}
+                  {selectedItem.rumorData && (
+                    <div className="space-y-5">
+                      <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">
+                            Indice di Affidabilità Fonte
+                          </span>
+                          <span className="text-sm font-extrabold text-foreground">
+                            {selectedItem.rumorData.credibility_badge} ({selectedItem.rumorData.credibility_score}%)
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedItem.rumorData.involved_team_ids?.map((tId) => (
+                            <Badge key={tId} variant="outline" className="text-xs font-bold">
+                              Club: {tId}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 text-sm sm:text-base leading-relaxed bg-muted/20 p-4 rounded-xl border border-border/50">
+                        {selectedItem.rumorData.content}
+                      </div>
+
+                      {/* Barra Reazioni della Community */}
+                      <div className="pt-2">
+                        <span className="text-xs font-bold text-muted-foreground block mb-2">
+                          Reazioni dei Manager della Lega:
+                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {[
+                            { type: "fire", emoji: "🔥", label: "Colpaccio", count: selectedItem.rumorData.reactions?.fire || 0 },
+                            { type: "laugh", emoji: "😂", label: "Fake", count: selectedItem.rumorData.reactions?.laugh || 0 },
+                            { type: "shock", emoji: "😱", label: "Choc", count: selectedItem.rumorData.reactions?.shock || 0 },
+                            { type: "doubt", emoji: "🤔", label: "Dubbio", count: selectedItem.rumorData.reactions?.doubt || 0 },
+                          ].map((rx) => (
+                            <Button
+                              key={rx.type}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReaction(selectedItem.rumorData!.id, rx.type as any)}
+                              className="h-8 text-xs font-bold gap-1.5 rounded-xl border-border/80 hover:bg-muted/80"
+                            >
+                              <span>{rx.emoji}</span>
+                              <span className="text-muted-foreground">{rx.label}</span>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                                {rx.count}
+                              </Badge>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ========================================================= */}
+                  {/* TIPO 2: SALA STAMPA (INTERVISTA O PENDING QUESTION)        */}
+                  {/* ========================================================= */}
+                  {selectedItem.pressData && (
+                    <div className="space-y-5">
+                      {/* Intervista da rilasciare (PENDING) */}
+                      {selectedItem.pressData.status === "PENDING" ? (
+                        <Card className="border-amber-500/40 bg-gradient-to-b from-amber-500/10 to-transparent shadow-sm">
+                          <CardHeader className="p-4 sm:p-5 border-b border-amber-500/20">
+                            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-wider">
+                              <Radio className="h-4 w-4 animate-pulse" />
+                              <span>Intervista Ufficiale In Attesa</span>
+                            </div>
+                            <CardTitle className="text-base sm:text-lg font-black text-foreground mt-1">
+                              Domanda del Giornalista AI:
+                            </CardTitle>
+                            <p className="text-sm italic text-foreground/90 mt-1 leading-relaxed">
+                              "{selectedItem.pressData.question}"
+                            </p>
+                          </CardHeader>
+                          <CardContent className="p-4 sm:p-5 space-y-3">
+                            <label className="text-xs font-bold text-foreground block">
+                              La tua dichiarazione ufficiale da pubblicare in Sala Stampa:
+                            </label>
+                            <Textarea
+                              placeholder="Rispondi alla domanda del giornalista per chiarire gli obiettivi, commentare la prestazione o mandare un messaggio ai rivali..."
+                              value={myAnswerText}
+                              onChange={(e) => setMyAnswerText(e.target.value)}
+                              rows={4}
+                              className="text-sm bg-background border-border/80 rounded-xl"
+                            />
+                            <div className="flex justify-end">
+                              <Button
+                                onClick={() => handleAnswerSubmit(selectedItem.pressData!.id)}
+                                disabled={isSubmittingAnswer || !myAnswerText.trim()}
+                                className="h-9 px-4 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs"
+                              >
+                                <Send className="h-3.5 w-3.5" />
+                                <span>{isSubmittingAnswer ? "Pubblicazione..." : "Rilascia Dichiarazione"}</span>
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        /* Intervista già rilasciata */
+                        <div className="space-y-4">
+                          <div className="p-4 rounded-xl bg-muted/30 border border-border/70 space-y-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                              <Mic2 className="h-3.5 w-3.5 text-emerald-500" />
+                              Domanda Ufficiale
+                            </span>
+                            <p className="text-sm font-semibold italic text-muted-foreground">
+                              "{selectedItem.pressData.question}"
+                            </p>
+                          </div>
+
+                          <div className="p-4 sm:p-5 rounded-2xl bg-card border-2 border-emerald-500/30 shadow-xs space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                                Risposta Ufficiale di {selectedItem.pressData.manager_name || "Presidente"}
+                              </span>
+                              {selectedItem.pressData.answered_at && (
+                                <span className="text-[10px] font-mono text-muted-foreground">
+                                  {new Date(selectedItem.pressData.answered_at).toLocaleTimeString("it-IT", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm sm:text-base leading-relaxed text-foreground font-medium">
+                              "{selectedItem.pressData.answer}"
+                            </p>
+                          </div>
+
+                          {/* Sezione Repliche e Botta e Risposta (#69) */}
+                          <div className="pt-4 border-t border-border/60 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                <MessageSquare className="h-3.5 w-3.5 text-blue-500" />
+                                Botta e Risposta tra Presidenti ({selectedItem.pressData.replies?.length || 0})
+                              </h3>
+                            </div>
+
+                            {/* Thread repliche esistenti */}
+                            {selectedItem.pressData.replies && selectedItem.pressData.replies.length > 0 && (
+                              <div className="space-y-2.5">
+                                {selectedItem.pressData.replies.map((rep) => (
                                   <div
                                     key={rep.id}
-                                    className="p-2.5 rounded-lg bg-muted/40 border border-border/60 text-xs space-y-1.5 hover:border-primary/30 transition-colors"
+                                    className="p-3.5 rounded-xl bg-muted/30 border border-border/60 flex items-start gap-3"
                                   >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        <div className="h-4 w-4 rounded shrink-0 overflow-hidden flex items-center justify-center bg-card">
-                                          <img
-                                            src={getTeamLogo(rep.team_id)}
-                                            alt={rep.team_id}
-                                            className="h-full w-full object-contain"
-                                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                                          />
-                                        </div>
-                                        <span className="font-bold text-foreground truncate">
-                                          {rep.team?.NAME || rep.team_id}
+                                    <img
+                                      src={getTeamLogo(rep.team_id)}
+                                      alt={rep.team_id}
+                                      className="h-6 w-6 object-contain rounded shrink-0 mt-0.5"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = "none";
+                                      }}
+                                    />
+                                    <div className="flex-1 min-w-0 space-y-1">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-xs font-bold text-foreground">
+                                          {rep.team?.NAME || rep.team_id} ({rep.manager_name || rep.team?.MANAGER || "Presidente"})
                                         </span>
-                                        <span className="text-[11px] text-muted-foreground truncate">
-                                          • {rep.manager_name || rep.team?.MANAGER || "Presidente"}
+                                        <span className="text-[10px] font-mono text-muted-foreground">
+                                          {new Date(rep.created_at).toLocaleDateString("it-IT", {
+                                            day: "numeric",
+                                            month: "short",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })}
                                         </span>
                                       </div>
-                                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                                        {new Date(rep.created_at).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}
-                                      </span>
+                                      <p className="text-xs text-foreground/90 leading-relaxed">
+                                        {rep.reply_text}
+                                      </p>
                                     </div>
-                                    <p className="text-foreground/90 pl-3 italic text-[11.5px] border-l-2 border-primary/50 leading-relaxed">
-                                      "{rep.reply_text}"
-                                    </p>
                                   </div>
                                 ))}
                               </div>
                             )}
 
-                            {/* Form Invio Nuova Replica */}
-                            {effectiveTeam ? (
-                              <div className="pt-2 border-t border-dashed border-border/60 space-y-2">
-                                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-                                  <CornerDownRight className="h-3 w-3 text-primary shrink-0" />
-                                  <span>Replica come <strong>{effectiveTeam}</strong>:</span>
-                                </div>
-                                <div className="flex gap-2 items-end">
+                            {/* Form per inviare una replica */}
+                            {effectiveTeam && (
+                              <div className="p-3.5 rounded-xl bg-card border border-border/70 space-y-2">
+                                <label className="text-[11px] font-bold text-muted-foreground block">
+                                  Replica come Presidente del {effectiveTeam}:
+                                </label>
+                                <div className="flex gap-2">
                                   <Textarea
+                                    placeholder="Scrivi la tua replica alle dichiarazioni..."
+                                    value={replyDraft}
+                                    onChange={(e) => setReplyDraft(e.target.value)}
                                     rows={2}
-                                    placeholder="Rilascia la tua contro-dichiarazione da presidente..."
-                                    value={replyDrafts[conf.id] || ""}
-                                    onChange={(e) =>
-                                      setReplyDrafts((prev) => ({ ...prev, [conf.id]: e.target.value }))
-                                    }
-                                    className="text-xs resize-none min-h-[46px]"
+                                    className="text-xs bg-muted/20 rounded-xl"
                                   />
                                   <Button
                                     size="sm"
-                                    onClick={() => handleReplySubmit(conf.id)}
-                                    disabled={
-                                      isSubmittingReply[conf.id] ||
-                                      !(replyDrafts[conf.id] || "").trim()
-                                    }
-                                    className="shrink-0 h-9 px-3 gap-1"
+                                    onClick={() => handleReplySubmit(selectedItem.pressData!.id)}
+                                    disabled={isSubmittingReply || !replyDraft.trim()}
+                                    className="h-auto px-3 text-xs font-bold self-end bg-blue-600 hover:bg-blue-500 text-white rounded-xl"
                                   >
-                                    {isSubmittingReply[conf.id] ? (
-                                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                      <Send className="h-3.5 w-3.5" />
-                                    )}
-                                    <span className="hidden sm:inline">Invia</span>
+                                    <Send className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
                               </div>
-                            ) : (
-                              <p className="text-[10.5px] text-muted-foreground italic text-center py-1">
-                                Effettua il login come manager di una squadra per replicare a questa intervista.
-                              </p>
                             )}
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-              </div>
-            )}
-          </TabsContent>
+                  {/* ========================================================= */}
+                  {/* TIPO 3: MESSAGGIO / TRATTATIVA DI MERCATO                  */}
+                  {/* ========================================================= */}
+                  {selectedItem.tradeData && (
+                    <div className="space-y-4">
+                      {/* Matchup Banner Scambio */}
+                      <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 via-card to-blue-500/10 border border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={getTeamLogo(selectedItem.tradeData.sender_team)}
+                            alt={selectedItem.tradeData.sender_team}
+                            className="h-10 w-10 object-contain rounded-lg"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = "none";
+                            }}
+                          />
+                          <div>
+                            <div className="text-xs text-muted-foreground uppercase font-bold">Proponente</div>
+                            <div className="font-extrabold text-sm text-foreground">
+                              {selectedItem.tradeData.sender_team_name || selectedItem.tradeData.sender_team}
+                            </div>
+                          </div>
+                        </div>
 
-          {/* ------------------------------------------------------------- */}
-          {/* TAB 2: GOSSIP & RUMOR DI CALCIOMERCATO */}
-          {/* ------------------------------------------------------------- */}
-          <TabsContent value="rumors" className="space-y-6">
-            {/* Banner Stato Mercato & Info Feed */}
-            <div className="p-4 rounded-xl bg-card border border-border/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span
-                  className={`h-2.5 w-2.5 rounded-full ${
-                    isMarketOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                  }`}
-                />
-                <span className="text-xs font-bold uppercase tracking-wider">
-                  {isMarketOpen ? "Calciomercato LCSIM Aperto" : "Calciomercato Chiuso"}
-                </span>
-                <span className="text-muted-foreground text-xs">•</span>
-                <span className="text-xs text-muted-foreground">
-                  I rumor emergono spontaneamente durante la giornata dal monitoraggio di trattative e spogliatoi.
-                </span>
-              </div>
-
-              <div className="text-[11px] font-mono text-muted-foreground">
-                Feed aggiornato automaticamente
-              </div>
-            </div>
-
-            {/* Feed Rumor */}
-            {loadingRumors ? (
-              <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                <RefreshCw className="h-8 w-8 animate-spin text-amber-500" />
-                <p className="text-sm text-muted-foreground">Scansione bacheca e indiscrezioni in corso...</p>
-              </div>
-            ) : rumors.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-border/80 bg-muted/20">
-                <Flame className="h-12 w-12 text-muted-foreground/40 mb-3" />
-                <h3 className="text-base font-semibold">Nessun rumor registrato al momento</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mt-1">
-                  Il giornalista sta setacciando le trattative. Nuove indiscrezioni appariranno spontaneamente durante la giornata.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {paginatedRumors.map((rumor) => (
-                  <Card
-                    key={rumor.id}
-                    className="border border-border/80 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <CardHeader className="py-3 px-5 border-b border-border/60 bg-muted/10">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs font-extrabold text-foreground tracking-wide flex items-center gap-1.5">
-                            <Sparkles className="h-3 w-3 text-amber-500" />
-                            {rumor.source_label}
-                          </span>
-                          <span className="text-muted-foreground text-xs">•</span>
-                          <Badge variant="outline" className={`text-[10px] font-bold ${getJournalisticBadgeStyle(rumor.credibility_badge)}`}>
-                            {rumor.credibility_badge}
+                        <div className="flex items-center gap-2">
+                          <ArrowLeftRight className="h-5 w-5 text-blue-500" />
+                          <Badge variant="outline" className="text-xs font-mono font-bold">
+                            {selectedItem.tradeData.status.toUpperCase()}
                           </Badge>
                         </div>
 
-                        <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(rumor.created_at).toLocaleString("it-IT", {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          })}
+                        <div className="flex items-center gap-3 sm:flex-row-reverse text-center sm:text-right">
+                          <img
+                            src={getTeamLogo(selectedItem.tradeData.receiver_team)}
+                            alt={selectedItem.tradeData.receiver_team}
+                            className="h-10 w-10 object-contain rounded-lg"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = "none";
+                            }}
+                          />
+                          <div>
+                            <div className="text-xs text-muted-foreground uppercase font-bold">Destinataria</div>
+                            <div className="font-extrabold text-sm text-foreground">
+                              {selectedItem.tradeData.receiver_team_name || selectedItem.tradeData.receiver_team}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </CardHeader>
 
-                    <CardContent className="p-5 space-y-3">
-                      <h3 className="text-base font-bold text-foreground leading-snug">
-                        {rumor.headline}
-                      </h3>
-
-                      <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
-                        {rumor.content}
-                      </p>
-
-                      {/* Tag Calciatori & Club Coinvolti */}
-                      <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/40">
-                        {rumor.involved_player_names && rumor.involved_player_names.length > 0 && (
-                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <strong>Nomi caldi:</strong>
-                            <span className="font-semibold text-foreground">
-                              {rumor.involved_player_names.join(", ")}
-                            </span>
-                          </div>
-                        )}
-
-                        {rumor.involved_team_ids && rumor.involved_team_ids.length > 0 && (
-                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground ml-auto">
-                            <strong>Società interessate:</strong>
-                            {rumor.involved_team_ids.map((tid) => (
-                              <Badge key={tid} variant="secondary" className="text-[10px] px-1.5 py-0 font-bold">
-                                {tid}
-                              </Badge>
+                      {/* Griglia Asset Offerti vs Richiesti */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="p-3.5 rounded-xl bg-muted/20 border border-border/70 space-y-2">
+                          <span className="text-xs font-bold text-foreground block">
+                            Asset Offerti ({selectedItem.tradeData.offered_players?.length || 0} calciatori):
+                          </span>
+                          <div className="space-y-1">
+                            {selectedItem.tradeData.offered_players?.map((p) => (
+                              <div key={p.ID} className="p-2 rounded-lg bg-card border border-border/50 flex items-center justify-between text-xs font-mono">
+                                <span className="font-bold text-foreground">{p.Cognome} {p.Nome}</span>
+                                <Badge variant="outline" className="text-[10px]">{p.Posiz} • {p.OVR} OVR</Badge>
+                              </div>
                             ))}
                           </div>
-                        )}
+                        </div>
+
+                        <div className="p-3.5 rounded-xl bg-muted/20 border border-border/70 space-y-2">
+                          <span className="text-xs font-bold text-foreground block">
+                            Asset Richiesti ({selectedItem.tradeData.requested_players?.length || 0} calciatori):
+                          </span>
+                          <div className="space-y-1">
+                            {selectedItem.tradeData.requested_players?.map((p) => (
+                              <div key={p.ID} className="p-2 rounded-lg bg-card border border-border/50 flex items-center justify-between text-xs font-mono">
+                                <span className="font-bold text-foreground">{p.Cognome} {p.Nome}</span>
+                                <Badge variant="outline" className="text-[10px]">{p.Posiz} • {p.OVR} OVR</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                    </CardContent>
 
-                    <CardFooter className="py-2.5 px-5 bg-muted/5 border-t border-border/60 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-muted-foreground">
-                        Reazioni dei Manager:
-                      </span>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReaction(rumor.id, "fire")}
-                          className="h-7 px-2 text-xs gap-1 hover:bg-orange-500/10 hover:text-orange-600"
-                          title="Trattativa caldissima!"
-                        >
-                          <Flame className="h-3.5 w-3.5 text-orange-500" />
-                          <span className="font-mono text-[11px] font-bold">{rumor.reactions?.fire || 0}</span>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReaction(rumor.id, "laugh")}
-                          className="h-7 px-2 text-xs gap-1 hover:bg-yellow-500/10 hover:text-yellow-600"
-                          title="Buffonata / Risate!"
-                        >
-                          <Laugh className="h-3.5 w-3.5 text-yellow-500" />
-                          <span className="font-mono text-[11px] font-bold">{rumor.reactions?.laugh || 0}</span>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReaction(rumor.id, "shock")}
-                          className="h-7 px-2 text-xs gap-1 hover:bg-purple-500/10 hover:text-purple-600"
-                          title="Colpo incredibile / Shock!"
-                        >
-                          <Zap className="h-3.5 w-3.5 text-purple-500" />
-                          <span className="font-mono text-[11px] font-bold">{rumor.reactions?.shock || 0}</span>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReaction(rumor.id, "doubt")}
-                          className="h-7 px-2 text-xs gap-1 hover:bg-blue-500/10 hover:text-blue-600"
-                          title="Ho forti dubbi..."
-                        >
-                          <HelpCircle className="h-3.5 w-3.5 text-blue-500" />
-                          <span className="font-mono text-[11px] font-bold">{rumor.reactions?.doubt || 0}</span>
-                        </Button>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                ))}
-
-                {/* Pager Rumor (5 alla volta) */}
-                {totalRumorPages > 1 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/60">
-                    <div className="text-xs text-muted-foreground font-medium">
-                      Mostrando <strong className="text-foreground">{(rumorPage - 1) * RUMORS_PER_PAGE + 1}</strong> - <strong className="text-foreground">{Math.min(rumorPage * RUMORS_PER_PAGE, rumors.length)}</strong> di <strong className="text-foreground">{rumors.length}</strong> rumor
+                      {selectedItem.tradeData.notes && (
+                        <div className="p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs text-muted-foreground space-y-1">
+                          <span className="font-bold text-foreground block">Note & Messaggi:</span>
+                          <p>{selectedItem.tradeData.notes}</p>
+                        </div>
+                      )}
                     </div>
+                  )}
 
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setRumorPage((p) => Math.max(1, p - 1));
-                          window.scrollTo({ top: 200, behavior: "smooth" });
-                        }}
-                        disabled={rumorPage === 1}
-                        className="h-8 px-2.5 text-xs gap-1 font-semibold rounded-lg"
-                      >
-                        <ChevronLeft className="h-3.5 w-3.5" />
-                        <span>Precedente</span>
-                      </Button>
+                  {/* ========================================================= */}
+                  {/* TIPO 4: MATCH PREVIEW & ANALISI PROSSIMA GIORNATA          */}
+                  {/* ========================================================= */}
+                  {selectedItem.previewData && (
+                    <div className="space-y-5">
+                      {/* Big Matchup Card */}
+                      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-card to-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={getTeamLogo(selectedItem.previewData.matchInfo.myTeamId)}
+                            alt={selectedItem.previewData.matchInfo.myTeamId}
+                            className="h-12 w-12 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = "none";
+                            }}
+                          />
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground">La Tua Squadra</span>
+                            <div className="text-base font-black text-foreground">
+                              {selectedItem.previewData.matchInfo.myTeamId}
+                            </div>
+                          </div>
+                        </div>
 
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: totalRumorPages }, (_, i) => i + 1).map((p) => {
-                          if (
-                            p === 1 ||
-                            p === totalRumorPages ||
-                            (p >= rumorPage - 1 && p <= rumorPage + 1)
-                          ) {
-                            return (
-                              <Button
-                                key={p}
-                                variant={p === rumorPage ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  setRumorPage(p);
-                                  window.scrollTo({ top: 200, behavior: "smooth" });
-                                }}
-                                className={`h-8 w-8 p-0 text-xs font-mono font-bold rounded-lg ${
-                                  p === rumorPage
-                                    ? "bg-primary text-primary-foreground"
-                                    : "hover:bg-muted"
+                        <div className="flex flex-col items-center justify-center font-mono">
+                          <span className="text-xs font-black text-amber-500 tracking-wider">VS</span>
+                          <Badge variant="outline" className="text-[10px] mt-1">
+                            {selectedItem.previewData.matchInfo.isHome ? "IN CASA" : "IN TRASFERTA"}
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-3 sm:flex-row-reverse text-center sm:text-right">
+                          <img
+                            src={getTeamLogo(selectedItem.previewData.matchInfo.opponentTeamId)}
+                            alt={selectedItem.previewData.matchInfo.opponentTeamId}
+                            className="h-12 w-12 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = "none";
+                            }}
+                          />
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground">Avversario</span>
+                            <div className="text-base font-black text-foreground">
+                              {selectedItem.previewData.matchInfo.opponentTeamName}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dati Pre-partita (Stadio, Arbitro) */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                        <div className="p-2.5 rounded-xl bg-muted/20 border border-border/60">
+                          <span className="text-[10px] text-muted-foreground block flex items-center gap-1">
+                            <MapPin className="h-3 w-3" /> Stadio
+                          </span>
+                          <span className="font-bold text-foreground">
+                            {selectedItem.previewData.matchInfo.stadium || "Comunale"}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-muted/20 border border-border/60">
+                          <span className="text-[10px] text-muted-foreground block flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> Turno
+                          </span>
+                          <span className="font-bold text-foreground">
+                            Giornata {selectedItem.previewData.matchInfo.week}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-muted/20 border border-border/60 col-span-2 sm:col-span-1">
+                          <span className="text-[10px] text-muted-foreground block">Fattore Campo</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            {selectedItem.previewData.matchInfo.isHome ? "Vantaggio Casa" : "Insidia Trasferta"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Statistiche Avversario */}
+                      {selectedItem.previewData.scoutData?.standings && (
+                        <div className="p-4 rounded-xl bg-muted/20 border border-border/60 space-y-2">
+                          <span className="text-xs font-bold text-foreground block">
+                            Rendimento Avversario in Campionato:
+                          </span>
+                          <div className="grid grid-cols-4 gap-2 text-center font-mono text-xs">
+                            <div className="p-2 rounded bg-card border border-border/50">
+                              <span className="text-[10px] text-muted-foreground block">Posiz.</span>
+                              <span className="font-black text-foreground">
+                                #{selectedItem.previewData.scoutData.standings.rank || "-"}
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-card border border-border/50">
+                              <span className="text-[10px] text-muted-foreground block">Punti</span>
+                              <span className="font-black text-foreground">
+                                {selectedItem.previewData.scoutData.standings.points || 0} pt
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-card border border-border/50">
+                              <span className="text-[10px] text-muted-foreground block">Gol Fatti</span>
+                              <span className="font-black text-emerald-600 dark:text-emerald-400">
+                                {selectedItem.previewData.scoutData.standings.goalsFor || 0}
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-card border border-border/50">
+                              <span className="text-[10px] text-muted-foreground block">Gol Subiti</span>
+                              <span className="font-black text-rose-600 dark:text-rose-400">
+                                {selectedItem.previewData.scoutData.standings.goalsAgainst || 0}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Forma Recente Avversario */}
+                      {selectedItem.previewData.scoutData?.form && selectedItem.previewData.scoutData.form.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-muted-foreground">Forma recente avversario:</span>
+                          <div className="flex gap-1 font-mono text-xs font-black">
+                            {selectedItem.previewData.scoutData.form.map((res, i) => (
+                              <span
+                                key={i}
+                                className={`h-6 w-6 rounded-md flex items-center justify-center text-white ${
+                                  res === "V"
+                                    ? "bg-emerald-600"
+                                    : res === "N"
+                                    ? "bg-amber-500"
+                                    : "bg-rose-600"
                                 }`}
                               >
-                                {p}
-                              </Button>
-                            );
-                          } else if (p === rumorPage - 2 || p === rumorPage + 2) {
-                            return (
-                              <span key={p} className="text-xs text-muted-foreground px-0.5">
-                                …
+                                {res}
                               </span>
-                            );
-                          }
-                          return null;
-                        })}
-                      </div>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setRumorPage((p) => Math.min(totalRumorPages, p + 1));
-                          window.scrollTo({ top: 200, behavior: "smooth" });
-                        }}
-                        disabled={rumorPage === totalRumorPages}
-                        className="h-8 px-2.5 text-xs gap-1 font-semibold rounded-lg"
-                      >
-                        <span>Successivo</span>
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground space-y-3">
+                <div className="h-16 w-16 rounded-2xl bg-muted/40 border border-border/70 flex items-center justify-center">
+                  <Inbox className="h-8 w-8 text-muted-foreground/50" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-foreground text-sm">Nessuna Notizia Selezionata</h3>
+                  <p className="text-xs max-w-xs text-muted-foreground">
+                    Seleziona un elemento dall'elenco a sinistra per visualizzarne i dettagli e interagire.
+                  </p>
+                </div>
               </div>
             )}
-          </TabsContent>
-        </Tabs>
-
-        
+          </div>
+        </div>
       </main>
     </div>
   );

@@ -162,8 +162,8 @@ const Navbar = () => {
   const mediaItems: NavGroupItem[] = [
     {
       path: "/sala-stampa",
-      label: "Sala Stampa & Rumor",
-      description: "Dichiarazioni dei presidenti e scoop del Giornalista AI",
+      label: "Inbox & Sala Stampa",
+      description: "Inbox stile FM24 con rumor, interviste, anteprime e trattative",
       icon: Newspaper,
       colorClass: "text-amber-500",
     },
