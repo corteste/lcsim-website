@@ -458,10 +458,26 @@ const Calendario = () => {
     );
   }, [offseasonEvents, selectedOffseasonId]);
 
-  // Find the active round
+  // Find the active round with chronologically sorted matches
   const currentRound: Schedule | undefined = useMemo(() => {
     if (!schedule || schedule.length === 0) return undefined;
-    return schedule.find((s) => s.week === activeWeek) || schedule[0];
+    const round = schedule.find((s) => s.week === activeWeek) || schedule[0];
+    if (!round) return undefined;
+
+    const sortedMatches = [...round.matches].sort((a, b) => {
+      const dateA = a.date instanceof Date ? a.date.getTime() : new Date(a.date || 0).getTime();
+      const dateB = b.date instanceof Date ? b.date.getTime() : new Date(b.date || 0).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+
+      const timeA = String(a.match_time || "21:00");
+      const timeB = String(b.match_time || "21:00");
+      return timeA.localeCompare(timeB);
+    });
+
+    return {
+      ...round,
+      matches: sortedMatches,
+    };
   }, [schedule, activeWeek]);
 
   // Admin handlers for Offseason Events
@@ -1246,7 +1262,7 @@ const Calendario = () => {
                             )}% • Tiri: ${match.home_tiri_tot ?? 0} - ${
                               match.away_tiri_tot ?? 0
                             }`
-                          : "Calcio d'inizio ore 21:00"}
+                          : null}
                       </div>
                       <Button
                         variant="ghost"

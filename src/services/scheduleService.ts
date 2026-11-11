@@ -293,6 +293,14 @@ export async function fetchSchedule(
       home_player_stats: sortPlayersByRole(homePlayerStats, match.home_minuti),
       away_player_stats: sortPlayersByRole(awayPlayerStats, match.away_minuti),
     };
+  }).sort((a, b) => {
+    const dateA = a.date instanceof Date ? a.date.getTime() : new Date(a.date || 0).getTime();
+    const dateB = b.date instanceof Date ? b.date.getTime() : new Date(b.date || 0).getTime();
+    if (dateA !== dateB) return dateA - dateB;
+
+    const timeA = String(a.match_time || "21:00");
+    const timeB = String(b.match_time || "21:00");
+    return timeA.localeCompare(timeB);
   });
 }
 
@@ -374,6 +382,17 @@ export async function fetchSeasonSchedule(stag: number): Promise<Schedule[]> {
 
   const result: Schedule[] = [];
   for (const [week, matches] of weeksMap.entries()) {
+    // Sort matches chronologically within each week: by date first, then by match_time
+    matches.sort((a, b) => {
+      const dateA = a.date instanceof Date ? a.date.getTime() : new Date(a.date || 0).getTime();
+      const dateB = b.date instanceof Date ? b.date.getTime() : new Date(b.date || 0).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+
+      const timeA = String(a.match_time || "21:00");
+      const timeB = String(b.match_time || "21:00");
+      return timeA.localeCompare(timeB);
+    });
+
     result.push({ week, matches });
   }
 
