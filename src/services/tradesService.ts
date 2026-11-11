@@ -102,8 +102,8 @@ async function hydrateTrades(rawTrades: any[]): Promise<EnrichedTrade[]> {
     allTeamIds.add(t.receiver_team);
     (t.offered_player_ids || []).forEach((id: number) => allPlayerIds.add(id));
     (t.requested_player_ids || []).forEach((id: number) => allPlayerIds.add(id));
-    (t.offered_pick_numbers || []).forEach((num: number) => allPickNums.add(num));
-    (t.requested_pick_numbers || []).forEach((num: number) => allPickNums.add(num));
+    (t.offered_pick_numbers || []).forEach((num: any) => allPickNums.add(Number(num)));
+    (t.requested_pick_numbers || []).forEach((num: any) => allPickNums.add(Number(num)));
   });
 
   // 2. Query parallele per metadati
@@ -139,12 +139,13 @@ async function hydrateTrades(rawTrades: any[]): Promise<EnrichedTrade[]> {
 
   const pickMap: Record<number, TradePickAsset> = {};
   (picksRes.data || []).forEach((pk: any) => {
-    pickMap[pk.pick_overall] = {
-      pick_overall: pk.pick_overall,
-      round: pk.round,
-      pick_in_round: pk.pick_in_round,
+    const num = Number(pk.pick_overall);
+    pickMap[num] = {
+      pick_overall: num,
+      round: Number(pk.round) || Math.ceil(num / 16),
+      pick_in_round: Number(pk.pick_in_round) || (((num - 1) % 16) + 1),
       team_id: pk.team_id,
-      original_team_id: pk.original_team_id,
+      original_team_id: pk.original_team_id || pk.team_id,
       rookie_id: pk.rookie_id,
     };
   });
@@ -182,9 +183,31 @@ async function hydrateTrades(rawTrades: any[]): Promise<EnrichedTrade[]> {
     completed_at: t.completed_at,
     completed_by: t.completed_by,
     offered_players: (t.offered_player_ids || []).map((id: number) => playerMap[id]).filter(Boolean),
-    offered_picks: (t.offered_pick_numbers || []).map((num: number) => pickMap[num]).filter(Boolean),
+    offered_picks: (t.offered_pick_numbers || []).map((num: any) => {
+      const n = Number(num);
+      return (
+        pickMap[n] || {
+          pick_overall: n,
+          round: Math.ceil(n / 16),
+          pick_in_round: ((n - 1) % 16) + 1,
+          team_id: t.sender_team,
+          original_team_id: t.sender_team,
+        }
+      );
+    }),
     requested_players: (t.requested_player_ids || []).map((id: number) => playerMap[id]).filter(Boolean),
-    requested_picks: (t.requested_pick_numbers || []).map((num: number) => pickMap[num]).filter(Boolean),
+    requested_picks: (t.requested_pick_numbers || []).map((num: any) => {
+      const n = Number(num);
+      return (
+        pickMap[n] || {
+          pick_overall: n,
+          round: Math.ceil(n / 16),
+          pick_in_round: ((n - 1) % 16) + 1,
+          team_id: t.receiver_team,
+          original_team_id: t.receiver_team,
+        }
+      );
+    }),
     messages: messageMap[t.id] || [],
   }));
 }

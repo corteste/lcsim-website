@@ -962,35 +962,143 @@ export default function SalaStampa() {
                       </div>
 
                       {/* Griglia Asset Offerti vs Richiesti */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="p-3.5 rounded-xl bg-muted/20 border border-border/70 space-y-2">
-                          <span className="text-xs font-bold text-foreground block">
-                            Asset Offerti ({selectedItem.tradeData.offered_players?.length || 0} calciatori):
-                          </span>
-                          <div className="space-y-1">
-                            {selectedItem.tradeData.offered_players?.map((p) => (
-                              <div key={p.ID} className="p-2 rounded-lg bg-card border border-border/50 flex items-center justify-between text-xs font-mono">
-                                <span className="font-bold text-foreground">{p.Cognome} {p.Nome}</span>
-                                <Badge variant="outline" className="text-[10px]">{p.Posiz} • {p.OVR} OVR</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                      {(() => {
+                        const offeredPlayers = selectedItem.tradeData.offered_players || [];
+                        const offeredPicks = selectedItem.tradeData.offered_picks || [];
+                        const totalOffered = offeredPlayers.length + offeredPicks.length;
 
-                        <div className="p-3.5 rounded-xl bg-muted/20 border border-border/70 space-y-2">
-                          <span className="text-xs font-bold text-foreground block">
-                            Asset Richiesti ({selectedItem.tradeData.requested_players?.length || 0} calciatori):
-                          </span>
-                          <div className="space-y-1">
-                            {selectedItem.tradeData.requested_players?.map((p) => (
-                              <div key={p.ID} className="p-2 rounded-lg bg-card border border-border/50 flex items-center justify-between text-xs font-mono">
-                                <span className="font-bold text-foreground">{p.Cognome} {p.Nome}</span>
-                                <Badge variant="outline" className="text-[10px]">{p.Posiz} • {p.OVR} OVR</Badge>
+                        const requestedPlayers = selectedItem.tradeData.requested_players || [];
+                        const requestedPicks = selectedItem.tradeData.requested_picks || [];
+                        const totalRequested = requestedPlayers.length + requestedPicks.length;
+
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Colonna Offerti */}
+                            <div className="p-3.5 rounded-xl bg-muted/20 border border-border/70 space-y-2">
+                              <div className="flex items-center justify-between pb-1 border-b border-border/40">
+                                <span className="text-xs font-bold text-foreground">
+                                  Asset Offerti ({totalOffered}):
+                                </span>
+                                {totalOffered > 0 && (
+                                  <span className="text-[10px] text-muted-foreground font-mono">
+                                    {offeredPlayers.length > 0 && `${offeredPlayers.length} calc.`}
+                                    {offeredPlayers.length > 0 && offeredPicks.length > 0 && " • "}
+                                    {offeredPicks.length > 0 &&
+                                      `${offeredPicks.length} scelt${offeredPicks.length === 1 ? "a" : "e"}`}
+                                  </span>
+                                )}
                               </div>
-                            ))}
+                              <div className="space-y-1.5">
+                                {offeredPlayers.map((p) => (
+                                  <div
+                                    key={p.ID}
+                                    className="p-2 rounded-lg bg-card border border-border/50 flex items-center justify-between text-xs font-mono"
+                                  >
+                                    <span className="font-bold text-foreground">
+                                      {p.Cognome} {p.Nome}
+                                    </span>
+                                    <Badge variant="outline" className="text-[10px]">
+                                      {p.Posiz} • {p.OVR} OVR
+                                    </Badge>
+                                  </div>
+                                ))}
+                                {offeredPicks.map((pk) => (
+                                  <div
+                                    key={pk.pick_overall}
+                                    className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs font-mono"
+                                  >
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                                      <span className="font-bold text-amber-600 dark:text-amber-400 truncate">
+                                        Scelta #{pk.pick_overall}
+                                      </span>
+                                      {pk.original_team_id &&
+                                        pk.original_team_id !== selectedItem.tradeData?.sender_team && (
+                                          <span className="text-[10px] text-muted-foreground font-normal shrink-0">
+                                            (ex {pk.original_team_id})
+                                          </span>
+                                        )}
+                                    </div>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] font-bold border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 shrink-0"
+                                    >
+                                      Giro {pk.round} (#{pk.pick_in_round})
+                                    </Badge>
+                                  </div>
+                                ))}
+                                {totalOffered === 0 && (
+                                  <div className="p-2 text-xs text-muted-foreground italic">
+                                    Nessun asset inserito
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Colonna Richiesti */}
+                            <div className="p-3.5 rounded-xl bg-muted/20 border border-border/70 space-y-2">
+                              <div className="flex items-center justify-between pb-1 border-b border-border/40">
+                                <span className="text-xs font-bold text-foreground">
+                                  Asset Richiesti ({totalRequested}):
+                                </span>
+                                {totalRequested > 0 && (
+                                  <span className="text-[10px] text-muted-foreground font-mono">
+                                    {requestedPlayers.length > 0 && `${requestedPlayers.length} calc.`}
+                                    {requestedPlayers.length > 0 && requestedPicks.length > 0 && " • "}
+                                    {requestedPicks.length > 0 &&
+                                      `${requestedPicks.length} scelt${requestedPicks.length === 1 ? "a" : "e"}`}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="space-y-1.5">
+                                {requestedPlayers.map((p) => (
+                                  <div
+                                    key={p.ID}
+                                    className="p-2 rounded-lg bg-card border border-border/50 flex items-center justify-between text-xs font-mono"
+                                  >
+                                    <span className="font-bold text-foreground">
+                                      {p.Cognome} {p.Nome}
+                                    </span>
+                                    <Badge variant="outline" className="text-[10px]">
+                                      {p.Posiz} • {p.OVR} OVR
+                                    </Badge>
+                                  </div>
+                                ))}
+                                {requestedPicks.map((pk) => (
+                                  <div
+                                    key={pk.pick_overall}
+                                    className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs font-mono"
+                                  >
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                                      <span className="font-bold text-amber-600 dark:text-amber-400 truncate">
+                                        Scelta #{pk.pick_overall}
+                                      </span>
+                                      {pk.original_team_id &&
+                                        pk.original_team_id !== selectedItem.tradeData?.receiver_team && (
+                                          <span className="text-[10px] text-muted-foreground font-normal shrink-0">
+                                            (ex {pk.original_team_id})
+                                          </span>
+                                        )}
+                                    </div>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] font-bold border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 shrink-0"
+                                    >
+                                      Giro {pk.round} (#{pk.pick_in_round})
+                                    </Badge>
+                                  </div>
+                                ))}
+                                {totalRequested === 0 && (
+                                  <div className="p-2 text-xs text-muted-foreground italic">
+                                    Nessun asset inserito
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
 
                       {selectedItem.tradeData.notes && (
                         <div className="p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs text-muted-foreground space-y-1">

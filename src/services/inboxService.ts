@@ -361,9 +361,27 @@ export async function fetchInboxFeed(params: {
         tradeColor = "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30";
       }
 
-      const offeredNames = (trade.offered_players || []).map((p) => p.Cognome).join(", ");
-      const requestedNames = (trade.requested_players || []).map((p) => p.Cognome).join(", ");
-      const snippet = `Offerti: ${offeredNames || "Scelte Draft"} ➔ Richiesti: ${requestedNames || "Scelte Draft"}`;
+      const formatAssetSnippet = (
+        players?: { Cognome: string }[],
+        picks?: { pick_overall: number }[]
+      ) => {
+        const playerNames = (players || []).map((p) => p.Cognome);
+        const pickCount = (picks || []).length;
+
+        if (playerNames.length > 0 && pickCount > 0) {
+          const pickLabel = pickCount === 1 ? "+1 Scelta" : `+${pickCount} Scelte`;
+          return `${playerNames.join(", ")} (${pickLabel})`;
+        } else if (playerNames.length > 0) {
+          return playerNames.join(", ");
+        } else if (pickCount > 0) {
+          return pickCount === 1 ? "1 Scelta Draft" : `${pickCount} Scelte Draft`;
+        }
+        return "Nessun asset";
+      };
+
+      const offeredSnippet = formatAssetSnippet(trade.offered_players, trade.offered_picks);
+      const requestedSnippet = formatAssetSnippet(trade.requested_players, trade.requested_picks);
+      const snippet = `Offerti: ${offeredSnippet} ➔ Richiesti: ${requestedSnippet}`;
 
       items.push({
         id: `trade_${trade.id}`,
