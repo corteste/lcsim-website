@@ -163,7 +163,7 @@ const Navbar = () => {
     {
       path: "/sala-stampa",
       label: "Inbox Personale",
-      description: "Inbox stile FM24 con rumor, interviste, anteprime e trattative",
+      description: "Notizie ufficiali, rumor, interviste, anteprime e trattative",
       icon: Newspaper,
       colorClass: "text-amber-500",
     },

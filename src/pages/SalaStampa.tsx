@@ -357,9 +357,6 @@ export default function SalaStampa() {
                   <h1 className="text-lg sm:text-xl font-black text-foreground tracking-tight flex items-center gap-2">
                     Inbox Personale
                   </h1>
-                  <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
-                    FM24 Edition
-                  </Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground truncate">
                   Comunicazioni ufficiali, interviste, gossip di mercato e report tattici unificati.
