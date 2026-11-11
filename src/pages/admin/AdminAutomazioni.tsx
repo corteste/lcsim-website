@@ -42,10 +42,11 @@ import { ImportRookieModal } from "@/components/admin/ImportRookieModal";
 import { AgingModal } from "@/components/admin/AgingModal";
 import { MatchResultsManagerModal } from "@/components/admin/MatchResultsManagerModal";
 import { PerformanceDecayModal } from "@/components/admin/PerformanceDecayModal";
+import { ScheduleGeneratorModal } from "@/components/admin/ScheduleGeneratorModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCutsComplianceReport, executeOfficialCutsRpc } from "@/services/cutsService";
 import { generatePressQuestionsForMatchday, generateRandomMarketRumors } from "@/services/aiJournalistService";
-import { Newspaper, Mic2, Flame, Camera, Trophy, TrendingDown, UserCheck, Pencil } from "lucide-react";
+import { Newspaper, Mic2, Flame, Camera, Trophy, TrendingDown, UserCheck, Pencil, CalendarDays } from "lucide-react";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import { getDraftState, setDraftState, DraftState } from "@/services/draftStateService";
@@ -99,6 +100,7 @@ export default function AdminAutomazioni() {
   const [agingModalOpen, setAgingModalOpen] = useState(false);
   const [matchResultsModalOpen, setMatchResultsModalOpen] = useState(false);
   const [decayModalOpen, setDecayModalOpen] = useState(false);
+  const [scheduleGeneratorModalOpen, setScheduleGeneratorModalOpen] = useState(false);
 
   // Official cuts state & query
   const queryClient = useQueryClient();
@@ -591,6 +593,66 @@ export default function AdminAutomazioni() {
               </span>
               <span className="font-semibold text-foreground truncate max-w-[320px]">
                 {formatLastRun(stateMap["import_match_results"]?.last_run_at, stateMap["import_match_results"]?.last_run_by)}
+              </span>
+            </div>
+          </Card>
+
+          {/* 0B. GENERATORE CALENDARIO STAGIONALE (11 GIORNATE) */}
+          <Card className="border-cyan-500/40 bg-gradient-to-br from-card via-card/95 to-cyan-500/10 shadow-lg relative overflow-hidden flex flex-col justify-between md:col-span-2">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/15 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <Badge className="bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" /> 11 Giornate Bilanciate • 5 Casa / 5 Trasferta • G6 Neutro (PhoneHub Arena)
+                  </Badge>
+                  <CalendarDays className="h-6 w-6 text-cyan-500" />
+                </div>
+                <CardTitle className="text-xl font-black">Genera Calendario Stagionale (Regular Season)</CardTitle>
+                <CardDescription className="text-xs">
+                  Generazione automatica del calendario a girone unico (11 giornate, 6 partite per turno su Lunedì e Martedì) con bilanciamento matematico Casa/Trasferta (max 2 consecutive esclusa la 6ª giornata in campo neutro alla PhoneHub Arena), anteprima date e approvazione finale prima del salvataggio a DB.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3.5 rounded-xl bg-muted/60 border border-border/70 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Formato Regular Season:</span>
+                    <span className="font-mono font-bold text-foreground">11 Giornate (66 Partite)</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Bilanciamento Squadre:</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">5 Casa • 5 Trasferta • 1 Neutro</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">6ª Giornata Campo Neutro:</span>
+                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">PhoneHub Arena (Esclusa Streak)</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px]">Programmazione Turno:</span>
+                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">Lunedì &amp; Martedì (Configurabili)</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                  <Button
+                    onClick={() => setScheduleGeneratorModalOpen(true)}
+                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-cyan-600/20"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    Genera &amp; Configura Calendario Stagionale
+                  </Button>
+                </div>
+              </CardContent>
+            </div>
+
+            {/* Timestamp Footer */}
+            <div className="px-6 py-2.5 bg-muted/30 border-t border-border/60 text-[11px] flex items-center justify-between text-muted-foreground font-mono">
+              <span className="flex items-center gap-1.5 font-sans">
+                <Clock className="h-3.5 w-3.5 text-cyan-500" />
+                Ultima generazione calendario:
+              </span>
+              <span className="font-semibold text-foreground truncate max-w-[320px]">
+                {formatLastRun(stateMap["generate_season_schedule"]?.last_run_at, stateMap["generate_season_schedule"]?.last_run_by)}
               </span>
             </div>
           </Card>
@@ -1773,13 +1835,26 @@ export default function AdminAutomazioni() {
         }}
       />
 
-            {/* MODALE: PEGGIORAMENTI PRESTAZIONALI IN-SEASON (#25) */}
+      {/* MODALE: PEGGIORAMENTI PRESTAZIONALI IN-SEASON (#25) */}
       <PerformanceDecayModal
         open={decayModalOpen}
         onOpenChange={setDecayModalOpen}
         onSuccess={async () => {
           await loadAutomationStates();
           await queryClient.invalidateQueries({ queryKey: ["players"] });
+        }}
+      />
+
+      {/* MODALE: GENERATORE CALENDARIO STAGIONALE */}
+      <ScheduleGeneratorModal
+        open={scheduleGeneratorModalOpen}
+        onOpenChange={setScheduleGeneratorModalOpen}
+        adminName={user?.name || user?.team || "Super Admin"}
+        onSaved={async () => {
+          await loadAutomationStates();
+          await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+          await queryClient.invalidateQueries({ queryKey: ["season_schedule"] });
+          await queryClient.invalidateQueries({ queryKey: ["standings"] });
         }}
       />
 
