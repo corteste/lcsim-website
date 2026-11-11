@@ -421,43 +421,6 @@ export const SkillMovesAndWeakFootSystem: React.FC<SkillMovesAndWeakFootSystemPr
         </Card>
 
       </div>
-
-      {/* ========================================================================= */}
-      {/* BOX RIEPILOGATIVO STATO TECNICO CALCIATORE                                */}
-      {/* ========================================================================= */}
-      <div className="p-3.5 rounded-xl border border-border/70 bg-muted/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2">
-          {totalStarsCost > 0 ? (
-            <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-500 border border-amber-500/30">
-              <Sparkles className="h-4 w-4" />
-            </div>
-          ) : (
-            <div className="p-1.5 rounded-lg bg-muted text-muted-foreground border border-border/60">
-              <CheckCircle2 className="h-4 w-4" />
-            </div>
-          )}
-          <div>
-            <div className="font-bold text-foreground">
-              {totalStarsCost > 0
-                ? `Potenziamenti Tecnici Attivi: spesa di ${totalStarsCost} XP`
-                : "Valori Originali di Fabbrica Mantenuti"}
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              {totalStarsCost > 0
-                ? `${addedSkillMoves > 0 ? `Mosse Abilità: ${baseSkillMoves}⭐ ➔ ${currentSkillMoves}⭐ (+${costSkillMoves} XP)` : ""}${
-                    addedSkillMoves > 0 && addedWeakFoot > 0 ? " • " : ""
-                  }${addedWeakFoot > 0 ? `Piede Debole: ${baseWeakFoot}⭐ ➔ ${currentWeakFoot}⭐ (+${costWeakFoot} XP)` : ""}`
-                : `Il calciatore gioca con le sue ${baseSkillMoves}⭐ di abilità e ${baseWeakFoot}⭐ di piede debole naturali.`}
-            </div>
-          </div>
-        </div>
-
-        {totalStarsCost > 0 && (
-          <Badge className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-xs px-2.5 py-1">
-            Totale: -{totalStarsCost} XP
-          </Badge>
-        )}
-      </div>
     </div>
   );
 };
