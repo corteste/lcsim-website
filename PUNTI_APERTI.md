@@ -1767,3 +1767,15 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
   4. **Database & Master DB Sync**:
      - Migrazione SQL `supabase/migrations/20261111_training_skill_moves_and_weak_foot.sql` e rispettivo rollback.
      - Aggiornata la RPC `recompute_ea_player_from_an_and_training` per salvare ed allineare in tempo reale `skillmoves` (0..4) e `weakfootabilitytypecode` (1..5) su `ea_player_db`.
+
+---
+
+## 📌 84. Lista Giocatori: Tab Dedicato per la Classe Rookie (Draft Class)
+- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione all'Admin del 08/11/2026)
+- **Priorità**: Media (Consultabilità e scouting della classe esordienti)
+- **Moduli previsti**: `src/pages/ListaGiocatori.tsx`, `src/components/player/`, `src/services/rookieService.ts`
+- **Tabelle coinvolte**: `an_rookie`, `an_team`
+- **Descrizione & Obiettivi**:
+  - Attualmente la pagina `/giocatori/lista-giocatori` mostra tutti i calciatori sotto contratto in Serie A e gli Svincolati (Free Agent).
+  - Aggiungere un **Tab dedicato per i Rookie** (o un selettore di visualizzazione) che permetta di sfogliare comodamente l'intera classe del Draft attivo direttamente dall'elenco generale dei giocatori della lega.
+  - Implementare i consueti filtri rapidi di ricerca per ruolo, nazionalità, piede e attributi noti, garantendo la totale coerenza con la protezione crittografica e l'offuscamento a stelle/range (Blind Database).
