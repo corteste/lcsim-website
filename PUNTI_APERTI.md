@@ -1743,3 +1743,27 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
        - Assenza di conflitti tra battitori di corner e saltatori d'area.
      - Se sono presenti errori bloccanti: badge rosso, elenco dettagliato dei problemi e guida rapida per correggerli. Il salvataggio definitivo è inibito fino alla risoluzione.
      - Se tutti i controlli sono superati: badge verde *"Conforme"*, checklist verde e pulsante *"Conferma e Salva Formazione"*.
+
+---
+
+## 📌 83. Allenamenti: Potenziamento Stelle Mosse Abilità (MABI) e Piede Debole (WF)
+- **Stato**: 🟢 Completato & Integrato (Branch `dev`)
+- **Priorità**: Alta (Personalizzazione tecnica e profondità del gameplay FC 25)
+- **Moduli coinvolti**: `src/pages/Allenamenti.tsx`, `src/components/training/SkillMovesAndWeakFootSystem.tsx`, `src/types/training.ts`
+- **Tabelle & Database coinvolti**: `an_player`, `an_player_training`, `ea_player_db`, RPC `recompute_ea_player_from_an_and_training`
+- **Regole & Implementazione**:
+  1. **Costi XP Ufficiali**:
+     - **Mosse Abilità (MABI)**: **65 XP** per ogni stella incrementata.
+     - **Piede Debole (Weak Foot)**: **90 XP** per ogni stella incrementata.
+  2. **Vincoli di Salvaguardia e Limiti**:
+     - **Limite minimo inderogabile**: Il giocatore non può **mai scendere sotto il valore di fabbrica naturale** registrato in `an_player` (`MABI` e `PiedeDebole`). Il tasto `[-]` si disabilita al raggiungimento del default.
+     - **Reset ai valori originali**: Il reset (locale o generale) ripristina le stelle ai rating di partenza.
+     - **Limite massimo**: Tetto massimo consentito di **5 stelle** (⭐⭐⭐⭐⭐) per entrambi gli attributi.
+     - **Ruoli ammessi**: Tutti i calciatori di movimento e i **Portieri (POR)** possono accedere agli upgrade tecnici.
+  3. **Interfaccia Grafica Dedicata (Tab Autonomo)**:
+     - Inserito il terzo tab principale in `/mia-squadra/allenamenti`: `Gruppi Attributi` | `Ruoli & Tratti` | `Abilità & Piede`.
+     - Componente `SkillMovesAndWeakFootSystem.tsx` con stelle grafiche interattive ad alto impatto visivo, indicazione del valore base (badge "Base"), evidenziazione aurea/ciano per le stelle potenziate, stepper `[-]` e `[+]` con controlli reattivi sul saldo XP residuo.
+     - Integrazione completa nella Sidebar destra (Riepilogo Spesa XP con righe dedicate) e nel box regole a sinistra.
+  4. **Database & Master DB Sync**:
+     - Migrazione SQL `supabase/migrations/20261111_training_skill_moves_and_weak_foot.sql` e rispettivo rollback.
+     - Aggiornata la RPC `recompute_ea_player_from_an_and_training` per salvare ed allineare in tempo reale `skillmoves` (0..4) e `weakfootabilitytypecode` (1..5) su `ea_player_db`.

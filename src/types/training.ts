@@ -37,6 +37,8 @@ export const TRAINING_COSTS = {
   TRAIT_SILVER_ADD: 60,       // Tratto Argento: 60 XP
   TRAIT_REMOVE: 40,           // Elimina tratto pre-esistente: 40 XP
   TRAIT_GOLD_SWAP: 70,        // Swap/Promozione Tratto Oro: 70 XP (se già presente un oro)
+  SKILL_MOVES_STAR: 65,       // Stella Mossa Abilità: 65 XP per stella
+  WEAK_FOOT_STAR: 90,         // Stella Piede Debole: 90 XP per stella
   OVR_THRESHOLD: 84,          // Soglia OVR per 1° Oro gratis e Ruolo++
   MAX_TRAITS: 5,              // Massimo 5 tratti totali
   MAX_GOLD_TRAITS: 1,         // Massimo 1 tratto oro
@@ -44,7 +46,34 @@ export const TRAINING_COSTS = {
   MAX_ROLE_PLUSPLUS: 1,       // Massimo 1 Ruolo++ per giocatore
   MAX_POSITIONS: 2,           // Massimo 2 posizioni (Primaria + Secondaria)
   MAX_TOTAL_ROLES: 3,         // Massimo 3 Ruoli+ complessivi (2 primari + 1 secondario)
+  MAX_STARS: 5,               // Massimo 5 stelle per Skill Moves e Weak Foot
 } as const;
+
+/**
+ * Converte un valore di stelle (stringa '⭐⭐⭐', numero 3, o stringa '3') in un intero 1..5.
+ */
+export function parseStarCount(val: string | number | null | undefined, defaultVal = 1): number {
+  if (val === null || val === undefined) return defaultVal;
+  if (typeof val === "number") return Math.max(1, Math.min(5, Math.round(val)));
+  const s = String(val).trim();
+  const starMatches = s.match(/⭐/g);
+  if (starMatches && starMatches.length > 0) {
+    return Math.max(1, Math.min(5, starMatches.length));
+  }
+  const parsed = parseInt(s, 10);
+  if (!isNaN(parsed) && parsed >= 1 && parsed <= 5) {
+    return parsed;
+  }
+  return defaultVal;
+}
+
+/**
+ * Formatta un conteggio numerico (1..5) in stringa di caratteri '⭐'.
+ */
+export function formatStars(count: number): string {
+  const safeCount = Math.max(1, Math.min(5, Math.round(count)));
+  return "⭐".repeat(safeCount);
+}
 
 /** Ruoli principali ufficiali supportati */
 export const OFFICIAL_POSITIONS = [

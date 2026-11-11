@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import UnifiedRoleAndTraitSystem from "@/components/training/UnifiedRoleAndTraitSystem";
+import { SkillMovesAndWeakFootSystem } from "@/components/training/SkillMovesAndWeakFootSystem";
 import { SeasonalXpReportModal } from "@/components/training/SeasonalXpReportModal";
 import { useAuth } from "@/context/AuthContext";
 import { useSchedule } from "@/context/ScheduleContext";
@@ -32,6 +33,9 @@ import {
   serializeSpecializationsForDb,
   calculateSpecializationsCost,
   OFFICIAL_TRAITS,
+  TRAINING_COSTS,
+  parseStarCount,
+  formatStars,
 } from "@/types/training";
 
 export { type StatKey };
@@ -454,6 +458,10 @@ const Allenamenti = () => {
     parsePlayerSpecializations(null)
   );
 
+  // Stato bozza per Mosse Abilità e Piede Debole
+  const [skillMovesDraft, setSkillMovesDraft] = useState<number>(1);
+  const [weakFootDraft, setWeakFootDraft] = useState<number>(1);
+
   // Stati operativi UI
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -492,17 +500,29 @@ const Allenamenti = () => {
     if (!targetPlayer) {
       setIncreases(emptyIncreases());
       setSpecializationsDraft(parsePlayerSpecializations(null));
+      setSkillMovesDraft(1);
+      setWeakFootDraft(1);
       return;
     }
 
+    const bSM = parseStarCount(targetPlayer.MABI, 1);
+    const bWF = parseStarCount(targetPlayer.PiedeDebole, 1);
+
     if (record && record.increases) {
       setIncreases(normalizeIncreases(record.increases));
+      const recSM = record.increases.skill_moves !== undefined ? Number(record.increases.skill_moves) : bSM;
+      const recWF = record.increases.weak_foot !== undefined ? Number(record.increases.weak_foot) : bWF;
+      setSkillMovesDraft(Math.max(bSM, Math.min(5, recSM)));
+      setWeakFootDraft(Math.max(bWF, Math.min(5, recWF)));
+
       if (record.increases.specializations) {
         const spec = record.increases.specializations;
         setSpecializationsDraft({
           posiz: spec.posiz || targetPlayer.Posiz || "CC",
           role1: spec.role1 !== undefined ? spec.role1 : targetPlayer.Role1 || null,
           role2: spec.role2 !== undefined ? spec.role2 : targetPlayer.Role2 || null,
+          role3: spec.role3 !== undefined ? spec.role3 : targetPlayer.Role3 || null,
+          preferredPosition2: spec.preferred_position_2 !== undefined ? spec.preferred_position_2 : targetPlayer.PreferredPosition2 || null,
           traits: Array.isArray(spec.traits_list)
             ? spec.traits_list
             : parsePlayerSpecializations(targetPlayer).traits,
@@ -514,6 +534,8 @@ const Allenamenti = () => {
     } else {
       setIncreases(emptyIncreases());
       setSpecializationsDraft(parsePlayerSpecializations(targetPlayer));
+      setSkillMovesDraft(bSM);
+      setWeakFootDraft(bWF);
     }
   };
 
@@ -580,6 +602,10 @@ const Allenamenti = () => {
     if (!selectedId) return null;
     return players.find((p) => Number(p.ID) === selectedId) ?? null;
   }, [players, selectedId]);
+
+  // Valori base naturali di Mosse Abilità e Piede Debole del calciatore selezionato
+  const baseSkillMoves = useMemo(() => parseStarCount(player?.MABI, 1), [player?.MABI]);
+  const baseWeakFoot = useMemo(() => parseStarCount(player?.PiedeDebole, 1), [player?.PiedeDebole]);
 
   const currentTrainingRecord = useMemo(() => {
     if (!selectedId) return null;
@@ -700,13 +726,23 @@ const Allenamenti = () => {
     );
   }, [player, specializationsDraft, postOverall, isSelectedRoleDiscounted]);
 
+  // Calcolo Costo Stelle Abilità e Piede Debole (Opzione concordata: MABI 65 XP, WF 90 XP)
+  const addedSkillMoves = Math.max(0, skillMovesDraft - baseSkillMoves);
+  const addedWeakFoot = Math.max(0, weakFootDraft - baseWeakFoot);
+  const skillMovesCost = addedSkillMoves * TRAINING_COSTS.SKILL_MOVES_STAR;
+  const weakFootCost = addedWeakFoot * TRAINING_COSTS.WEAK_FOOT_STAR;
+  const starsCost = skillMovesCost + weakFootCost;
+
   // Costo Totale Complessivo
-  const totalCost = attributeCost + specCostSummary.totalCost;
+  const totalCost = attributeCost + specCostSummary.totalCost + starsCost;
   const xpAvailable = player?.XP ?? 0;
   const xpRemaining = xpAvailable - totalCost;
 
   // Verifica se ci sono modifiche attive sugli attributi
   const hasActiveIncreases = useMemo(() => hasAnyIncrease(increases), [increases]);
+
+  // Verifica se ci sono modifiche attive sulle stelle di abilità o piede
+  const hasActiveStars = addedSkillMoves > 0 || addedWeakFoot > 0;
 
   // Verifica se ci sono modifiche attive su ruoli o tratti rispetto al giocatore base di an_player
   const hasActiveSpecializations = useMemo(() => {
@@ -723,7 +759,7 @@ const Allenamenti = () => {
     return baseTraitKeys !== draftTraitKeys;
   }, [player, specializationsDraft]);
 
-  const hasAnyDraftChanges = hasActiveIncreases || hasActiveSpecializations;
+  const hasAnyDraftChanges = hasActiveIncreases || hasActiveSpecializations || hasActiveStars;
 
   const hasSavedTraining = useMemo(() => {
     return !!currentTrainingRecord;
@@ -760,8 +796,16 @@ const Allenamenti = () => {
       specializationsDraft.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",") !==
       savedDraftSpec.traits.map((t) => `${t.id}:${t.tier}`).sort().join(",");
 
-    return increasesChanged || specChanged;
-  }, [player, increases, specializationsDraft, currentTrainingRecord]);
+    const savedSM = currentTrainingRecord?.increases?.skill_moves !== undefined
+      ? Number(currentTrainingRecord.increases.skill_moves)
+      : baseSkillMoves;
+    const savedWF = currentTrainingRecord?.increases?.weak_foot !== undefined
+      ? Number(currentTrainingRecord.increases.weak_foot)
+      : baseWeakFoot;
+    const starsChanged = skillMovesDraft !== savedSM || weakFootDraft !== savedWF;
+
+    return increasesChanged || specChanged || starsChanged;
+  }, [player, increases, specializationsDraft, skillMovesDraft, weakFootDraft, baseSkillMoves, baseWeakFoot, currentTrainingRecord]);
 
   const isPhysicalGroup = (groupKey: string, category: string) => category === "FIS" || groupKey === "PORF";
 
@@ -876,6 +920,8 @@ const Allenamenti = () => {
       const payloadIncreases = {
         ...normalizedInc,
         specializations: serializedSpec,
+        skill_moves: skillMovesDraft,
+        weak_foot: weakFootDraft,
       };
 
       const nowIso = new Date().toISOString();
@@ -895,6 +941,10 @@ const Allenamenti = () => {
           XP: player.XP,
           stats: preStats,
           specializations: specializationsDraft,
+          MABI: player.MABI,
+          PiedeDebole: player.PiedeDebole,
+          skill_moves: skillMovesDraft,
+          weak_foot: weakFootDraft,
         },
         updated_at: nowIso,
       };
@@ -914,9 +964,14 @@ const Allenamenti = () => {
 
       queryClient.invalidateQueries({ queryKey: ["player_training", playerId] });
 
+      const starsFeedback: string[] = [];
+      if (addedSkillMoves > 0) starsFeedback.push(`Mosse Abilità ${skillMovesDraft}⭐ (+${addedSkillMoves})`);
+      if (addedWeakFoot > 0) starsFeedback.push(`Piede Debole ${weakFootDraft}⭐ (+${addedWeakFoot})`);
+      const starsText = starsFeedback.length > 0 ? ` [${starsFeedback.join(", ")}]` : "";
+
       toast({
         title: "Allenamenti Salvati!",
-        description: `Stato salvato per ${player.Nome} ${player.Cognome}. Spesa: ${totalCost} XP. OVR stimato: ${postOverall} (+${postOverall - preOverall}).`,
+        description: `Stato salvato per ${player.Nome} ${player.Cognome}. Spesa: ${totalCost} XP. OVR stimato: ${postOverall} (+${postOverall - preOverall}).${starsText}`,
       });
     } catch (err: any) {
       console.error("Errore salvataggio allenamenti:", err);
@@ -939,6 +994,8 @@ const Allenamenti = () => {
     try {
       setIncreases(emptyIncreases());
       setSpecializationsDraft(parsePlayerSpecializations(player));
+      setSkillMovesDraft(baseSkillMoves);
+      setWeakFootDraft(baseWeakFoot);
 
       if (trainingMap[playerId]) {
         const { error } = await supabase
@@ -1411,21 +1468,32 @@ const Allenamenti = () => {
                         <li>Swap Tratto Oro: <strong>70 XP</strong></li>
                       </ul>
                     </div>
+                    <div className="pt-1 border-t border-border/40">
+                      <strong className="text-foreground">Stelle Tecniche (Max 5⭐):</strong>
+                      <ul className="list-disc list-inside space-y-0.5 text-[10px] mt-0.5">
+                        <li>Mosse Abilità: <strong>65 XP</strong> per stella</li>
+                        <li>Piede Debole: <strong>90 XP</strong> per stella</li>
+                        <li>Non riducibili sotto il valore originale</li>
+                      </ul>
+                    </div>
                   </div>
                 </Card>
               </div>
 
               {/* ------------------------------------------------------------- */}
-              {/* COLONNA CENTRALE: LE DUE SCHEDE (ATTRIBUTI vs RUOLI & TRATTI) */}
+              {/* COLONNA CENTRALE: LE TRE SCHEDE (ATTRIBUTI, RUOLI/TRATTI, TECNICA) */}
               {/* ------------------------------------------------------------- */}
               <div className="col-span-12 lg:col-span-6 xl:col-span-6 2xl:col-span-7 space-y-4">
                 <Tabs defaultValue="attributi" className="w-full">
-                  <TabsList className="w-full grid grid-cols-2 h-11 bg-muted/40 p-1 rounded-xl">
+                  <TabsList className="w-full grid grid-cols-3 h-11 bg-muted/40 p-1 rounded-xl">
                     <TabsTrigger value="attributi" className="font-bold text-xs sm:text-sm gap-1.5">
                       <TrendingUp className="h-4 w-4" /> Gruppi Attributi
                     </TabsTrigger>
                     <TabsTrigger value="specializzazioni" className="font-bold text-xs sm:text-sm gap-1.5">
-                      <Sparkles className="h-4 w-4" /> Ruoli &amp; Tratti Speciali
+                      <Sparkles className="h-4 w-4" /> Ruoli &amp; Tratti
+                    </TabsTrigger>
+                    <TabsTrigger value="tecnica" className="font-bold text-xs sm:text-sm gap-1.5">
+                      <Star className="h-4 w-4 text-amber-500 fill-amber-500/20" /> Abilità &amp; Piede
                     </TabsTrigger>
                   </TabsList>
 
@@ -1630,6 +1698,27 @@ const Allenamenti = () => {
                       </Card>
                     )}
                   </TabsContent>
+
+                  {/* TAB 3: STELLE ABILITÀ E PIEDE DEBOLE (#PUNTO TECNICO) */}
+                  <TabsContent value="tecnica" className="mt-4">
+                    {player ? (
+                      <SkillMovesAndWeakFootSystem
+                        player={player}
+                        baseSkillMoves={baseSkillMoves}
+                        baseWeakFoot={baseWeakFoot}
+                        currentSkillMoves={skillMovesDraft}
+                        currentWeakFoot={weakFootDraft}
+                        onSkillMovesChange={setSkillMovesDraft}
+                        onWeakFootChange={setWeakFootDraft}
+                        xpAvailable={xpRemaining}
+                        isRosterLocked={isRosterLocked}
+                      />
+                    ) : (
+                      <Card className="py-12 text-center text-muted-foreground border-dashed">
+                        Seleziona un giocatore dalla rosa a sinistra per potenziare le stelle di abilità e piede debole.
+                      </Card>
+                    )}
+                  </TabsContent>
                 </Tabs>
               </div>
 
@@ -1714,6 +1803,33 @@ const Allenamenti = () => {
                               <span className="text-amber-500 font-bold">•</span> {t}
                             </li>
                           ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Dettaglio Potenziamenti Tecnici (Mosse Abilità & Piede Debole) */}
+                    {(addedSkillMoves > 0 || addedWeakFoot > 0) && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1.5">
+                        <div className="flex items-center justify-between font-bold text-xs text-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                            <span>Abilità &amp; Piede Debole</span>
+                          </div>
+                          <span className="text-amber-500 font-mono">-{starsCost} XP</span>
+                        </div>
+                        <ul className="space-y-1 text-[11px] text-muted-foreground">
+                          {addedSkillMoves > 0 && (
+                            <li className="flex items-center justify-between">
+                              <span>Mosse Abilità: {baseSkillMoves}⭐ &rarr; {skillMovesDraft}⭐ (+{addedSkillMoves})</span>
+                              <strong className="text-amber-500 font-mono">-{skillMovesCost} XP</strong>
+                            </li>
+                          )}
+                          {addedWeakFoot > 0 && (
+                            <li className="flex items-center justify-between">
+                              <span>Piede Debole: {baseWeakFoot}⭐ &rarr; {weakFootDraft}⭐ (+{addedWeakFoot})</span>
+                              <strong className="text-cyan-500 font-mono">-{weakFootCost} XP</strong>
+                            </li>
+                          )}
                         </ul>
                       </div>
                     )}
