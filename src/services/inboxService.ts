@@ -122,15 +122,8 @@ export async function fetchInboxFeed(params: {
       });
     });
 
-    // 4. Rumor & Indiscrezioni di Calciomercato
+    // 4. Rumor & Indiscrezioni di Calciomercato (Badge unificato "Voci di Mercato")
     rumorsList.forEach((rumor) => {
-      let badgeStyle = "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30";
-      if (rumor.category === "TRATTATIVA_REALE") {
-        badgeStyle = "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
-      } else if (rumor.category === "FAKE_NEWS") {
-        badgeStyle = "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30";
-      }
-
       items.push({
         id: `rumor_${rumor.id}`,
         category: "rumors",
@@ -141,8 +134,8 @@ export async function fetchInboxFeed(params: {
         senderTeamId: rumor.involved_team_ids?.[0],
         timestamp: rumor.created_at,
         priority: "normal",
-        badgeText: rumor.credibility_badge || "Rumor",
-        badgeColor: badgeStyle,
+        badgeText: "Voci di Mercato",
+        badgeColor: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
         rumorData: rumor,
       });
     });

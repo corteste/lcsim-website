@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Clock,
   CheckCircle2,
+  CheckCheck,
   Search,
   Filter,
   MessageSquare,
@@ -157,6 +158,15 @@ export default function SalaStampa() {
       } catch {}
       return next;
     });
+  };
+
+  const markAllAsRead = () => {
+    const allIds = new Set(items.map((it) => it.id));
+    setReadItemIds(allIds);
+    try {
+      localStorage.setItem("lcsim_fm24_inbox_read", JSON.stringify(Array.from(allIds)));
+    } catch {}
+    toast.success("Tutte le notifiche dell'Inbox sono state segnate come lette.");
   };
 
   const handleSelectItem = (id: string) => {
@@ -360,6 +370,18 @@ export default function SalaStampa() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={markAllAsRead}
+                disabled={items.length === 0 || readItemIds.size === items.length}
+                className="h-8 text-xs font-semibold gap-1.5 rounded-xl border-border/70"
+                title="Segna tutte le notifiche come lette"
+              >
+                <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+                <span className="hidden sm:inline">Segna tutte come lette</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={loadInbox}
                 disabled={loading}
                 className="h-8 text-xs font-semibold gap-1.5 rounded-xl border-border/70"
@@ -552,14 +574,21 @@ export default function SalaStampa() {
                           <p className="text-[11px] text-muted-foreground truncate flex-1">
                             {item.snippet}
                           </p>
-                          {item.badgeText && (
+                          {item.category === "rumors" ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] px-1.5 py-0 shrink-0 font-bold border bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30"
+                            >
+                              Voci di Mercato
+                            </Badge>
+                          ) : item.badgeText ? (
                             <Badge
                               variant="outline"
                               className={`text-[9px] px-1.5 py-0 shrink-0 font-bold border ${item.badgeColor || ""}`}
                             >
                               {item.badgeText}
                             </Badge>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -598,9 +627,15 @@ export default function SalaStampa() {
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="outline"
-                        className={`text-[10px] font-bold border ${selectedItem.badgeColor || ""}`}
+                        className={`text-[10px] font-bold border ${
+                          selectedItem.category === "rumors"
+                            ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30"
+                            : selectedItem.badgeColor || ""
+                        }`}
                       >
-                        {selectedItem.badgeText || selectedItem.category.toUpperCase()}
+                        {selectedItem.category === "rumors"
+                          ? "Voci di Mercato"
+                          : selectedItem.badgeText || selectedItem.category.toUpperCase()}
                       </Badge>
                       {selectedItem.matchday && (
                         <span className="text-xs font-mono text-muted-foreground">
@@ -689,25 +724,7 @@ export default function SalaStampa() {
                   {/* ========================================================= */}
                   {selectedItem.rumorData && (
                     <div className="space-y-5">
-                      <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">
-                            Indice di Affidabilità Fonte
-                          </span>
-                          <span className="text-sm font-extrabold text-foreground">
-                            {selectedItem.rumorData.credibility_badge} ({selectedItem.rumorData.credibility_score}%)
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {selectedItem.rumorData.involved_team_ids?.map((tId) => (
-                            <Badge key={tId} variant="outline" className="text-xs font-bold">
-                              Club: {tId}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 text-sm sm:text-base leading-relaxed bg-muted/20 p-4 rounded-xl border border-border/50">
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 text-sm sm:text-base leading-relaxed bg-muted/20 p-4 sm:p-5 rounded-2xl border border-border/50 shadow-xs">
                         {selectedItem.rumorData.content}
                       </div>
 
