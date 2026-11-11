@@ -2,6 +2,7 @@ import { supabase } from "@/supabaseClient";
 import { Player } from "@/types/player";
 import { PLAYER_TABLE, TEAM_TABLE } from "@/constants/App";
 import { EA_FC25_FORMATIONS } from "@/pages/Tattica";
+import { fetchStandings } from "@/services/standingsService";
 
 export interface OpponentMatchInfo {
   week: number;
@@ -155,10 +156,10 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
   if (!opponentTeamId) return null;
 
   try {
-    // 1. Dati base squadra, classifica e mercato giocatori
-    const [teamRes, standingsRes, rosterRes, marketRes] = await Promise.all([
+    // 1. Dati base squadra, classifica ufficiale (tramite fetchStandings di Classifica.tsx), rosa e mercato
+    const [teamRes, currentStandings, rosterRes, marketRes] = await Promise.all([
       supabase.from(TEAM_TABLE).select('*').eq("TEAM_ID", opponentTeamId).maybeSingle(),
-      supabase.from("an_standings").select('*').order("stag", { ascending: false }),
+      fetchStandings(11),
       supabase.from(PLAYER_TABLE).select('*').eq("Squadra", opponentTeamId),
       supabase.from("as_player_market").select("PLAYER_ID_FK, Status"),
     ]);
@@ -166,20 +167,7 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
     const teamData = teamRes.data;
     if (!teamData) return null;
 
-    // Risoluzione posizione in classifica (stagione più recente)
-    const rawStandings = (standingsRes.data || []) as any[];
-    const maxStag = rawStandings[0]?.stag;
-    const currentStandings = maxStag ? rawStandings.filter((s) => s.stag === maxStag) : rawStandings;
-
-    currentStandings.sort((a, b) => {
-      const ptA = Number(a.points ?? 0);
-      const ptB = Number(b.points ?? 0);
-      if (ptB !== ptA) return ptB - ptA;
-      const drA = Number(a.goal_difference ?? 0);
-      const drB = Number(b.goal_difference ?? 0);
-      return drB - drA;
-    });
-
+    // Risoluzione posizione in classifica direttamente dall'elenco ufficiale ordinato
     const rankIdx = currentStandings.findIndex((s) => {
       const tid = typeof s.team === "object" ? s.team?.TEAM_ID : s.team;
       return tid === opponentTeamId;
@@ -191,11 +179,11 @@ export async function fetchOpponentScoutData(opponentTeamId: string): Promise<Op
           rank: rankIdx + 1,
           points: Number(standingRow.points ?? 0),
           played: Number(standingRow.games_played ?? 0),
-          wins: Number(standingRow.win ?? standingRow.won ?? 0),
-          draws: Number(standingRow.draws ?? standingRow.draw ?? 0),
-          losses: Number(standingRow.loss ?? standingRow.lost ?? 0),
+          wins: Number(standingRow.win ?? (standingRow as any).won ?? 0),
+          draws: Number(standingRow.draws ?? (standingRow as any).draw ?? 0),
+          losses: Number(standingRow.loss ?? (standingRow as any).lost ?? 0),
           goalsFor: Number(standingRow.goal_made ?? 0),
-          goalsAgainst: Number(standingRow.goal_conceded ?? standingRow.goal_suffered ?? 0),
+          goalsAgainst: Number(standingRow.goal_conceded ?? (standingRow as any).goal_suffered ?? 0),
           goalDiff: Number(standingRow.goal_difference ?? 0),
         }
       : undefined;
