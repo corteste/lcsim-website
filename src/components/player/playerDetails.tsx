@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { isRetiringSoon } from "@/utils/functions";
-import { getStandardTraits, getIconTraits } from "@/utils/scoutingConfig";
+import { getStandardTraits, getIconTraits, getStatDisplayByTokens } from "@/utils/scoutingConfig";
 import { RetiringBadge } from "@/components/player/RetiringBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -67,12 +67,42 @@ const getMarketStatusDisplay = (market?: MarketStatus | null) => {
   }
 };
 
-const StatBar = ({ label, value, code }: { label: string; value: number | null | undefined; code?: string }) => {
-  const numValue = value ?? 0;
-  const percentage = Math.min(Math.max(numValue, 0), 99);
+const StatBar = ({ 
+  label, 
+  value, 
+  code,
+  isRookie,
+  tokensSpent 
+}: { 
+  label: string; 
+  value: number | null | undefined; 
+  code?: string;
+  isRookie?: boolean;
+  tokensSpent?: number;
+}) => {
+  let displayLabel: string;
+  let barValue: number;
+  let isUnlocked = true;
+
+  if (isRookie) {
+    const disp = getStatDisplayByTokens(value, tokensSpent ?? 0);
+    isUnlocked = disp.isUnlocked;
+    displayLabel = disp.label;
+    barValue = disp.midpoint;
+  } else {
+    displayLabel = value !== null && value !== undefined ? String(value) : "-";
+    barValue = value ?? 0;
+  }
+
+  const percentage = Math.min(Math.max(barValue, 0), 99);
+  const colorClass = getValueColor(isUnlocked ? barValue : null);
   
   return (
-    <div className="group p-2 rounded-lg bg-card/70 hover:bg-muted/50 border border-border/50 hover:border-primary/40 transition-all duration-200 shadow-xs">
+    <div className={`group p-2 rounded-lg border transition-all duration-200 shadow-xs ${
+      isRookie && !isUnlocked
+        ? "bg-muted/20 border-dashed border-border/50 opacity-75"
+        : "bg-card/70 hover:bg-muted/50 border-border/50 hover:border-primary/40"
+    }`}>
       <div className="flex justify-between items-center mb-1 gap-1.5">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {code && (
@@ -84,20 +114,21 @@ const StatBar = ({ label, value, code }: { label: string; value: number | null |
             {label}
           </span>
         </div>
-        <span className={`text-sm font-bold font-mono ${getValueColor(value ?? null)} shrink-0 pl-1`}>
-          {value ?? "-"}
+        <span className={`text-sm font-bold font-mono ${colorClass} shrink-0 pl-1`}>
+          {displayLabel}
         </span>
       </div>
       <div className="h-1.5 bg-muted/90 rounded-full overflow-hidden">
         <div 
           className={`h-full rounded-full transition-all duration-500 ${
-            numValue >= 90 ? "bg-gradient-to-r from-purple-500 to-indigo-500" : 
-            numValue >= 85 ? "bg-gradient-to-r from-blue-500 to-cyan-500" : 
-            numValue >= 80 ? "bg-gradient-to-r from-emerald-500 to-green-500" : 
-            numValue >= 75 ? "bg-gradient-to-r from-yellow-500 to-amber-500" : 
-            numValue >= 50 ? "bg-gradient-to-r from-orange-500 to-amber-600" : "bg-gradient-to-r from-red-500 to-rose-600"
+            !isUnlocked ? "bg-muted-foreground/20" :
+            barValue >= 90 ? "bg-gradient-to-r from-purple-500 to-indigo-500" : 
+            barValue >= 85 ? "bg-gradient-to-r from-blue-500 to-cyan-500" : 
+            barValue >= 80 ? "bg-gradient-to-r from-emerald-500 to-green-500" : 
+            barValue >= 75 ? "bg-gradient-to-r from-yellow-500 to-amber-500" : 
+            barValue >= 50 ? "bg-gradient-to-r from-orange-500 to-amber-600" : "bg-gradient-to-r from-red-500 to-rose-600"
           }`}
-          style={{ width: `${percentage}%` }}
+          style={{ width: `${isUnlocked ? percentage : 0}%` }}
         />
       </div>
     </div>
@@ -506,6 +537,35 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
   const ovr = currentPlayer.OVR ?? 0;
   const isGoalkeeper = currentPlayer.Posiz === "POR";
 
+  const isRookie = Boolean(
+    (currentPlayer as any).isRookie ||
+    currentPlayer.Squadra === "Rookie Draft" ||
+    (currentPlayer as any).tokens_spent !== undefined
+  );
+
+  const rookieTokens = useMemo(() => {
+    if (!isRookie) return 0;
+    if ((currentPlayer as any).tokens_spent !== undefined && (currentPlayer as any).tokens_spent !== null) {
+      return Number((currentPlayer as any).tokens_spent);
+    }
+    // Fallback: se ha statistiche presenti ma tokens_spent non è definito
+    if (currentPlayer.CONT !== null && currentPlayer.CONT !== undefined) {
+      return 2;
+    }
+    return 0;
+  }, [isRookie, currentPlayer]);
+
+  const renderStatBar = (label: string, code: string, value: number | null | undefined) => (
+    <StatBar
+      key={code}
+      label={label}
+      code={code}
+      value={value}
+      isRookie={isRookie}
+      tokensSpent={rookieTokens}
+    />
+  );
+
   // Helper per media ponderata / aggregata dei pilastri macro-attributi
   const calcPillarAvg = (vals: (number | null | undefined)[]) => {
     const valid = vals.filter((v): v is number => v !== null && v !== undefined && !isNaN(Number(v)) && Number(v) > 0);
@@ -516,25 +576,25 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
   // Macro pillars con calcolo dinamico dagli attributi analitici a DB
   const macroStats = useMemo(() => {
     if (isGoalkeeper) {
-      const gkFis = currentPlayer.FIS ?? calcPillarAvg([currentPlayer.FRZA, currentPlayer.RESI, currentPlayer.ELEV]) ?? currentPlayer.FRZA;
+      const gkFis = currentPlayer.FIS ?? calcPillarAvg([currentPlayer.FRZA, currentPlayer.RESI, currentPlayer.ELEV]) ?? (currentPlayer.FRZA !== null && currentPlayer.FRZA !== undefined ? Math.round(Number(currentPlayer.FRZA)) : null);
       return [
-        { label: "Tuffo", value: currentPlayer.TUFP, color: "from-amber-500/20 to-orange-500/10 text-orange-600 dark:text-orange-400" },
-        { label: "Presa", value: currentPlayer.PREP, color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
-        { label: "Rinvio", value: currentPlayer.RINP, color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
-        { label: "Riflessi", value: currentPlayer.RIFP, color: "from-purple-500/20 to-indigo-500/10 text-purple-600 dark:text-purple-400" },
-        { label: "Piazzamento", value: currentPlayer.POSP, color: "from-rose-500/20 to-pink-500/10 text-rose-600 dark:text-rose-400" },
+        { label: "Tuffo", value: currentPlayer.TUFP !== null && currentPlayer.TUFP !== undefined ? Math.round(Number(currentPlayer.TUFP)) : null, color: "from-amber-500/20 to-orange-500/10 text-orange-600 dark:text-orange-400" },
+        { label: "Presa", value: currentPlayer.PREP !== null && currentPlayer.PREP !== undefined ? Math.round(Number(currentPlayer.PREP)) : null, color: "from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400" },
+        { label: "Rinvio", value: currentPlayer.RINP !== null && currentPlayer.RINP !== undefined ? Math.round(Number(currentPlayer.RINP)) : null, color: "from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400" },
+        { label: "Riflessi", value: currentPlayer.RIFP !== null && currentPlayer.RIFP !== undefined ? Math.round(Number(currentPlayer.RIFP)) : null, color: "from-purple-500/20 to-indigo-500/10 text-purple-600 dark:text-purple-400" },
+        { label: "Piazzamento", value: currentPlayer.POSP !== null && currentPlayer.POSP !== undefined ? Math.round(Number(currentPlayer.POSP)) : null, color: "from-rose-500/20 to-pink-500/10 text-rose-600 dark:text-rose-400" },
         { label: "Fisico", value: gkFis, color: "from-purple-500/20 to-violet-500/10 text-purple-600 dark:text-purple-400" },
       ];
     }
 
     const vel = currentPlayer.VELO && currentPlayer.ACCL 
       ? calcPillarAvg([currentPlayer.VELO, currentPlayer.ACCL]) 
-      : currentPlayer.VELO;
+      : (currentPlayer.VELO !== null && currentPlayer.VELO !== undefined ? Math.round(Number(currentPlayer.VELO)) : null);
     const tir = currentPlayer.ATT ?? calcPillarAvg([currentPlayer.FINA, currentPlayer.PTIR, currentPlayer.TIRD, currentPlayer.PIAZ]);
     const pas = currentPlayer.CEN ?? calcPillarAvg([currentPlayer.PASC, currentPlayer.PASL, currentPlayer.CTRP, currentPlayer.VISI]);
     const drb = currentPlayer.DRBL && (currentPlayer.CTRP || currentPlayer.AGIL)
       ? calcPillarAvg([currentPlayer.DRBL, currentPlayer.CTRP, currentPlayer.AGIL])
-      : currentPlayer.DRBL;
+      : (currentPlayer.DRBL !== null && currentPlayer.DRBL !== undefined ? Math.round(Number(currentPlayer.DRBL)) : null);
     const dif = currentPlayer.DIF ?? calcPillarAvg([currentPlayer.CONT, currentPlayer.MARC, currentPlayer.INTR, currentPlayer.SCIV]);
     const fis = currentPlayer.FIS ?? calcPillarAvg([currentPlayer.FRZA, currentPlayer.RESI, currentPlayer.ELEV]);
     const men = currentPlayer.MEN ?? calcPillarAvg([currentPlayer.FRED, currentPlayer.VISI, currentPlayer.AGGR, currentPlayer.PIAZ]);
@@ -619,6 +679,11 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   {currentPlayer.Squadra}
                 </Badge>
               )}
+              {isRookie && (
+                <Badge variant="outline" className="text-xs font-bold px-2.5 py-0.5 bg-amber-500/10 text-amber-500 border-amber-500/30">
+                  Scouting: {rookieTokens}G
+                </Badge>
+              )}
               {currentPlayer.MarketStatus && isEligibleForMarketStatus(currentPlayer.Squadra) && (
                 <Badge variant="outline" className={`text-xs font-semibold ${getMarketStatus(currentPlayer.MarketStatus)}`}>
                   {getMarketStatusDisplay(currentPlayer.MarketStatus)}
@@ -674,17 +739,32 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <span>Piede: <strong className="text-foreground">{currentPlayer.Piede}</strong></span>
                 </div>
               )}
-              {currentPlayer.PiedeDebole && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-muted-foreground">P. Debole:</span>
-                  <span className="text-amber-500 font-bold">{currentPlayer.PiedeDebole}</span>
-                </div>
-              )}
-              {currentPlayer.MABI && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-muted-foreground">Skill:</span>
-                  <span className="text-amber-500 font-bold">{currentPlayer.MABI}</span>
-                </div>
+              {isRookie && rookieTokens < 3 ? (
+                <>
+                  <div className="flex items-center gap-1.5" title="Sbloccato con Scouting 3G">
+                    <span className="text-muted-foreground">P. Debole:</span>
+                    <span className="text-muted-foreground font-mono font-bold">??</span>
+                  </div>
+                  <div className="flex items-center gap-1.5" title="Sbloccato con Scouting 3G">
+                    <span className="text-muted-foreground">Skill:</span>
+                    <span className="text-muted-foreground font-mono font-bold">??</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {currentPlayer.PiedeDebole && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">P. Debole:</span>
+                      <span className="text-amber-500 font-bold">{currentPlayer.PiedeDebole}</span>
+                    </div>
+                  )}
+                  {currentPlayer.MABI && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">Skill:</span>
+                      <span className="text-amber-500 font-bold">{currentPlayer.MABI}</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -696,7 +776,9 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   className={`flex flex-col items-center justify-center p-2 rounded-xl bg-gradient-to-br ${st.color} border border-border/40 shadow-sm`}
                 >
                   <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap">{st.label}</span>
-                  <span className="text-lg font-black font-mono leading-tight mt-0.5">{st.value ?? "-"}</span>
+                  <span className="text-lg font-black font-mono leading-tight mt-0.5">
+                    {isRookie && rookieTokens < 1 ? "??" : (st.value !== null && st.value !== undefined ? Math.round(Number(st.value)) : "-")}
+                  </span>
                 </div>
               ))}
             </div>
@@ -744,60 +826,60 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             {/* Attacco */}
             <StatCardGroup title="Attacco & Tiro" icon={Target} colorClass="bg-red-500/10 text-red-600 dark:text-red-400">
-              <StatBar label="Finalizzazione" code="FINA" value={currentPlayer.FINA} />
-              <StatBar label="Piazzamento" code="PIAZ" value={currentPlayer.PIAZ} />
-              <StatBar label="Potenza Tiro" code="PTIR" value={currentPlayer.PTIR} />
-              <StatBar label="Tiri Distanza" code="TIRD" value={currentPlayer.TIRD} />
-              <StatBar label="Tiri al Volo" code="TIRV" value={currentPlayer.TIRV} />
-              <StatBar label="Dribbling" code="DRBL" value={currentPlayer.DRBL} />
-              <StatBar label="Colpi di Testa" code="TSTA" value={currentPlayer.TSTA} />
+              {renderStatBar("Finalizzazione", "FINA", currentPlayer.FINA)}
+              {renderStatBar("Piazzamento", "PIAZ", currentPlayer.PIAZ)}
+              {renderStatBar("Potenza Tiro", "PTIR", currentPlayer.PTIR)}
+              {renderStatBar("Tiri Distanza", "TIRD", currentPlayer.TIRD)}
+              {renderStatBar("Tiri al Volo", "TIRV", currentPlayer.TIRV)}
+              {renderStatBar("Dribbling", "DRBL", currentPlayer.DRBL)}
+              {renderStatBar("Colpi di Testa", "TSTA", currentPlayer.TSTA)}
             </StatCardGroup>
 
             {/* Passaggi */}
             <StatCardGroup title="Passaggi & Regia" icon={Compass} colorClass="bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
-              <StatBar label="Passaggio Corto" code="PASC" value={currentPlayer.PASC} />
-              <StatBar label="Passaggio Lungo" code="PASL" value={currentPlayer.PASL} />
-              <StatBar label="Cross" code="CRSS" value={currentPlayer.CRSS} />
-              <StatBar label="Controllo Palla" code="CTRP" value={currentPlayer.CTRP} />
-              <StatBar label="Visione Gioco" code="VISI" value={currentPlayer.VISI} />
-              <StatBar label="Effetto" code="EFFT" value={currentPlayer.EFFT} />
+              {renderStatBar("Passaggio Corto", "PASC", currentPlayer.PASC)}
+              {renderStatBar("Passaggio Lungo", "PASL", currentPlayer.PASL)}
+              {renderStatBar("Cross", "CRSS", currentPlayer.CRSS)}
+              {renderStatBar("Controllo Palla", "CTRP", currentPlayer.CTRP)}
+              {renderStatBar("Visione Gioco", "VISI", currentPlayer.VISI)}
+              {renderStatBar("Effetto", "EFFT", currentPlayer.EFFT)}
             </StatCardGroup>
 
             {/* Difesa */}
             <StatCardGroup title="Difesa & Marcatura" icon={Shield} colorClass="bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <StatBar label="Contrasto" code="CONT" value={currentPlayer.CONT} />
-              <StatBar label="Scivolata" code="SCIV" value={currentPlayer.SCIV} />
-              <StatBar label="Marcatura" code="MARC" value={currentPlayer.MARC} />
-              <StatBar label="Aggressività" code="AGGR" value={currentPlayer.AGGR} />
-              <StatBar label="Intercettazione" code="INTR" value={currentPlayer.INTR} />
+              {renderStatBar("Contrasto", "CONT", currentPlayer.CONT)}
+              {renderStatBar("Scivolata", "SCIV", currentPlayer.SCIV)}
+              {renderStatBar("Marcatura", "MARC", currentPlayer.MARC)}
+              {renderStatBar("Aggressività", "AGGR", currentPlayer.AGGR)}
+              {renderStatBar("Intercettazione", "INTR", currentPlayer.INTR)}
             </StatCardGroup>
 
             {/* Fisico */}
             <StatCardGroup title="Fisico & Velocità" icon={Zap} colorClass="bg-purple-500/10 text-purple-600 dark:text-purple-400">
-              <StatBar label="Velocità Scatto" code="VELO" value={currentPlayer.VELO} />
-              <StatBar label="Accelerazione" code="ACCL" value={currentPlayer.ACCL} />
-              <StatBar label="Agilità" code="AGIL" value={currentPlayer.AGIL} />
-              <StatBar label="Resistenza" code="RESI" value={currentPlayer.RESI} />
-              <StatBar label="Forza Fisica" code="FRZA" value={currentPlayer.FRZA} />
-              <StatBar label="Elevazione" code="ELEV" value={currentPlayer.ELEV} />
-              <StatBar label="Equilibrio" code="EQLB" value={currentPlayer.EQLB} />
-              <StatBar label="Riflessi" code="RIFL" value={currentPlayer.RIFL} />
+              {renderStatBar("Velocità Scatto", "VELO", currentPlayer.VELO)}
+              {renderStatBar("Accelerazione", "ACCL", currentPlayer.ACCL)}
+              {renderStatBar("Agilità", "AGIL", currentPlayer.AGIL)}
+              {renderStatBar("Resistenza", "RESI", currentPlayer.RESI)}
+              {renderStatBar("Forza Fisica", "FRZA", currentPlayer.FRZA)}
+              {renderStatBar("Elevazione", "ELEV", currentPlayer.ELEV)}
+              {renderStatBar("Equilibrio", "EQLB", currentPlayer.EQLB)}
+              {renderStatBar("Riflessi", "RIFL", currentPlayer.RIFL)}
             </StatCardGroup>
 
             {/* Calci Piazzati */}
             <StatCardGroup title="Calci Piazzati" icon={Flame} colorClass="bg-orange-500/10 text-orange-600 dark:text-orange-400">
-              <StatBar label="Punizioni" code="PNIZ" value={currentPlayer.PNIZ} />
-              <StatBar label="Rigori" code="CRIG" value={currentPlayer.CRIG} />
-              <StatBar label="Freddezza" code="FRED" value={currentPlayer.FRED} />
+              {renderStatBar("Punizioni", "PNIZ", currentPlayer.PNIZ)}
+              {renderStatBar("Rigori", "CRIG", currentPlayer.CRIG)}
+              {renderStatBar("Freddezza", "FRED", currentPlayer.FRED)}
             </StatCardGroup>
 
             {/* Portiere */}
             <StatCardGroup title="Portiere" icon={Swords} colorClass="bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <StatBar label="Presa" code="PREP" value={currentPlayer.PREP} />
-              <StatBar label="Posizionamento" code="POSP" value={currentPlayer.POSP} />
-              <StatBar label="Rinvio" code="RINP" value={currentPlayer.RINP} />
-              <StatBar label="Riflessi Portiere" code="RIFP" value={currentPlayer.RIFP} />
-              <StatBar label="Tuffo" code="TUFP" value={currentPlayer.TUFP} />
+              {renderStatBar("Presa", "PREP", currentPlayer.PREP)}
+              {renderStatBar("Posizionamento", "POSP", currentPlayer.POSP)}
+              {renderStatBar("Rinvio", "RINP", currentPlayer.RINP)}
+              {renderStatBar("Riflessi Portiere", "RIFP", currentPlayer.RIFP)}
+              {renderStatBar("Tuffo", "TUFP", currentPlayer.TUFP)}
             </StatCardGroup>
           </div>
         </TabsContent>
@@ -821,15 +903,15 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
 
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-muted/20">
                   <span className="text-sm font-medium text-muted-foreground">Specializzazione Primaria (Role 1)</span>
-                  <span className="text-sm font-bold text-primary">
-                    {currentPlayer.Role1 || "Standard"}
+                  <span className={`text-sm font-bold ${isRookie && rookieTokens < 3 ? "text-muted-foreground font-mono" : "text-primary"}`}>
+                    {isRookie && rookieTokens < 3 ? "Bloccato (Richiede 3G)" : (currentPlayer.Role1 || "Standard")}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-muted/20">
                   <span className="text-sm font-medium text-muted-foreground">Specializzazione Secondaria (Role 2)</span>
-                  <span className="text-sm font-bold text-foreground">
-                    {currentPlayer.Role2 || "-"}
+                  <span className={`text-sm font-bold ${isRookie && rookieTokens < 3 ? "text-muted-foreground font-mono" : "text-foreground"}`}>
+                    {isRookie && rookieTokens < 3 ? "Bloccato (Richiede 3G)" : (currentPlayer.Role2 || "-")}
                   </span>
                 </div>
 
@@ -850,6 +932,38 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               </div>
               <CardContent className="p-5 space-y-3">
                 {(() => {
+                  if (isRookie && rookieTokens < 2) {
+                    return (
+                      <div className="p-6 rounded-xl border border-dashed border-border/70 bg-muted/20 text-center space-y-1.5">
+                        <Sparkles className="h-5 w-5 text-muted-foreground mx-auto" />
+                        <h5 className="text-xs font-bold text-foreground uppercase tracking-wider">Tratti & PlayStyles Bloccati</h5>
+                        <p className="text-xs text-muted-foreground">
+                          Richiede almeno 2 Gettoni di Scouting per svelare il conteggio dei tratti e 3 Gettoni per i nomi specifici.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  if (isRookie && rookieTokens === 2) {
+                    const traitsCount = Number((currentPlayer as any).TraitsCount ?? 0);
+                    return (
+                      <div className="p-4 rounded-xl border border-border/70 bg-muted/20 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            Conteggio Tratti Rilevati (2G)
+                          </span>
+                          <Badge variant="outline" className="text-xs font-mono font-bold text-primary">
+                            {traitsCount}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground italic">
+                          Il calciatore possiede {traitsCount} {traitsCount === 1 ? "tratto" : "tratti"}. I nomi e i dettagli verranno rivelati con Fascia 3G.
+                        </p>
+                      </div>
+                    );
+                  }
+
                   const stdTraits = getStandardTraits(currentPlayer);
                   const iconTraits = getIconTraits(currentPlayer);
                   return (
