@@ -1771,11 +1771,17 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 84. Lista Giocatori: Tab Dedicato per la Classe Rookie (Draft Class)
-- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione all'Admin del 08/11/2026)
+- **Stato**: 🟢 Completato (Tab dedicato "Rookie", Blind Database compliant, Viste Tabella e Griglia, Filtri e Modale Dettagli)
 - **Priorità**: Media (Consultabilità e scouting della classe esordienti)
-- **Moduli previsti**: `src/pages/ListaGiocatori.tsx`, `src/components/player/`, `src/services/rookieService.ts`
-- **Tabelle coinvolte**: `an_rookie`, `an_team`
-- **Descrizione & Obiettivi**:
-  - Attualmente la pagina `/giocatori/lista-giocatori` mostra tutti i calciatori sotto contratto in Serie A e gli Svincolati (Free Agent).
-  - Aggiungere un **Tab dedicato per i Rookie** (o un selettore di visualizzazione) che permetta di sfogliare comodamente l'intera classe del Draft attivo direttamente dall'elenco generale dei giocatori della lega.
-  - Implementare i consueti filtri rapidi di ricerca per ruolo, nazionalità, piede e attributi noti, garantendo la totale coerenza con la protezione crittografica e l'offuscamento a stelle/range (Blind Database).
+- **Moduli coinvolti**: `src/pages/ListaGiocatori.tsx`, `src/components/player/playerDetails.tsx`
+- **Tabelle & RPC coinvolte**: `an_rookie`, `an_team`, `rpc_get_scouted_rookies`
+- **Descrizione & Implementazione**:
+  - Aggiunto il tab rapido di ambito **"Rookie"** nella barra superiore di `ListaGiocatori.tsx` con badge conteggio e icona `Sparkles`.
+  - **Blind Database Protection**: caricamento protetto tramite RPC `rpc_get_scouted_rookies` agganciato a `effectiveTeam`. Se il rookie non è stato scoutato al 100% (meno di 5 gettoni), l'Overall reale non viene esposto ed è rappresentato dal sistema a stelle percentili (1..5 ⭐) o range, nel pieno rispetto delle regole crittografiche. Se scoutato a 5G, viene visualizzato l'OVR esatto.
+  - **Viste e Filtri Supportati**:
+    - Supporto completo sia per la vista a **Tabella Densa** sia per la vista a **Griglia Card (FUT Style)**.
+    - Filtro per reparto di ruolo (Portieri, Difensori, Centrocampisti, Attaccanti).
+    - Ricerca testuale reattiva per nome, cognome, ruolo e nazionalità.
+    - Ordinamento per OVR/Stelle, Età, Nome, Ruolo e Gettoni Scouting spesi.
+    - Disabilitazione contestuale dei filtri Squadra e Stato Mercato per la classe Rookie (contrassegnata con badge "Rookie Draft" / "Draft Pool").
+  - **Dettagli Calciatore**: cliccando su una riga o una card si apre la modale ingrandita `PlayerDetails`, con rendering coerente di badge OVR a stelle/valore decifrato e dati anagrafici.

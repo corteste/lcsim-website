@@ -31,6 +31,8 @@ import {
   Layers,
   X,
   UserX,
+  Star,
+  GraduationCap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -45,7 +47,7 @@ import { getPlayers } from "@/hooks/use-players";
 import { getTeams } from "@/hooks/use-teams";
 import { Player } from "@/types/player";
 import { useAuth } from "@/context/AuthContext";
-import { fetchTeamFavorites, toggleTeamFavorite } from "@/services/draftWishlistService";
+import { supabase } from "@/supabaseClient";
 import { toast } from "sonner";
 import PlayerDetails from "@/components/player/playerDetails";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
@@ -93,7 +95,7 @@ export const getMarketLabel = (code: string | null) => {
 
 type SortField = "OVR" | "Età" | "Nome" | "Posiz" | "XP";
 type SortDir = "asc" | "desc";
-type ScopeTab = "LCSIM" | "ALL" | "SVINCOLATI" | "RITIRATI" | "SERIE_B" | "FAVORITES";
+type ScopeTab = "LCSIM" | "ALL" | "SVINCOLATI" | "RITIRATI" | "SERIE_B" | "ROOKIES";
 type ViewMode = "table" | "grid";
 
 const ROLE_GROUPS = [
@@ -105,8 +107,45 @@ const ROLE_GROUPS = [
 ];
 
 const ListaGiocatori = () => {
-  const { players, loading } = getPlayers();
+  const { effectiveTeam } = useAuth();
+  const { players, loading: playersLoading } = getPlayers();
   const { teams } = getTeams();
+
+  // Rookie Draft Class (Punto 84: tab dedicato protetto con Blind Database)
+  const [rookies, setRookies] = useState<Player[]>([]);
+  const [rookiesLoading, setRookiesLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchRookies() {
+      try {
+        setRookiesLoading(true);
+        const { data, error } = await supabase.rpc("rpc_get_scouted_rookies", {
+          p_team_id: effectiveTeam || null,
+          p_admin_passphrase: null,
+        });
+        if (error) throw error;
+        if (isMounted && data) {
+          const mapped = (data as any[]).map((r) => ({
+            ...r,
+            isRookie: true,
+            Squadra: "Rookie Draft",
+          }));
+          setRookies(mapped as Player[]);
+        }
+      } catch (err) {
+        console.error("Errore nel caricamento della classe rookie:", err);
+      } finally {
+        if (isMounted) setRookiesLoading(false);
+      }
+    }
+    fetchRookies();
+    return () => {
+      isMounted = false;
+    };
+  }, [effectiveTeam]);
+
+  const loading = playersLoading || (scopeTab === "ROOKIES" && rookiesLoading);
 
   // Scope / Ambito Giocatori (Scelta utente: default Serie A)
   const [scopeTab, setScopeTab] = useState<ScopeTab>("LCSIM");
@@ -173,8 +212,9 @@ const ListaGiocatori = () => {
       svincolati: svincolatiCount,
       ritirati: ritiratiCount,
       serieB: serieBCount,
+      rookies: rookies.length,
     };
-  }, [players]);
+  }, [players, rookies]);
 
   // Reset pagina al variare dei filtri
   useEffect(() => {
@@ -202,8 +242,9 @@ const ListaGiocatori = () => {
   // Calcolo e filtraggio giocatori
   const filteredAndSorted = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
+    const sourceList = scopeTab === "ROOKIES" ? rookies : players;
 
-    const filtered = players.filter((player) => {
+    const filtered = sourceList.filter((player) => {
       const sq = player.Squadra;
       const isSvincolato = !sq;
       const isRitirato = sq === "RITIRATO";
@@ -215,18 +256,20 @@ const ListaGiocatori = () => {
       if (scopeTab === "SVINCOLATI" && !isSvincolato) return false;
       if (scopeTab === "RITIRATI" && !isRitirato) return false;
       if (scopeTab === "SERIE_B" && !isSerieB) return false;
-      if (scopeTab === "FAVORITES" && !favoritePlayerIds.has(Number(player.ID))) return false;
+      if (scopeTab === "ROOKIES" && !(player as any).isRookie) return false;
 
       // 2. Filtro Ricerca Testuale
       if (q) {
         const fullName = `${player.Nome || ""} ${player.Cognome || ""}`.toLowerCase();
         const role = (player.Posiz || "").toLowerCase();
+        const nationality = (player.Nazionalità || "").toLowerCase();
         const teamCode = (sq || "").toLowerCase();
         const teamName = (teamsMap.get(sq || "") || "").toLowerCase();
         const num = player.NumeroMaglia ? String(player.NumeroMaglia) : "";
         const matches =
           fullName.includes(q) ||
           role.includes(q) ||
+          nationality.includes(q) ||
           teamCode.includes(q) ||
           teamName.includes(q) ||
           num.includes(q);
@@ -238,13 +281,13 @@ const ListaGiocatori = () => {
         if (getPosGroup(player.Posiz) !== roleFilter) return false;
       }
 
-      // 4. Filtro Squadra
-      if (teamFilter !== "all") {
+      // 4. Filtro Squadra (non applicabile alla classe Rookie)
+      if (scopeTab !== "ROOKIES" && teamFilter !== "all") {
         if (player.Squadra !== teamFilter) return false;
       }
 
-      // 5. Filtro Stato Mercato
-      if (marketFilter !== "all") {
+      // 5. Filtro Stato Mercato (non applicabile alla classe Rookie)
+      if (scopeTab !== "ROOKIES" && marketFilter !== "all") {
         if (!isEligibleForMarketStatus(player.Squadra)) return false;
         const code = extractMarketStatusCode(player.MarketStatus, player.Squadra);
         if (code !== marketFilter) return false;
@@ -259,17 +302,25 @@ const ListaGiocatori = () => {
       let valB: any = 0;
 
       switch (sortField) {
-        case "OVR":
-          valA = a.OVR ?? 0;
-          valB = b.OVR ?? 0;
+        case "OVR": {
+          const getEffectiveOvr = (p: Player) => {
+            if (p.OVR !== null && p.OVR !== undefined) return Number(p.OVR);
+            // Se rookie non scoutato al 100%, usa le stelle percentili * 15
+            const stars = Number((p as any).Stelle) || 3;
+            const tokens = Number((p as any).tokens_spent) || 0;
+            return stars * 15 + tokens;
+          };
+          valA = getEffectiveOvr(a);
+          valB = getEffectiveOvr(b);
           break;
+        }
         case "Età":
           valA = a.Età ?? 0;
           valB = b.Età ?? 0;
           break;
         case "XP":
-          valA = a.XP ?? 0;
-          valB = b.XP ?? 0;
+          valA = a.XP ?? ((a as any).tokens_spent ?? 0);
+          valB = b.XP ?? ((b as any).tokens_spent ?? 0);
           break;
         case "Nome":
           valA = `${a.Cognome || ""} ${a.Nome || ""}`.toLowerCase();
@@ -285,7 +336,7 @@ const ListaGiocatori = () => {
       if (valA > valB) return sortDir === "asc" ? 1 : -1;
       return (b.OVR ?? 0) - (a.OVR ?? 0);
     });
-  }, [players, scopeTab, searchQuery, roleFilter, teamFilter, marketFilter, sortField, sortDir, teamsMap]);
+  }, [players, rookies, scopeTab, searchQuery, roleFilter, teamFilter, marketFilter, sortField, sortDir, teamsMap]);
 
   // Calcolo paginazione
   const totalItems = filteredAndSorted.length;
@@ -512,6 +563,33 @@ const ListaGiocatori = () => {
               {countsByScope.serieB}
             </Badge>
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setScopeTab("ROOKIES");
+              setTeamFilter("all");
+              setMarketFilter("all");
+            }}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-sm ${
+              scopeTab === "ROOKIES"
+                ? "bg-amber-500 text-slate-950 shadow-amber-500/20 font-black"
+                : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Rookie</span>
+            <Badge
+              variant="outline"
+              className={`text-[10px] px-1.5 py-0 font-mono ${
+                scopeTab === "ROOKIES"
+                  ? "bg-black/20 text-slate-950 border-black/30 font-black"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {countsByScope.rookies}
+            </Badge>
+          </button>
         </div>
 
         {/* ========================================================================= */}
@@ -606,9 +684,19 @@ const ListaGiocatori = () => {
 
             {/* Tendina Squadra */}
             <div className="md:col-span-3">
-              <Select value={teamFilter} onValueChange={setTeamFilter}>
-                <SelectTrigger className="h-9 text-xs bg-muted/20 border-border/70 rounded-xl">
-                  <SelectValue placeholder="Tutte le Squadre" />
+              <Select
+                value={teamFilter}
+                onValueChange={setTeamFilter}
+                disabled={scopeTab === "ROOKIES"}
+              >
+                <SelectTrigger className="h-9 text-xs bg-muted/20 border-border/70 rounded-xl disabled:opacity-50">
+                  <SelectValue
+                    placeholder={
+                      scopeTab === "ROOKIES"
+                        ? "Classe Draft (Nessuna Squadra)"
+                        : "Tutte le Squadre"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
                   <SelectItem value="all">Tutte le Squadre ({teams.length})</SelectItem>
@@ -623,9 +711,17 @@ const ListaGiocatori = () => {
 
             {/* Tendina Stato Mercato */}
             <div className="md:col-span-2">
-              <Select value={marketFilter} onValueChange={setMarketFilter}>
-                <SelectTrigger className="h-9 text-xs bg-muted/20 border-border/70 rounded-xl">
-                  <SelectValue placeholder="Tutti gli Stati" />
+              <Select
+                value={marketFilter}
+                onValueChange={setMarketFilter}
+                disabled={scopeTab === "ROOKIES"}
+              >
+                <SelectTrigger className="h-9 text-xs bg-muted/20 border-border/70 rounded-xl disabled:opacity-50">
+                  <SelectValue
+                    placeholder={
+                      scopeTab === "ROOKIES" ? "Non a Mercato" : "Tutti gli Stati"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutti gli stati</SelectItem>
@@ -802,6 +898,9 @@ const ListaGiocatori = () => {
                   </thead>
                   <tbody className="divide-y divide-border/60">
                     {currentPlayers.map((player) => {
+                      const isRookie = (player as any).isRookie || player.Squadra === "Rookie Draft";
+                      const rookieStars = Number((player as any).Stelle) || 3;
+                      const rookieTokens = Number((player as any).tokens_spent) || 0;
                       const marketCode = extractMarketStatusCode(player.MarketStatus, player.Squadra);
                       const teamName = teamsMap.get(player.Squadra || "") || player.Squadra;
                       const isSvincolato = !player.Squadra || player.Squadra === "RITIRATO";
@@ -815,13 +914,32 @@ const ListaGiocatori = () => {
                         >
                           {/* Colonna OVR */}
                           <td className="py-2.5 px-4 font-mono">
-                            <div
-                              className={`h-9 w-9 rounded-xl flex items-center justify-center font-black text-sm border shadow-xs ${getValueColor(
-                                player.OVR ?? 0
-                              )}`}
-                            >
-                              {player.OVR ?? "-"}
-                            </div>
+                            {player.OVR !== null && player.OVR !== undefined ? (
+                              <div
+                                className={`h-9 w-9 rounded-xl flex items-center justify-center font-black text-sm border shadow-xs ${getValueColor(
+                                  player.OVR
+                                )}`}
+                                title={isRookie ? "Valore OVR sbloccato (Scouting 5G)" : undefined}
+                              >
+                                {player.OVR}
+                              </div>
+                            ) : isRookie ? (
+                              <div
+                                className="h-9 min-w-9 px-2 rounded-xl flex items-center justify-center gap-1 font-black text-xs border border-amber-500/40 bg-amber-500/10 text-amber-500 shadow-xs"
+                                title={`Stima di lega: ${rookieStars}★ (${rookieTokens}G spesi)`}
+                              >
+                                <Star className="h-3.5 w-3.5 fill-amber-500" />
+                                <span>{rookieStars}★</span>
+                              </div>
+                            ) : (
+                              <div
+                                className={`h-9 w-9 rounded-xl flex items-center justify-center font-black text-sm border shadow-xs ${getValueColor(
+                                  0
+                                )}`}
+                              >
+                                -
+                              </div>
+                            )}
                           </td>
 
                           {/* Colonna Giocatore (Avatar + Nome + Bandiera + Numero) */}
@@ -876,7 +994,15 @@ const ListaGiocatori = () => {
 
                           {/* Colonna Squadra */}
                           <td className="py-2.5 px-4 min-w-[140px]">
-                            {isSvincolato ? (
+                            {isRookie ? (
+                              <Badge
+                                variant="outline"
+                                className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold gap-1"
+                              >
+                                <Sparkles className="h-3 w-3" />
+                                Rookie Draft
+                              </Badge>
+                            ) : isSvincolato ? (
                               <Badge
                                 variant="outline"
                                 className="bg-muted/50 text-muted-foreground border-border text-[10px]"
@@ -910,21 +1036,39 @@ const ListaGiocatori = () => {
                             {player.Piede || "Dx"} • {player.Altezza ? `${player.Altezza} cm` : "—"}
                           </td>
 
-                          {/* Colonna XP */}
-                          <td className="py-2.5 px-4 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400 hidden sm:table-cell">
-                            {player.XP ?? 0} XP
+                          {/* Colonna XP / Scouting */}
+                          <td className="py-2.5 px-4 text-center font-mono font-bold hidden sm:table-cell">
+                            {isRookie ? (
+                              rookieTokens > 0 ? (
+                                <Badge variant="outline" className="text-[10px] font-mono border-amber-500/30 text-amber-500 bg-amber-500/10">
+                                  Scout {rookieTokens}G
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground/50 text-xs font-normal">0G</span>
+                              )
+                            ) : (
+                              <span className="text-emerald-600 dark:text-emerald-400">
+                                {player.XP ?? 0} XP
+                              </span>
+                            )}
                           </td>
 
                           {/* Colonna Stato Mercato */}
                           <td className="py-2.5 px-4 text-center">
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] font-semibold px-2 py-0.5 border ${getMarketBadgeStyle(
-                                marketCode
-                              )}`}
-                            >
-                              {getMarketLabel(marketCode)}
-                            </Badge>
+                            {isRookie ? (
+                              <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/60">
+                                Draft Pool
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] font-semibold px-2 py-0.5 border ${getMarketBadgeStyle(
+                                  marketCode
+                                )}`}
+                              >
+                                {getMarketLabel(marketCode)}
+                              </Badge>
+                            )}
                           </td>
 
                           {/* Colonna Azioni */}
@@ -951,6 +1095,9 @@ const ListaGiocatori = () => {
             /* =================================================================== */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {currentPlayers.map((player) => {
+                const isRookie = (player as any).isRookie || player.Squadra === "Rookie Draft";
+                const rookieStars = Number((player as any).Stelle) || 3;
+                const rookieTokens = Number((player as any).tokens_spent) || 0;
                 const marketCode = extractMarketStatusCode(player.MarketStatus, player.Squadra);
                 const teamName = teamsMap.get(player.Squadra || "") || player.Squadra;
                 const isSvincolato = !player.Squadra || player.Squadra === "RITIRATO";
@@ -965,13 +1112,32 @@ const ListaGiocatori = () => {
                       {/* Top Bar: OVR + Ruolo + Logo Club */}
                       <div className="p-3.5 border-b border-border/60 bg-muted/20 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <div
-                            className={`h-9 w-9 rounded-xl flex items-center justify-center font-black text-sm border shadow-xs ${getValueColor(
-                              player.OVR ?? 0
-                            )}`}
-                          >
-                            {player.OVR ?? "-"}
-                          </div>
+                          {player.OVR !== null && player.OVR !== undefined ? (
+                            <div
+                              className={`h-9 w-9 rounded-xl flex items-center justify-center font-black text-sm border shadow-xs ${getValueColor(
+                                player.OVR ?? 0
+                              )}`}
+                              title={isRookie ? "Valore OVR sbloccato (Scouting 5G)" : undefined}
+                            >
+                              {player.OVR}
+                            </div>
+                          ) : isRookie ? (
+                            <div
+                              className="h-9 px-2.5 rounded-xl flex items-center justify-center gap-1 font-black text-xs border border-amber-500/40 bg-amber-500/10 text-amber-500 shadow-xs"
+                              title={`Stima di lega: ${rookieStars}★ (${rookieTokens}G)`}
+                            >
+                              <Star className="h-3.5 w-3.5 fill-amber-500" />
+                              <span>{rookieStars}★</span>
+                            </div>
+                          ) : (
+                            <div
+                              className={`h-9 w-9 rounded-xl flex items-center justify-center font-black text-sm border shadow-xs ${getValueColor(
+                                0
+                              )}`}
+                            >
+                              -
+                            </div>
+                          )}
                           <Badge
                             variant="outline"
                             className={`text-[10px] font-bold px-2 py-0.5 border ${getRoleColor(
@@ -982,8 +1148,16 @@ const ListaGiocatori = () => {
                           </Badge>
                         </div>
 
-                        {/* Logo Club o Badge Svincolato */}
-                        {!isSvincolato && player.Squadra ? (
+                        {/* Logo Club o Badge Rookie/Svincolato */}
+                        {isRookie ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold gap-1"
+                          >
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Rookie Draft
+                          </Badge>
+                        ) : !isSvincolato && player.Squadra ? (
                           <div className="flex items-center gap-1.5" title={teamName || player.Squadra}>
                             <img
                               src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
@@ -1036,7 +1210,7 @@ const ListaGiocatori = () => {
                             {player.Nome} {player.Cognome}
                           </h3>
                           <div className="text-xs text-muted-foreground truncate mt-0.5">
-                            {teamName || (isSvincolato ? "Senza Squadra" : player.Squadra)}
+                            {isRookie ? "Classe Draft 2026/27" : (teamName || (isSvincolato ? "Senza Squadra" : player.Squadra))}
                             {player.NumeroMaglia ? ` • #${player.NumeroMaglia}` : ""}
                           </div>
                         </div>
@@ -1063,9 +1237,9 @@ const ListaGiocatori = () => {
                             </span>
                           </div>
                           <div className="p-1 rounded bg-muted/30">
-                            <span className="text-[9px] text-muted-foreground block">XP</span>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                              {player.XP ?? 0}
+                            <span className="text-[9px] text-muted-foreground block">{isRookie ? "Scout" : "XP"}</span>
+                            <span className={`font-bold ${isRookie ? "text-amber-500" : "text-emerald-600 dark:text-emerald-400"}`}>
+                              {isRookie ? `${rookieTokens}G` : (player.XP ?? 0)}
                             </span>
                           </div>
                         </div>
@@ -1074,14 +1248,23 @@ const ListaGiocatori = () => {
 
                     {/* Card Footer: Stato Mercato */}
                     <div className="p-3 border-t border-border/60 bg-muted/20 flex items-center justify-between">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] font-semibold px-2 py-0.5 border ${getMarketBadgeStyle(
-                          marketCode
-                        )}`}
-                      >
-                        {getMarketLabel(marketCode)}
-                      </Badge>
+                      {isRookie ? (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-mono border-amber-500/30 text-amber-500 bg-amber-500/10"
+                        >
+                          Draft 2026/27
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] font-semibold px-2 py-0.5 border ${getMarketBadgeStyle(
+                            marketCode
+                          )}`}
+                        >
+                          {getMarketLabel(marketCode)}
+                        </Badge>
+                      )}
 
                       <span className="text-[11px] font-bold text-primary flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                         <span>Scheda</span>

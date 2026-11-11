@@ -595,7 +595,13 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
             {/* Glowing OVR badge */}
             <div className="absolute -bottom-2 -right-2 h-12 w-12 sm:h-13 sm:w-13 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex flex-col items-center justify-center font-black shadow-xl border-2 border-background">
               <span className="text-[8px] uppercase tracking-widest leading-none opacity-80 font-bold">OVR</span>
-              <span className="text-xl sm:text-2xl leading-tight font-black">{ovr}</span>
+              <span className="text-lg sm:text-2xl leading-tight font-black">
+                {currentPlayer.OVR !== null && currentPlayer.OVR !== undefined
+                  ? currentPlayer.OVR
+                  : (currentPlayer as any).Stelle
+                  ? `${(currentPlayer as any).Stelle}★`
+                  : "—"}
+              </span>
             </div>
           </div>
 
