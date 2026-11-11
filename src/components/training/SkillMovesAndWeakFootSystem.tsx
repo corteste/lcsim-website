@@ -197,14 +197,10 @@ export const SkillMovesAndWeakFootSystem: React.FC<SkillMovesAndWeakFootSystemPr
                 <span className="font-extrabold text-foreground text-sm">
                   {currentSkillMoves} / 5 Stelle
                 </span>
-                {addedSkillMoves > 0 ? (
+                {addedSkillMoves > 0 && (
                   <Badge className="bg-amber-500 text-slate-950 font-black text-[10px] px-1.5 py-0">
                     +{addedSkillMoves} ⭐ (+{costSkillMoves} XP)
                   </Badge>
-                ) : (
-                  <span className="text-[11px] text-muted-foreground font-sans">
-                    (Valore di fabbrica)
-                  </span>
                 )}
               </div>
             </div>
@@ -351,14 +347,10 @@ export const SkillMovesAndWeakFootSystem: React.FC<SkillMovesAndWeakFootSystemPr
                 <span className="font-extrabold text-foreground text-sm">
                   {currentWeakFoot} / 5 Stelle
                 </span>
-                {addedWeakFoot > 0 ? (
+                {addedWeakFoot > 0 && (
                   <Badge className="bg-cyan-500 text-slate-950 font-black text-[10px] px-1.5 py-0">
                     +{addedWeakFoot} ⭐ (+{costWeakFoot} XP)
                   </Badge>
-                ) : (
-                  <span className="text-[11px] text-muted-foreground font-sans">
-                    (Valore di fabbrica)
-                  </span>
                 )}
               </div>
             </div>
