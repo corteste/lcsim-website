@@ -145,10 +145,10 @@ const ListaGiocatori = () => {
     };
   }, [effectiveTeam]);
 
-  const loading = playersLoading || (scopeTab === "ROOKIES" && rookiesLoading);
-
   // Scope / Ambito Giocatori (Scelta utente: default Serie A)
   const [scopeTab, setScopeTab] = useState<ScopeTab>("LCSIM");
+
+  const loading = playersLoading || (scopeTab === "ROOKIES" && rookiesLoading);
 
   // Vista (Scelta utente: Doppia vista Tabella / Griglia)
   const [viewMode, setViewMode] = useState<ViewMode>("table");
