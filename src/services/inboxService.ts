@@ -32,9 +32,19 @@ export interface MatchdayScheduleMatch {
   isPlayed?: boolean;
 }
 
+export interface MatchdayTalkingPoint {
+  title: string;
+  content: string;
+  highlight?: string;
+}
+
 export interface MatchdayPreviewData {
   week: number;
   season: number;
+  headline: string;
+  leadParagraph: string;
+  bigMatch?: MatchdayScheduleMatch;
+  talkingPoints: MatchdayTalkingPoint[];
   matches: MatchdayScheduleMatch[];
 }
 
@@ -60,7 +70,7 @@ export interface InboxItem {
 
 /**
  * Aggrega in un unico feed FM24 tutte le notizie di lega, rumor, conferenze stampa,
- * preview di tutte le partite della prossima giornata e messaggi di trattativa.
+ * preview editoriale con spunti di analisi della prossima giornata e messaggi di trattativa.
  */
 export async function fetchInboxFeed(params: {
   teamId?: string | null;
@@ -170,7 +180,7 @@ export async function fetchInboxFeed(params: {
       });
     });
 
-    // 5. Preview Completa della Prossima Giornata (Analisi di tutti i match in programma)
+    // 5. Notizia Editoriale di Analisi della Prossima Giornata
     const scheduleRows = scheduleRes?.data || [];
     const teams = teamsRes?.data || [];
     const standings = standingsList || [];
@@ -222,25 +232,100 @@ export async function fetchInboxFeed(params: {
           };
         });
 
-        const matchupsSummary = matchItems
-          .map((m) => `${m.homeTeamId}-${m.awayTeamId}`)
-          .join(", ");
+        // 5.1 Identifica il Big Match della giornata (somma posizioni in classifica più bassa)
+        const sortedByRankSum = [...matchItems].sort((a, b) => {
+          const rankA = (a.homeRank ?? 15) + (a.awayRank ?? 15);
+          const rankB = (b.homeRank ?? 15) + (b.awayRank ?? 15);
+          return rankA - rankB;
+        });
+        const bigMatch = sortedByRankSum[0] || matchItems[0];
+
+        // 5.2 Scontri diretti e distanze corte (distanza <= 3 punti)
+        const closeMatches = matchItems.filter(
+          (m) =>
+            m !== bigMatch &&
+            m.homePoints !== undefined &&
+            m.awayPoints !== undefined &&
+            Math.abs(m.homePoints - m.awayPoints) <= 3
+        );
+
+        // 5.3 Match della squadra utente
+        const userMatch = teamId
+          ? matchItems.find((m) => m.homeTeamId === teamId || m.awayTeamId === teamId)
+          : null;
+
+        // 5.4 Costruzione spunti di analisi editoriale
+        const talkingPoints: MatchdayTalkingPoint[] = [];
+
+        // Spunto 1: Big Match
+        if (bigMatch) {
+          const diffPt = Math.abs((bigMatch.homePoints ?? 0) - (bigMatch.awayPoints ?? 0));
+          const homeRankStr = bigMatch.homeRank ? `#${bigMatch.homeRank}` : "";
+          const awayRankStr = bigMatch.awayRank ? `#${bigMatch.awayRank}` : "";
+          talkingPoints.push({
+            title: `Riflettori sul Big Match: ${bigMatch.homeTeamName} contro ${bigMatch.awayTeamName}`,
+            content: `La sfida di cartello del turno mette a confronto due tra le formazioni più ambiziose della lega (${homeRankStr} contro ${awayRankStr}). Distanziate da ${
+              diffPt === 0 ? "pari punti" : `soli ${diffPt} punti`
+            }, la posta in palio allo Stadio ${bigMatch.stadium || "Comunale"} vale un deciso scatto nella corsa al vertice.`,
+            highlight: "Scontro al Vertice",
+          });
+        }
+
+        // Spunto 2: Scontri diretti
+        if (closeMatches.length > 0) {
+          const matchupsNames = closeMatches
+            .slice(0, 2)
+            .map((m) => `${m.homeTeamName} vs ${m.awayTeamName}`)
+            .join(" e ");
+          talkingPoints.push({
+            title: "Scontri Diretti e Punti Salvezza/Playoff",
+            content: `Turno ad altissima intensità con duelli sul filo di lana: ${matchupsNames}. La cortissima forbice in graduatoria trasforma ogni singolo dettaglio in potenziale spartiacque per la griglia finale.`,
+            highlight: "Equilibrio Totale",
+          });
+        }
+
+        // Spunto 3: Fattore campo & Tattica
+        talkingPoints.push({
+          title: "Fattore Campo e Gestione delle Rotazioni",
+          content: `In questa ${targetWeek}ª giornata il rendimento tra le mura amiche e la solidità delle difese saranno l'ago della bilancia. Chi riuscirà a mantenere alta l'intensità atletica senza sbilanciarsi trarrà il massimo dividendo dal turno.`,
+          highlight: "Chiave Tattica",
+        });
+
+        // Spunto 4: Focus sul club dell'utente (se applicabile)
+        if (userMatch && userMatch !== bigMatch) {
+          const isHome = userMatch.homeTeamId === teamId;
+          const oppName = isHome ? userMatch.awayTeamName : userMatch.homeTeamName;
+          talkingPoints.push({
+            title: `Focus Squadra: L'impegno contro ${oppName}`,
+            content: `Per il tuo club si profila una prova di maturità importante ${
+              isHome ? "davanti ai propri tifosi" : "in trasferta"
+            }. Impostare un pressing ragionato e concretizzare le ripartenze saranno i fattori chiave del match.`,
+            highlight: "Il Tuo Club",
+          });
+        }
+
+        const headline = `Speciale Giornata ${targetWeek}: Analisi, Big Match e Spunti del Prossimo Turno`;
+        const leadParagraph = `Il campionato di Serie A LCSIM si prepara a vivere la sua ${targetWeek}ª giornata. Con ${matchItems.length} partite in programma, il turno offre incroci determinanti per le gerarchie della classifica e la lotta alle posizioni nobili.`;
 
         items.push({
           id: `preview_matchday_${targetWeek}`,
           category: "preview",
-          title: `⚔️ Preview Giornata ${targetWeek} • Tutte le Sfide del Turno`,
-          snippet: `Analisi completa e calendario delle sfide del prossimo turno di Serie A: ${matchupsSummary}.`,
-          senderName: "Commissione Tecnica & Calendario",
-          senderRole: "Preview Ufficiale del Turno",
+          title: `🗞️ Speciale Giornata ${targetWeek}: Analisi del Turno e Spunti Tattici`,
+          snippet: `Riflettori puntati sul big match ${bigMatch.homeTeamName}-${bigMatch.awayTeamName} e i temi caldi del prossimo turno di campionato.`,
+          senderName: "Redazione Sportiva LCSIM",
+          senderRole: "Ufficio Stampa & Analisi",
           timestamp: new Date().toISOString(),
           matchday: targetWeek,
           priority: "high",
-          badgeText: `G${targetWeek} • Preview Giornata`,
+          badgeText: `G${targetWeek} • Speciale Turno`,
           badgeColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
           previewData: {
             week: targetWeek,
             season,
+            headline,
+            leadParagraph,
+            bigMatch,
+            talkingPoints,
             matches: matchItems,
           },
         });
