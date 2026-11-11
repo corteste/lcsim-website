@@ -29,6 +29,7 @@ import {
   GeneratedWeekSchedule,
   NEUTRAL_MATCHDAY_WEEK,
   NEUTRAL_STADIUM_NAME,
+  DEFAULT_DAILY_MATCH_TIMES,
   fetchActiveScheduleTeams,
   generateBalancedSeasonSchedule,
   applyGlobalStartMondayToSchedule,
@@ -57,6 +58,8 @@ export function ScheduleGeneratorModal({
     getNextMondayDateStr()
   );
   const [defaultMatchTime, setDefaultMatchTime] = useState<string>("21:00");
+  const [matchTime2, setMatchTime2] = useState<string>("21:30");
+  const [matchTime3, setMatchTime3] = useState<string>("22:00");
 
   const [teams, setTeams] = useState<ScheduleTeamInfo[]>([]);
   const [weeks, setWeeks] = useState<GeneratedWeekSchedule[]>([]);
@@ -141,13 +144,16 @@ export function ScheduleGeneratorModal({
     }
     try {
       const nextWeeks = generateBalancedSeasonSchedule(teams, startMondayDate);
-      // Preserve current defaultMatchTime
+      const times = [defaultMatchTime || "21:00", matchTime2 || "21:30", matchTime3 || "22:00"];
       const withTime = nextWeeks.map((w) => ({
         ...w,
-        matches: w.matches.map((m) => ({
-          ...m,
-          match_time: defaultMatchTime || "21:00",
-        })),
+        matches: w.matches.map((m) => {
+          const slotIdx = m.matchIndex < 3 ? m.matchIndex : m.matchIndex - 3;
+          return {
+            ...m,
+            match_time: times[slotIdx] || "21:00",
+          };
+        }),
       }));
       setWeeks(withTime);
       toast.success(
@@ -165,17 +171,23 @@ export function ScheduleGeneratorModal({
     setWeeks((prev) => applyGlobalStartMondayToSchedule(prev, newDate));
   };
 
-  // Apply default time to all matches
-  const handleApplyTimeToAll = (timeStr: string) => {
-    setDefaultMatchTime(timeStr);
+  // Apply default slot times across all matches
+  const handleApplySlotTime = (slotIdx: number, timeStr: string) => {
+    if (slotIdx === 0) setDefaultMatchTime(timeStr);
+    if (slotIdx === 1) setMatchTime2(timeStr);
+    if (slotIdx === 2) setMatchTime3(timeStr);
+
     if (!timeStr) return;
     setWeeks((prev) =>
       prev.map((w) => ({
         ...w,
-        matches: w.matches.map((m) => ({
-          ...m,
-          match_time: timeStr,
-        })),
+        matches: w.matches.map((m) => {
+          const currentSlot = m.matchIndex < 3 ? m.matchIndex : m.matchIndex - 3;
+          if (currentSlot === slotIdx) {
+            return { ...m, match_time: timeStr };
+          }
+          return m;
+        }),
       }))
     );
   };
@@ -390,9 +402,9 @@ export function ScheduleGeneratorModal({
 
         {/* Top Config Controls & Validation Bar */}
         <div className="px-6 py-3 bg-muted/40 border-b border-border/70 space-y-3 shrink-0">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
             {/* Stagione */}
-            <div>
+            <div className="sm:col-span-2">
               <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
                 Stagione
               </label>
@@ -407,7 +419,7 @@ export function ScheduleGeneratorModal({
             </div>
 
             {/* Lunedì Giornata 1 */}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-5">
               <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
                 Data Lunedì Giornata 1 (Auto-calcola Lunedì/Martedì G1–G11)
               </label>
@@ -427,17 +439,43 @@ export function ScheduleGeneratorModal({
               </div>
             </div>
 
-            {/* Orario Default */}
-            <div>
+            {/* Orari Scaglionati (1ª, 2ª, 3ª partita) */}
+            <div className="sm:col-span-5">
               <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-                Orario Default Gare
+                Orari Scaglionati Giornalieri (30 min)
               </label>
-              <input
-                type="time"
-                value={defaultMatchTime}
-                onChange={(e) => handleApplyTimeToAll(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs font-mono font-semibold"
-              />
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="flex items-center gap-1 bg-background border border-border rounded-lg px-2 py-1">
+                  <span className="text-[10px] font-mono font-bold text-muted-foreground">1ª:</span>
+                  <input
+                    type="time"
+                    value={defaultMatchTime}
+                    onChange={(e) => handleApplySlotTime(0, e.target.value)}
+                    className="w-full bg-transparent text-[11px] font-mono font-bold focus:outline-none"
+                    title="Orario prima partita del giorno"
+                  />
+                </div>
+                <div className="flex items-center gap-1 bg-background border border-border rounded-lg px-2 py-1">
+                  <span className="text-[10px] font-mono font-bold text-muted-foreground">2ª:</span>
+                  <input
+                    type="time"
+                    value={matchTime2}
+                    onChange={(e) => handleApplySlotTime(1, e.target.value)}
+                    className="w-full bg-transparent text-[11px] font-mono font-bold focus:outline-none"
+                    title="Orario seconda partita del giorno"
+                  />
+                </div>
+                <div className="flex items-center gap-1 bg-background border border-border rounded-lg px-2 py-1">
+                  <span className="text-[10px] font-mono font-bold text-muted-foreground">3ª:</span>
+                  <input
+                    type="time"
+                    value={matchTime3}
+                    onChange={(e) => handleApplySlotTime(2, e.target.value)}
+                    className="w-full bg-transparent text-[11px] font-mono font-bold focus:outline-none"
+                    title="Orario terza partita del giorno"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

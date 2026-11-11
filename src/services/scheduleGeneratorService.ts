@@ -2,6 +2,7 @@ import { supabase } from "@/supabaseClient";
 
 export const NEUTRAL_MATCHDAY_WEEK = 6;
 export const NEUTRAL_STADIUM_NAME = "PhoneHub Arena";
+export const DEFAULT_DAILY_MATCH_TIMES = ["21:00", "21:30", "22:00"] as const;
 
 export interface ScheduleTeamInfo {
   teamId: string;
@@ -285,6 +286,8 @@ export function generateBalancedSeasonSchedule(
           const awayTeam = teamByIndex[awayIdx];
           const daySlot: "monday" | "tuesday" = mIdx < 3 ? "monday" : "tuesday";
           const matchDate = daySlot === "monday" ? mondayDate : tuesdayDate;
+          const slotIndex = mIdx < 3 ? mIdx : mIdx - 3;
+          const matchTime = DEFAULT_DAILY_MATCH_TIMES[slotIndex] || "21:00";
 
           return {
             id: `W${weekNum}-M${mIdx + 1}`,
@@ -300,7 +303,7 @@ export function generateBalancedSeasonSchedule(
             is_neutral: isNeutralWeek,
             daySlot,
             date: matchDate,
-            match_time: "21:00",
+            match_time: matchTime,
             referee: "Arbitro Federale",
             weather: "Sereno",
           };
