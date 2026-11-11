@@ -24,7 +24,6 @@ interface PressAndRumorsHomeCardProps {
 
 export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
   className = "",
-  layout = "side-by-side",
 }) => {
   const { effectiveTeam, isAdmin } = useAuth();
   const [items, setItems] = useState<InboxItem[]>([]);
@@ -81,19 +80,24 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
 
   const currentItem = items[currentIndex] || null;
 
+  // Altre notizie da mostrare nel mini-feed inferiore per riempire ed ottimizzare lo spazio
+  const otherRecentItems = useMemo(() => {
+    return items.filter((_, idx) => idx !== currentIndex).slice(0, 2);
+  }, [items, currentIndex]);
+
   // Icona categoria dinamica
   const getCategoryIcon = (category?: string) => {
     switch (category) {
       case "press":
-        return <Mic2 className="h-3 w-3" />;
+        return <Mic2 className="h-3.5 w-3.5" />;
       case "rumors":
-        return <Flame className="h-3 w-3" />;
+        return <Flame className="h-3.5 w-3.5" />;
       case "preview":
-        return <Swords className="h-3 w-3" />;
+        return <Swords className="h-3.5 w-3.5" />;
       case "trades":
-        return <ArrowLeftRight className="h-3 w-3" />;
+        return <ArrowLeftRight className="h-3.5 w-3.5" />;
       default:
-        return <Inbox className="h-3 w-3" />;
+        return <Inbox className="h-3.5 w-3.5" />;
     }
   };
 
@@ -131,7 +135,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
       <CardContent
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
-        className="p-4 flex-1 flex flex-col justify-between min-h-[220px]"
+        className="p-4 flex-1 flex flex-col justify-between space-y-3"
       >
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-xs text-muted-foreground italic">
@@ -139,84 +143,132 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
             <p>Caricamento notizie dell'Inbox...</p>
           </div>
         ) : currentItem ? (
-          <div key={currentItem.id} className="flex-1 flex flex-col justify-between space-y-3 animate-in fade-in duration-300">
-            {/* Top Row: Badge Categoria + Controlli Carosello */}
-            <div className="flex items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] font-bold flex items-center gap-1 py-0.5 px-2 border ${currentItem.badgeColor || ""}`}
-                >
-                  {getCategoryIcon(currentItem.category)}
-                  <span>{currentItem.badgeText || "Notizia"}</span>
-                </Badge>
-                {currentItem.matchday && (
-                  <span className="text-[10px] font-mono text-muted-foreground">
-                    G{currentItem.matchday}
-                  </span>
-                )}
-              </div>
-
-              {items.length > 1 && (
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
-                    {currentIndex + 1}/{items.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handlePrev}
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                    title="Notizia precedente"
+          <div className="flex-1 flex flex-col justify-between space-y-3">
+            {/* Box Notizia in Evidenza Attiva */}
+            <div className="p-3.5 rounded-xl bg-muted/25 border border-border/70 space-y-2.5 transition-all shadow-xs">
+              {/* Top Row: Badge Categoria + Controlli Carosello */}
+              <div className="flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] font-bold flex items-center gap-1 py-0.5 px-2 border ${currentItem.badgeColor || ""}`}
                   >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                    title="Notizia successiva"
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Mittente + Titolo + Snippet */}
-            <div className="flex-1 min-h-0 space-y-2">
-              <div className="flex items-center gap-2.5">
-                {currentItem.senderTeamId ? (
-                  <img
-                    src={getTeamLogo(currentItem.senderTeamId)}
-                    alt={currentItem.senderTeamId}
-                    className="h-7 w-7 object-contain rounded-md shrink-0"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div className="h-7 w-7 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                     {getCategoryIcon(currentItem.category)}
+                    <span>{currentItem.badgeText || "Notizia"}</span>
+                  </Badge>
+                  {currentItem.matchday && (
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      G{currentItem.matchday}
+                    </span>
+                  )}
+                </div>
+
+                {items.length > 1 && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] font-mono text-muted-foreground/70 mr-0.5">
+                      {currentIndex + 1}/{items.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                      title="Notizia precedente"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                      title="Notizia successiva"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 )}
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-foreground truncate">
-                    {currentItem.senderName}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    {currentItem.senderRole || "Notifica di Lega"}
-                  </p>
-                </div>
               </div>
 
-              <h4 className="text-sm font-black text-foreground leading-snug line-clamp-2">
-                {currentItem.title}
-              </h4>
+              {/* Mittente + Titolo + Snippet */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  {currentItem.senderTeamId ? (
+                    <img
+                      src={getTeamLogo(currentItem.senderTeamId)}
+                      alt={currentItem.senderTeamId}
+                      className="h-6 w-6 object-contain rounded shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="h-6 w-6 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      {getCategoryIcon(currentItem.category)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-foreground truncate">
+                      {currentItem.senderName}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground truncate">
+                      {currentItem.senderRole || "Notifica di Lega"}
+                    </p>
+                  </div>
+                </div>
 
-              <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                {currentItem.snippet}
-              </p>
+                <h4 className="text-xs sm:text-sm font-black text-foreground leading-snug line-clamp-2">
+                  {currentItem.title}
+                </h4>
+
+                <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                  {currentItem.snippet}
+                </p>
+              </div>
             </div>
+
+            {/* Sezione Altre Notifiche Recenti dell'Inbox (Riempie ed ottimizza lo spazio verticale) */}
+            {otherRecentItems.length > 0 && (
+              <div className="space-y-1.5 flex-1 min-h-0 flex flex-col justify-center">
+                <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground px-0.5">
+                  <span className="uppercase tracking-wider flex items-center gap-1 text-[10px]">
+                    <Inbox className="h-3 w-3 text-emerald-500" />
+                    Altre Notizie in Bacheca
+                  </span>
+                  <span className="font-mono text-muted-foreground/60 text-[9px]">
+                    Clicca per leggere
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  {otherRecentItems.map((item) => {
+                    const originalIndex = items.findIndex((it) => it.id === item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          if (originalIndex !== -1) setCurrentIndex(originalIndex);
+                        }}
+                        className="p-2 rounded-lg bg-muted/20 hover:bg-muted/50 border border-border/50 cursor-pointer transition-colors flex items-center justify-between gap-2 text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="shrink-0 text-muted-foreground">
+                            {getCategoryIcon(item.category)}
+                          </span>
+                          <span className="text-[11px] font-medium text-foreground truncate">
+                            {item.title}
+                          </span>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="text-[9px] px-1.5 py-0 font-mono shrink-0 hidden sm:inline-flex"
+                        >
+                          {item.badgeText || "Notifica"}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Footer Widget con Link e Indicatori Pallini */}
             <div className="flex items-center justify-between pt-2 border-t border-border/50 shrink-0">
@@ -230,7 +282,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
 
               {items.length > 1 && (
                 <div className="flex items-center gap-1">
-                  {items.map((_, idx) => (
+                  {items.slice(0, 8).map((_, idx) => (
                     <button
                       key={idx}
                       type="button"
