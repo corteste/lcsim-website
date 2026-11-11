@@ -186,6 +186,13 @@ const Navbar = () => {
   // 6. SEZIONE ARCHIVIO
   const archivioItems: NavGroupItem[] = [
     {
+      path: "/archivio/stagioni",
+      label: "Archivio Stagioni",
+      description: "Storico classifiche, regular season e tabelloni playoff passati",
+      icon: ListOrdered,
+      colorClass: "text-amber-500",
+    },
+    {
       path: "/archivio/giocatori",
       label: "Archivio Calciatori",
       description: "Carriere, stagioni a roster, statistiche e movimenti storici",

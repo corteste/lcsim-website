@@ -472,8 +472,8 @@ const Statistiche = () => {
               <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                 LCSIM Ufficiale • Serie A
               </span>
-              <span className="text-xs text-muted-foreground">
-                Rendimento Individuale • Stagione 2024/25
+              <span className="text-xs text-muted-foreground font-semibold">
+                Rendimento Individuale • Stagione 11 (In corso)
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">

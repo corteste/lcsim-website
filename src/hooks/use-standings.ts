@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchStandings } from "@/services/standingsService";
 import { Standings } from "@/types/standings";
 
-export function getStandings(season?: number) {
+export function getStandings(season: number = 11) {
   const { data, isLoading, error } = useQuery<Standings[]>({
-    queryKey: ['standings', season ?? 'latest'],
+    queryKey: ['standings', season],
     queryFn: () => fetchStandings(season),
     staleTime: 5 * 60 * 1000,
   });

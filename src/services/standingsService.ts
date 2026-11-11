@@ -1,22 +1,21 @@
 import { Standings } from "@/types/standings";
 import { supabase } from "@/supabaseClient";
 
-export async function fetchStandings(season?: number): Promise<Standings[]> {
+export async function fetchStandings(season: number = 11): Promise<Standings[]> {
   try {
-    await supabase.rpc('sync_unlocked_standings', { p_stag: season ?? null });
+    await supabase.rpc('sync_unlocked_standings', { p_stag: season });
   } catch {
     // Non-blocking sync
   }
 
-  let query = supabase
+  const query = supabase
     .from('an_standings')
     .select('*, team:an_team(*)')
+    .eq('stag', season)
     .order('points', { ascending: false })
-    .order('goal_difference', { ascending: false });
-
-  if (season !== undefined) {
-    query = query.eq('stag', season);
-  }
+    .order('goal_difference', { ascending: false })
+    .order('goal_made', { ascending: false })
+    .order('team', { ascending: true });
 
   const { data, error } = await query;
   if (error) {

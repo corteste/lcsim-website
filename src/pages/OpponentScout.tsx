@@ -317,7 +317,7 @@ export const OpponentScout: React.FC = () => {
                       VS
                     </span>
                     <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-0.5">
-                      Stagione 10
+                      Stagione 11
                     </span>
                   </div>
 

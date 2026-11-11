@@ -72,11 +72,11 @@ export const FoglioCommento: React.FC = () => {
     seasons: number[];
     weeksBySeason: Record<number, number[]>;
   }>({
-    seasons: [10],
-    weeksBySeason: { 10: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
+    seasons: [11, 10],
+    weeksBySeason: { 11: [1], 10: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
   });
 
-  const [selectedSeason, setSelectedSeason] = useState<number>(10);
+  const [selectedSeason, setSelectedSeason] = useState<number>(11);
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
 
   // 2. Partite della giornata selezionata

@@ -18,9 +18,10 @@ const Classifica = () => {
     setSearchParams(val === "playoff" ? { tab: "playoff" } : {});
   };
 
-  const maxMatchday = standings.length > 0
-    ? Math.max(1, ...standings.map(s => s.games_played || 0))
-    : 10;
+  const gamesPlayedMax = standings.length > 0
+    ? Math.max(0, ...standings.map(s => s.games_played || 0))
+    : 0;
+  const matchdayLabel = gamesPlayedMax > 0 ? `Giornata ${gamesPlayedMax}` : "Pre-Season (In corso)";
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors">
@@ -32,10 +33,10 @@ const Classifica = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                LCSIM
+                LCSIM Ufficiale
               </span>
-              <span className="text-xs text-muted-foreground">
-                Stagione 2024/25 • Giornata {maxMatchday}
+              <span className="text-xs text-muted-foreground font-semibold">
+                Stagione 11 • {matchdayLabel}
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
