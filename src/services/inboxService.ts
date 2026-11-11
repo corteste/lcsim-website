@@ -7,19 +7,36 @@ import {
   MarketRumor,
 } from "@/services/aiJournalistService";
 import {
-  findNextOpponentMatch,
-  fetchOpponentScoutData,
-  OpponentMatchInfo,
-  OpponentScoutData,
-} from "@/services/opponentScoutService";
-import {
   fetchTeamTrades,
   fetchAdminPendingTrades,
-  fetchAllTradesForAdmin,
 } from "@/services/tradesService";
+import { fetchStandings } from "@/services/standingsService";
 import { EnrichedTrade } from "@/types/trades";
 
 export type InboxCategory = "all" | "trades" | "press" | "rumors" | "preview";
+
+export interface MatchdayScheduleMatch {
+  homeTeamId: string;
+  homeTeamName: string;
+  homeRank?: number;
+  homePoints?: number;
+  awayTeamId: string;
+  awayTeamName: string;
+  awayRank?: number;
+  awayPoints?: number;
+  stadium?: string;
+  referee?: string;
+  weather?: string;
+  date?: string;
+  matchTime?: string;
+  isPlayed?: boolean;
+}
+
+export interface MatchdayPreviewData {
+  week: number;
+  season: number;
+  matches: MatchdayScheduleMatch[];
+}
 
 export interface InboxItem {
   id: string;
@@ -38,15 +55,12 @@ export interface InboxItem {
   pressData?: PressConference;
   rumorData?: MarketRumor;
   tradeData?: EnrichedTrade;
-  previewData?: {
-    matchInfo: OpponentMatchInfo;
-    scoutData: OpponentScoutData | null;
-  };
+  previewData?: MatchdayPreviewData;
 }
 
 /**
  * Aggrega in un unico feed FM24 tutte le notizie di lega, rumor, conferenze stampa,
- * match preview pre-partita e messaggi di trattativa della squadra loggata.
+ * preview di tutte le partite della prossima giornata e messaggi di trattativa.
  */
 export async function fetchInboxFeed(params: {
   teamId?: string | null;
@@ -58,25 +72,41 @@ export async function fetchInboxFeed(params: {
 
   try {
     // 1. Chiamate parallele a tutte le sorgenti informative
-    const promises: [
-      Promise<PressConference[]>,
-      Promise<PressConference | null>,
-      Promise<MarketRumor[]>,
-      Promise<OpponentMatchInfo | null>,
-      Promise<EnrichedTrade[]>
-    ] = [
+    const [
+      pressList,
+      pendingPress,
+      rumorsList,
+      tradesList,
+      deadlineRes,
+      scheduleRes,
+      standingsList,
+      teamsRes,
+    ] = await Promise.all([
       fetchPressConferences(undefined, season, true),
       teamId ? fetchPendingConferenceForTeam(teamId, season) : Promise.resolve(null),
       fetchMarketRumors(25),
-      teamId ? findNextOpponentMatch(teamId) : Promise.resolve(null),
       teamId
         ? fetchTeamTrades(teamId)
         : isAdmin
         ? fetchAdminPendingTrades()
         : Promise.resolve([]),
-    ];
-
-    const [pressList, pendingPress, rumorsList, nextMatch, tradesList] = await Promise.all(promises);
+      supabase
+        .from("league_deadlines")
+        .select("week, stag, is_active")
+        .eq("stag", season)
+        .eq("is_active", true)
+        .maybeSingle(),
+      supabase
+        .from("an_schedule")
+        .select("id, week, stag, home, away, stadium, referee, weather, date, match_time, standings_processed")
+        .eq("stag", season)
+        .order("week", { ascending: true })
+        .order("id", { ascending: true }),
+      fetchStandings(season).catch(() => []),
+      supabase
+        .from("an_team")
+        .select("TEAM_ID, NAME, NAME_ABBR"),
+    ]);
 
     // 2. Intervista in attesa per la squadra dell'utente (Massima priorità)
     if (pendingPress) {
@@ -140,42 +170,85 @@ export async function fetchInboxFeed(params: {
       });
     });
 
-    // 5. Anticipazioni & Match Preview (della propria squadra)
-    if (nextMatch && nextMatch.opponentTeamId) {
-      let scoutData: OpponentScoutData | null = null;
-      try {
-        scoutData = await fetchOpponentScoutData(nextMatch.opponentTeamId);
-      } catch (e) {
-        console.warn("Errore caricamento scout avversario per preview:", e);
+    // 5. Preview Completa della Prossima Giornata (Analisi di tutti i match in programma)
+    const scheduleRows = scheduleRes?.data || [];
+    const teams = teamsRes?.data || [];
+    const standings = standingsList || [];
+
+    const teamMap = new Map<string, { name: string; abbr?: string }>();
+    teams.forEach((t) => {
+      teamMap.set(t.TEAM_ID, { name: t.NAME || t.TEAM_ID, abbr: t.NAME_ABBR });
+    });
+
+    const standingMap = new Map<string, { rank: number; points: number }>();
+    standings.forEach((st, idx) => {
+      const tid = st.team?.TEAM_ID;
+      if (tid) {
+        standingMap.set(tid, {
+          rank: idx + 1,
+          points: st.points ?? 0,
+        });
       }
+    });
 
-      const matchVersus = nextMatch.isHome
-        ? `${nextMatch.myTeamId} vs ${nextMatch.opponentTeamId}`
-        : `${nextMatch.opponentTeamId} vs ${nextMatch.myTeamId}`;
+    // Determina targetWeek del prossimo turno
+    let targetWeek: number | null = deadlineRes?.data?.week ?? null;
+    if (!targetWeek && scheduleRows.length > 0) {
+      const unplayed = scheduleRows.find((m) => !m.standings_processed);
+      targetWeek = unplayed ? unplayed.week : scheduleRows[scheduleRows.length - 1].week;
+    }
 
-      items.push({
-        id: `preview_${nextMatch.week}_${nextMatch.myTeamId}`,
-        category: "preview",
-        title: `⚔️ Match Preview: ${matchVersus} (Giornata ${nextMatch.week})`,
-        snippet: `Analisi tattica, rendimento recente e statistiche pre-partita in vista della sfida contro ${nextMatch.opponentTeamName}. Stadio: ${nextMatch.stadium || "Comunale"}.`,
-        senderName: "Ufficio Tattico & Match Analysis",
-        senderRole: "Anticipazione Prossima Giornata",
-        senderTeamId: nextMatch.opponentTeamId,
-        timestamp: new Date().toISOString(),
-        matchday: nextMatch.week,
-        priority: "high",
-        badgeText: `G${nextMatch.week} • Match Preview`,
-        badgeColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
-        previewData: {
-          matchInfo: nextMatch,
-          scoutData,
-        },
-      });
+    if (targetWeek) {
+      const weekMatches = scheduleRows.filter((m) => m.week === targetWeek && m.home && m.away);
+      if (weekMatches.length > 0) {
+        const matchItems: MatchdayScheduleMatch[] = weekMatches.map((m) => {
+          const homeInfo = standingMap.get(m.home);
+          const awayInfo = standingMap.get(m.away);
+          return {
+            homeTeamId: m.home,
+            homeTeamName: teamMap.get(m.home)?.name || m.home,
+            homeRank: homeInfo?.rank,
+            homePoints: homeInfo?.points,
+            awayTeamId: m.away,
+            awayTeamName: teamMap.get(m.away)?.name || m.away,
+            awayRank: awayInfo?.rank,
+            awayPoints: awayInfo?.points,
+            stadium: m.stadium || undefined,
+            referee: m.referee || undefined,
+            weather: m.weather || undefined,
+            date: m.date ? String(m.date) : undefined,
+            matchTime: m.match_time || undefined,
+            isPlayed: Boolean(m.standings_processed),
+          };
+        });
+
+        const matchupsSummary = matchItems
+          .map((m) => `${m.homeTeamId}-${m.awayTeamId}`)
+          .join(", ");
+
+        items.push({
+          id: `preview_matchday_${targetWeek}`,
+          category: "preview",
+          title: `⚔️ Preview Giornata ${targetWeek} • Tutte le Sfide del Turno`,
+          snippet: `Analisi completa e calendario delle sfide del prossimo turno di Serie A: ${matchupsSummary}.`,
+          senderName: "Commissione Tecnica & Calendario",
+          senderRole: "Preview Ufficiale del Turno",
+          timestamp: new Date().toISOString(),
+          matchday: targetWeek,
+          priority: "high",
+          badgeText: `G${targetWeek} • Preview Giornata`,
+          badgeColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+          previewData: {
+            week: targetWeek,
+            season,
+            matches: matchItems,
+          },
+        });
+      }
     }
 
     // 6. Messaggi & Trattative di Squadra (o approvazioni Admin)
     tradesList.forEach((trade) => {
-      const isMyTrade = teamId && (trade.sender_team === teamId || trade.receiver_team === teamId);
       const isReceived = teamId && trade.receiver_team === teamId && trade.status === "pending";
 
       let tradeTitle = `Trattativa: ${trade.sender_team} ↔ ${trade.receiver_team}`;

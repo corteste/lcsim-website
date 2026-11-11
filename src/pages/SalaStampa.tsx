@@ -37,6 +37,7 @@ import {
   User,
   MapPin,
   Calendar,
+  CloudSun,
 } from "lucide-react";
 import { getTeamLogo } from "@/utils/functions";
 import { supabase } from "@/supabaseClient";
@@ -708,9 +709,9 @@ export default function SalaStampa() {
                         asChild
                         className="h-8 text-xs font-bold gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 shrink-0"
                       >
-                        <Link to="/prossimo-avversario">
-                          <Swords className="h-3.5 w-3.5" />
-                          <span>Report Tattico Completo</span>
+                        <Link to="/calendario">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span>Calendario Completo</span>
                         </Link>
                       </Button>
                     )}
@@ -1008,133 +1009,187 @@ export default function SalaStampa() {
                   {/* ========================================================= */}
                   {selectedItem.previewData && (
                     <div className="space-y-5">
-                      {/* Big Matchup Card */}
-                      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-card to-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={getTeamLogo(selectedItem.previewData.matchInfo.myTeamId)}
-                            alt={selectedItem.previewData.matchInfo.myTeamId}
-                            className="h-12 w-12 object-contain"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = "none";
-                            }}
-                          />
-                          <div>
-                            <span className="text-[10px] font-bold uppercase text-muted-foreground">La Tua Squadra</span>
-                            <div className="text-base font-black text-foreground">
-                              {selectedItem.previewData.matchInfo.myTeamId}
-                            </div>
+                      {/* Banner Titolo Preview del Turno */}
+                      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-card to-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-amber-500 text-slate-950 font-black text-xs px-2.5 py-0.5">
+                              GIORNATA {selectedItem.previewData.week}
+                            </Badge>
+                            <span className="text-xs font-mono text-muted-foreground">
+                              Stagione {selectedItem.previewData.season} • Serie A LCSIM
+                            </span>
                           </div>
+                          <h3 className="text-base sm:text-lg font-black text-foreground">
+                            Preview Ufficiale del Prossimo Turno
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            Panoramica completa e analisi di tutti i {selectedItem.previewData.matches.length} match in programma.
+                          </p>
                         </div>
 
-                        <div className="flex flex-col items-center justify-center font-mono">
-                          <span className="text-xs font-black text-amber-500 tracking-wider">VS</span>
-                          <Badge variant="outline" className="text-[10px] mt-1">
-                            {selectedItem.previewData.matchInfo.isHome ? "IN CASA" : "IN TRASFERTA"}
-                          </Badge>
-                        </div>
-
-                        <div className="flex items-center gap-3 sm:flex-row-reverse text-center sm:text-right">
-                          <img
-                            src={getTeamLogo(selectedItem.previewData.matchInfo.opponentTeamId)}
-                            alt={selectedItem.previewData.matchInfo.opponentTeamId}
-                            className="h-12 w-12 object-contain"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = "none";
-                            }}
-                          />
-                          <div>
-                            <span className="text-[10px] font-bold uppercase text-muted-foreground">Avversario</span>
-                            <div className="text-base font-black text-foreground">
-                              {selectedItem.previewData.matchInfo.opponentTeamName}
-                            </div>
-                          </div>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                          className="h-8 text-xs font-bold gap-1.5 border-amber-500/40 text-foreground hover:bg-amber-500/10 shrink-0"
+                        >
+                          <Link to="/calendario">
+                            <Calendar className="h-3.5 w-3.5 text-amber-500" />
+                            <span>Vai al Calendario</span>
+                          </Link>
+                        </Button>
                       </div>
 
-                      {/* Dati Pre-partita (Stadio, Arbitro) */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono">
-                        <div className="p-2.5 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground block flex items-center gap-1">
-                            <MapPin className="h-3 w-3" /> Stadio
-                          </span>
-                          <span className="font-bold text-foreground">
-                            {selectedItem.previewData.matchInfo.stadium || "Comunale"}
-                          </span>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground block flex items-center gap-1">
-                            <Calendar className="h-3 w-3" /> Turno
-                          </span>
-                          <span className="font-bold text-foreground">
-                            Giornata {selectedItem.previewData.matchInfo.week}
-                          </span>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-muted/20 border border-border/60 col-span-2 sm:col-span-1">
-                          <span className="text-[10px] text-muted-foreground block">Fattore Campo</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                            {selectedItem.previewData.matchInfo.isHome ? "Vantaggio Casa" : "Insidia Trasferta"}
-                          </span>
-                        </div>
+                      {/* Lista di tutte le partite della giornata */}
+                      <div className="space-y-3">
+                        {selectedItem.previewData.matches.map((match) => {
+                          const isMyMatch = Boolean(
+                            effectiveTeam &&
+                              (match.homeTeamId === effectiveTeam || match.awayTeamId === effectiveTeam)
+                          );
+
+                          return (
+                            <div
+                              key={`${match.homeTeamId}_${match.awayTeamId}`}
+                              className={`p-4 rounded-2xl border transition-all ${
+                                isMyMatch
+                                  ? "border-amber-500/60 bg-amber-500/5 shadow-sm ring-1 ring-amber-500/30"
+                                  : "border-border/70 bg-card hover:border-border hover:bg-muted/15"
+                              }`}
+                            >
+                              {/* Barra superiore partita: Sede, meteo, arbitro, stato */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 mb-3 border-b border-border/50 text-[11px] font-mono text-muted-foreground">
+                                <div className="flex flex-wrap items-center gap-3">
+                                  {match.stadium && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3 text-amber-500" />
+                                      <span>{match.stadium}</span>
+                                    </span>
+                                  )}
+                                  {match.weather && (
+                                    <span className="flex items-center gap-1">
+                                      <CloudSun className="h-3 w-3 text-blue-400" />
+                                      <span>{match.weather}</span>
+                                    </span>
+                                  )}
+                                  {match.referee && (
+                                    <span className="hidden sm:inline">
+                                      Arbitro: <strong className="text-foreground">{match.referee}</strong>
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  {isMyMatch && (
+                                    <Badge className="bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-0.5">
+                                      ⭐ La Tua Partita
+                                    </Badge>
+                                  )}
+                                  {match.isPlayed ? (
+                                    <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-[10px]">
+                                      Giocata
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-muted-foreground text-[10px]">
+                                      In programma
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Griglia Matchup Casa vs Trasferta */}
+                              <div className="grid grid-cols-12 items-center gap-2 sm:gap-4">
+                                {/* Squadra di Casa */}
+                                <div className="col-span-5 flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                  <img
+                                    src={getTeamLogo(match.homeTeamId)}
+                                    alt={match.homeTeamId}
+                                    className="h-10 w-10 sm:h-12 sm:w-12 object-contain shrink-0"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = "none";
+                                    }}
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-extrabold text-xs sm:text-sm text-foreground truncate">
+                                      {match.homeTeamName}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 mt-0.5 text-[11px] font-mono">
+                                      <span className="text-muted-foreground uppercase font-bold">
+                                        {match.homeTeamId}
+                                      </span>
+                                      {match.homeRank !== undefined && (
+                                        <Badge variant="secondary" className="text-[10px] px-1 py-0 font-mono font-bold">
+                                          #{match.homeRank} • {match.homePoints ?? 0} pt
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Separatore VS */}
+                                <div className="col-span-2 flex flex-col items-center justify-center font-mono text-center">
+                                  <span className="text-xs sm:text-sm font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/30">
+                                    VS
+                                  </span>
+                                  {match.homePoints !== undefined && match.awayPoints !== undefined && (
+                                    <span className="text-[9px] text-muted-foreground mt-1 hidden sm:block">
+                                      Δ {Math.abs(match.homePoints - match.awayPoints)} pt
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Squadra Ospite */}
+                                <div className="col-span-5 flex items-center justify-end gap-2.5 sm:gap-3 min-w-0 text-right">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-extrabold text-xs sm:text-sm text-foreground truncate">
+                                      {match.awayTeamName}
+                                    </div>
+                                    <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[11px] font-mono">
+                                      {match.awayRank !== undefined && (
+                                        <Badge variant="secondary" className="text-[10px] px-1 py-0 font-mono font-bold">
+                                          #{match.awayRank} • {match.awayPoints ?? 0} pt
+                                        </Badge>
+                                      )}
+                                      <span className="text-muted-foreground uppercase font-bold">
+                                        {match.awayTeamId}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <img
+                                    src={getTeamLogo(match.awayTeamId)}
+                                    alt={match.awayTeamId}
+                                    className="h-10 w-10 sm:h-12 sm:w-12 object-contain shrink-0"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = "none";
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Footer interattivo se è la propria partita */}
+                              {isMyMatch && (
+                                <div className="mt-3 pt-2.5 border-t border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                    Prepara la formazione e studia il piano gara contro {match.homeTeamId === effectiveTeam ? match.awayTeamName : match.homeTeamName}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    asChild
+                                    className="h-7 text-xs font-bold gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15"
+                                  >
+                                    <Link to="/prossimo-avversario">
+                                      <span>Report Tattico</span>
+                                      <ExternalLink className="h-3 w-3" />
+                                    </Link>
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-
-                      {/* Statistiche Avversario */}
-                      {selectedItem.previewData.scoutData?.standings && (
-                        <div className="p-4 rounded-xl bg-muted/20 border border-border/60 space-y-2">
-                          <span className="text-xs font-bold text-foreground block">
-                            Rendimento Avversario in Campionato:
-                          </span>
-                          <div className="grid grid-cols-4 gap-2 text-center font-mono text-xs">
-                            <div className="p-2 rounded bg-card border border-border/50">
-                              <span className="text-[10px] text-muted-foreground block">Posiz.</span>
-                              <span className="font-black text-foreground">
-                                #{selectedItem.previewData.scoutData.standings.rank || "-"}
-                              </span>
-                            </div>
-                            <div className="p-2 rounded bg-card border border-border/50">
-                              <span className="text-[10px] text-muted-foreground block">Punti</span>
-                              <span className="font-black text-foreground">
-                                {selectedItem.previewData.scoutData.standings.points || 0} pt
-                              </span>
-                            </div>
-                            <div className="p-2 rounded bg-card border border-border/50">
-                              <span className="text-[10px] text-muted-foreground block">Gol Fatti</span>
-                              <span className="font-black text-emerald-600 dark:text-emerald-400">
-                                {selectedItem.previewData.scoutData.standings.goalsFor || 0}
-                              </span>
-                            </div>
-                            <div className="p-2 rounded bg-card border border-border/50">
-                              <span className="text-[10px] text-muted-foreground block">Gol Subiti</span>
-                              <span className="font-black text-rose-600 dark:text-rose-400">
-                                {selectedItem.previewData.scoutData.standings.goalsAgainst || 0}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Forma Recente Avversario */}
-                      {selectedItem.previewData.scoutData?.form && selectedItem.previewData.scoutData.form.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-muted-foreground">Forma recente avversario:</span>
-                          <div className="flex gap-1 font-mono text-xs font-black">
-                            {selectedItem.previewData.scoutData.form.map((res, i) => (
-                              <span
-                                key={i}
-                                className={`h-6 w-6 rounded-md flex items-center justify-center text-white ${
-                                  res === "V"
-                                    ? "bg-emerald-600"
-                                    : res === "N"
-                                    ? "bg-amber-500"
-                                    : "bg-rose-600"
-                                }`}
-                              >
-                                {res}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
