@@ -342,11 +342,11 @@ export default function SalaStampa() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Navbar />
 
-      <main className="container mx-auto px-2 sm:px-4 py-4 flex-1 flex flex-col max-w-7xl">
+      <main className="container mx-auto px-4 py-6 sm:py-8 flex-1 flex flex-col space-y-4">
         {/* ========================================================================= */}
         {/* TOP COMMAND BAR (FM24 STYLE HEADER & CONTROLS)                            */}
         {/* ========================================================================= */}
-        <div className="mb-3 p-3 sm:p-4 rounded-2xl border border-border/80 bg-card/95 shadow-sm space-y-3">
+        <div className="p-3 sm:p-4 rounded-2xl border border-border/80 bg-card/95 shadow-sm space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs">
