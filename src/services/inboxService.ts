@@ -9,6 +9,7 @@ import {
 import {
   fetchTeamTrades,
   fetchAdminPendingTrades,
+  fetchCompletedTrades,
 } from "@/services/tradesService";
 import { fetchStandings } from "@/services/standingsService";
 import { EnrichedTrade } from "@/types/trades";
@@ -86,7 +87,8 @@ export async function fetchInboxFeed(params: {
       pressList,
       pendingPress,
       rumorsList,
-      tradesList,
+      userTradesList,
+      completedTradesList,
       deadlineRes,
       scheduleRes,
       standingsList,
@@ -100,6 +102,7 @@ export async function fetchInboxFeed(params: {
         : isAdmin
         ? fetchAdminPendingTrades()
         : Promise.resolve([]),
+      fetchCompletedTrades(),
       supabase
         .from("league_deadlines")
         .select("week, stag, is_active")
@@ -117,6 +120,12 @@ export async function fetchInboxFeed(params: {
         .from("an_team")
         .select("TEAM_ID, NAME, NAME_ABBR"),
     ]);
+
+    // Unifica le trattative completate visibili a tutta la Lega con le trattative del club
+    const tradesMap = new Map<string, EnrichedTrade>();
+    completedTradesList.forEach((t) => tradesMap.set(t.id, t));
+    userTradesList.forEach((t) => tradesMap.set(t.id, t));
+    const tradesList = Array.from(tradesMap.values());
 
     // 2. Intervista in attesa per la squadra dell'utente (Massima priorità)
     if (pendingPress) {
@@ -352,7 +361,7 @@ export async function fetchInboxFeed(params: {
         tradeColor = "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30";
         priority = isAdmin ? "urgent" : "high";
       } else if (trade.status === "completed") {
-        tradeTitle = `🏆 Scambio Ufficiale Convalidato: ${trade.sender_team} ↔ ${trade.receiver_team}`;
+        tradeTitle = `🏆 Ufficiale: Accordo di Mercato tra ${trade.sender_team_name || trade.sender_team} e ${trade.receiver_team_name || trade.receiver_team}`;
         tradeBadge = "Trasferimento Ufficiale";
         tradeColor = "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
       } else if (trade.status === "rejected" || trade.status === "admin_rejected") {

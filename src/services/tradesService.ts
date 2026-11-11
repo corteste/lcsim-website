@@ -107,7 +107,7 @@ async function hydrateTrades(rawTrades: any[]): Promise<EnrichedTrade[]> {
   });
 
   // 2. Query parallele per metadati
-  const [teamsRes, playersRes, picksRes, messagesRes] = await Promise.all([
+  const [teamsRes, playersRes, picksRes, messagesRes, publicRepliesRes] = await Promise.all([
     supabase.from(TEAM_TABLE).select("TEAM_ID, NAME").in("TEAM_ID", Array.from(allTeamIds)),
     allPlayerIds.size > 0
       ? supabase.from(PLAYER_TABLE).select("ID, Nome, Cognome, Posiz, OVR, Squadra, Età").in("ID", Array.from(allPlayerIds))
@@ -117,6 +117,13 @@ async function hydrateTrades(rawTrades: any[]): Promise<EnrichedTrade[]> {
       : Promise.resolve({ data: [] }),
     tradeIds.length > 0
       ? supabase.from(MESSAGES_TABLE).select("*").in("trade_id", tradeIds).order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] }),
+    tradeIds.length > 0
+      ? supabase
+          .from("trade_public_replies")
+          .select("id, trade_id, team_id, manager_name, reply_text, created_at, team:an_team(TEAM_ID, NAME, MANAGER)")
+          .in("trade_id", tradeIds)
+          .order("created_at", { ascending: true })
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -160,6 +167,20 @@ async function hydrateTrades(rawTrades: any[]): Promise<EnrichedTrade[]> {
       sender_name: m.sender_name,
       message: m.message,
       created_at: m.created_at,
+    });
+  });
+
+  const publicReplyMap: Record<string, any[]> = {};
+  (publicRepliesRes.data || []).forEach((r: any) => {
+    if (!publicReplyMap[r.trade_id]) publicReplyMap[r.trade_id] = [];
+    publicReplyMap[r.trade_id].push({
+      id: r.id,
+      trade_id: r.trade_id,
+      team_id: r.team_id,
+      manager_name: r.manager_name,
+      reply_text: r.reply_text,
+      created_at: r.created_at,
+      team: r.team,
     });
   });
 
@@ -209,6 +230,7 @@ async function hydrateTrades(rawTrades: any[]): Promise<EnrichedTrade[]> {
       );
     }),
     messages: messageMap[t.id] || [],
+    public_replies: publicReplyMap[t.id] || [],
   }));
 }
 
@@ -300,6 +322,34 @@ export async function fetchCompletedTrades(): Promise<EnrichedTrade[]> {
   } catch (err) {
     console.error("fetchCompletedTrades exception:", err);
     return [];
+  }
+}
+
+/**
+ * Invia un commento/reazione pubblica a una trattativa ufficiale conclusa in Sala Stampa.
+ */
+export async function submitTradePublicReply(
+  tradeId: string,
+  teamId: string,
+  replyText: string,
+  managerName?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc("rpc_submit_trade_reply", {
+      p_trade_id: tradeId,
+      p_team_id: teamId,
+      p_reply_text: replyText,
+      p_manager_name: managerName || null,
+    });
+
+    if (error) throw error;
+    if (data && !data.success) {
+      return { success: false, error: data.error };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("submitTradePublicReply exception:", err);
+    return { success: false, error: err?.message || "Errore durante l'invio del commento." };
   }
 }
 

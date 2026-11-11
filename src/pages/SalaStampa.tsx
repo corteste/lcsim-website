@@ -57,6 +57,7 @@ import {
   maybeTriggerRandomRumor,
   checkIsMarketOpen,
 } from "@/services/aiJournalistService";
+import { submitTradePublicReply } from "@/services/tradesService";
 
 export default function SalaStampa() {
   const { user, isAdmin, effectiveTeam, availableTeams } = useAuth();
@@ -86,6 +87,10 @@ export default function SalaStampa() {
   // Stato Repliche Sala Stampa (#69)
   const [replyDraft, setReplyDraft] = useState("");
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+
+  // Stato Commenti Trattative Ufficiali
+  const [tradeReplyDraft, setTradeReplyDraft] = useState("");
+  const [isSubmittingTradeReply, setIsSubmittingTradeReply] = useState(false);
 
   // Amministrazione
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
@@ -140,6 +145,16 @@ export default function SalaStampa() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "market_rumors" },
+        () => loadInbox()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trade_public_replies" },
+        () => loadInbox()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "market_trades" },
         () => loadInbox()
       )
       .subscribe();
@@ -277,6 +292,42 @@ export default function SalaStampa() {
       toast.error(err?.message || "Errore durante l'invio della replica.");
     } finally {
       setIsSubmittingReply(false);
+    }
+  };
+
+  // Invio Commento Trattativa Ufficiale
+  const handleTradeReplySubmit = async (tradeId: string) => {
+    const draft = tradeReplyDraft.trim();
+    if (!draft) {
+      toast.error("Inserisci un commento prima di inviare.");
+      return;
+    }
+    if (!effectiveTeam) {
+      toast.error("Devi possedere o selezionare una squadra per commentare.");
+      return;
+    }
+
+    try {
+      setIsSubmittingTradeReply(true);
+      const managerDisplayName =
+        user?.name ||
+        user?.username ||
+        (effectiveTeam ? availableTeams.find((t) => (t.team_id || (t as any).id) === effectiveTeam)?.name : undefined) ||
+        "Presidente";
+
+      const res = await submitTradePublicReply(tradeId, effectiveTeam, draft, managerDisplayName);
+
+      if (res.success) {
+        toast.success("Commento ufficiale registrato in Sala Stampa!");
+        setTradeReplyDraft("");
+        await loadInbox();
+      } else {
+        toast.error(res.error || "Errore durante l'invio del commento.");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Errore durante l'invio del commento.");
+    } finally {
+      setIsSubmittingTradeReply(false);
     }
   };
 
@@ -1104,6 +1155,90 @@ export default function SalaStampa() {
                         <div className="p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs text-muted-foreground space-y-1">
                           <span className="font-bold text-foreground block">Note & Messaggi:</span>
                           <p>{selectedItem.tradeData.notes}</p>
+                        </div>
+                      )}
+
+                      {/* Sezione Commenti e Reazioni dei Presidenti allo Scambio Ufficiale */}
+                      {selectedItem.tradeData.status === "completed" && (
+                        <div className="pt-4 border-t border-border/60 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                              <MessageSquare className="h-3.5 w-3.5 text-emerald-500" />
+                              Reazioni &amp; Commenti dei Presidenti ({selectedItem.tradeData.public_replies?.length || 0})
+                            </h3>
+                            <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
+                              Dibattito Pubblico di Lega
+                            </Badge>
+                          </div>
+
+                          {/* Thread commenti esistenti */}
+                          {selectedItem.tradeData.public_replies && selectedItem.tradeData.public_replies.length > 0 ? (
+                            <div className="space-y-2.5">
+                              {selectedItem.tradeData.public_replies.map((rep) => (
+                                <div
+                                  key={rep.id}
+                                  className="p-3.5 rounded-xl bg-muted/30 border border-border/60 flex items-start gap-3"
+                                >
+                                  <img
+                                    src={getTeamLogo(rep.team_id)}
+                                    alt={rep.team_id}
+                                    className="h-6 w-6 object-contain rounded shrink-0 mt-0.5"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = "none";
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-xs font-bold text-foreground">
+                                        {rep.team?.NAME || rep.team_id} ({rep.manager_name || rep.team?.MANAGER || "Presidente"})
+                                      </span>
+                                      <span className="text-[10px] font-mono text-muted-foreground">
+                                        {new Date(rep.created_at).toLocaleDateString("it-IT", {
+                                          day: "numeric",
+                                          month: "short",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-foreground/90 leading-relaxed">
+                                      {rep.reply_text}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-3 rounded-xl bg-muted/15 border border-dashed border-border/70 text-xs text-muted-foreground text-center">
+                              Nessun presidente ha ancora commentato questo trasferimento. Sii il primo a esprimere un parere!
+                            </div>
+                          )}
+
+                          {/* Form per inviare una replica / commento */}
+                          {effectiveTeam && (
+                            <div className="p-3.5 rounded-xl bg-card border border-border/70 space-y-2">
+                              <label className="text-[11px] font-bold text-muted-foreground block">
+                                Commenta il trasferimento come Presidente del {effectiveTeam}:
+                              </label>
+                              <div className="flex gap-2">
+                                <Textarea
+                                  placeholder="Esprimi un parere o una reazione a questo accordo..."
+                                  value={tradeReplyDraft}
+                                  onChange={(e) => setTradeReplyDraft(e.target.value)}
+                                  rows={2}
+                                  className="text-xs bg-muted/20 rounded-xl"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleTradeReplySubmit(selectedItem.tradeData!.id)}
+                                  disabled={isSubmittingTradeReply || !tradeReplyDraft.trim()}
+                                  className="h-auto px-3 text-xs font-bold self-end bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl"
+                                >
+                                  <Send className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -53,6 +53,20 @@ export interface TradePickAsset {
   rookie_id?: number | null;
 }
 
+export interface TradePublicReply {
+  id: number;
+  trade_id: string;
+  team_id: string;
+  manager_name?: string | null;
+  reply_text: string;
+  created_at: string;
+  team?: {
+    TEAM_ID: string;
+    NAME: string;
+    MANAGER?: string | null;
+  };
+}
+
 export interface EnrichedTrade extends Trade {
   sender_team_name?: string;
   receiver_team_name?: string;
@@ -61,6 +75,7 @@ export interface EnrichedTrade extends Trade {
   requested_players: TradePlayerAsset[];
   requested_picks: TradePickAsset[];
   messages?: TradeMessage[];
+  public_replies?: TradePublicReply[];
 }
 
 export interface CreateTradePayload {
