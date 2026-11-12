@@ -1019,7 +1019,7 @@ export default function ArchivioStatisticheSquadre() {
                   value={selectedSeason}
                   onValueChange={(val) => setSelectedSeason(val)}
                 >
-                  <SelectTrigger className="h-8 w-[165px] sm:w-[185px] text-xs font-bold bg-muted/40 border-border/70">
+                  <SelectTrigger className="h-8 w-[215px] sm:w-[230px] text-xs font-bold bg-muted/40 border-border/70">
                     <div className="flex items-center gap-1.5 truncate">
                       <Calendar className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                       <SelectValue />
