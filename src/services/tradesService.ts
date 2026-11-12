@@ -989,6 +989,82 @@ export async function adminApproveTrade(
 
     if (tErr) throw tErr;
 
+    // e-bis. Registra transazioni e aggiorna career seasons nell'archivio storico
+    try {
+      const activeSeason = 11;
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0];
+      const timeStr = now.toTimeString().split(" ")[0];
+
+      const { data: maxTxData } = await supabase
+        .from("an_player_transactions")
+        .select("tx_order")
+        .order("tx_order", { ascending: false })
+        .limit(1);
+
+      let nextTxOrder = (maxTxData?.[0]?.tx_order || 0) + 1;
+
+      for (const p of trade.offered_players || []) {
+        await supabase.from("an_player_transactions").insert({
+          tx_order: nextTxOrder++,
+          tx_date: dateStr,
+          tx_time: timeStr,
+          player_id: p.ID,
+          nome: p.Nome || "",
+          cognome: p.Cognome || "",
+          prev_team: trade.sender_team,
+          new_team: trade.receiver_team,
+          motivo: "Scambio",
+          stagione: activeSeason,
+          draft_pick: null,
+        });
+
+        await supabase.from("an_player_career_seasons").upsert(
+          {
+            player_id: p.ID,
+            stagione: activeSeason,
+            team_id: trade.receiver_team,
+            franchise_id: trade.receiver_team,
+            entry_motivo: "Scambio",
+            draft_pick: null,
+            presenze_capitano: 0,
+          },
+          { onConflict: "player_id,stagione" }
+        );
+      }
+
+      for (const p of trade.requested_players || []) {
+        await supabase.from("an_player_transactions").insert({
+          tx_order: nextTxOrder++,
+          tx_date: dateStr,
+          tx_time: timeStr,
+          player_id: p.ID,
+          nome: p.Nome || "",
+          cognome: p.Cognome || "",
+          prev_team: trade.receiver_team,
+          new_team: trade.sender_team,
+          motivo: "Scambio",
+          stagione: activeSeason,
+          draft_pick: null,
+        });
+
+        await supabase.from("an_player_career_seasons").upsert(
+          {
+            player_id: p.ID,
+            stagione: activeSeason,
+            team_id: trade.sender_team,
+            franchise_id: trade.sender_team,
+            entry_motivo: "Scambio",
+            draft_pick: null,
+            presenze_capitano: 0,
+          },
+          { onConflict: "player_id,stagione" }
+        );
+      }
+    } catch (archiveErr) {
+      console.warn("adminApproveTrade archive fallback sync warning:", archiveErr);
+    }
+
     // f. Messaggio di conferma nel thread
     await supabase.from(MESSAGES_TABLE).insert({
       trade_id: trade.id,
@@ -997,6 +1073,7 @@ export async function adminApproveTrade(
       message: `🏆 Scambio approvato ed eseguito ufficialmente in Serie A da ${adminUsername}! Le rose e le scelte sono state aggiornate con successo.`,
     });
 
+    invalidateRostersAndTrades();
     return { success: true };
   } catch (err: any) {
     console.error("adminApproveTrade error:", err);

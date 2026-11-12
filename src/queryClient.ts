@@ -21,4 +21,6 @@ export function invalidateRostersAndTrades() {
   queryClient.invalidateQueries({ queryKey: ["players"] });
   queryClient.invalidateQueries({ queryKey: ["completed-trades"] });
   queryClient.invalidateQueries({ queryKey: ["trades"] });
+  queryClient.invalidateQueries({ queryKey: ["archive_players_career_summary"] });
+  queryClient.invalidateQueries({ queryKey: ["archive_player_detail"] });
 }
