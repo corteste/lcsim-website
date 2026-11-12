@@ -923,8 +923,8 @@ const Tattica = () => {
 
           const rawBench: number[] = Array.isArray(tacticRes.data.bench_order)
             ? tacticRes.data.bench_order
-                .map((id: any) => Number(id))
-                .filter((id: number) => validPlayerIds.has(id) && !rawStarters.includes(id))
+              .map((id: any) => Number(id))
+              .filter((id: number) => validPlayerIds.has(id) && !rawStarters.includes(id))
             : [];
 
           const matchedFormation =
@@ -1662,7 +1662,7 @@ const Tattica = () => {
                     className="gap-2 text-xs sm:text-sm font-bold data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow px-3 sm:px-4 h-9 rounded-lg"
                   >
                     <SlidersHorizontal className="w-4 h-4" />
-                    <span>Tattiche FC IQ</span>
+                    <span>Istruzioni Tattiche</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -1689,957 +1689,209 @@ const Tattica = () => {
 
               {/* TAB 2: SCHIERA FORMAZIONE (MODULO + TELEMETRIA + ROSTER + TITOLARI + PANCHINA) */}
               <TabsContent value="lineup" className="mt-0 space-y-6">
-            {/* ================================================================= */}
-            {/* COMMAND HUD: MODULO EA FC 25 + STATISTICHE FORMAZIONE             */}
-            {/* ================================================================= */}
-            <div className="rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-card/90 shadow-lg p-4 backdrop-blur-md">
-              <div className="grid grid-cols-12 gap-4 items-center">
-                {/* Squadra & Modulo Selector */}
-                <div className="col-span-12 lg:col-span-5 flex flex-col sm:flex-row sm:items-center gap-3.5 lg:border-r border-border/70 lg:pr-4">
-                  <div className="flex items-center gap-3">
-                    {currentTeam && (
-                      <img
-                        src={`${SUPABASE_STORAGE_URL}/images/teams/${currentTeam}_Logo.png`}
-                        alt={currentTeam}
-                        className="h-12 w-12 object-contain drop-shadow shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
-                        }}
-                      />
-                    )}
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Modulo EA Sports FC 25
+                {/* ================================================================= */}
+                {/* COMMAND HUD: MODULO EA FC 25 + STATISTICHE FORMAZIONE             */}
+                {/* ================================================================= */}
+                <div className="rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-card/90 shadow-lg p-4 backdrop-blur-md">
+                  <div className="grid grid-cols-12 gap-4 items-center">
+                    {/* Squadra & Modulo Selector */}
+                    <div className="col-span-12 lg:col-span-5 flex flex-col sm:flex-row sm:items-center gap-3.5 lg:border-r border-border/70 lg:pr-4">
+                      <div className="flex items-center gap-3">
+                        {currentTeam && (
+                          <img
+                            src={`${SUPABASE_STORAGE_URL}/images/teams/${currentTeam}_Logo.png`}
+                            alt={currentTeam}
+                            className="h-12 w-12 object-contain drop-shadow shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
+                            }}
+                          />
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Modulo EA Sports FC 25
+                          </div>
+                          <div className="font-extrabold text-sm sm:text-base text-foreground truncate">
+                            {currentFormation.name}
+                          </div>
+                        </div>
                       </div>
-                      <div className="font-extrabold text-sm sm:text-base text-foreground truncate">
-                        {currentFormation.name}
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="sm:ml-auto w-full sm:w-[220px]">
-                    <Select value={formationId} onValueChange={handleFormationChange}>
-                      <SelectTrigger className="h-10 bg-background/80 border-primary/30 font-bold text-xs sm:text-sm">
-                        <SelectValue placeholder="Seleziona modulo" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[340px]">
-                        {(["Difesa a 4", "Difesa a 3", "Difesa a 5"] as const).map((cat) => (
-                          <SelectGroup key={cat}>
-                            <SelectLabel className="text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-extrabold bg-muted/40 py-1.5">
-                              {cat}
-                            </SelectLabel>
-                            {EA_FC25_FORMATIONS.filter((f) => f.category === cat).map((f) => (
-                              <SelectItem key={f.id} value={f.id} className="text-xs font-semibold">
-                                {f.name}
-                              </SelectItem>
+                      <div className="sm:ml-auto w-full sm:w-[220px]">
+                        <Select value={formationId} onValueChange={handleFormationChange}>
+                          <SelectTrigger className="h-10 bg-background/80 border-primary/30 font-bold text-xs sm:text-sm">
+                            <SelectValue placeholder="Seleziona modulo" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[340px]">
+                            {(["Difesa a 4", "Difesa a 3", "Difesa a 5"] as const).map((cat) => (
+                              <SelectGroup key={cat}>
+                                <SelectLabel className="text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-extrabold bg-muted/40 py-1.5">
+                                  {cat}
+                                </SelectLabel>
+                                {EA_FC25_FORMATIONS.filter((f) => f.category === cat).map((f) => (
+                                  <SelectItem key={f.id} value={f.id} className="text-xs font-semibold">
+                                    {f.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
                             ))}
-                          </SelectGroup>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Contatori Telemetry: Titolari, OVR Medio, Reparti, Affinità */}
-                <div className="col-span-12 lg:col-span-7 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                  <div
-                    className={`p-2.5 rounded-xl border text-center ${
-                      tacticStats.count === 11
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                        : "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
-                    }`}
-                  >
-                    <div className="text-[10px] font-bold uppercase tracking-wider">Titolari</div>
-                    <div className="text-xl font-black font-mono mt-0.5">{tacticStats.count}/11</div>
-                    <span className="text-[9px] font-medium">
-                      {benchPlayers.length}/9 panchina • {tribunaPlayers.length} tribuna
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      OVR Titolari
-                    </div>
-                    <div className="text-xl font-black font-mono text-primary mt-0.5">
-                      {tacticStats.avgOvr || "—"}
-                    </div>
-                    <span className="text-[9px] text-muted-foreground font-medium">Media 11</span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-blue-500">
-                      Difesa
-                    </div>
-                    <div className="text-xl font-black font-mono text-foreground mt-0.5">
-                      {tacticStats.avgDif || "—"}
-                    </div>
-                    <span className="text-[9px] text-muted-foreground font-medium">POR + DIF</span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">
-                      Centrocampo
-                    </div>
-                    <div className="text-xl font-black font-mono text-foreground mt-0.5">
-                      {tacticStats.avgCen || "—"}
-                    </div>
-                    <span className="text-[9px] text-muted-foreground font-medium">Reparto CEN</span>
-                  </div>
-
-                  <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
-                      Attacco
-                    </div>
-                    <div className="text-xl font-black font-mono text-foreground mt-0.5">
-                      {tacticStats.avgAtt || "—"}
-                    </div>
-                    <span className="text-[9px] text-muted-foreground font-medium">Reparto ATT</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
-
-            {/* ================================================================= */}
-            {/* GRIGLIA A 3 COLONNE: ROSTER (3) | TITOLARI+PANCHINA (5) | CAMPO (4) */}
-            {/* ================================================================= */}
-            <div className="grid grid-cols-12 gap-5 items-start">
-              
-              {/* --------------------------------------------------------------- */}
-              {/* COLONNA 1 (SINISTRA): ROSTER COMPLETO ORDINATO PER RUOLO        */}
-              {/* --------------------------------------------------------------- */}
-              <div className="col-span-12 lg:col-span-3 space-y-4">
-                <Card className="shadow-lg border-border/80 overflow-hidden">
-                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-emerald-500" />
-                        <CardTitle className="text-sm font-bold">Roster Completo</CardTitle>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
-                        {orderedRoster.length} Giocatori
-                      </Badge>
-                    </div>
-                    <CardDescription className="text-[11px] mt-0.5">
-                      Ordinato per ruolo (POR &rarr; ATT). Trascina o clicca + per schierare.
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="p-3 space-y-2.5">
-                    {/* Ricerca rapida */}
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        type="text"
-                        placeholder="Cerca nome o ruolo..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8 h-8 text-xs bg-muted/20 border-border/70"
-                      />
                     </div>
 
-                    {/* Filtro Reparto */}
-                    <div className="grid grid-cols-5 gap-1">
-                      {["ALL", "POR", "DIF", "CEN", "ATT"].map((r) => (
-                        <Button
-                          key={r}
-                          size="sm"
-                          variant={roleFilter === r ? "default" : "outline"}
-                          onClick={() => setRoleFilter(r)}
-                          className={`h-7 text-[10px] px-1 font-bold ${
-                            roleFilter === r
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground"
+                    {/* Contatori Telemetry: Titolari, OVR Medio, Reparti, Affinità */}
+                    <div className="col-span-12 lg:col-span-7 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                      <div
+                        className={`p-2.5 rounded-xl border text-center ${tacticStats.count === 11
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                          : "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
                           }`}
-                        >
-                          {r === "ALL" ? "Tutti" : r}
-                        </Button>
-                      ))}
-                    </div>
-
-                    {/* Elenco completo ordinato per ruolo */}
-                    <div className="max-h-[680px] overflow-y-auto space-y-1.5 pr-1">
-                      {filteredRoster.length === 0 ? (
-                        <div className="p-6 text-center text-xs text-muted-foreground">
-                          Nessun giocatore trovato.
-                        </div>
-                      ) : (
-                        filteredRoster.map((player) => {
-                          const pId = Number(player.ID);
-                          const slotIdx = starterSlotByPlayerId.get(pId);
-                          const isStarter = slotIdx !== undefined;
-                          const assignedRole =
-                            isStarter ? currentFormation.positions[slotIdx]?.label : null;
-                          const disc = disciplinaryMap[pId];
-
-                          return (
-                            <div
-                              key={pId}
-                              draggable={!disc?.isSuspended}
-                              onDragStart={(e) => !disc?.isSuspended && handleDragStartPlayer(e, pId)}
-                              onDragEnd={handleDragEnd}
-                              className={`group p-2 rounded-xl border transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${
-                                isStarter
-                                  ? "bg-emerald-500/10 border-emerald-500/40 shadow-sm"
-                                  : "bg-card hover:bg-muted/40 border-border/60"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                                <div
-                                  onClick={() => setSelectedPlayerModal(player)}
-                                  className="w-8 h-8 rounded-lg overflow-hidden border border-border/80 bg-muted/30 shrink-0 cursor-pointer"
-                                  title="Vedi dettagli giocatore"
-                                >
-                                  <img
-                                    src={getPlayerImage(pId)}
-                                    alt={player.Cognome}
-                                    className="w-full h-full object-cover object-top"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src =
-                                        `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
-                                    }}
-                                  />
-                                </div>
-
-                                <div
-                                  onClick={() => setSelectedPlayerModal(player)}
-                                  className="min-w-0 flex-1 cursor-pointer"
-                                >
-                                  <div className="font-bold text-xs text-foreground truncate group-hover:text-primary transition-colors">
-                                    {player.Nome?.[0]}. {player.Cognome}
-                                  </div>
-                                  <div className="flex items-center gap-1 mt-0.5">
-                                    <Badge
-                                      variant="outline"
-                                      className={`text-[9px] px-1 py-0 h-3.5 font-bold ${getRoleColor(
-                                        player.Posiz
-                                      )}`}
-                                    >
-                                      {player.Posiz}
-                                    </Badge>
-                                    {disc?.isSuspended ? (
-                                      <Badge variant="destructive" className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold flex items-center gap-0.5" title={disc.suspensionDetails}>
-                                        <Ban className="h-2.5 w-2.5" /> SQUALIFICATO
-                                      </Badge>
-                                    ) : disc?.isWarned ? (
-                                      <Badge variant="outline" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold flex items-center gap-0.5" title={disc.warningDetails}>
-                                        <AlertTriangle className="h-2.5 w-2.5" /> DIFFIDATO
-                                      </Badge>
-                                    ) : null}
-                                    {isStarter ? (
-                                      <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold">
-                                        TIT #{slotIdx + 1} ({assignedRole})
-                                      </Badge>
-                                    ) : (
-                                      <Badge
-                                        variant="secondary"
-                                        className="text-[8px] px-1 py-0 h-3.5 text-muted-foreground font-semibold"
-                                      >
-                                        PAN
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-1 shrink-0">
-                                <span
-                                  className={`text-xs font-black font-mono ${getValueColor(
-                                    player.OVR ?? 70
-                                  )}`}
-                                >
-                                  {player.OVR}
-                                </span>
-
-                                {!isStarter ? (
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => quickInsertToStarters(player)}
-                                    className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                                    title="Inserisci nel primo slot compatibile"
-                                  >
-                                    <UserPlus className="h-3.5 w-3.5" />
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => removePlayerFromStarters(pId)}
-                                    className="h-6 w-6 rounded-lg hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
-                                    title="Sposta in panchina"
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* --------------------------------------------------------------- */}
-              {/* COLONNA 2 (CENTRO): SEZIONE TITOLARI (11) & SEZIONE PANCHINARI  */}
-              {/* --------------------------------------------------------------- */}
-              <div className="col-span-12 lg:col-span-5 space-y-5">
-                
-                {/* SEZIONE 1: TITOLARI (11 SLOT) */}
-                <Card className="shadow-lg border-border/80 overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-emerald-500/15 via-primary/10 to-transparent border-b border-border/60 py-3.5 px-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-emerald-500" />
-                        <div>
-                          <CardTitle className="text-sm font-bold">
-                            Undici Titolare ({currentFormation.name})
-                          </CardTitle>
-                          <CardDescription className="text-[11px]">
-                            Trascina un giocatore nello slot o selezionalo dal menù a tendina
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="bg-background/80 font-mono text-xs font-extrabold border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
                       >
-                        {tacticStats.count} / 11
-                      </Badge>
-                    </div>
-                  </CardHeader>
+                        <div className="text-[10px] font-bold uppercase tracking-wider">Titolari</div>
+                        <div className="text-xl font-black font-mono mt-0.5">{tacticStats.count}/11</div>
+                        <span className="text-[9px] font-medium">
+                          {benchPlayers.length}/9 panchina • {tribunaPlayers.length} tribuna
+                        </span>
+                      </div>
 
-                  <CardContent className="p-3 space-y-2">
-                    {currentFormation.positions.map((pos, slotIndex) => {
-                      const occupant = formationSlots[slotIndex];
-                      const roleFit = occupant
-                        ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
-                        : null;
-                      const baseOvr = occupant?.OVR ?? 70;
-                      const dynamicOvr = occupant ? (roleFit === "natural" ? baseOvr : calcOverall(pos.label, occupant, baseOvr)) : null;
-                      const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
-                      const isDragOver = dragOverSlotIndex === slotIndex;
-
-                      // Opzioni per il menù a tendina di questo slot:
-                      // mette in cima i giocatori con ruolo naturale per lo slot, poi gli adattabili, poi gli altri
-                      const slotDropdownOptions = orderedRoster.slice().sort((a, b) => {
-                        const fitA = evaluateRoleFit(a.Posiz, pos.label);
-                        const fitB = evaluateRoleFit(b.Posiz, pos.label);
-                        const rank = { natural: 0, adaptable: 1, out: 2 };
-                        if (rank[fitA] !== rank[fitB]) return rank[fitA] - rank[fitB];
-                        const prioA = ROLE_PRIORITY[a.Posiz] ?? 99;
-                        const prioB = ROLE_PRIORITY[b.Posiz] ?? 99;
-                        if (prioA !== prioB) return prioA - prioB;
-                        return (b.OVR ?? 0) - (a.OVR ?? 0);
-                      });
-
-                      return (
-                        <div
-                          key={slotIndex}
-                          draggable={Boolean(occupant)}
-                          onDragStart={(e) =>
-                            occupant && handleDragStartPlayer(e, Number(occupant.ID))
-                          }
-                          onDragEnd={handleDragEnd}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setDragOverSlotIndex(slotIndex);
-                          }}
-                          onDragLeave={() => {
-                            if (dragOverSlotIndex === slotIndex) setDragOverSlotIndex(null);
-                          }}
-                          onDrop={(e) => handleDropOnStarterSlot(e, slotIndex)}
-                          className={`p-2 rounded-xl border transition-all flex items-center gap-2.5 ${
-                            isDragOver
-                              ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10 scale-[1.01]"
-                              : occupant
-                              ? "bg-card hover:border-primary/40 border-border/70 shadow-sm"
-                              : "bg-muted/15 border-dashed border-border hover:border-emerald-500/40"
-                          }`}
-                        >
-                          {/* Numero Slot + Ruolo Richiesto nel Modulo (LARGHEZZA FISSA: w-[72px] shrink-0) */}
-                          <div className="flex items-center gap-1.5 w-[72px] shrink-0">
-                            <div className="w-6 h-6 rounded-md bg-muted/70 border border-border/80 flex items-center justify-center font-mono text-[11px] font-black text-foreground shrink-0">
-                              {slotIndex + 1}
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className={`w-10 justify-center font-extrabold text-[10px] py-0 px-1 shrink-0 ${getRoleColor(
-                                pos.label
-                              )}`}
-                            >
-                              {pos.label}
-                            </Badge>
-                          </div>
-
-                          {/* Menù a Tendina Selettore Giocatore per lo Slot */}
-                          <div className="flex-1 min-w-0">
-                            <Select
-                              value={occupant ? String(occupant.ID) : "EMPTY"}
-                              onValueChange={(val) => {
-                                if (val === "EMPTY") {
-                                  assignPlayerToSlot(slotIndex, null);
-                                } else {
-                                  assignPlayerToSlot(slotIndex, Number(val));
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="h-9 w-full bg-background/70 border-border/60 text-xs font-semibold px-2.5">
-                                {occupant ? (
-                                  <div className="flex items-center gap-2 min-w-0 truncate">
-                                    <img
-                                      src={getPlayerImage(Number(occupant.ID))}
-                                      alt={occupant.Cognome}
-                                      className="h-5 w-5 rounded-full object-cover object-top border border-border shrink-0"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src =
-                                          `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
-                                      }}
-                                    />
-                                    <span className="font-bold text-foreground truncate">
-                                      {occupant.Nome} {occupant.Cognome}
-                                    </span>
-                                    <Badge
-                                      variant="outline"
-                                      className={`text-[9px] px-1 py-0 h-4 shrink-0 ${getRoleColor(
-                                        occupant.Posiz
-                                      )}`}
-                                    >
-                                      {occupant.Posiz}
-                                    </Badge>
-                                  </div>
-                                ) : (
-                                  <span className="text-muted-foreground italic">
-                                    + Seleziona o trascina ({pos.label})...
-                                  </span>
-                                )}
-                              </SelectTrigger>
-
-                              <SelectContent className="max-h-[300px]">
-                                <SelectItem value="EMPTY" className="text-xs italic text-muted-foreground">
-                                  — Lascia slot vuoto —
-                                </SelectItem>
-                                {slotDropdownOptions.map((p) => {
-                                  const pId = Number(p.ID);
-                                  const otherSlot = starterSlotByPlayerId.get(pId);
-                                  const isInOtherSlot =
-                                    otherSlot !== undefined && otherSlot !== slotIndex;
-                                  const fit = evaluateRoleFit(p.Posiz, pos.label);
-
-                                  return (
-                                    <SelectItem key={pId} value={String(pId)} className="text-xs">
-                                      <div className="flex items-center gap-2 w-full">
-                                        <span
-                                          className={`inline-block w-2 h-2 rounded-full shrink-0 ${
-                                            fit === "natural"
-                                              ? "bg-emerald-500"
-                                              : fit === "adaptable"
-                                              ? "bg-amber-500"
-                                              : "bg-rose-500/60"
-                                          }`}
-                                        />
-                                        <span className="font-mono text-[10px] font-bold w-8">
-                                          [{p.Posiz}]
-                                        </span>
-                                        <span className="font-semibold">
-                                          {p.Nome} {p.Cognome}
-                                        </span>
-                                        <span className="font-mono font-bold text-primary ml-1">
-                                          OVR {p.OVR}
-                                        </span>
-                                        {isInOtherSlot && (
-                                          <span className="text-[10px] text-amber-500 font-semibold ml-1">
-                                            (Scambia con #{otherSlot + 1})
-                                          </span>
-                                        )}
-                                      </div>
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Colonna 3: Indicatori Destra & Azioni (LARGHEZZA FISSA: w-[140px] shrink-0 flex items-center justify-end gap-1.5) */}
-                          <div className="w-[140px] shrink-0 flex items-center justify-end gap-1.5">
-                            {occupant ? (
-                              <>
-                                {roleFit === "natural" ? (
-                                  <span
-                                    className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"
-                                    title={`Ruolo Naturale (${occupant.Posiz})`}
-                                  />
-                                ) : roleFit === "adaptable" ? (
-                                  <span
-                                    className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"
-                                    title={`Adattato (${occupant.Posiz} schierato come ${pos.label})`}
-                                  />
-                                ) : (
-                                  <AlertTriangle
-                                    className="h-3.5 w-3.5 text-rose-500 shrink-0"
-                                    title={`Fuori ruolo! (${occupant.Posiz} schierato come ${pos.label})`}
-                                  />
-                                )}
-
-                                {(() => {
-                                  const dynOvr = calcOverall(pos.label, occupant, occupant.OVR ?? 70);
-                                  const baseOvr = occupant.OVR ?? 70;
-                                  const diff = dynOvr - baseOvr;
-                                  return (
-                                    <span
-                                      className={`text-xs font-black font-mono w-7 text-center shrink-0 ${getValueColor(
-                                        dynOvr
-                                      )}`}
-                                      title={
-                                        roleFit === "natural"
-                                          ? `OVR: ${baseOvr} (Ruolo Naturale: ${pos.label})`
-                                          : diff < 0
-                                          ? `OVR nel ruolo ${pos.label}: ${dynOvr} (${diff} per ${roleFit === "adaptable" ? "ruolo adattato" : "fuori ruolo"}, Base: ${baseOvr})`
-                                          : `OVR nel ruolo ${pos.label}: ${dynOvr} (+${diff} rispetto a ${baseOvr})`
-                                      }
-                                    >
-                                      {dynOvr}
-                                    </span>
-                                  );
-                                })()}
-
-                                {/* Bottone Istruzioni FC IQ */}
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  onClick={() => setInstructionSlotIndex(slotIndex)}
-                                  className="h-7 w-7 rounded-lg text-primary border-primary/30 bg-primary/5 hover:bg-primary/15 shrink-0"
-                                  title="Personalizza Ruolo e Focus FC IQ (EA FC 25)"
-                                >
-                                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                                </Button>
-
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => setSelectedPlayerModal(occupant)}
-                                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground shrink-0"
-                                  title="Scheda attributi giocatore"
-                                >
-                                  <Info className="h-3.5 w-3.5" />
-                                </Button>
-
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => assignPlayerToSlot(slotIndex, null)}
-                                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 shrink-0"
-                                  title="Manda in panchina"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <div className="w-7 text-center font-mono text-[11px] text-muted-foreground shrink-0">—</div>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => setInstructionSlotIndex(slotIndex)}
-                                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary shrink-0"
-                                  title="Pre-imposta Ruolo e Focus FC IQ per questo slot"
-                                >
-                                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                                </Button>
-                                <div className="w-7 h-7 shrink-0" />
-                                <div className="w-7 h-7 shrink-0" />
-                              </>
-                            )}
-                          </div>
+                      <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          OVR Titolari
                         </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-
-                {/* SEZIONE 2: PANCHINA UFFICIALE (9 SLOT FISSI P1..P9) */}
-                <Card
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOverBenchZone(true);
-                  }}
-                  onDragLeave={() => setDragOverBenchZone(false)}
-                  onDrop={(e) => handleDropOnBenchZone(e)}
-                  className={`shadow-lg overflow-hidden transition-all ${
-                    dragOverBenchZone
-                      ? "ring-2 ring-amber-500 border-amber-500 bg-amber-500/5"
-                      : "border-border/80"
-                  }`}
-                >
-                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3 px-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <ClipboardList className="h-4 w-4 text-amber-500" />
-                        <div>
-                          <CardTitle className="text-sm font-bold flex items-center gap-2">
-                            <span>Panchina Ufficiale (9 Riserve)</span>
-                            <Badge variant="outline" className="text-[10px] font-mono text-amber-600 dark:text-amber-400 border-amber-500/30">
-                              Disponibili per il match
-                            </Badge>
-                          </CardTitle>
-                          <CardDescription className="text-[11px]">
-                            9 calciatori convocati ordinati per priorità di subentro (da P1 a P9). Trascina per sostituire o usa i bottoni rapidi.
-                          </CardDescription>
+                        <div className="text-xl font-black font-mono text-primary mt-0.5">
+                          {tacticStats.avgOvr || "—"}
                         </div>
+                        <span className="text-[9px] text-muted-foreground font-medium">Media 11</span>
                       </div>
-                      <Badge variant="secondary" className="text-xs font-mono font-bold">
-                        {benchPlayers.length} / 9 Panchinari
-                      </Badge>
+
+                      <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                          Difesa
+                        </div>
+                        <div className="text-xl font-black font-mono text-foreground mt-0.5">
+                          {tacticStats.avgDif || "—"}
+                        </div>
+                        <span className="text-[9px] text-muted-foreground font-medium">POR + DIF</span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">
+                          Centrocampo
+                        </div>
+                        <div className="text-xl font-black font-mono text-foreground mt-0.5">
+                          {tacticStats.avgCen || "—"}
+                        </div>
+                        <span className="text-[9px] text-muted-foreground font-medium">Reparto CEN</span>
+                      </div>
+
+                      <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl border border-border/60 bg-muted/20 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
+                          Attacco
+                        </div>
+                        <div className="text-xl font-black font-mono text-foreground mt-0.5">
+                          {tacticStats.avgAtt || "—"}
+                        </div>
+                        <span className="text-[9px] text-muted-foreground font-medium">Reparto ATT</span>
+                      </div>
                     </div>
-                  </CardHeader>
+                  </div>
+                </div>
 
-                  <CardContent className="p-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
-                      {Array.from({ length: 9 }).map((_, slotIdx) => {
-                        const player = benchPlayers[slotIdx];
-                        if (!player) {
-                          // Slot panchina vuoto
-                          return (
-                            <div
-                              key={`empty-bench-${slotIdx}`}
-                              onDragOver={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                              onDrop={(e) => handleDropOnBenchZone(e, slotIdx)}
-                              className="p-2 rounded-xl border border-dashed border-border/70 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground select-none"
-                            >
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="text-[10px] font-mono font-bold text-muted-foreground w-5 text-center shrink-0">
-                                  P{slotIdx + 1}
-                                </span>
-                                <span className="text-xs italic truncate">Slot Panchina Libero</span>
-                              </div>
-                              <span className="text-[10px] font-mono opacity-60 shrink-0 ml-1">Trascina qui</span>
-                            </div>
-                          );
-                        }
 
-                        const pId = Number(player.ID);
-                        const isDragTarget = dragOverBenchId === pId;
 
-                        return (
-                          <div
-                            key={pId}
-                            draggable
-                            onDragStart={(e) => handleDragStartPlayer(e, pId)}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setDragOverBenchId(pId);
-                            }}
-                            onDragLeave={() => {
-                              if (dragOverBenchId === pId) setDragOverBenchId(null);
-                            }}
-                            onDrop={(e) => handleDropOnBenchPlayer(e, pId)}
-                            className={`p-2 rounded-xl border bg-card hover:bg-muted/30 transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${
-                              isDragTarget
-                                ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10"
-                                : "border-border/60"
-                            }`}
-                          >
-                            <div
-                              onClick={() => setSelectedPlayerModal(player)}
-                              className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
-                            >
-                              <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 w-5 text-center shrink-0">
-                                P{slotIdx + 1}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className={`text-[9px] px-1.5 py-0 h-4 shrink-0 font-bold ${getRoleColor(
-                                  player.Posiz
-                                )}`}
-                              >
-                                {player.Posiz}
-                              </Badge>
-                              <span
-                                className="font-bold text-xs text-foreground truncate min-w-0"
-                                title={`${player.Nome} ${player.Cognome}`}
-                              >
-                                {player.Nome?.[0]}. {player.Cognome}
-                              </span>
-                            </div>
+                {/* ================================================================= */}
+                {/* GRIGLIA A 3 COLONNE: ROSTER (3) | TITOLARI+PANCHINA (5) | CAMPO (4) */}
+                {/* ================================================================= */}
+                <div className="grid grid-cols-12 gap-5 items-start">
 
-                            <div className="flex items-center gap-1 shrink-0 ml-1">
-                              <span
-                                className={`text-[11px] font-black font-mono mr-0.5 ${getValueColor(
-                                  player.OVR ?? 70
-                                )}`}
-                              >
-                                {player.OVR}
-                              </span>
-
-                              {/* Invia in campo nel primo slot libero */}
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  quickInsertToStarters(player);
-                                }}
-                                className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                                title="Schiera negli 11 titolari"
-                              >
-                                <ArrowLeftRight className="h-3 w-3" />
-                              </Button>
-
-                              {/* Sposta in Tribuna */}
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMoveToTribuna(pId);
-                                }}
-                                className="h-6 w-6 rounded-lg hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
-                                title="Manda in Tribuna (Non convocato)"
-                              >
-                                <ArrowDownRight className="h-3 w-3" />
-                              </Button>
-                            </div>
+                  {/* --------------------------------------------------------------- */}
+                  {/* COLONNA 1 (SINISTRA): ROSTER COMPLETO ORDINATO PER RUOLO        */}
+                  {/* --------------------------------------------------------------- */}
+                  <div className="col-span-12 lg:col-span-3 space-y-4">
+                    <Card className="shadow-lg border-border/80 overflow-hidden">
+                      <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-emerald-500" />
+                            <CardTitle className="text-sm font-bold">Roster Completo</CardTitle>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* SEZIONE 3: TRIBUNA (NON CONVOCATI / ECCEDENZE OLTRE LE 9 RISERVE) */}
-                <Card
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOverTribunaZone(true);
-                  }}
-                  onDragLeave={() => setDragOverTribunaZone(false)}
-                  onDrop={handleDropOnTribunaZone}
-                  className={`shadow-md overflow-hidden transition-all ${
-                    dragOverTribunaZone
-                      ? "ring-2 ring-rose-500 border-rose-500 bg-rose-500/5"
-                      : "border-border/70 bg-card/60"
-                  }`}
-                >
-                  <CardHeader className="bg-muted/20 border-b border-border/50 py-2.5 px-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Armchair className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                            <span>Tribuna / Non Convocati</span>
-                            <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border">
-                              Non disponibili a partita in corso
-                            </Badge>
-                          </CardTitle>
-                          <CardDescription className="text-[10px]">
-                            Calciatori non inseriti nei 9 slot della panchina. Trascina qui per escludere o clicca Promuovi per portare nei 9 panchinari.
-                          </CardDescription>
+                          <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
+                            {orderedRoster.length} Giocatori
+                          </Badge>
                         </div>
-                      </div>
-                      <Badge variant="outline" className="text-[11px] font-mono text-muted-foreground">
-                        {tribunaPlayers.length} in Tribuna
-                      </Badge>
-                    </div>
-                  </CardHeader>
+                        <CardDescription className="text-[11px] mt-0.5">
+                          Ordinato per ruolo (POR &rarr; ATT). Trascina o clicca + per schierare.
+                        </CardDescription>
+                      </CardHeader>
 
-                  <CardContent className="p-3">
-                    {tribunaPlayers.length === 0 ? (
-                      <div className="p-3.5 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10">
-                        Nessun calciatore in tribuna. Tutta la rosa attiva è schierata tra titolari e panchina.
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
-                        {tribunaPlayers.map((player) => {
-                          const pId = Number(player.ID);
-                          const disc = disciplinaryMap[pId];
-                          return (
-                            <div
-                              key={pId}
-                              draggable={!disc?.isSuspended}
-                              onDragStart={(e) => !disc?.isSuspended && handleDragStartPlayer(e, pId)}
-                              onDragEnd={handleDragEnd}
-                              className={`p-2 rounded-xl border border-dashed transition-all flex items-center justify-between gap-2 ${
-                                disc?.isSuspended
-                                  ? "border-rose-500/50 bg-rose-500/5 cursor-not-allowed"
-                                  : "border-border/70 bg-muted/30 hover:bg-muted/50 cursor-grab active:cursor-grabbing"
-                              }`}
+                      <CardContent className="p-3 space-y-2.5">
+                        {/* Ricerca rapida */}
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                          <Input
+                            type="text"
+                            placeholder="Cerca nome o ruolo..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-8 h-8 text-xs bg-muted/20 border-border/70"
+                          />
+                        </div>
+
+                        {/* Filtro Reparto */}
+                        <div className="grid grid-cols-5 gap-1">
+                          {["ALL", "POR", "DIF", "CEN", "ATT"].map((r) => (
+                            <Button
+                              key={r}
+                              size="sm"
+                              variant={roleFilter === r ? "default" : "outline"}
+                              onClick={() => setRoleFilter(r)}
+                              className={`h-7 text-[10px] px-1 font-bold ${roleFilter === r
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground"
+                                }`}
                             >
-                              <div
-                                onClick={() => setSelectedPlayerModal(player)}
-                                className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
-                              >
-                                <span className="text-[10px] font-mono font-bold text-muted-foreground/80 w-5 text-center shrink-0">
-                                  TRB
-                                </span>
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[9px] px-1.5 py-0 h-4 shrink-0 font-bold opacity-80 ${getRoleColor(
-                                    player.Posiz
-                                  )}`}
-                                >
-                                  {player.Posiz}
-                                </Badge>
-                                <span
-                                  className="font-semibold text-xs text-foreground/90 truncate min-w-0"
-                                  title={`${player.Nome} ${player.Cognome}`}
-                                >
-                                  {player.Nome?.[0]}. {player.Cognome}
-                                </span>
-                              </div>
+                              {r === "ALL" ? "Tutti" : r}
+                            </Button>
+                          ))}
+                        </div>
 
-                              <div className="flex items-center gap-1 shrink-0 ml-1">
-                                <span
-                                  className={`text-[11px] font-black font-mono mr-0.5 opacity-80 ${getValueColor(
-                                    player.OVR ?? 70
-                                  )}`}
-                                >
-                                  {player.OVR}
-                                </span>
-
-                                {disc?.isSuspended ? (
-                                  <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4 bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40 font-bold shrink-0 flex items-center gap-0.5" title={disc.suspensionDetails}>
-                                    <Ban className="h-2.5 w-2.5" /> Squalificato
-                                  </Badge>
-                                ) : (
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handlePromoteToBench(pId);
-                                    }}
-                                    className="h-6 w-6 rounded-lg hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                                    title="Promuovi in Panchina (Slot P1)"
-                                  >
-                                    <ArrowUpRight className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
+                        {/* Elenco completo ordinato per ruolo */}
+                        <div className="max-h-[680px] overflow-y-auto space-y-1.5 pr-1">
+                          {filteredRoster.length === 0 ? (
+                            <div className="p-6 text-center text-xs text-muted-foreground">
+                              Nessun giocatore trovato.
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                          ) : (
+                            filteredRoster.map((player) => {
+                              const pId = Number(player.ID);
+                              const slotIdx = starterSlotByPlayerId.get(pId);
+                              const isStarter = slotIdx !== undefined;
+                              const assignedRole =
+                                isStarter ? currentFormation.positions[slotIdx]?.label : null;
+                              const disc = disciplinaryMap[pId];
 
-              {/* --------------------------------------------------------------- */}
-              {/* COLONNA 3 (DESTRA): CAMPETTO INTERATTIVO LIVE                   */}
-              {/* --------------------------------------------------------------- */}
-              <div className="col-span-12 lg:col-span-4 lg:sticky lg:top-20 space-y-4">
-                <Card className="shadow-xl border-border/80 overflow-hidden">
-                  <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-emerald-500" />
-                        <div>
-                          <CardTitle className="text-sm font-bold">
-                            Campetto Tattico Live
-                          </CardTitle>
-                          <CardDescription className="text-[11px]">
-                            Trascina i giocatori anche direttamente sulle posizioni in campo
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <Badge className="bg-emerald-600 text-white font-mono text-xs font-extrabold">
-                        {currentFormation.id}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="p-3 sm:p-4">
-                    {/* Pitch Container - Allungato in verticale per evitare sovrapposizioni */}
-                    <div
-                      className="relative w-full rounded-2xl shadow-inner overflow-hidden border-2 border-emerald-950/60 select-none"
-                      style={{
-                        minHeight: "780px",
-                        height: "780px",
-                        background: `repeating-linear-gradient(0deg, hsl(142 52% 26%) 0px, hsl(142 52% 26%) 45px, hsl(142 52% 30%) 45px, hsl(142 52% 30%) 90px)`,
-                      }}
-                    >
-                      {/* Vignette & Broadcast Lighting */}
-                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)]" />
-
-                      {/* Linee regolamentari del campo */}
-                      <div className="pointer-events-none absolute inset-4 border-2 border-white/55 rounded-sm">
-                        {/* Linea di metà campo */}
-                        <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-white/55" />
-                        {/* Cerchio di centrocampo */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 border-2 border-white/55 rounded-full" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/80 rounded-full" />
-
-                        {/* Area di rigore superiore (Attacco) */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-30 border-2 border-white/55 border-t-0" />
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-12 border-2 border-white/55 border-t-0" />
-
-                        {/* Area di rigore inferiore (Porta) */}
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 h-30 border-2 border-white/55 border-b-0" />
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-12 border-2 border-white/55 border-b-0" />
-                      </div>
-
-                      {/* 11 Posizioni interattive sul campo */}
-                      <div className="relative w-full h-full">
-                        {currentFormation.positions.map((pos, slotIdx) => {
-                          const occupant = formationSlots[slotIdx];
-                          const roleFit = occupant
-                            ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
-                            : null;
-                          const baseOvr = occupant?.OVR ?? 70;
-                          const dynamicOvr = occupant
-                            ? (roleFit === "natural" ? baseOvr : calcOverall(pos.label, occupant, baseOvr))
-                            : null;
-                          const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
-                          const isHovered = dragOverSlotIndex === slotIdx;
-
-                          const ringColor =
-                            roleFit === "natural"
-                              ? "border-emerald-400 shadow-emerald-500/30"
-                              : roleFit === "adaptable"
-                              ? "border-amber-400 shadow-amber-500/30"
-                              : "border-rose-400 shadow-rose-500/30";
-
-                          return (
-                            <div
-                              key={slotIdx}
-                              draggable={Boolean(occupant)}
-                              onDragStart={(e) =>
-                                occupant && handleDragStartPlayer(e, Number(occupant.ID))
-                              }
-                              onDragEnd={handleDragEnd}
-                              onDragOver={(e) => {
-                                e.preventDefault();
-                                setDragOverSlotIndex(slotIdx);
-                              }}
-                              onDragLeave={() => {
-                                if (dragOverSlotIndex === slotIdx) setDragOverSlotIndex(null);
-                              }}
-                              onDrop={(e) => handleDropOnStarterSlot(e, slotIdx)}
-                              onClick={() => setInstructionSlotIndex(slotIdx)}
-                              style={{ left: pos.x, top: pos.y }}
-                              className={`absolute -translate-x-1/2 -translate-y-1/2 z-10 transition-all duration-300 ${
-                                isHovered ? "scale-125 z-30" : "hover:scale-110 hover:z-20"
-                              }`}
-                            >
-                              {occupant ? (
-                                <div className="flex flex-col items-center cursor-grab active:cursor-grabbing group">
-                                  {/* Avatar Pedina con OVR */}
-                                  <div className="relative">
+                              return (
+                                <div
+                                  key={pId}
+                                  draggable={!disc?.isSuspended}
+                                  onDragStart={(e) => !disc?.isSuspended && handleDragStartPlayer(e, pId)}
+                                  onDragEnd={handleDragEnd}
+                                  className={`group p-2 rounded-xl border transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${isStarter
+                                    ? "bg-emerald-500/10 border-emerald-500/40 shadow-sm"
+                                    : "bg-card hover:bg-muted/40 border-border/60"
+                                    }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
                                     <div
-                                      className={`w-12 h-12 rounded-full overflow-hidden bg-slate-900 border-2 ${ringColor} shadow-lg`}
+                                      onClick={() => setSelectedPlayerModal(player)}
+                                      className="w-8 h-8 rounded-lg overflow-hidden border border-border/80 bg-muted/30 shrink-0 cursor-pointer"
+                                      title="Vedi dettagli giocatore"
                                     >
                                       <img
-                                        src={getPlayerImage(Number(occupant.ID))}
-                                        alt={occupant.Cognome}
+                                        src={getPlayerImage(pId)}
+                                        alt={player.Cognome}
                                         className="w-full h-full object-cover object-top"
                                         onError={(e) => {
                                           (e.target as HTMLImageElement).src =
@@ -2648,113 +1900,849 @@ const Tattica = () => {
                                       />
                                     </div>
 
-                                    {/* Pillola OVR in alto a destra */}
-                                    <span
-                                      className={`absolute -top-1 -right-2 text-[10px] font-black font-mono px-1.5 py-0 rounded-full shadow border transition-all ${
-                                        roleFit === "natural"
-                                          ? "bg-slate-950 text-white border-white/40"
-                                          : ovrDiff < 0
-                                          ? (roleFit === "adaptable" ? "bg-amber-950 text-amber-300 border-amber-500/80" : "bg-rose-950 text-rose-300 border-rose-500/80 ring-1 ring-rose-500/40")
-                                          : "bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40"
-                                      }`}
-                                      title={
-                                        roleFit === "natural"
-                                          ? `OVR: ${baseOvr} (Ruolo Naturale: ${pos.label})`
-                                          : ovrDiff < 0
-                                          ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (${ovrDiff} per ${roleFit === "adaptable" ? "ruolo adattato" : "fuori ruolo"}, OVR naturale: ${baseOvr})`
-                                          : `OVR nel ruolo ${pos.label}: ${dynamicOvr} (+${ovrDiff} rispetto a OVR naturale ${baseOvr})`
-                                      }
+                                    <div
+                                      onClick={() => setSelectedPlayerModal(player)}
+                                      className="min-w-0 flex-1 cursor-pointer"
                                     >
-                                      {dynamicOvr}
-                                    </span>
-
-                                    {/* Numero maglia giocatore in basso a sinistra */}
-                                    <span
-                                      className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[9px] font-bold font-mono min-w-4 h-4 px-1 rounded-full flex items-center justify-center border border-white/60 shadow"
-                                      title={occupant.NumeroMaglia ? `Maglia #${occupant.NumeroMaglia}` : `Posizione #${slotIdx + 1}`}
-                                    >
-                                      {occupant.NumeroMaglia ?? slotIdx + 1}
-                                    </span>
-                                  </div>
-
-                                  {/* Targhetta Cognome + Ruolo */}
-                                  <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-950/90 backdrop-blur-sm border border-white/25 text-white shadow-md flex items-center gap-1 max-w-[110px]">
-                                    <span className={`text-[9px] font-extrabold font-mono shrink-0 ${getRoleTextColor(pos.label)}`}>
-                                      {pos.label}
-                                    </span>
-                                    <span className="text-[10px] font-bold truncate">
-                                      {occupant.Cognome}
-                                    </span>
-                                  </div>
-
-                                  {/* Badge Ruolo FC IQ */}
-                                  {(() => {
-                                    const instr = tacticalSettings.playerInstructions[slotIdx];
-                                    const roleDef = FC25_ROLES_BY_POSITION[pos.label]?.find(
-                                      (r) => r.id === instr?.roleId
-                                    );
-                                    const roleName = roleDef?.name || "FC IQ";
-                                    return (
-                                      <div
-                                        className="mt-0.5 px-1.5 py-0.5 rounded bg-primary/95 text-primary-foreground text-[8px] font-black tracking-tight shadow flex items-center gap-1 border border-primary/40 truncate max-w-[110px]"
-                                        title={`FC IQ: ${roleName}`}
-                                      >
-                                        <SlidersHorizontal className="w-2.5 h-2.5 shrink-0" />
-                                        <span className="truncate">{roleName}</span>
+                                      <div className="font-bold text-xs text-foreground truncate group-hover:text-primary transition-colors">
+                                        {player.Nome?.[0]}. {player.Cognome}
                                       </div>
-                                    );
-                                  })()}
-                                </div>
-                              ) : (
-                                /* Slot Vuoto sul Campo */
-                                <div className="flex flex-col items-center">
-                                  <div
-                                    className={`w-11 h-11 rounded-full border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
-                                      isHovered
-                                        ? "border-emerald-300 bg-emerald-500/40 text-white"
-                                        : "border-white/70 bg-black/35 text-white/90 hover:bg-black/50"
-                                    }`}
-                                  >
-                                    <span className="text-[9px] font-mono font-bold opacity-80">
-                                      #{slotIdx + 1}
+                                      <div className="flex items-center gap-1 mt-0.5">
+                                        <Badge
+                                          variant="outline"
+                                          className={`text-[9px] px-1 py-0 h-3.5 font-bold ${getRoleColor(
+                                            player.Posiz
+                                          )}`}
+                                        >
+                                          {player.Posiz}
+                                        </Badge>
+                                        {disc?.isSuspended ? (
+                                          <Badge variant="destructive" className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold flex items-center gap-0.5" title={disc.suspensionDetails}>
+                                            <Ban className="h-2.5 w-2.5" /> SQUALIFICATO
+                                          </Badge>
+                                        ) : disc?.isWarned ? (
+                                          <Badge variant="outline" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold flex items-center gap-0.5" title={disc.warningDetails}>
+                                            <AlertTriangle className="h-2.5 w-2.5" /> DIFFIDATO
+                                          </Badge>
+                                        ) : null}
+                                        {isStarter ? (
+                                          <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[8px] px-1 py-0 h-3.5 font-extrabold">
+                                            TIT #{slotIdx + 1} ({assignedRole})
+                                          </Badge>
+                                        ) : (
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-[8px] px-1 py-0 h-3.5 text-muted-foreground font-semibold"
+                                          >
+                                            PAN
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <span
+                                      className={`text-xs font-black font-mono ${getValueColor(
+                                        player.OVR ?? 70
+                                      )}`}
+                                    >
+                                      {player.OVR}
                                     </span>
-                                    <span className={`text-[10px] font-extrabold ${getRoleTextColor(pos.label)}`}>
-                                      {pos.label}
-                                    </span>
+
+                                    {!isStarter ? (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => quickInsertToStarters(player)}
+                                        className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                                        title="Inserisci nel primo slot compatibile"
+                                      >
+                                        <UserPlus className="h-3.5 w-3.5" />
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => removePlayerFromStarters(pId)}
+                                        className="h-6 w-6 rounded-lg hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
+                                        title="Sposta in panchina"
+                                      >
+                                        <X className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
-                              )}
+                              );
+                            })
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* --------------------------------------------------------------- */}
+                  {/* COLONNA 2 (CENTRO): SEZIONE TITOLARI (11) & SEZIONE PANCHINARI  */}
+                  {/* --------------------------------------------------------------- */}
+                  <div className="col-span-12 lg:col-span-5 space-y-5">
+
+                    {/* SEZIONE 1: TITOLARI (11 SLOT) */}
+                    <Card className="shadow-lg border-border/80 overflow-hidden">
+                      <CardHeader className="bg-gradient-to-r from-emerald-500/15 via-primary/10 to-transparent border-b border-border/60 py-3.5 px-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-emerald-500" />
+                            <div>
+                              <CardTitle className="text-sm font-bold">
+                                Undici Titolare ({currentFormation.name})
+                              </CardTitle>
+                              <CardDescription className="text-[11px]">
+                                Trascina un giocatore nello slot o selezionalo dal menù a tendina
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="bg-background/80 font-mono text-xs font-extrabold border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                          >
+                            {tacticStats.count} / 11
+                          </Badge>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="p-3 space-y-2">
+                        {currentFormation.positions.map((pos, slotIndex) => {
+                          const occupant = formationSlots[slotIndex];
+                          const roleFit = occupant
+                            ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
+                            : null;
+                          const baseOvr = occupant?.OVR ?? 70;
+                          const dynamicOvr = occupant ? (roleFit === "natural" ? baseOvr : calcOverall(pos.label, occupant, baseOvr)) : null;
+                          const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
+                          const isDragOver = dragOverSlotIndex === slotIndex;
+
+                          // Opzioni per il menù a tendina di questo slot:
+                          // mette in cima i giocatori con ruolo naturale per lo slot, poi gli adattabili, poi gli altri
+                          const slotDropdownOptions = orderedRoster.slice().sort((a, b) => {
+                            const fitA = evaluateRoleFit(a.Posiz, pos.label);
+                            const fitB = evaluateRoleFit(b.Posiz, pos.label);
+                            const rank = { natural: 0, adaptable: 1, out: 2 };
+                            if (rank[fitA] !== rank[fitB]) return rank[fitA] - rank[fitB];
+                            const prioA = ROLE_PRIORITY[a.Posiz] ?? 99;
+                            const prioB = ROLE_PRIORITY[b.Posiz] ?? 99;
+                            if (prioA !== prioB) return prioA - prioB;
+                            return (b.OVR ?? 0) - (a.OVR ?? 0);
+                          });
+
+                          return (
+                            <div
+                              key={slotIndex}
+                              draggable={Boolean(occupant)}
+                              onDragStart={(e) =>
+                                occupant && handleDragStartPlayer(e, Number(occupant.ID))
+                              }
+                              onDragEnd={handleDragEnd}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                setDragOverSlotIndex(slotIndex);
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverSlotIndex === slotIndex) setDragOverSlotIndex(null);
+                              }}
+                              onDrop={(e) => handleDropOnStarterSlot(e, slotIndex)}
+                              className={`p-2 rounded-xl border transition-all flex items-center gap-2.5 ${isDragOver
+                                ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10 scale-[1.01]"
+                                : occupant
+                                  ? "bg-card hover:border-primary/40 border-border/70 shadow-sm"
+                                  : "bg-muted/15 border-dashed border-border hover:border-emerald-500/40"
+                                }`}
+                            >
+                              {/* Numero Slot + Ruolo Richiesto nel Modulo (LARGHEZZA FISSA: w-[72px] shrink-0) */}
+                              <div className="flex items-center gap-1.5 w-[72px] shrink-0">
+                                <div className="w-6 h-6 rounded-md bg-muted/70 border border-border/80 flex items-center justify-center font-mono text-[11px] font-black text-foreground shrink-0">
+                                  {slotIndex + 1}
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={`w-10 justify-center font-extrabold text-[10px] py-0 px-1 shrink-0 ${getRoleColor(
+                                    pos.label
+                                  )}`}
+                                >
+                                  {pos.label}
+                                </Badge>
+                              </div>
+
+                              {/* Menù a Tendina Selettore Giocatore per lo Slot */}
+                              <div className="flex-1 min-w-0">
+                                <Select
+                                  value={occupant ? String(occupant.ID) : "EMPTY"}
+                                  onValueChange={(val) => {
+                                    if (val === "EMPTY") {
+                                      assignPlayerToSlot(slotIndex, null);
+                                    } else {
+                                      assignPlayerToSlot(slotIndex, Number(val));
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="h-9 w-full bg-background/70 border-border/60 text-xs font-semibold px-2.5">
+                                    {occupant ? (
+                                      <div className="flex items-center gap-2 min-w-0 truncate">
+                                        <img
+                                          src={getPlayerImage(Number(occupant.ID))}
+                                          alt={occupant.Cognome}
+                                          className="h-5 w-5 rounded-full object-cover object-top border border-border shrink-0"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src =
+                                              `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
+                                          }}
+                                        />
+                                        <span className="font-bold text-foreground truncate">
+                                          {occupant.Nome} {occupant.Cognome}
+                                        </span>
+                                        <Badge
+                                          variant="outline"
+                                          className={`text-[9px] px-1 py-0 h-4 shrink-0 ${getRoleColor(
+                                            occupant.Posiz
+                                          )}`}
+                                        >
+                                          {occupant.Posiz}
+                                        </Badge>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground italic">
+                                        + Seleziona o trascina ({pos.label})...
+                                      </span>
+                                    )}
+                                  </SelectTrigger>
+
+                                  <SelectContent className="max-h-[300px]">
+                                    <SelectItem value="EMPTY" className="text-xs italic text-muted-foreground">
+                                      — Lascia slot vuoto —
+                                    </SelectItem>
+                                    {slotDropdownOptions.map((p) => {
+                                      const pId = Number(p.ID);
+                                      const otherSlot = starterSlotByPlayerId.get(pId);
+                                      const isInOtherSlot =
+                                        otherSlot !== undefined && otherSlot !== slotIndex;
+                                      const fit = evaluateRoleFit(p.Posiz, pos.label);
+
+                                      return (
+                                        <SelectItem key={pId} value={String(pId)} className="text-xs">
+                                          <div className="flex items-center gap-2 w-full">
+                                            <span
+                                              className={`inline-block w-2 h-2 rounded-full shrink-0 ${fit === "natural"
+                                                ? "bg-emerald-500"
+                                                : fit === "adaptable"
+                                                  ? "bg-amber-500"
+                                                  : "bg-rose-500/60"
+                                                }`}
+                                            />
+                                            <span className="font-mono text-[10px] font-bold w-8">
+                                              [{p.Posiz}]
+                                            </span>
+                                            <span className="font-semibold">
+                                              {p.Nome} {p.Cognome}
+                                            </span>
+                                            <span className="font-mono font-bold text-primary ml-1">
+                                              OVR {p.OVR}
+                                            </span>
+                                            {isInOtherSlot && (
+                                              <span className="text-[10px] text-amber-500 font-semibold ml-1">
+                                                (Scambia con #{otherSlot + 1})
+                                              </span>
+                                            )}
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Colonna 3: Indicatori Destra & Azioni (LARGHEZZA FISSA: w-[140px] shrink-0 flex items-center justify-end gap-1.5) */}
+                              <div className="w-[140px] shrink-0 flex items-center justify-end gap-1.5">
+                                {occupant ? (
+                                  <>
+                                    {roleFit === "natural" ? (
+                                      <span
+                                        className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"
+                                        title={`Ruolo Naturale (${occupant.Posiz})`}
+                                      />
+                                    ) : roleFit === "adaptable" ? (
+                                      <span
+                                        className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"
+                                        title={`Adattato (${occupant.Posiz} schierato come ${pos.label})`}
+                                      />
+                                    ) : (
+                                      <AlertTriangle
+                                        className="h-3.5 w-3.5 text-rose-500 shrink-0"
+                                        title={`Fuori ruolo! (${occupant.Posiz} schierato come ${pos.label})`}
+                                      />
+                                    )}
+
+                                    {(() => {
+                                      const dynOvr = calcOverall(pos.label, occupant, occupant.OVR ?? 70);
+                                      const baseOvr = occupant.OVR ?? 70;
+                                      const diff = dynOvr - baseOvr;
+                                      return (
+                                        <span
+                                          className={`text-xs font-black font-mono w-7 text-center shrink-0 ${getValueColor(
+                                            dynOvr
+                                          )}`}
+                                          title={
+                                            roleFit === "natural"
+                                              ? `OVR: ${baseOvr} (Ruolo Naturale: ${pos.label})`
+                                              : diff < 0
+                                                ? `OVR nel ruolo ${pos.label}: ${dynOvr} (${diff} per ${roleFit === "adaptable" ? "ruolo adattato" : "fuori ruolo"}, Base: ${baseOvr})`
+                                                : `OVR nel ruolo ${pos.label}: ${dynOvr} (+${diff} rispetto a ${baseOvr})`
+                                          }
+                                        >
+                                          {dynOvr}
+                                        </span>
+                                      );
+                                    })()}
+
+                                    {/* Bottone Istruzioni FC IQ */}
+                                    <Button
+                                      size="icon"
+                                      variant="outline"
+                                      onClick={() => setInstructionSlotIndex(slotIndex)}
+                                      className="h-7 w-7 rounded-lg text-primary border-primary/30 bg-primary/5 hover:bg-primary/15 shrink-0"
+                                      title="Personalizza Ruolo e Focus FC IQ (EA FC 25)"
+                                    >
+                                      <SlidersHorizontal className="h-3.5 w-3.5" />
+                                    </Button>
+
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => setSelectedPlayerModal(occupant)}
+                                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground shrink-0"
+                                      title="Scheda attributi giocatore"
+                                    >
+                                      <Info className="h-3.5 w-3.5" />
+                                    </Button>
+
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => assignPlayerToSlot(slotIndex, null)}
+                                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 shrink-0"
+                                      title="Manda in panchina"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="w-7 text-center font-mono text-[11px] text-muted-foreground shrink-0">—</div>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => setInstructionSlotIndex(slotIndex)}
+                                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary shrink-0"
+                                      title="Pre-imposta Ruolo e Focus FC IQ per questo slot"
+                                    >
+                                      <SlidersHorizontal className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <div className="w-7 h-7 shrink-0" />
+                                    <div className="w-7 h-7 shrink-0" />
+                                  </>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
 
-                    {/* Legenda Affinità Ruolo & Hint FC IQ */}
-                    <div className="mt-3 pt-2.5 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-                          <span>Naturale ({tacticStats.naturalCount})</span>
+                    {/* SEZIONE 2: PANCHINA UFFICIALE (9 SLOT FISSI P1..P9) */}
+                    <Card
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOverBenchZone(true);
+                      }}
+                      onDragLeave={() => setDragOverBenchZone(false)}
+                      onDrop={(e) => handleDropOnBenchZone(e)}
+                      className={`shadow-lg overflow-hidden transition-all ${dragOverBenchZone
+                        ? "ring-2 ring-amber-500 border-amber-500 bg-amber-500/5"
+                        : "border-border/80"
+                        }`}
+                    >
+                      <CardHeader className="bg-muted/30 border-b border-border/60 py-3 px-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="h-4 w-4 text-amber-500" />
+                            <div>
+                              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                <span>Panchina Ufficiale (9 Riserve)</span>
+                                <Badge variant="outline" className="text-[10px] font-mono text-amber-600 dark:text-amber-400 border-amber-500/30">
+                                  Disponibili per il match
+                                </Badge>
+                              </CardTitle>
+                              <CardDescription className="text-[11px]">
+                                9 calciatori convocati ordinati per priorità di subentro (da P1 a P9). Trascina per sostituire o usa i bottoni rapidi.
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs font-mono font-bold">
+                            {benchPlayers.length} / 9 Panchinari
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                          <span>Adattato ({tacticStats.adaptableCount})</span>
+                      </CardHeader>
+
+                      <CardContent className="p-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
+                          {Array.from({ length: 9 }).map((_, slotIdx) => {
+                            const player = benchPlayers[slotIdx];
+                            if (!player) {
+                              // Slot panchina vuoto
+                              return (
+                                <div
+                                  key={`empty-bench-${slotIdx}`}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }}
+                                  onDrop={(e) => handleDropOnBenchZone(e, slotIdx)}
+                                  className="p-2 rounded-xl border border-dashed border-border/70 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground select-none"
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-[10px] font-mono font-bold text-muted-foreground w-5 text-center shrink-0">
+                                      P{slotIdx + 1}
+                                    </span>
+                                    <span className="text-xs italic truncate">Slot Panchina Libero</span>
+                                  </div>
+                                  <span className="text-[10px] font-mono opacity-60 shrink-0 ml-1">Trascina qui</span>
+                                </div>
+                              );
+                            }
+
+                            const pId = Number(player.ID);
+                            const isDragTarget = dragOverBenchId === pId;
+
+                            return (
+                              <div
+                                key={pId}
+                                draggable
+                                onDragStart={(e) => handleDragStartPlayer(e, pId)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDragOverBenchId(pId);
+                                }}
+                                onDragLeave={() => {
+                                  if (dragOverBenchId === pId) setDragOverBenchId(null);
+                                }}
+                                onDrop={(e) => handleDropOnBenchPlayer(e, pId)}
+                                className={`p-2 rounded-xl border bg-card hover:bg-muted/30 transition-all flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing ${isDragTarget
+                                  ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10"
+                                  : "border-border/60"
+                                  }`}
+                              >
+                                <div
+                                  onClick={() => setSelectedPlayerModal(player)}
+                                  className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
+                                >
+                                  <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 w-5 text-center shrink-0">
+                                    P{slotIdx + 1}
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[9px] px-1.5 py-0 h-4 shrink-0 font-bold ${getRoleColor(
+                                      player.Posiz
+                                    )}`}
+                                  >
+                                    {player.Posiz}
+                                  </Badge>
+                                  <span
+                                    className="font-bold text-xs text-foreground truncate min-w-0"
+                                    title={`${player.Nome} ${player.Cognome}`}
+                                  >
+                                    {player.Nome?.[0]}. {player.Cognome}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0 ml-1">
+                                  <span
+                                    className={`text-[11px] font-black font-mono mr-0.5 ${getValueColor(
+                                      player.OVR ?? 70
+                                    )}`}
+                                  >
+                                    {player.OVR}
+                                  </span>
+
+                                  {/* Invia in campo nel primo slot libero */}
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      quickInsertToStarters(player);
+                                    }}
+                                    className="h-6 w-6 rounded-lg hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                                    title="Schiera negli 11 titolari"
+                                  >
+                                    <ArrowLeftRight className="h-3 w-3" />
+                                  </Button>
+
+                                  {/* Sposta in Tribuna */}
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoveToTribuna(pId);
+                                    }}
+                                    className="h-6 w-6 rounded-lg hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
+                                    title="Manda in Tribuna (Non convocato)"
+                                  >
+                                    <ArrowDownRight className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
-                          <span>Fuori Ruolo ({tacticStats.outCount})</span>
+                      </CardContent>
+                    </Card>
+
+                    {/* SEZIONE 3: TRIBUNA (NON CONVOCATI / ECCEDENZE OLTRE LE 9 RISERVE) */}
+                    <Card
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOverTribunaZone(true);
+                      }}
+                      onDragLeave={() => setDragOverTribunaZone(false)}
+                      onDrop={handleDropOnTribunaZone}
+                      className={`shadow-md overflow-hidden transition-all ${dragOverTribunaZone
+                        ? "ring-2 ring-rose-500 border-rose-500 bg-rose-500/5"
+                        : "border-border/70 bg-card/60"
+                        }`}
+                    >
+                      <CardHeader className="bg-muted/20 border-b border-border/50 py-2.5 px-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Armchair className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                <span>Tribuna / Non Convocati</span>
+                                <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border">
+                                  Non disponibili a partita in corso
+                                </Badge>
+                              </CardTitle>
+                              <CardDescription className="text-[10px]">
+                                Calciatori non inseriti nei 9 slot della panchina. Trascina qui per escludere o clicca Promuovi per portare nei 9 panchinari.
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-[11px] font-mono text-muted-foreground">
+                            {tribunaPlayers.length} in Tribuna
+                          </Badge>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1 text-[10px] text-primary font-bold">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Clicca su una pedina per le Istruzioni FC IQ</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                      </CardHeader>
+
+                      <CardContent className="p-3">
+                        {tribunaPlayers.length === 0 ? (
+                          <div className="p-3.5 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10">
+                            Nessun calciatore in tribuna. Tutta la rosa attiva è schierata tra titolari e panchina.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
+                            {tribunaPlayers.map((player) => {
+                              const pId = Number(player.ID);
+                              const disc = disciplinaryMap[pId];
+                              return (
+                                <div
+                                  key={pId}
+                                  draggable={!disc?.isSuspended}
+                                  onDragStart={(e) => !disc?.isSuspended && handleDragStartPlayer(e, pId)}
+                                  onDragEnd={handleDragEnd}
+                                  className={`p-2 rounded-xl border border-dashed transition-all flex items-center justify-between gap-2 ${disc?.isSuspended
+                                    ? "border-rose-500/50 bg-rose-500/5 cursor-not-allowed"
+                                    : "border-border/70 bg-muted/30 hover:bg-muted/50 cursor-grab active:cursor-grabbing"
+                                    }`}
+                                >
+                                  <div
+                                    onClick={() => setSelectedPlayerModal(player)}
+                                    className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
+                                  >
+                                    <span className="text-[10px] font-mono font-bold text-muted-foreground/80 w-5 text-center shrink-0">
+                                      TRB
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-[9px] px-1.5 py-0 h-4 shrink-0 font-bold opacity-80 ${getRoleColor(
+                                        player.Posiz
+                                      )}`}
+                                    >
+                                      {player.Posiz}
+                                    </Badge>
+                                    <span
+                                      className="font-semibold text-xs text-foreground/90 truncate min-w-0"
+                                      title={`${player.Nome} ${player.Cognome}`}
+                                    >
+                                      {player.Nome?.[0]}. {player.Cognome}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-1 shrink-0 ml-1">
+                                    <span
+                                      className={`text-[11px] font-black font-mono mr-0.5 opacity-80 ${getValueColor(
+                                        player.OVR ?? 70
+                                      )}`}
+                                    >
+                                      {player.OVR}
+                                    </span>
+
+                                    {disc?.isSuspended ? (
+                                      <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4 bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40 font-bold shrink-0 flex items-center gap-0.5" title={disc.suspensionDetails}>
+                                        <Ban className="h-2.5 w-2.5" /> Squalificato
+                                      </Badge>
+                                    ) : (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handlePromoteToBench(pId);
+                                        }}
+                                        className="h-6 w-6 rounded-lg hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                                        title="Promuovi in Panchina (Slot P1)"
+                                      >
+                                        <ArrowUpRight className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* --------------------------------------------------------------- */}
+                  {/* COLONNA 3 (DESTRA): CAMPETTO INTERATTIVO LIVE                   */}
+                  {/* --------------------------------------------------------------- */}
+                  <div className="col-span-12 lg:col-span-4 lg:sticky lg:top-20 space-y-4">
+                    <Card className="shadow-xl border-border/80 overflow-hidden">
+                      <CardHeader className="bg-muted/30 border-b border-border/60 py-3.5 px-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-emerald-500" />
+                            <div>
+                              <CardTitle className="text-sm font-bold">
+                                Campetto Tattico Live
+                              </CardTitle>
+                              <CardDescription className="text-[11px]">
+                                Trascina i giocatori anche direttamente sulle posizioni in campo
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <Badge className="bg-emerald-600 text-white font-mono text-xs font-extrabold">
+                            {currentFormation.id}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="p-3 sm:p-4">
+                        {/* Pitch Container - Allungato in verticale per evitare sovrapposizioni */}
+                        <div
+                          className="relative w-full rounded-2xl shadow-inner overflow-hidden border-2 border-emerald-950/60 select-none"
+                          style={{
+                            minHeight: "780px",
+                            height: "780px",
+                            background: `repeating-linear-gradient(0deg, hsl(142 52% 26%) 0px, hsl(142 52% 26%) 45px, hsl(142 52% 30%) 45px, hsl(142 52% 30%) 90px)`,
+                          }}
+                        >
+                          {/* Vignette & Broadcast Lighting */}
+                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)]" />
+
+                          {/* Linee regolamentari del campo */}
+                          <div className="pointer-events-none absolute inset-4 border-2 border-white/55 rounded-sm">
+                            {/* Linea di metà campo */}
+                            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-white/55" />
+                            {/* Cerchio di centrocampo */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 border-2 border-white/55 rounded-full" />
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/80 rounded-full" />
+
+                            {/* Area di rigore superiore (Attacco) */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-30 border-2 border-white/55 border-t-0" />
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-12 border-2 border-white/55 border-t-0" />
+
+                            {/* Area di rigore inferiore (Porta) */}
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 h-30 border-2 border-white/55 border-b-0" />
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-12 border-2 border-white/55 border-b-0" />
+                          </div>
+
+                          {/* 11 Posizioni interattive sul campo */}
+                          <div className="relative w-full h-full">
+                            {currentFormation.positions.map((pos, slotIdx) => {
+                              const occupant = formationSlots[slotIdx];
+                              const roleFit = occupant
+                                ? evaluateRoleFit(occupant.Posiz, pos.label, occupant)
+                                : null;
+                              const baseOvr = occupant?.OVR ?? 70;
+                              const dynamicOvr = occupant
+                                ? (roleFit === "natural" ? baseOvr : calcOverall(pos.label, occupant, baseOvr))
+                                : null;
+                              const ovrDiff = dynamicOvr !== null ? dynamicOvr - baseOvr : 0;
+                              const isHovered = dragOverSlotIndex === slotIdx;
+
+                              const ringColor =
+                                roleFit === "natural"
+                                  ? "border-emerald-400 shadow-emerald-500/30"
+                                  : roleFit === "adaptable"
+                                    ? "border-amber-400 shadow-amber-500/30"
+                                    : "border-rose-400 shadow-rose-500/30";
+
+                              return (
+                                <div
+                                  key={slotIdx}
+                                  draggable={Boolean(occupant)}
+                                  onDragStart={(e) =>
+                                    occupant && handleDragStartPlayer(e, Number(occupant.ID))
+                                  }
+                                  onDragEnd={handleDragEnd}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setDragOverSlotIndex(slotIdx);
+                                  }}
+                                  onDragLeave={() => {
+                                    if (dragOverSlotIndex === slotIdx) setDragOverSlotIndex(null);
+                                  }}
+                                  onDrop={(e) => handleDropOnStarterSlot(e, slotIdx)}
+                                  onClick={() => setInstructionSlotIndex(slotIdx)}
+                                  style={{ left: pos.x, top: pos.y }}
+                                  className={`absolute -translate-x-1/2 -translate-y-1/2 z-10 transition-all duration-300 ${isHovered ? "scale-125 z-30" : "hover:scale-110 hover:z-20"
+                                    }`}
+                                >
+                                  {occupant ? (
+                                    <div className="flex flex-col items-center cursor-grab active:cursor-grabbing group">
+                                      {/* Avatar Pedina con OVR */}
+                                      <div className="relative">
+                                        <div
+                                          className={`w-12 h-12 rounded-full overflow-hidden bg-slate-900 border-2 ${ringColor} shadow-lg`}
+                                        >
+                                          <img
+                                            src={getPlayerImage(Number(occupant.ID))}
+                                            alt={occupant.Cognome}
+                                            className="w-full h-full object-cover object-top"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).src =
+                                                `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
+                                            }}
+                                          />
+                                        </div>
+
+                                        {/* Pillola OVR in alto a destra */}
+                                        <span
+                                          className={`absolute -top-1 -right-2 text-[10px] font-black font-mono px-1.5 py-0 rounded-full shadow border transition-all ${roleFit === "natural"
+                                            ? "bg-slate-950 text-white border-white/40"
+                                            : ovrDiff < 0
+                                              ? (roleFit === "adaptable" ? "bg-amber-950 text-amber-300 border-amber-500/80" : "bg-rose-950 text-rose-300 border-rose-500/80 ring-1 ring-rose-500/40")
+                                              : "bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40"
+                                            }`}
+                                          title={
+                                            roleFit === "natural"
+                                              ? `OVR: ${baseOvr} (Ruolo Naturale: ${pos.label})`
+                                              : ovrDiff < 0
+                                                ? `OVR nel ruolo ${pos.label}: ${dynamicOvr} (${ovrDiff} per ${roleFit === "adaptable" ? "ruolo adattato" : "fuori ruolo"}, OVR naturale: ${baseOvr})`
+                                                : `OVR nel ruolo ${pos.label}: ${dynamicOvr} (+${ovrDiff} rispetto a OVR naturale ${baseOvr})`
+                                          }
+                                        >
+                                          {dynamicOvr}
+                                        </span>
+
+                                        {/* Numero maglia giocatore in basso a sinistra */}
+                                        <span
+                                          className="absolute -bottom-1 -left-1.5 bg-emerald-600 text-white text-[9px] font-bold font-mono min-w-4 h-4 px-1 rounded-full flex items-center justify-center border border-white/60 shadow"
+                                          title={occupant.NumeroMaglia ? `Maglia #${occupant.NumeroMaglia}` : `Posizione #${slotIdx + 1}`}
+                                        >
+                                          {occupant.NumeroMaglia ?? slotIdx + 1}
+                                        </span>
+                                      </div>
+
+                                      {/* Targhetta Cognome + Ruolo */}
+                                      <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-950/90 backdrop-blur-sm border border-white/25 text-white shadow-md flex items-center gap-1 max-w-[110px]">
+                                        <span className={`text-[9px] font-extrabold font-mono shrink-0 ${getRoleTextColor(pos.label)}`}>
+                                          {pos.label}
+                                        </span>
+                                        <span className="text-[10px] font-bold truncate">
+                                          {occupant.Cognome}
+                                        </span>
+                                      </div>
+
+                                      {/* Badge Ruolo FC IQ */}
+                                      {(() => {
+                                        const instr = tacticalSettings.playerInstructions[slotIdx];
+                                        const roleDef = FC25_ROLES_BY_POSITION[pos.label]?.find(
+                                          (r) => r.id === instr?.roleId
+                                        );
+                                        const roleName = roleDef?.name || "FC IQ";
+                                        return (
+                                          <div
+                                            className="mt-0.5 px-1.5 py-0.5 rounded bg-primary/95 text-primary-foreground text-[8px] font-black tracking-tight shadow flex items-center gap-1 border border-primary/40 truncate max-w-[110px]"
+                                            title={`FC IQ: ${roleName}`}
+                                          >
+                                            <SlidersHorizontal className="w-2.5 h-2.5 shrink-0" />
+                                            <span className="truncate">{roleName}</span>
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  ) : (
+                                    /* Slot Vuoto sul Campo */
+                                    <div className="flex flex-col items-center">
+                                      <div
+                                        className={`w-11 h-11 rounded-full border-2 border-dashed flex flex-col items-center justify-center transition-colors ${isHovered
+                                          ? "border-emerald-300 bg-emerald-500/40 text-white"
+                                          : "border-white/70 bg-black/35 text-white/90 hover:bg-black/50"
+                                          }`}
+                                      >
+                                        <span className="text-[9px] font-mono font-bold opacity-80">
+                                          #{slotIdx + 1}
+                                        </span>
+                                        <span className={`text-[10px] font-extrabold ${getRoleTextColor(pos.label)}`}>
+                                          {pos.label}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Legenda Affinità Ruolo & Hint FC IQ */}
+                        <div className="mt-3 pt-2.5 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                              <span>Naturale ({tacticStats.naturalCount})</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                              <span>Adattato ({tacticStats.adaptableCount})</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                              <span>Fuori Ruolo ({tacticStats.outCount})</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] text-primary font-bold">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Clicca su una pedina per le Istruzioni</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
               </TabsContent>
 
               {/* TAB 3: TATTICHE & ISTRUZIONI FC IQ */}

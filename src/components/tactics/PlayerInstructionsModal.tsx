@@ -178,13 +178,12 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                     const diff = dynOvr - baseOvr;
                     return (
                       <span
-                        className={`absolute -top-1 -right-1 text-[10px] font-black font-mono px-1.5 py-0.2 rounded-full border shadow ${
-                          diff < 0
-                            ? "bg-rose-950 text-rose-300 border-rose-500/80"
-                            : diff > 0
+                        className={`absolute -top-1 -right-1 text-[10px] font-black font-mono px-1.5 py-0.2 rounded-full border shadow ${diff < 0
+                          ? "bg-rose-950 text-rose-300 border-rose-500/80"
+                          : diff > 0
                             ? "bg-emerald-950 text-emerald-300 border-emerald-500/80"
                             : "bg-slate-950 text-white border-white/40"
-                        }`}
+                          }`}
                         title={
                           diff < 0
                             ? `OVR nel ruolo ${slotRole}: ${dynOvr} (${diff} per adattamento fuori ruolo, Base: ${baseOvr})`
@@ -260,11 +259,10 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                         <Badge
                           key={`${sr.raw}-${i}`}
                           variant="outline"
-                          className={`text-[10px] py-0 px-1.5 font-extrabold ${
-                            sr.level === "++"
-                              ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/50"
-                              : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/50"
-                          }`}
+                          className={`text-[10px] py-0 px-1.5 font-extrabold ${sr.level === "++"
+                            ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/50"
+                            : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/50"
+                            }`}
                         >
                           {sr.raw}
                         </Badge>
@@ -292,19 +290,6 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
 
         {/* CONTENUTO MODALE: RUOLO & FOCUS FC IQ */}
         <div className="space-y-5 py-3">
-          {/* BANNER INFORMATIVO FC IQ */}
-          <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs text-muted-foreground flex items-start gap-2.5">
-            <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-foreground">
-                Sistema Ufficiale FC IQ EA Sports FC 25
-              </p>
-              <p className="text-[11px] mt-0.5 leading-relaxed">
-                Assegna al giocatore il suo <b>Ruolo</b> tattico (come interpreta la posizione) e il relativo <b>Compito / Focus</b> (comportamento con o senza palla). L'admin della lega replicherà esattamente questi settaggi nel gioco.
-              </p>
-            </div>
-          </div>
-
           {/* 1. SELEZIONE RUOLO (PLAYER ROLE) */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -328,8 +313,8 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                     mastery === "++"
                       ? "bg-amber-500/15 border-amber-500 text-foreground ring-2 ring-amber-500/30 shadow-sm"
                       : mastery === "+"
-                      ? "bg-emerald-500/15 border-emerald-500 text-foreground ring-2 ring-emerald-500/30 shadow-sm"
-                      : "bg-primary/10 border-primary text-foreground ring-2 ring-primary/25 shadow-sm";
+                        ? "bg-emerald-500/15 border-emerald-500 text-foreground ring-2 ring-emerald-500/30 shadow-sm"
+                        : "bg-primary/10 border-primary text-foreground ring-2 ring-primary/25 shadow-sm";
                 } else if (mastery === "++") {
                   cardStyle =
                     "bg-amber-500/10 border-amber-500/50 text-foreground hover:bg-amber-500/15 hover:border-amber-500";
@@ -344,9 +329,8 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                     type="button"
                     disabled={disabled}
                     onClick={() => handleSelectRole(role)}
-                    className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-1.5 ${cardStyle} ${
-                      disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
-                    }`}
+                    className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-1.5 ${cardStyle} ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -366,13 +350,12 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                       </div>
                       {isSelected && (
                         <CheckCircle2
-                          className={`w-4 h-4 shrink-0 ${
-                            mastery === "++"
-                              ? "text-amber-500"
-                              : mastery === "+"
+                          className={`w-4 h-4 shrink-0 ${mastery === "++"
+                            ? "text-amber-500"
+                            : mastery === "+"
                               ? "text-emerald-500"
                               : "text-primary"
-                          }`}
+                            }`}
                         />
                       )}
                     </div>
@@ -408,11 +391,10 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                     type="button"
                     disabled={disabled}
                     onClick={() => handleSelectFocus(focus)}
-                    className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-1.5 ${
-                      isSelected
-                        ? "bg-emerald-500/10 border-emerald-500 text-foreground ring-2 ring-emerald-500/25 shadow-sm"
-                        : "bg-muted/15 border-border/70 text-muted-foreground hover:bg-muted/30 hover:border-emerald-500/40"
-                    } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                    className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-1.5 ${isSelected
+                      ? "bg-emerald-500/10 border-emerald-500 text-foreground ring-2 ring-emerald-500/25 shadow-sm"
+                      : "bg-muted/15 border-border/70 text-muted-foreground hover:bg-muted/30 hover:border-emerald-500/40"
+                      } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">

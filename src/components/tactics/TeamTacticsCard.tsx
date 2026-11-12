@@ -74,14 +74,8 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base sm:text-lg font-black tracking-tight">
-                  Tattiche di Squadra FC IQ
+                  Istruzioni Tattiche di Squadra
                 </CardTitle>
-                <Badge
-                  variant="outline"
-                  className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 text-[10px] font-black uppercase tracking-wider"
-                >
-                  EA FC 25
-                </Badge>
               </div>
               <CardDescription className="text-xs">
                 Imposta lo stile di costruzione e l'altezza della linea difensiva della squadra
@@ -139,11 +133,10 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
                       type="button"
                       disabled={disabled}
                       onClick={() => handleBuildUpChange(style.id)}
-                      className={`relative flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all ${
-                        isSelected
-                          ? "bg-amber-500/10 border-amber-500/80 text-foreground ring-2 ring-amber-500/20 shadow-sm"
-                          : "bg-card/70 border-border/70 text-muted-foreground hover:border-amber-500/40 hover:bg-card"
-                      } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                      className={`relative flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all ${isSelected
+                        ? "bg-amber-500/10 border-amber-500/80 text-foreground ring-2 ring-amber-500/20 shadow-sm"
+                        : "bg-card/70 border-border/70 text-muted-foreground hover:border-amber-500/40 hover:bg-card"
+                        } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                     >
                       <span className="text-xs font-black tracking-tight mb-1">
                         {style.name}
@@ -189,11 +182,10 @@ export const TeamTacticsCard: React.FC<TeamTacticsCardProps> = ({
                       type="button"
                       disabled={disabled}
                       onClick={() => handleDefensiveLineSelect(opt.value)}
-                      className={`flex flex-col text-left p-2.5 rounded-xl border transition-all text-xs relative ${
-                        isSelected
-                          ? "bg-emerald-500/15 border-emerald-500/80 ring-2 ring-emerald-500/20 text-foreground shadow-xs"
-                          : "bg-card/70 border-border/70 text-muted-foreground hover:border-emerald-500/40 hover:bg-card"
-                      } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                      className={`flex flex-col text-left p-2.5 rounded-xl border transition-all text-xs relative ${isSelected
+                        ? "bg-emerald-500/15 border-emerald-500/80 ring-2 ring-emerald-500/20 text-foreground shadow-xs"
+                        : "bg-card/70 border-border/70 text-muted-foreground hover:border-emerald-500/40 hover:bg-card"
+                        } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-extrabold text-foreground text-xs">
