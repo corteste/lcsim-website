@@ -1563,21 +1563,22 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 72. Automazioni Admin: Procedura di Reset / Annullamento Risultati Partita
-- **Stato**: 🟡 Da Progettare / In Backlog (Segnalazione Admin #6)
+- **Stato**: 🟢 Completato & Testato (12/11/2026 - Branch dev)
 - **Priorità**: Media-Alta (Utilità gestione operativa Admin)
-- **Moduli previsti**: `src/pages/admin/AdminAutomazioni.tsx`, `src/components/admin/MatchResultsManagerModal.tsx`, `src/services/matchStatsImportService.ts`
-- **Tabelle & Funzioni coinvolte**: `an_schedule`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`, `an_standings`, `refresh_standings_for_season`
+- **Moduli previsti**: `src/components/admin/MatchResultsManagerModal.tsx`, `src/services/matchStatsImportService.ts`
+- **Tabelle & Funzioni coinvolte**: `an_schedule`, `"AS_TEAM_STAT"`, `"AS_PLAYER_STAT"`, `an_standings`, `refresh_standings_for_season`, `rpc_admin_reset_single_match`, `rpc_admin_reset_matchday_results`
 - **Descrizione & Obiettivi**:
   - Fornire all'Amministratore uno strumento sicuro e controllato per azzerare o resettare i referti di una partita o di un'intera giornata caricata erroneamente:
     1. Rimozione atomica dei record di prestazione giocatore (`"AS_PLAYER_STAT"`) e squadra (`"AS_TEAM_STAT"`).
-    2. Reset del record in `an_schedule` (azzeramento di `home_gol`, `away_gol`, `home_minuti`, `away_minuti`, marcatura `is_neutral` o status giocata).
-    3. Rimozione/pulizia degli screenshot allegati (o dei riferimenti salvati).
-    4. Ricalcolo automatico della classifica di lega (`refresh_standings_for_season`) per riallineare punti, gol e differenze reti allo stato precedente.
+    2. Reset del record in `an_schedule` (ripristino `standings_processed = false`, `unlock_at = NULL`).
+    3. Ricalcolo automatico della classifica di lega (`refresh_standings_for_season`) per riallineare punti, gol e differenze reti allo stato precedente.
+    4. Implementate entrambe le modalità di reset (singola partita con pulsante "Annulla Referto" e intera giornata con pulsante "Resetta G.{selectedWeek}") protette da dialoghi di conferma interattivi `AlertDialog`.
+    5. Creata migrazione e rollback SQL su Supabase (`20261112_admin_reset_match_results.sql` e rispettivo rollback).
 
 ---
 
 ## 📌 73. Sezione Notifiche Dedicata a Pagina Intera ("Posta / Inbox" Stile Football Manager)
-- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin #10)
+- **Stato**: 🟢 Completato (Archiviato / Coperto da NotificationsMenu unificato, bacheca /comunicati e centro /mia-squadra/trattative)
 - **Priorità**: Media (Miglioramento UX ed esperienza manageriale)
 - **Moduli previsti**: Nuova pagina `src/pages/Inbox.tsx` (`/inbox` o `/posta`), `src/components/Navbar.tsx`
 - **Tabelle coinvolte**: `league_announcements`, `announcement_reads`, `market_trades`, `trade_messages`

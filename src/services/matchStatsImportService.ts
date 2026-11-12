@@ -837,6 +837,57 @@ export async function updateAdminMatchSchedule(
   }
 }
 
+/**
+ * Annulla/resetta il referto di una singola partita (cancella statistiche da AS_TEAM_STAT e AS_PLAYER_STAT,
+ * azzera orario sblocco e ricalcola la classifica).
+ */
+export async function resetAdminSingleMatchReport(
+  stag: number,
+  week: number,
+  home: string,
+  away: string,
+  adminName = "Super Admin"
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc("rpc_admin_reset_single_match", {
+      p_stag: stag,
+      p_week: week,
+      p_home: home,
+      p_away: away,
+      p_admin_name: adminName,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || "Errore durante il reset della partita");
+    return { success: true, message: data.message };
+  } catch (err: any) {
+    console.error("Errore resetAdminSingleMatchReport:", err);
+    return { success: false, error: err.message || "Errore durante l'annullamento del referto" };
+  }
+}
+
+/**
+ * Annulla/resetta tutti i referti dell'intera giornata selezionata e ricalcola la classifica.
+ */
+export async function resetAdminMatchdayResults(
+  stag: number,
+  week: number,
+  adminName = "Super Admin"
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc("rpc_admin_reset_matchday_results", {
+      p_stag: stag,
+      p_week: week,
+      p_admin_name: adminName,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || "Errore durante il reset della giornata");
+    return { success: true, message: data.message };
+  } catch (err: any) {
+    console.error("Errore resetAdminMatchdayResults:", err);
+    return { success: false, error: err.message || "Errore durante l'annullamento della giornata" };
+  }
+}
+
 // ============================================================================
 // 2. FUZZY PLAYER & TEAM MATCHING HELPERS
 // ============================================================================

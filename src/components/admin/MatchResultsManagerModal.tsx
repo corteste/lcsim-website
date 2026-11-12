@@ -6,6 +6,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -31,6 +41,9 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  RotateCcw,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -52,6 +65,8 @@ import {
   processMatchScreenshots,
   exportMatchReportToCSV,
   importMatchReportFromCSV,
+  resetAdminSingleMatchReport,
+  resetAdminMatchdayResults,
 } from "@/services/matchStatsImportService";
 import { useSchedule } from "@/context/ScheduleContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -98,6 +113,12 @@ export function MatchResultsManagerModal({
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
   const [savingReport, setSavingReport] = useState(false);
+
+  // Reset state (#72)
+  const [resettingMatch, setResettingMatch] = useState(false);
+  const [resettingMatchday, setResettingMatchday] = useState(false);
+  const [showResetMatchDialog, setShowResetMatchDialog] = useState(false);
+  const [showResetMatchdayDialog, setShowResetMatchdayDialog] = useState(false);
 
   const [report, setReport] = useState<AdminMatchFullReport | null>(null);
   const [activeEditorTab, setActiveEditorTab] = useState<string>("team");
@@ -341,6 +362,55 @@ export function MatchResultsManagerModal({
     }
   };
 
+  // Handler Reset Singola Partita (#72)
+  const handleResetSingleMatch = async () => {
+    if (!report) return;
+    setResettingMatch(true);
+    try {
+      const res = await resetAdminSingleMatchReport(
+        report.schedule.stag,
+        report.schedule.week,
+        report.schedule.home,
+        report.schedule.away,
+        adminName
+      );
+      if (!res.success) throw new Error(res.error);
+      toast.success(res.message || "Referto partita annullato e classifica ricalcolata!");
+      setShowResetMatchDialog(false);
+      await loadSeasonSchedule(selectedSeason, selectedMatchKey);
+      await reloadSchedule();
+      await queryClient.invalidateQueries();
+      onSaved?.();
+    } catch (err: any) {
+      toast.error(err.message || "Errore durante il reset della partita");
+    } finally {
+      setResettingMatch(false);
+    }
+  };
+
+  // Handler Reset Intera Giornata (#72)
+  const handleResetMatchday = async () => {
+    setResettingMatchday(true);
+    try {
+      const res = await resetAdminMatchdayResults(
+        selectedSeason,
+        selectedWeek,
+        adminName
+      );
+      if (!res.success) throw new Error(res.error);
+      toast.success(res.message || `Risultati della Giornata ${selectedWeek} annullati e classifica ricalcolata!`);
+      setShowResetMatchdayDialog(false);
+      await loadSeasonSchedule(selectedSeason);
+      await reloadSchedule();
+      await queryClient.invalidateQueries();
+      onSaved?.();
+    } catch (err: any) {
+      toast.error(err.message || "Errore durante il reset della giornata");
+    } finally {
+      setResettingMatchday(false);
+    }
+  };
+
   // Helpers modifica campi
   const updateTeamStat = (
     side: "home" | "away",
@@ -517,6 +587,20 @@ export function MatchResultsManagerModal({
                   </button>
                 ))}
               </div>
+
+              {/* Reset Intera Giornata (#72) */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowResetMatchdayDialog(true)}
+                disabled={resettingMatchday || loadingSchedule || !matchesInSelectedWeek.some((m) => m.has_stats)}
+                className="h-8 text-xs font-bold text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30 gap-1.5 shrink-0 shadow-2xs"
+                title={`Resetta tutti i referti e statistiche della Giornata ${selectedWeek}`}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Resetta G.{selectedWeek}</span>
+              </Button>
             </div>
           </div>
         </DialogHeader>
@@ -731,6 +815,19 @@ export function MatchResultsManagerModal({
                       >
                         <Unlock className="h-3 w-3" />
                         Sblocca Subito Risultato & Statistiche
+                      </Button>
+                    )}
+                    {report.schedule.has_stats && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={savingReport || resettingMatch}
+                        onClick={() => setShowResetMatchDialog(true)}
+                        className="h-7 text-[11px] font-bold gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Annulla Referto
                       </Button>
                     )}
                   </div>
@@ -1642,12 +1739,25 @@ export function MatchResultsManagerModal({
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={savingReport}>
+            {report?.schedule.has_stats && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={savingReport || resettingMatch}
+                onClick={() => setShowResetMatchDialog(true)}
+                className="font-bold text-xs gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Annulla Referto Partita
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={savingReport || resettingMatch}>
               Chiudi
             </Button>
             <Button
               variant="outline"
-              disabled={savingReport || !report}
+              disabled={savingReport || !report || resettingMatch}
               onClick={() => handleSaveReport(true)}
               className="font-bold text-xs gap-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
             >
@@ -1655,7 +1765,7 @@ export function MatchResultsManagerModal({
               Salva & Sblocca Subito
             </Button>
             <Button
-              disabled={savingReport || !report}
+              disabled={savingReport || !report || resettingMatch}
               onClick={() => handleSaveReport(false)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-md shadow-emerald-600/20"
             >
@@ -1673,6 +1783,89 @@ export function MatchResultsManagerModal({
             </Button>
           </div>
         </div>
+
+        {/* DIALOG CONFERMA RESET SINGOLA PARTITA (#72) */}
+        <AlertDialog open={showResetMatchDialog} onOpenChange={setShowResetMatchDialog}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                <AlertDialogTitle>Annullare Referto Partita?</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="text-xs text-muted-foreground space-y-2">
+                <span>
+                  Stai per annullare il referto e le statistiche di:
+                </span>
+                <span className="block font-bold text-foreground text-sm">
+                  {report?.schedule.home} vs {report?.schedule.away} (G.{report?.schedule.week} - S.{report?.schedule.stag})
+                </span>
+                <span className="block bg-destructive/10 text-destructive border border-destructive/20 p-2.5 rounded-lg text-[11px] leading-relaxed">
+                  ⚠️ Questa operazione cancellerà i record di squadra e giocatori associati (AS_TEAM_STAT, AS_PLAYER_STAT), riporterà lo stato della partita a &quot;da caricare&quot; e ricalcolerà immediatamente la Classifica della stagione.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={resettingMatch}>Annulla</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleResetSingleMatch();
+                }}
+                disabled={resettingMatch}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs"
+              >
+                {resettingMatch ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                    Annullamento...
+                  </>
+                ) : (
+                  "Conferma Annullamento Referto"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* DIALOG CONFERMA RESET INTERA GIORNATA (#72) */}
+        <AlertDialog open={showResetMatchdayDialog} onOpenChange={setShowResetMatchdayDialog}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                <AlertDialogTitle>Resettare Risultati Giornata {selectedWeek}?</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="text-xs text-muted-foreground space-y-2">
+                <span>
+                  Stai per annullare <strong>tutti i referti e le statistiche</strong> della <strong>Giornata {selectedWeek}</strong> (Stagione {selectedSeason}).
+                </span>
+                <span className="block bg-destructive/10 text-destructive border border-destructive/20 p-2.5 rounded-lg text-[11px] leading-relaxed">
+                  ⚠️ Verranno rimossi tutti i record di squadra e calciatori di ogni partita della giornata. Tutte le partite torneranno a stato &quot;da caricare&quot; e la Classifica della stagione verrà ricalcolata azzerando i punti di questa giornata.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={resettingMatchday}>Annulla</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleResetMatchday();
+                }}
+                disabled={resettingMatchday}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs"
+              >
+                {resettingMatchday ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                    Reset Giornata...
+                  </>
+                ) : (
+                  `Conferma Reset Giornata ${selectedWeek}`
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
