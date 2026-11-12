@@ -1611,15 +1611,26 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 76. Profilo Giocatore: Sezione Palmarès, Premi Individuali & Titoli Vinti
-- **Stato**: 🟡 Da Progettare / In Backlog (Segnalazione Admin #17)
+- **Stato**: 🟢 Completato & Testato (12/11/2026 - Branch `dev`)
 - **Priorità**: Media (Profondità storica e immersione)
-- **Moduli previsti**: `src/components/player/playerDetails.tsx`, `src/pages/PlayerCareerArchive.tsx`, tabella Supabase `player_trophies` o `league_awards`
-- **Tabelle coinvolte**: `an_player`, `an_standings`, nuova tabella o vista premi
-- **Descrizione & Obiettivi**:
-  - Arricchire la scheda del calciatore (`PlayerDetails`) e la pagina archivio storico con una bacheca personale:
-    1. **Trofei di Squadra**: Scudetti Serie A vinti (con indicazione anno/stagione e squadra di appartenenza), Coppe di Lega e Supercoppe.
-    2. **Riconoscimenti Individuali**: Titolo di Capocannoniere, Miglior Assistman, Golden Glove (Miglior Portiere), MVP della Stagione, presenze nella Top 11 / TOTW.
-    3. Badge grafici o icone trofeo visualizzabili nell'header o in un tab dedicato "Palmarès & Riconoscimenti".
+- **Moduli coinvolti**: `src/components/player/playerDetails.tsx`, `src/pages/ArchivioGiocatori.tsx`, `src/components/player/PlayerPalmaresTab.tsx`, `src/components/player/PlayerPalmaresBadges.tsx`, `src/services/playerPalmaresService.ts`, `supabase/migrations/20261112_player_awards_and_palmares.sql`
+- **Tabelle coinvolte**: `public.player_awards`, `public.team_trophies`, `public.an_player_career_seasons`, `public.an_hall_of_fame`, `public.as_player_stat`
+- **Descrizione & Implementazione**:
+  1. **Database & Tabella Premi (`public.player_awards`)**:
+     - Creata la tabella `public.player_awards` con RLS di lettura pubblica per memorizzare i riconoscimenti individuali storici ed ufficiali della lega.
+     - Popolati 60 record storici (S1–S10) analizzati e certificati dalle statistiche ufficiali: Capocannonieri, Migliori Assist-man, Guanto d'Oro (miglior portiere per clean sheet) e MVP della Stagione (miglior media voto con $\ge 50\%$ presenze).
+     - Migrazione SQL `supabase/migrations/20261112_player_awards_and_palmares.sql` e rispettivo rollback archiviati ed applicati su Supabase.
+  2. **Servizio di Risoluzione Palmarès (`playerPalmaresService.ts`)**:
+     - **Trofei di Squadra**: incrocia le stagioni a roster del calciatore (`an_player_career_seasons`) con l'albo d'oro ufficiale (`team_trophies`), assegnando automaticamente Scudetti Serie A e Supercoppe di Lega vinte dal club con logo storico e denominazione ufficiale.
+     - **Riconoscimenti Individuali**: estrae i titoli da `player_awards` (Capocannoniere, Assistman, Guanto d'Oro, MVP).
+     - **Hall of Fame**: rileva lo status di leggenda da `an_hall_of_fame` con classe di induzione e nota biografica.
+     - **Presenze Top 11 (TOTW)**: integra il totale convocazioni nella Squadra della Settimana.
+  3. **Interfaccia Grafica Scheda Calciatore (`PlayerDetails.tsx`)**:
+     - **Badge Riepilogativi Header**: visualizza nell'intestazione badge con icona (`🏆 x{n} Scudetti`, `🛡️ x{n} Supercoppa`, `👑 Hall of Fame`, `🎖️ x{n} Titoli Ind.`) cliccabili per accedere direttamente alla bacheca.
+     - **5° Tab Dedicato "🏆 Palmarès"**: bacheca illustrata con card per ciascun trofeo di squadra e premio individuale (con stemmi club, valori statistici e note).
+  4. **Interfaccia Grafica Archivio Storico (`ArchivioGiocatori.tsx`)**:
+     - Badge riassuntivi nell'header del giocatore selezionato.
+     - 4° Tab dedicato **"🏆 Palmarès"** (accanto a *Per Stagione*, *Movimenti & Cronistoria*, *Totali Carriera*) con la bacheca completa del calciatore.
 
 ---
 

@@ -30,13 +30,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, Ruler, Weight, Footprints, X, Shield, Zap, Target, Activity, 
   Sparkles, Star, Award, Compass, Swords, Flame, TrendingUp,
-  Calendar, Clock, CheckCircle2, AlertCircle, BarChart3, Timer
+  Calendar, Clock, CheckCircle2, AlertCircle, BarChart3, Timer, Trophy
 } from "lucide-react";
 import { PlayerXpBreakdownModal } from "@/components/player/PlayerXpBreakdownModal";
 import { Button } from "@/components/ui/button";
 import { fetchPlayerSumBySeason } from "@/services/playerStatsService";
 import { PlayerStatsSum } from "@/types/playerStats";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
+import { fetchPlayerPalmares } from "@/services/playerPalmaresService";
+import { PlayerPalmaresTab } from "@/components/player/PlayerPalmaresTab";
+import { PlayerPalmaresBadges } from "@/components/player/PlayerPalmaresBadges";
 
 interface PlayerDetailsProps {
   currentPlayer: Player;
@@ -399,6 +402,7 @@ const AccuracyBar = ({
 
 const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialStats }: PlayerDetailsProps) => {
   if (!currentPlayer) return null;
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [showXpModal, setShowXpModal] = useState<boolean>(false);
   const [xpSummary, setXpSummary] = useState<PlayerSeasonXpSummary | null>(null);
   const [xpLoading, setXpLoading] = useState<boolean>(false);
@@ -412,6 +416,13 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
   const { data: totwCount = 0 } = useQuery({
     queryKey: ["player_totw_count", currentPlayer.ID],
     queryFn: () => fetchPlayerTotwAppearances(currentPlayer.ID),
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(currentPlayer?.ID),
+  });
+
+  const { data: palmares, isLoading: palmaresLoading } = useQuery({
+    queryKey: ["player_palmares", currentPlayer.ID],
+    queryFn: () => fetchPlayerPalmares(currentPlayer.ID),
     staleTime: 5 * 60 * 1000,
     enabled: Boolean(currentPlayer?.ID),
   });
@@ -702,6 +713,11 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   TOTW x{totwCount}
                 </Badge>
               )}
+              {/* Palmarès Badges Header */}
+              <PlayerPalmaresBadges
+                palmares={palmares}
+                onClickPalmaresTab={() => setActiveTab("palmares")}
+              />
               {currentPlayer.XP !== null && (
                 <button
                   type="button"
@@ -787,7 +803,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
       </div>
 
       {/* Tabs and Detailed Content */}
-      <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col min-h-0">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <div className="px-6 border-b border-border/60 bg-muted/20 shrink-0 overflow-x-auto">
           <TabsList className="bg-transparent h-12 p-0 gap-4 sm:gap-6 justify-start">
             <TabsTrigger 
@@ -817,6 +833,13 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
             >
               <TrendingUp className="h-4 w-4 mr-1.5 sm:mr-2 text-emerald-500" />
               Rendimento &amp; Grafico XP
+            </TabsTrigger>
+            <TabsTrigger 
+              value="palmares" 
+              className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
+            >
+              <Trophy className="h-4 w-4 mr-1.5 sm:mr-2 text-amber-500" />
+              Palmarès ({palmares?.totalTrophiesCount ?? 0})
             </TabsTrigger>
           </TabsList>
         </div>
@@ -1757,6 +1780,11 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               </div>
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab 5: Palmarès, Trofei & Premi Individuali */}
+        <TabsContent value="palmares" className="flex-1 overflow-y-auto p-3.5 sm:p-5 m-0 focus-visible:outline-none">
+          <PlayerPalmaresTab palmares={palmares} isLoading={palmaresLoading} />
         </TabsContent>
       </Tabs>
 

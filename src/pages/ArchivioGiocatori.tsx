@@ -36,6 +36,7 @@ import {
   UserX,
   CheckCircle2,
   Flame,
+  Trophy,
 } from "lucide-react";
 import {
   getRoleColor,
@@ -53,6 +54,9 @@ import {
   PlayerCareerSummary,
   PlayerTransaction,
 } from "@/services/archiveService";
+import { fetchPlayerPalmares } from "@/services/playerPalmaresService";
+import { PlayerPalmaresTab } from "@/components/player/PlayerPalmaresTab";
+import { PlayerPalmaresBadges } from "@/components/player/PlayerPalmaresBadges";
 
 const ROLE_GROUPS = [
   { id: "ALL", label: "Tutti i Ruoli", roles: [] as string[] },
@@ -345,6 +349,13 @@ const ArchivioGiocatori = () => {
     staleTime: 60 * 1000,
   });
 
+  const { data: playerPalmares, isLoading: loadingPalmares } = useQuery({
+    queryKey: ["archive_player_palmares", selectedPlayer?.player_id],
+    queryFn: () => fetchPlayerPalmares(selectedPlayer!.player_id),
+    enabled: !!selectedPlayer,
+    staleTime: 60 * 1000,
+  });
+
   const filteredPlayers = useMemo(() => {
     return allPlayers
       .filter((p) => {
@@ -560,6 +571,7 @@ const ArchivioGiocatori = () => {
                             {selectedPlayer.motm}x MVP Giornata (MOTM)
                           </Badge>
                         )}
+                        <PlayerPalmaresBadges palmares={playerPalmares} />
                       </div>
                     </div>
                   </div>
@@ -621,18 +633,22 @@ const ArchivioGiocatori = () => {
             <Card className="shadow-lg border-border/80">
               <Tabs defaultValue="stagioni" className="w-full">
                 <CardHeader className="border-b border-border/60 pb-4">
-                  <TabsList className="grid w-full max-w-2xl grid-cols-3">
+                  <TabsList className="grid w-full max-w-3xl grid-cols-2 sm:grid-cols-4 gap-1">
                     <TabsTrigger value="stagioni" className="gap-1.5 font-bold text-xs sm:text-sm">
                       <Calendar className="h-4 w-4" />
                       Per Stagione ({playerDetail?.seasons.length ?? 0})
                     </TabsTrigger>
                     <TabsTrigger value="movimenti" className="gap-1.5 font-bold text-xs sm:text-sm">
                       <History className="h-4 w-4" />
-                      Movimenti & Cronistoria ({playerDetail?.transactions.length ?? 0})
+                      Movimenti ({playerDetail?.transactions.length ?? 0})
                     </TabsTrigger>
                     <TabsTrigger value="carriera" className="gap-1.5 font-bold text-xs sm:text-sm">
                       <Award className="h-4 w-4" />
                       Totali Carriera
+                    </TabsTrigger>
+                    <TabsTrigger value="palmares" className="gap-1.5 font-bold text-xs sm:text-sm">
+                      <Trophy className="h-4 w-4 text-amber-500" />
+                      Palmarès ({playerPalmares?.totalTrophiesCount ?? 0})
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>
@@ -988,6 +1004,11 @@ const ArchivioGiocatori = () => {
                       />
                       <StatBox label="Fuorigioco" value={selectedPlayer.fuorigioco} />
                     </div>
+                  </TabsContent>
+
+                  {/* TAB 4: PALMARÈS & BACHECA TROFEI */}
+                  <TabsContent value="palmares" className="mt-0 space-y-4">
+                    <PlayerPalmaresTab palmares={playerPalmares} isLoading={loadingPalmares} />
                   </TabsContent>
                 </CardContent>
               </Tabs>
