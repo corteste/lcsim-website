@@ -5,9 +5,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { getStandings } from "@/hooks/use-standings";
-import { Trophy, Flame, History, Award, Crown, Swords } from "lucide-react";
+import { Trophy, Flame, History, Award, Crown, Swords, Calendar } from "lucide-react";
 import { getTeamLogo, LCSIM_LOGO_SMALL } from "@/utils/functions";
 import { useSearchParams } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface HistoricalSeasonMeta {
   seasonNumber: number;
@@ -243,25 +250,30 @@ export default function ArchivioStagioni() {
             </p>
           </div>
 
-          {/* Selettore Stagione Storica (S10 -> S1) */}
-          <div className="flex items-center gap-2 bg-muted/60 p-1.5 rounded-2xl border border-border/80 max-w-full overflow-x-auto self-start lg:self-auto">
-            <span className="text-xs font-bold text-muted-foreground px-2 shrink-0">Stagione:</span>
-            <div className="flex items-center gap-1 shrink-0">
-              {HISTORICAL_SEASONS.map((s) => (
-                <button
-                  key={s.seasonNumber}
-                  type="button"
-                  onClick={() => handleSeasonChange(s.seasonNumber)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    selectedSeason === s.seasonNumber
-                      ? "bg-card text-foreground shadow-sm border border-border font-extrabold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-card/40"
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
+          {/* Selettore Stagione Storica (Menu a tendina) */}
+          <div className="flex items-center gap-2.5 self-start lg:self-auto shrink-0">
+            <span className="text-xs font-bold text-muted-foreground shrink-0 hidden sm:inline">
+              Edizione:
+            </span>
+            <Select
+              value={String(selectedSeason)}
+              onValueChange={(val) => handleSeasonChange(Number(val))}
+            >
+              <SelectTrigger className="w-[230px] sm:w-[250px] bg-card border-border/80 font-bold text-xs h-10 rounded-xl shadow-xs">
+                <SelectValue placeholder="Seleziona Stagione" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[320px]">
+                {HISTORICAL_SEASONS.map((s) => (
+                  <SelectItem
+                    key={s.seasonNumber}
+                    value={String(s.seasonNumber)}
+                    className="text-xs font-semibold cursor-pointer"
+                  >
+                    {s.label} ({s.champion})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
