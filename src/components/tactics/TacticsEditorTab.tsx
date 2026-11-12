@@ -17,6 +17,7 @@ import {
   SetPiecesSettings,
   FC25_ROLES_BY_POSITION,
   getRolesForPosition,
+  getPlayerRoleMastery,
 } from "@/types/tactics";
 import { PlayerDisciplinaryStatus } from "@/services/disciplineService";
 import { TeamTacticsCard } from "@/components/tactics/TeamTacticsCard";
@@ -156,6 +157,7 @@ export const TacticsEditorTab: React.FC<TacticsEditorTabProps> = ({
             const activeRoleDef =
               availableRoles.find((r) => r.id === currentInstr.roleId) ||
               availableRoles[0];
+            const activeMastery = getPlayerRoleMastery(occupant, activeRoleDef?.name || "");
             const availableFocuses = activeRoleDef?.focuses || [];
             const activeFocusDef =
               availableFocuses.find((f) => f.id === currentInstr.focusId) ||
@@ -182,7 +184,12 @@ export const TacticsEditorTab: React.FC<TacticsEditorTabProps> = ({
                   </Badge>
 
                   {occupant ? (
-                    <div className="flex items-center gap-2 min-w-0 truncate">
+                    <button
+                      type="button"
+                      onClick={() => onOpenInstructionModal(slotIdx)}
+                      className="flex items-center gap-2 min-w-0 truncate text-left hover:opacity-80 transition-opacity cursor-pointer"
+                      title="Clicca per aprire le istruzioni FC IQ del giocatore"
+                    >
                       <img
                         src={getPlayerImage(Number(occupant.ID))}
                         alt={occupant.Cognome}
@@ -201,7 +208,7 @@ export const TacticsEditorTab: React.FC<TacticsEditorTabProps> = ({
                           <span>[{occupant.Posiz}]</span>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ) : (
                     <span className="text-xs text-muted-foreground italic truncate">
                       Slot non assegnato
@@ -218,19 +225,42 @@ export const TacticsEditorTab: React.FC<TacticsEditorTabProps> = ({
                       onValueChange={(val) => handleRoleChange(slotIdx, val)}
                       disabled={disabled}
                     >
-                      <SelectTrigger className="h-9 text-xs font-bold bg-background/90 border-border/80">
+                      <SelectTrigger
+                        className={`h-9 text-xs font-bold transition-colors ${
+                          activeMastery === "++"
+                            ? "bg-amber-500/10 border-amber-500/60 text-foreground"
+                            : activeMastery === "+"
+                            ? "bg-emerald-500/10 border-emerald-500/60 text-foreground"
+                            : "bg-background/90 border-border/80"
+                        }`}
+                      >
                         <SelectValue placeholder="Ruolo" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableRoles.map((r) => (
-                          <SelectItem
-                            key={r.id}
-                            value={r.id}
-                            className="text-xs font-semibold"
-                          >
-                            {r.name}
-                          </SelectItem>
-                        ))}
+                        {availableRoles.map((r) => {
+                          const mastery = getPlayerRoleMastery(occupant, r.name);
+                          return (
+                            <SelectItem
+                              key={r.id}
+                              value={r.id}
+                              className="text-xs font-semibold"
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <span>{r.name}</span>
+                                {mastery === "++" && (
+                                  <span className="inline-flex items-center px-1 py-0 rounded text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/50 leading-tight">
+                                    ++
+                                  </span>
+                                )}
+                                {mastery === "+" && (
+                                  <span className="inline-flex items-center px-1 py-0 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/50 leading-tight">
+                                    +
+                                  </span>
+                                )}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>

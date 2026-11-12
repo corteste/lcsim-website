@@ -825,3 +825,65 @@ export function evaluateRoleFit(
 
   return "out";
 }
+
+// ============================================================================
+// RUOLI SPECIALI FC IQ (+ e ++) DEL CALCIATORE
+// ============================================================================
+
+export type RoleMasteryLevel = "+" | "++" | null;
+
+export interface PlayerSpecialRole {
+  raw: string;
+  baseName: string;
+  level: "+" | "++";
+}
+
+/**
+ * Estrae i ruoli FC IQ (+ e ++) posseduti dal calciatore dai campi Role1, Role2, Role3.
+ */
+export function getPlayerSpecialRoles(
+  player: { Role1?: string | null; Role2?: string | null; Role3?: string | null } | null | undefined
+): PlayerSpecialRole[] {
+  if (!player) return [];
+  const rawRoles = [player.Role1, player.Role2, player.Role3].filter(
+    (r): r is string => typeof r === "string" && r.trim().length > 0
+  );
+  const result: PlayerSpecialRole[] = [];
+  for (const raw of rawRoles) {
+    const trimmed = raw.trim();
+    if (trimmed.endsWith("++")) {
+      result.push({
+        raw: trimmed,
+        baseName: trimmed.slice(0, -2).trim(),
+        level: "++",
+      });
+    } else if (trimmed.endsWith("+")) {
+      result.push({
+        raw: trimmed,
+        baseName: trimmed.slice(0, -1).trim(),
+        level: "+",
+      });
+    }
+  }
+  return result;
+}
+
+/**
+ * Restituisce il livello di padronanza (+ o ++) di un calciatore per un determinato ruolo FC IQ.
+ */
+export function getPlayerRoleMastery(
+  player: { Role1?: string | null; Role2?: string | null; Role3?: string | null } | null | undefined,
+  roleName: string
+): RoleMasteryLevel {
+  if (!player || !roleName) return null;
+  const target = roleName.toLowerCase().trim();
+  const specials = getPlayerSpecialRoles(player);
+  let best: RoleMasteryLevel = null;
+  for (const s of specials) {
+    if (s.baseName.toLowerCase() === target) {
+      if (s.level === "++") return "++";
+      best = "+";
+    }
+  }
+  return best;
+}

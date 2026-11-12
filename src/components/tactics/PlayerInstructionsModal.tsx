@@ -16,6 +16,8 @@ import { evaluateRoleFit } from "@/types/tactics";
 import {
   TacticalSettings,
   getRolesForPosition,
+  getPlayerSpecialRoles,
+  getPlayerRoleMastery,
   PlayerRoleOption,
   RoleFocusOption,
 } from "@/types/tactics";
@@ -246,6 +248,30 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
                     );
                   })()}
                 </DialogDescription>
+                {occupant && (() => {
+                  const specialRoles = getPlayerSpecialRoles(occupant);
+                  if (specialRoles.length === 0) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Ruoli FC IQ:
+                      </span>
+                      {specialRoles.map((sr, i) => (
+                        <Badge
+                          key={`${sr.raw}-${i}`}
+                          variant="outline"
+                          className={`text-[10px] py-0 px-1.5 font-extrabold ${
+                            sr.level === "++"
+                              ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/50"
+                              : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/50"
+                          }`}
+                        >
+                          {sr.raw}
+                        </Badge>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -293,24 +319,61 @@ export const PlayerInstructionsModal: React.FC<PlayerInstructionsModalProps> = (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {availableRoles.map((role) => {
                 const isSelected = selectedRole.id === role.id;
+                const mastery = getPlayerRoleMastery(occupant, role.name);
+
+                let cardStyle =
+                  "bg-muted/15 border-border/70 text-muted-foreground hover:bg-muted/30 hover:border-primary/40";
+                if (isSelected) {
+                  cardStyle =
+                    mastery === "++"
+                      ? "bg-amber-500/15 border-amber-500 text-foreground ring-2 ring-amber-500/30 shadow-sm"
+                      : mastery === "+"
+                      ? "bg-emerald-500/15 border-emerald-500 text-foreground ring-2 ring-emerald-500/30 shadow-sm"
+                      : "bg-primary/10 border-primary text-foreground ring-2 ring-primary/25 shadow-sm";
+                } else if (mastery === "++") {
+                  cardStyle =
+                    "bg-amber-500/10 border-amber-500/50 text-foreground hover:bg-amber-500/15 hover:border-amber-500";
+                } else if (mastery === "+") {
+                  cardStyle =
+                    "bg-emerald-500/10 border-emerald-500/50 text-foreground hover:bg-emerald-500/15 hover:border-emerald-500";
+                }
+
                 return (
                   <button
                     key={role.id}
                     type="button"
                     disabled={disabled}
                     onClick={() => handleSelectRole(role)}
-                    className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-1.5 ${
-                      isSelected
-                        ? "bg-primary/10 border-primary text-foreground ring-2 ring-primary/25 shadow-sm"
-                        : "bg-muted/15 border-border/70 text-muted-foreground hover:bg-muted/30 hover:border-primary/40"
-                    } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                    className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-1.5 ${cardStyle} ${
+                      disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-bold text-xs text-foreground">
-                        {role.name}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-xs text-foreground">
+                          {role.name}
+                        </span>
+                        {mastery === "++" && (
+                          <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/60 font-black">
+                            Ruolo ++
+                          </Badge>
+                        )}
+                        {mastery === "+" && (
+                          <Badge className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/60 font-black">
+                            Ruolo +
+                          </Badge>
+                        )}
+                      </div>
                       {isSelected && (
-                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                        <CheckCircle2
+                          className={`w-4 h-4 shrink-0 ${
+                            mastery === "++"
+                              ? "text-amber-500"
+                              : mastery === "+"
+                              ? "text-emerald-500"
+                              : "text-primary"
+                          }`}
+                        />
                       )}
                     </div>
                     <p className="text-[11px] leading-relaxed text-muted-foreground">
