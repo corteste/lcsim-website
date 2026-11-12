@@ -284,7 +284,7 @@ export const ClubProfileTab: React.FC<ClubProfileTabProps> = ({
                         <span className="text-[11px] text-muted-foreground block truncate">
                           {t.won_as_team_name && t.won_as_team_name !== team.NAME
                             ? `Come ${t.won_as_team_name}`
-                            : "Campione d'Italia"}
+                            : "Campione LCSIM"}
                         </span>
                       </div>
                     </div>

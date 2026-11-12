@@ -59,7 +59,7 @@ const HISTORICAL_SEASONS: HistoricalSeasonMeta[] = [
     regularSeasonWinner: "Alvisopoli FC",
     regularSeasonWinnerTeamId: "ALV",
     formatDescription: "10 squadre • 9 giornate di Regular Season • Playoff a eliminazione diretta",
-    description: "Finale al cardiopalma: Panormus FC si laurea campione d'Italia superando Alvisopoli FC ai calci di rigore dopo il 2-2 dei tempi regolamentari.",
+    description: "Finale al cardiopalma: Panormus FC si laurea Campione LCSIM superando Alvisopoli FC ai calci di rigore dopo il 2-2 dei tempi regolamentari.",
     totalTeams: 10,
     regularSeasonWeeks: 9,
   },
@@ -149,7 +149,7 @@ const HISTORICAL_SEASONS: HistoricalSeasonMeta[] = [
     regularSeasonWinner: "FC Karalis",
     regularSeasonWinnerTeamId: "KAR",
     formatDescription: "8 squadre • 9 giornate di Regular Season • Playoff a eliminazione diretta",
-    description: "L'FC Karalis comanda la fase a girone con 19 pt, ma l'AC Denti si impone nei playoff e supera l'AC Fantasy 2-0 laureandosi Campione d'Italia.",
+    description: "L'FC Karalis comanda la fase a girone con 19 pt, ma l'AC Denti si impone nei playoff e supera l'AC Fantasy 2-0 laureandosi Campione LCSIM.",
     totalTeams: 8,
     regularSeasonWeeks: 9,
   },
@@ -309,7 +309,7 @@ export default function ArchivioStagioni() {
                 )}
                 <div>
                   <div className="text-[10px] uppercase font-bold tracking-wider text-amber-500 flex items-center gap-1">
-                    <Trophy className="h-3.5 w-3.5" /> Campione d'Italia
+                    <Trophy className="h-3.5 w-3.5" /> Campione LCSIM
                   </div>
                   <div className="text-sm font-black text-foreground">{seasonMeta.champion}</div>
                   {seasonMeta.runnerUp && (
@@ -497,7 +497,7 @@ export default function ArchivioStagioni() {
                     />
                     <div className="space-y-0.5 min-w-0">
                       <span className="text-[10px] uppercase font-bold tracking-wider text-amber-500">
-                        Campione d'Italia
+                        Campione LCSIM
                       </span>
                       <h3 className="text-lg font-black text-foreground truncate">
                         {seasonMeta.champion}
