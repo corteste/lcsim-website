@@ -273,46 +273,36 @@ const TEAM_STAT_CATEGORIES: CategoryConfig[] = [
   },
 ];
 
-async function fetchAllTeamStatsData(): Promise<{
+const CURRENT_STAG = 11;
+
+async function fetchCurrentSeasonTeamStatsData(): Promise<{
   statRows: RawTeamStatRow[];
   dbTeams: DbTeamRow[];
 }> {
-  // Fetch all rows from as_team_stat using pagination to bypass 1000-row cap
-  const allStatRows: RawTeamStatRow[] = [];
-  const pageSize = 1000;
-  let from = 0;
-
-  while (true) {
-    const { data, error } = await supabase
+  const [statRes, teamsRes] = await Promise.all([
+    supabase
       .from("as_team_stat")
       .select("*")
-      .order("STAG", { ascending: true })
+      .eq("STAG", CURRENT_STAG)
       .order("WEEK", { ascending: true })
-      .order("ID", { ascending: true })
-      .range(from, from + pageSize - 1);
+      .order("ID", { ascending: true }),
+    supabase
+      .from("an_team")
+      .select("TEAM_ID, NAME, NAME_ABBR, MANAGER, ACTIVE, scudetto, supercoppa")
+      .eq("ACTIVE", true)
+      .order("NAME", { ascending: true }),
+  ]);
 
-    if (error) {
-      console.error("Errore caricamento as_team_stat:", error);
-      throw error;
-    }
-
-    if (!data || data.length === 0) break;
-    allStatRows.push(...(data as RawTeamStatRow[]));
-    if (data.length < pageSize) break;
-    from += pageSize;
+  if (statRes.error) {
+    console.error("Errore caricamento as_team_stat S11:", statRes.error);
   }
-
-  const { data: teamsData, error: teamsError } = await supabase
-    .from("an_team")
-    .select("TEAM_ID, NAME, NAME_ABBR, MANAGER, ACTIVE, scudetto, supercoppa");
-
-  if (teamsError) {
-    console.error("Errore caricamento an_team:", teamsError);
+  if (teamsRes.error) {
+    console.error("Errore caricamento an_team:", teamsRes.error);
   }
 
   return {
-    statRows: allStatRows,
-    dbTeams: (teamsData || []) as DbTeamRow[],
+    statRows: (statRes.data || []) as RawTeamStatRow[],
+    dbTeams: (teamsRes.data || []) as DbTeamRow[],
   };
 }
 
@@ -403,8 +393,6 @@ function getTeamColor(code: string, index: number): string {
 }
 
 export default function StatisticheSquadre() {
-  const [selectedSeason, setSelectedSeason] = useState<string>("all");
-  const [unifyFranchises, setUnifyFranchises] = useState<boolean>(true);
   const [statCategory, setStatCategory] = useState<TeamStatCategory>("attack");
   const [statMode, setStatMode] = useState<StatMode>("total");
   const [chartViewMode, setChartViewMode] = useState<"bar" | "donut">("bar");
@@ -414,68 +402,30 @@ export default function StatisticheSquadre() {
   const [modalTab, setModalTab] = useState<"overview" | "seasons" | "matches">("overview");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["as_team_stat_full"],
-    queryFn: fetchAllTeamStatsData,
+    queryKey: ["as_team_stat_s11"],
+    queryFn: fetchCurrentSeasonTeamStatsData,
     staleTime: 2 * 60 * 1000,
   });
 
   const statRows = data?.statRows ?? [];
   const dbTeams = data?.dbTeams ?? [];
 
-  const dbTeamMap = useMemo(() => {
-    const map = new Map<string, DbTeamRow>();
-    for (const t of dbTeams) {
-      map.set(t.TEAM_ID.trim().toUpperCase(), t);
-    }
-    return map;
-  }, [dbTeams]);
-
-  // Available seasons in as_team_stat sorted ascending (da meno recente a più recente: S1 -> S11)
-  const availableSeasons = useMemo(() => {
-    const set = new Set<number>();
-    for (const r of statRows) {
-      if (r.STAG) set.add(Number(r.STAG));
-    }
-    return Array.from(set).sort((a, b) => a - b);
-  }, [statRows]);
-
-  // Filter rows by selectedSeason and valid match played (MINUTI > 0 or VOTO != null)
+  // Filter rows by valid match played (MINUTI > 0 or VOTO != null)
   const filteredRawRows = useMemo(() => {
     return statRows.filter((r) => {
       const isPlayed = (r.MINUTI !== null && Number(r.MINUTI) > 0) || r.VOTO !== null;
-      if (!isPlayed) return false;
-      if (selectedSeason !== "all" && Number(r.STAG) !== Number(selectedSeason)) {
-        return false;
-      }
-      return true;
+      return isPlayed;
     });
-  }, [statRows, selectedSeason]);
+  }, [statRows]);
 
-  // Aggregate by team (or by franchise if selectedSeason === "all" && unifyFranchises)
+  // Aggregate stats per active team for the current season (Stagione 11)
   const aggregatedTeams = useMemo<AggregatedTeamStats[]>(() => {
-    const shouldUnify = selectedSeason === "all" && unifyFranchises;
-    const groups = new Map<string, RawTeamStatRow[]>();
+    return dbTeams.map((team) => {
+      const teamCode = team.TEAM_ID.trim().toUpperCase();
+      const rows = filteredRawRows.filter(
+        (r) => (r.ID || "").trim().toUpperCase() === teamCode
+      );
 
-    for (const r of filteredRawRows) {
-      const rawCode = (r.ID || "").trim().toUpperCase();
-      if (!rawCode) continue;
-      const meta = getHistoricalTeamMeta(rawCode);
-      const groupKey = shouldUnify ? meta.franchiseCode : rawCode;
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, []);
-      }
-      groups.get(groupKey)!.push(r);
-    }
-
-    const result: AggregatedTeamStats[] = [];
-
-    groups.forEach((rows, groupKey) => {
-      const meta = getHistoricalTeamMeta(groupKey);
-      const dbTeam = dbTeamMap.get(groupKey) || dbTeamMap.get(meta.franchiseCode);
-
-      // Distinct codes in chronological order
-      const eraCodes: string[] = [];
-      const seasonsSet = new Set<number>();
       let matches = 0;
       let validRatingMatches = 0;
       let sumVoto = 0;
@@ -511,29 +461,7 @@ export default function StatisticheSquadre() {
         { matches: number; sumVoto: number; votoCount: number; gf: number; gs: number }
       >();
 
-      const seasonMap = new Map<
-        number,
-        {
-          teamCode: string;
-          matches: number;
-          sumVoto: number;
-          votoCount: number;
-          gol: number;
-          gsub: number;
-          cleanSheets: number;
-          sumPoss: number;
-          possCount: number;
-          passSi: number;
-          passTot: number;
-        }
-      >();
-
       for (const r of rows) {
-        const code = (r.ID || "").trim().toUpperCase();
-        if (!eraCodes.includes(code)) eraCodes.push(code);
-        const stag = Number(r.STAG);
-        seasonsSet.add(stag);
-
         matches += 1;
         minuti += Number(r.MINUTI ?? 0);
         const g = Number(r.GOL ?? 0);
@@ -582,7 +510,7 @@ export default function StatisticheSquadre() {
         }
 
         // Coach aggregation
-        const coachName = (r.ALLENATORE || "N/D").trim();
+        const coachName = (r.ALLENATORE || team.MANAGER || "Staff Tecnico").trim();
         if (coachName && coachName !== "N/D") {
           const prev = coachMap.get(coachName) || {
             matches: 0,
@@ -600,37 +528,6 @@ export default function StatisticheSquadre() {
           prev.gs += gs;
           coachMap.set(coachName, prev);
         }
-
-        // Season aggregation
-        const sPrev = seasonMap.get(stag) || {
-          teamCode: code,
-          matches: 0,
-          sumVoto: 0,
-          votoCount: 0,
-          gol: 0,
-          gsub: 0,
-          cleanSheets: 0,
-          sumPoss: 0,
-          possCount: 0,
-          passSi: 0,
-          passTot: 0,
-        };
-        sPrev.teamCode = code;
-        sPrev.matches += 1;
-        if (r.VOTO !== null && !isNaN(Number(r.VOTO))) {
-          sPrev.sumVoto += Number(r.VOTO);
-          sPrev.votoCount += 1;
-        }
-        sPrev.gol += g;
-        sPrev.gsub += gs;
-        if (gs === 0) sPrev.cleanSheets += 1;
-        if (r.POSS !== null && Number(r.POSS) > 0 && Number(r.POSS) < 0.99) {
-          sPrev.sumPoss += Number(r.POSS) * 100;
-          sPrev.possCount += 1;
-        }
-        sPrev.passSi += Number(r.PASS_SI ?? 0);
-        sPrev.passTot += Number(r.PASS_TOT ?? 0);
-        seasonMap.set(stag, sPrev);
       }
 
       const gCount = Math.max(1, matches);
@@ -641,7 +538,7 @@ export default function StatisticheSquadre() {
       const avgPoss =
         validPossMatches > 0
           ? Math.round((sumPoss / validPossMatches) * 10) / 10
-          : 50.0;
+          : 0;
 
       const coaches: CoachSummary[] = Array.from(coachMap.entries())
         .map(([name, c]) => ({
@@ -654,40 +551,33 @@ export default function StatisticheSquadre() {
         }))
         .sort((a, b) => b.matches - a.matches || b.avgRating - a.avgRating);
 
-      const seasonBreakdowns: SeasonBreakdown[] = Array.from(seasonMap.entries())
-        .map(([stag, s]) => ({
-          stag,
-          teamCode: s.teamCode,
-          matches: s.matches,
-          avgRating:
-            s.votoCount > 0 ? Math.round((s.sumVoto / s.votoCount) * 100) / 100 : 0,
-          gol: s.gol,
-          gsub: s.gsub,
-          cleanSheets: s.cleanSheets,
-          avgPoss:
-            s.possCount > 0 ? Math.round((s.sumPoss / s.possCount) * 10) / 10 : 50.0,
-          passPct:
-            s.passTot > 0 ? Math.round((s.passSi / s.passTot) * 1000) / 10 : 0,
-        }))
-        .sort((a, b) => b.stag - a.stag);
+      const seasonBreakdowns: SeasonBreakdown[] =
+        matches > 0
+          ? [
+              {
+                stag: CURRENT_STAG,
+                teamCode,
+                matches,
+                avgRating: avgVoto,
+                gol,
+                gsub,
+                cleanSheets,
+                avgPoss,
+                passPct:
+                  passTot > 0 ? Math.round((passSi / passTot) * 1000) / 10 : 0,
+              },
+            ]
+          : [];
 
-      const displayName = shouldUnify
-        ? HISTORICAL_TEAMS_META[groupKey]?.franchiseName ||
-          dbTeam?.NAME ||
-          meta.fullName
-        : HISTORICAL_TEAMS_META[groupKey]?.fullName ||
-          dbTeam?.NAME ||
-          meta.fullName;
-
-      result.push({
-        key: groupKey,
-        displayCode: groupKey,
-        franchiseCode: meta.franchiseCode,
-        displayName,
-        eraCodes,
-        seasonsPlayed: Array.from(seasonsSet).sort((a, b) => a - b),
-        scudetti: Number(dbTeam?.scudetto ?? 0),
-        supercoppe: Number(dbTeam?.supercoppa ?? 0),
+      return {
+        key: teamCode,
+        displayCode: teamCode,
+        franchiseCode: teamCode,
+        displayName: team.NAME,
+        eraCodes: [teamCode],
+        seasonsPlayed: [CURRENT_STAG],
+        scudetti: Number(team.scudetto ?? 0),
+        supercoppe: Number(team.supercoppa ?? 0),
         matches,
         validRatingMatches,
         sumVoto,
@@ -718,42 +608,37 @@ export default function StatisticheSquadre() {
         validCanglMatches,
         avgPoss,
         validPossMatches,
-        golPerGame: Math.round((gol / gCount) * 100) / 100,
-        gsubPerGame: Math.round((gsub / gCount) * 100) / 100,
-        asstPerGame: Math.round((asst / gCount) * 100) / 100,
-        paraPerGame: Math.round((para / gCount) * 100) / 100,
-        tiriTotPerGame: Math.round((tiriTot / gCount) * 10) / 10,
-        tiriSiPerGame: Math.round((tiriSi / gCount) * 10) / 10,
+        golPerGame: matches > 0 ? Math.round((gol / gCount) * 100) / 100 : 0,
+        gsubPerGame: matches > 0 ? Math.round((gsub / gCount) * 100) / 100 : 0,
+        asstPerGame: matches > 0 ? Math.round((asst / gCount) * 100) / 100 : 0,
+        paraPerGame: matches > 0 ? Math.round((para / gCount) * 100) / 100 : 0,
+        tiriTotPerGame: matches > 0 ? Math.round((tiriTot / gCount) * 10) / 10 : 0,
+        tiriSiPerGame: matches > 0 ? Math.round((tiriSi / gCount) * 10) / 10 : 0,
         shotAccuracyPct:
           tiriTot > 0 ? Math.round((tiriSi / tiriTot) * 1000) / 10 : 0,
         shotConversionPct:
           tiriTot > 0 ? Math.round((gol / tiriTot) * 1000) / 10 : 0,
-        passSiPerGame: Math.round((passSi / gCount) * 10) / 10,
+        passSiPerGame: matches > 0 ? Math.round((passSi / gCount) * 10) / 10 : 0,
         passAccuracyPct:
           passTot > 0 ? Math.round((passSi / passTot) * 1000) / 10 : 0,
-        dribSiPerGame: Math.round((dribSi / gCount) * 10) / 10,
+        dribSiPerGame: matches > 0 ? Math.round((dribSi / gCount) * 10) / 10 : 0,
         dribSuccessPct:
           dribTot > 0 ? Math.round((dribSi / dribTot) * 1000) / 10 : 0,
-        crosSiPerGame: Math.round((crosSi / gCount) * 100) / 100,
+        crosSiPerGame: matches > 0 ? Math.round((crosSi / gCount) * 10) / 10 : 0,
         crosAccuracyPct:
           crosTot > 0 ? Math.round((crosSi / crosTot) * 1000) / 10 : 0,
-        ctrsSiPerGame: Math.round((ctrsSi / gCount) * 10) / 10,
+        ctrsSiPerGame: matches > 0 ? Math.round((ctrsSi / gCount) * 10) / 10 : 0,
         ctrsSuccessPct:
           ctrsTot > 0 ? Math.round((ctrsSi / ctrsTot) * 1000) / 10 : 0,
-        canglPerGame:
-          validCanglMatches > 0
-            ? Math.round((cangl / validCanglMatches) * 100) / 100
-            : 0,
-        falliPerGame: Math.round((falli / gCount) * 100) / 100,
-        cardsIndex: gialli + rossi * 3,
+        canglPerGame: matches > 0 ? Math.round((cangl / gCount) * 10) / 10 : 0,
+        falliPerGame: matches > 0 ? Math.round((falli / gCount) * 10) / 10 : 0,
+        cardsIndex: Math.round((gialli * 1 + rossi * 3) * 10) / 10,
         coaches,
         seasonBreakdowns,
-        matchRows: rows.slice().sort((a, b) => b.STAG - a.STAG || b.WEEK - a.WEEK),
-      });
+        matchRows: rows,
+      };
     });
-
-    return result;
-  }, [filteredRawRows, selectedSeason, unifyFranchises, dbTeamMap]);
+  }, [dbTeams, filteredRawRows]);
 
   // Dynamic percentage share data based on selected category & statMode
   const statShareData = useMemo(() => {
@@ -966,7 +851,11 @@ export default function StatisticheSquadre() {
         if (statCategory === "defense") {
           return a.gsubPerGame - b.gsubPerGame;
         }
-        return b.avgVoto - a.avgVoto || b.gol - a.gol;
+        return (
+          b.avgVoto - a.avgVoto ||
+          b.gol - a.gol ||
+          a.displayName.localeCompare(b.displayName)
+        );
       });
   }, [aggregatedTeams, statCategory, statMode, searchQuery]);
 
@@ -988,10 +877,10 @@ export default function StatisticheSquadre() {
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
                 <Shield className="h-3.5 w-3.5" />
-                LCSIM Ufficiale • Statistiche Squadre
+                Serie A • Stagione 11
               </span>
               <span className="text-xs text-muted-foreground">
-                Telemetrie Collettive EA Sports FC • Storico S1–S11
+                Statistiche Ufficiali di Squadra • Campionato in Corso
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
@@ -999,7 +888,7 @@ export default function StatisticheSquadre() {
               Statistiche Squadre
             </h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-              Analisi prestazionale comparativa, efficienza offensiva e difensiva, possesso palla, regia e storico tabellini ufficiali dei club della Lega.
+              Rendimenti, efficienza offensiva e difensiva, possesso palla e indicatori prestazionali dei 12 club di Serie A nella stagione in corso.
             </p>
           </div>
         </div>
@@ -1007,50 +896,17 @@ export default function StatisticheSquadre() {
         {/* UNIFIED COMPACT FILTER & CATEGORY BAR */}
         <Card className="border border-border/80 bg-card shadow-xs overflow-hidden">
           <div className="p-3 sm:px-4 sm:py-3 flex flex-wrap items-center justify-between gap-2.5">
-            {/* Left Group: Season Select + Category Select */}
+            {/* Left Group: Category Select */}
             <div className="flex flex-wrap items-center gap-2">
-              {/* Season Selector Dropdown */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground hidden sm:inline">
-                  Stagione:
-                </span>
-                <Select
-                  value={selectedSeason}
-                  onValueChange={(val) => setSelectedSeason(val)}
-                >
-                  <SelectTrigger className="h-8 w-[165px] sm:w-[180px] text-xs font-bold bg-muted/40 border-border/70">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="text-xs font-bold">
-                      All-Time (S1–S11)
-                    </SelectItem>
-                    {availableSeasons.map((stag) => (
-                      <SelectItem
-                        key={stag}
-                        value={String(stag)}
-                        className="text-xs font-mono font-semibold"
-                      >
-                        Stagione {stag} (S{stag})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Category Selector Dropdown */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground hidden sm:inline ml-1">
                   Statistica:
                 </span>
                 <Select
                   value={statCategory}
                   onValueChange={(val) => setStatCategory(val as TeamStatCategory)}
                 >
-                  <SelectTrigger className="h-8 w-[195px] sm:w-[215px] text-xs font-bold bg-muted/40 border-border/70">
+                  <SelectTrigger className="h-8 w-[205px] sm:w-[225px] text-xs font-bold bg-muted/40 border-border/70">
                     <div className="flex items-center gap-1.5 truncate">
                       <SelectValue />
                     </div>
@@ -1076,38 +932,8 @@ export default function StatisticheSquadre() {
               </div>
             </div>
 
-            {/* Right Group: Franchises Toggle, Total/Per-Game Toggle, KPI Chart Button */}
+            {/* Right Group: Total/Per-Game Toggle, Search, KPI Chart Button */}
             <div className="flex flex-wrap items-center gap-2">
-              {selectedSeason === "all" && (
-                <div className="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/60">
-                  <button
-                    type="button"
-                    onClick={() => setUnifyFranchises(true)}
-                    className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                      unifyFranchises
-                        ? "bg-card text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Unisce i rebrand storici sotto la franchigia attuale (es. SBM + MAR)"
-                  >
-                    <Layers className="h-3 w-3 text-emerald-500" />
-                    Franchigie
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUnifyFranchises(false)}
-                    className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
-                      !unifyFranchises
-                        ? "bg-card text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Mostra separatamente ogni singolo codice storico"
-                  >
-                    Codici
-                  </button>
-                </div>
-              )}
-
               <div className="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/60">
                 <button
                   type="button"
@@ -1131,6 +957,27 @@ export default function StatisticheSquadre() {
                 >
                   Media/G
                 </button>
+              </div>
+
+              {/* Search input */}
+              <div className="relative w-[130px] sm:w-[170px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Cerca club..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-8 pl-8 pr-7 text-xs bg-muted/40 border-border/70 rounded-lg"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
 
               <Button

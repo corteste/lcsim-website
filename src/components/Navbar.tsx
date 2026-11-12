@@ -200,6 +200,13 @@ const Navbar = () => {
       colorClass: "text-purple-500",
     },
     {
+      path: "/archivio/statistiche-squadre",
+      label: "Statistiche Squadre",
+      description: "Analisi storica e aggregata delle performance di squadra",
+      icon: BarChart3,
+      colorClass: "text-rose-500",
+    },
+    {
       path: "/archivio/hall-of-fame",
       label: "Hall of Fame",
       description: "Le leggende ufficiali e i campioni storici di Lega",
