@@ -250,7 +250,7 @@ export default function ArchivioStagioni() {
             </p>
           </div>
 
-          {/* Selettore Stagione Storica (Menu a tendina) */}
+          {/* Selettore Stagione Storica (Menu a tendina ordinato da S1 a S10) */}
           <div className="flex items-center gap-2.5 self-start lg:self-auto shrink-0">
             <span className="text-xs font-bold text-muted-foreground shrink-0 hidden sm:inline">
               Edizione:
@@ -259,19 +259,21 @@ export default function ArchivioStagioni() {
               value={String(selectedSeason)}
               onValueChange={(val) => handleSeasonChange(Number(val))}
             >
-              <SelectTrigger className="w-[230px] sm:w-[250px] bg-card border-border/80 font-bold text-xs h-10 rounded-xl shadow-xs">
+              <SelectTrigger className="w-[160px] sm:w-[180px] bg-card border-border/80 font-bold text-xs h-10 rounded-xl shadow-xs">
                 <SelectValue placeholder="Seleziona Stagione" />
               </SelectTrigger>
               <SelectContent className="max-h-[320px]">
-                {HISTORICAL_SEASONS.map((s) => (
-                  <SelectItem
-                    key={s.seasonNumber}
-                    value={String(s.seasonNumber)}
-                    className="text-xs font-semibold cursor-pointer"
-                  >
-                    {s.label} ({s.champion})
-                  </SelectItem>
-                ))}
+                {[...HISTORICAL_SEASONS]
+                  .sort((a, b) => a.seasonNumber - b.seasonNumber)
+                  .map((s) => (
+                    <SelectItem
+                      key={s.seasonNumber}
+                      value={String(s.seasonNumber)}
+                      className="text-xs font-semibold cursor-pointer"
+                    >
+                      {s.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
