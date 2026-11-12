@@ -261,7 +261,7 @@ const Scouting = () => {
           supabase
             .from("an_player")
             .select("*")
-            .is("Squadra", null)
+            .or("Squadra.is.null,Squadra.ilike.B -%,Squadra.ilike.B-%")
             .order("OVR", { ascending: false }),
         ]);
 

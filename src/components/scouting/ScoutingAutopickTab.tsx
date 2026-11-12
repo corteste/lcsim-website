@@ -65,6 +65,18 @@ const ROLE_GROUPS = [
   { id: "ATT", label: "ATT", roles: ["AD", "AS", "ATT"] },
 ];
 
+const isSerieBTeam = (team?: string | null): boolean => {
+  if (!team) return false;
+  const t = team.trim().toUpperCase();
+  return t.startsWith("B -") || t.startsWith("B-");
+};
+
+const formatSerieBLabel = (team?: string | null): string => {
+  if (!team) return "Serie B";
+  const code = team.replace(/^B\s*-\s*/i, "").trim();
+  return code ? `Serie B (${code})` : "Serie B";
+};
+
 export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
   teamId,
   teamFullName,
@@ -447,9 +459,15 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                         <div className="font-bold text-xs truncate flex items-center gap-1.5">
                           <span className="truncate">{p.Nome} {p.Cognome}</span>
                           {isFreeAgent ? (
-                            <Badge variant="outline" className="text-[8.5px] px-1 py-0 h-3.5 bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0">
-                              Svincolato
-                            </Badge>
+                            isSerieBTeam(p.Squadra) ? (
+                              <Badge variant="outline" className="text-[8.5px] px-1 py-0 h-3.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold shrink-0">
+                                {formatSerieBLabel(p.Squadra)}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[8.5px] px-1 py-0 h-3.5 bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0">
+                                Svincolato
+                              </Badge>
+                            )
                           ) : (
                             <Badge variant="outline" className="text-[8.5px] px-1 py-0 h-3.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shrink-0">
                               Rookie
@@ -542,11 +560,13 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
               (allFreeAgents || []).some((fa) => Number(fa.ID) === Number(pId)) ||
               (!allRookies.some((r) => Number(r.ID) === Number(pId)))
             );
+            const isSerieB = isSerieBTeam(player.Squadra);
             const isDrafted = Boolean(
               player.Squadra &&
               player.Squadra.trim() !== "" &&
               player.Squadra.toUpperCase() !== "SVINCOLATI" &&
-              player.Squadra !== "-"
+              player.Squadra !== "-" &&
+              !isSerieB
             );
             const tokens = isFreeAgent ? 0 : (scoutingTokensByRookie[pId] ?? (player as any)?.tokens_spent ?? 0);
             const topStats = !isFreeAgent && tokens > 0 ? getTopUnlockedAttributes(player, tokens, 5) : [];
@@ -593,9 +613,15 @@ export const ScoutingAutopickTab: React.FC<ScoutingAutopickTabProps> = ({
                       {player.Nome} {player.Cognome}
                     </span>
                     {isFreeAgent ? (
-                      <Badge variant="outline" className="text-[10px] bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0">
-                        Svincolato
-                      </Badge>
+                      isSerieB ? (
+                        <Badge variant="outline" className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold shrink-0">
+                          {formatSerieBLabel(player.Squadra)}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0">
+                          Svincolato
+                        </Badge>
+                      )
                     ) : (
                       <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold shrink-0">
                         Rookie

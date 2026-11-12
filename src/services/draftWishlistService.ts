@@ -473,11 +473,11 @@ export async function executeAutopick(params: {
       return { success: false, error: `La scelta #${pickOverall} è già stata assegnata!` };
     }
 
-    // 2. Recupera tutti i rookie e gli svincolati attualmente non draftati (Squadra IS NULL),
+    // 2. Recupera tutti i rookie e gli svincolati attualmente non draftati (Squadra IS NULL o Serie B "B - *"),
     // oltre al conteggio portieri e scelte residue della franchigia (Punti #42 e #43)
     const [rookiesRes, freeAgentsRes, teamGkRes, remainingPicksRes] = await Promise.all([
       supabase.from(ROOKIE_TABLE).select("*").is("Squadra", null),
-      supabase.from("an_player").select("*").is("Squadra", null),
+      supabase.from("an_player").select("*").or("Squadra.is.null,Squadra.ilike.B -%,Squadra.ilike.B-%"),
       supabase.from("an_player").select("ID", { count: "exact", head: true }).eq("Squadra", pickingTeamId).eq("Posiz", "POR"),
       supabase.from(DRAFT_BOARD_TABLE).select("pick_overall", { count: "exact", head: true }).eq("team_id", pickingTeamId).is("rookie_id", null).is("player_id", null),
     ]);

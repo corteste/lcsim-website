@@ -272,7 +272,7 @@ const Draft = () => {
         supabase
           .from("an_player")
           .select("*")
-          .is("Squadra", null)
+          .or("Squadra.is.null,Squadra.ilike.B -%,Squadra.ilike.B-%")
           .order("OVR", { ascending: false }),
         supabase
           .from("an_player")
@@ -717,8 +717,16 @@ const Draft = () => {
     return rookies.filter((r) => !draftedPlayerIds.has(Number(r.ID)) && !r.Squadra).length;
   }, [rookies, draftedPlayerIds]);
 
+  const isSerieBTeam = (team?: string | null) => {
+    if (!team) return false;
+    const t = team.trim().toUpperCase();
+    return t.startsWith("B -") || t.startsWith("B-");
+  };
+
   const undraftedFreeAgentsCount = useMemo(() => {
-    return freeAgents.filter((fa) => !draftedPlayerIds.has(Number(fa.ID)) && !fa.Squadra).length;
+    return freeAgents.filter(
+      (fa) => !draftedPlayerIds.has(Number(fa.ID)) && (!fa.Squadra || isSerieBTeam(fa.Squadra))
+    ).length;
   }, [freeAgents, draftedPlayerIds]);
 
   // Available unified draft pool (Rookies + Calciatori Svincolati)
@@ -747,11 +755,11 @@ const Draft = () => {
       }
     }
 
-    // 2. Calciatori Svincolati disponibili
+    // 2. Calciatori Svincolati disponibili (inclusi tesserati Serie B "B - *")
     if (poolTypeFilter === "ALL" || poolTypeFilter === "FREE_AGENT") {
       for (const fa of freeAgents) {
         const id = Number(fa.ID);
-        if (draftedPlayerIds.has(id) || fa.Squadra) continue;
+        if (draftedPlayerIds.has(id) || (fa.Squadra && !isSerieBTeam(fa.Squadra))) continue;
         // Punto #42: se c'è l'obbligo portiere, escludi i giocatori di movimento
         if (isGkDraftMandatory && fa.Posiz !== "POR") continue;
         const rank = wishlistMap.get(id);
@@ -2004,12 +2012,21 @@ const Draft = () => {
                             <div className="flex items-center justify-between gap-1.5 pl-9 text-xs">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {item.type === "free_agent" ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[9px] px-1.5 py-0 h-4 leading-none bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0"
-                                  >
-                                    Svincolato
-                                  </Badge>
+                                  isSerieBTeam(item.player.Squadra) ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] px-1.5 py-0 h-4 leading-none bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold shrink-0"
+                                    >
+                                      Serie B ({item.player.Squadra?.replace(/^B\s*-\s*/i, "").trim()})
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] px-1.5 py-0 h-4 leading-none bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold shrink-0"
+                                    >
+                                      Svincolato
+                                    </Badge>
+                                  )
                                 ) : (
                                   <Badge
                                     variant="outline"
