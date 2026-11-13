@@ -1321,7 +1321,7 @@ export default function AdminAutomazioni() {
                   asChild
                   className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 text-xs py-2.5 shadow-sm shadow-amber-600/20"
                 >
-                  <Link to="/sala-stampa">
+                  <Link to="/inbox">
                     <Newspaper className="h-4 w-4" />
                     Vai alla Sala Stampa & Media Hub
                   </Link>

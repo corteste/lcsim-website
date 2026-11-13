@@ -27,8 +27,8 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchPlayerTotwAppearances } from "@/services/totwService";
 import { MarketStatus, isEligibleForMarketStatus } from "@/types/marketStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  User, Ruler, Weight, Footprints, X, Shield, Zap, Target, Activity, 
+import {
+  User, Ruler, Weight, Footprints, X, Shield, Zap, Target, Activity,
   Sparkles, Star, Award, Compass, Swords, Flame, TrendingUp,
   Calendar, Clock, CheckCircle2, AlertCircle, BarChart3, Timer, Trophy
 } from "lucide-react";
@@ -70,15 +70,15 @@ const getMarketStatusDisplay = (market?: MarketStatus | null) => {
   }
 };
 
-const StatBar = ({ 
-  label, 
-  value, 
+const StatBar = ({
+  label,
+  value,
   code,
   isRookie,
-  tokensSpent 
-}: { 
-  label: string; 
-  value: number | null | undefined; 
+  tokensSpent
+}: {
+  label: string;
+  value: number | null | undefined;
   code?: string;
   isRookie?: boolean;
   tokensSpent?: number;
@@ -99,13 +99,12 @@ const StatBar = ({
 
   const percentage = Math.min(Math.max(barValue, 0), 99);
   const colorClass = getValueColor(isUnlocked ? barValue : null);
-  
+
   return (
-    <div className={`group p-2 rounded-lg border transition-all duration-200 shadow-xs ${
-      isRookie && !isUnlocked
-        ? "bg-muted/20 border-dashed border-border/50 opacity-75"
-        : "bg-card/70 hover:bg-muted/50 border-border/50 hover:border-primary/40"
-    }`}>
+    <div className={`group p-2 rounded-lg border transition-all duration-200 shadow-xs ${isRookie && !isUnlocked
+      ? "bg-muted/20 border-dashed border-border/50 opacity-75"
+      : "bg-card/70 hover:bg-muted/50 border-border/50 hover:border-primary/40"
+      }`}>
       <div className="flex justify-between items-center mb-1 gap-1.5">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {code && (
@@ -122,15 +121,14 @@ const StatBar = ({
         </span>
       </div>
       <div className="h-1.5 bg-muted/90 rounded-full overflow-hidden">
-        <div 
-          className={`h-full rounded-full transition-all duration-500 ${
-            !isUnlocked ? "bg-muted-foreground/20" :
-            barValue >= 90 ? "bg-gradient-to-r from-purple-500 to-indigo-500" : 
-            barValue >= 85 ? "bg-gradient-to-r from-blue-500 to-cyan-500" : 
-            barValue >= 80 ? "bg-gradient-to-r from-emerald-500 to-green-500" : 
-            barValue >= 75 ? "bg-gradient-to-r from-yellow-500 to-amber-500" : 
-            barValue >= 50 ? "bg-gradient-to-r from-orange-500 to-amber-600" : "bg-gradient-to-r from-red-500 to-rose-600"
-          }`}
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${!isUnlocked ? "bg-muted-foreground/20" :
+            barValue >= 90 ? "bg-gradient-to-r from-purple-500 to-indigo-500" :
+              barValue >= 85 ? "bg-gradient-to-r from-blue-500 to-cyan-500" :
+                barValue >= 80 ? "bg-gradient-to-r from-emerald-500 to-green-500" :
+                  barValue >= 75 ? "bg-gradient-to-r from-yellow-500 to-amber-500" :
+                    barValue >= 50 ? "bg-gradient-to-r from-orange-500 to-amber-600" : "bg-gradient-to-r from-red-500 to-rose-600"
+            }`}
           style={{ width: `${isUnlocked ? percentage : 0}%` }}
         />
       </div>
@@ -138,16 +136,16 @@ const StatBar = ({
   );
 };
 
-const StatCardGroup = ({ 
-  title, 
-  icon: Icon, 
-  colorClass, 
-  children 
-}: { 
-  title: string; 
-  icon: any; 
-  colorClass: string; 
-  children: React.ReactNode 
+const StatCardGroup = ({
+  title,
+  icon: Icon,
+  colorClass,
+  children
+}: {
+  title: string;
+  icon: any;
+  colorClass: string;
+  children: React.ReactNode
 }) => (
   <Card className="border border-border/60 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col">
     <div className={`px-3 py-2 border-b border-border/50 flex items-center justify-between ${colorClass}`}>
@@ -162,15 +160,15 @@ const StatCardGroup = ({
   </Card>
 );
 
-const StatItemCard = ({ 
-  label, 
-  value, 
+const StatItemCard = ({
+  label,
+  value,
   subValue,
-  icon: Icon, 
-  colorClass 
-}: { 
-  label: string; 
-  value: string | number; 
+  icon: Icon,
+  colorClass
+}: {
+  label: string;
+  value: string | number;
   subValue?: string | React.ReactNode;
   icon?: React.ElementType;
   colorClass?: string;
@@ -369,16 +367,16 @@ function computeDetailedStats(matches: any[], fallbackSum: PlayerStatsSum | null
   };
 }
 
-const AccuracyBar = ({ 
-  label, 
-  success, 
-  total, 
-  percentage 
-}: { 
-  label: string; 
-  success: number; 
-  total: number; 
-  percentage: number; 
+const AccuracyBar = ({
+  label,
+  success,
+  total,
+  percentage
+}: {
+  label: string;
+  success: number;
+  total: number;
+  percentage: number;
 }) => (
   <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs space-y-2">
     <div className="flex items-center justify-between text-xs">
@@ -388,12 +386,11 @@ const AccuracyBar = ({
       </span>
     </div>
     <div className="h-2 bg-muted rounded-full overflow-hidden">
-      <div 
-        className={`h-full rounded-full transition-all duration-500 ${
-          percentage >= 70 ? "bg-emerald-500" : 
-          percentage >= 50 ? "bg-amber-500" : 
-          percentage >= 30 ? "bg-orange-500" : "bg-rose-500"
-        }`}
+      <div
+        className={`h-full rounded-full transition-all duration-500 ${percentage >= 70 ? "bg-emerald-500" :
+          percentage >= 50 ? "bg-amber-500" :
+            percentage >= 30 ? "bg-orange-500" : "bg-rose-500"
+          }`}
         style={{ width: `${Math.min(Math.max(percentage, 0), 100)}%` }}
       />
     </div>
@@ -598,8 +595,8 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
       ];
     }
 
-    const vel = currentPlayer.VELO && currentPlayer.ACCL 
-      ? calcPillarAvg([currentPlayer.VELO, currentPlayer.ACCL]) 
+    const vel = currentPlayer.VELO && currentPlayer.ACCL
+      ? calcPillarAvg([currentPlayer.VELO, currentPlayer.ACCL])
       : (currentPlayer.VELO !== null && currentPlayer.VELO !== undefined ? Math.round(Number(currentPlayer.VELO)) : null);
     const tir = currentPlayer.ATT ?? calcPillarAvg([currentPlayer.FINA, currentPlayer.PTIR, currentPlayer.TIRD, currentPlayer.PIAZ]);
     const pas = currentPlayer.CEN ?? calcPillarAvg([currentPlayer.PASC, currentPlayer.PASL, currentPlayer.CTRP, currentPlayer.VISI]);
@@ -622,7 +619,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
   }, [currentPlayer, isGoalkeeper]);
 
   return (
-    <div 
+    <div
       className="w-[98vw] max-w-7xl 2xl:max-w-[1640px] h-[95vh] max-h-[960px] flex flex-col rounded-2xl overflow-hidden bg-card border border-border/80 shadow-2xl animate-scale-in my-auto mx-auto"
       onClick={(e) => e.stopPropagation()}
     >
@@ -643,18 +640,18 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
           {/* Player Photo + OVR Badge */}
           <div className="relative shrink-0 flex items-center justify-center sm:justify-start">
             <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl overflow-hidden border-2 border-border/80 shadow-xl bg-card/60 backdrop-blur-sm relative group">
-              <img 
-                src={getPlayerImage(currentPlayer.ID)} 
-                onError={(e) => (e.currentTarget.src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`)} 
-                alt={`${currentPlayer.Nome} ${currentPlayer.Cognome}`} 
+              <img
+                src={getPlayerImage(currentPlayer.ID)}
+                onError={(e) => (e.currentTarget.src = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`)}
+                alt={`${currentPlayer.Nome} ${currentPlayer.Cognome}`}
                 className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
               />
               {/* Flag pill overlay on avatar bottom-left */}
               {currentPlayer.Nazionalità && (
                 <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-background/85 backdrop-blur-md border border-border/60 shadow">
-                  <img 
-                    src={getNationalityFlag(currentPlayer.Nazionalità)} 
-                    alt={currentPlayer.Nazionalità} 
+                  <img
+                    src={getNationalityFlag(currentPlayer.Nazionalità)}
+                    alt={currentPlayer.Nazionalità}
                     className="h-3.5 w-5 object-cover rounded-sm"
                     onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
@@ -670,8 +667,8 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                 {currentPlayer.OVR !== null && currentPlayer.OVR !== undefined
                   ? currentPlayer.OVR
                   : (currentPlayer as any).Stelle
-                  ? `${(currentPlayer as any).Stelle}★`
-                  : "—"}
+                    ? `${(currentPlayer as any).Stelle}★`
+                    : "—"}
               </span>
             </div>
           </div>
@@ -681,15 +678,23 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground tracking-tight truncate">
                 {currentPlayer.Nome} {currentPlayer.Cognome}
+
               </h2>
+
+
+              {currentPlayer.Squadra && (
+                <img
+                  src={`${SUPABASE_STORAGE_URL}/images/teams/${currentPlayer.Squadra}_Logo.png`}
+                  alt={currentPlayer.Squadra}
+                  className="h-10 w-10 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
+                  }}
+                />
+              )}
               <Badge variant="outline" className={`${getRoleColor(currentPlayer.Posiz)} text-sm font-bold px-3 py-0.5 border shadow-sm`}>
                 {currentPlayer.Posiz}
               </Badge>
-              {currentPlayer.Squadra && (
-                <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5">
-                  {currentPlayer.Squadra}
-                </Badge>
-              )}
               {isRookie && (
                 <Badge variant="outline" className="text-xs font-bold px-2.5 py-0.5 bg-amber-500/10 text-amber-500 border-amber-500/30">
                   Scouting: {rookieTokens}G
@@ -703,21 +708,8 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               {isRetiringSoon(currentPlayer) && (
                 <RetiringBadge />
               )}
-              {totwCount > 0 && (
-                <Badge
-                  variant="outline"
-                  className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 text-xs font-black gap-1 shadow-xs cursor-default"
-                  title={`Selezionato ${totwCount} volte nella Squadra della Settimana (TOTW)`}
-                >
-                  <Star className="h-3 w-3 fill-amber-500" />
-                  TOTW x{totwCount}
-                </Badge>
-              )}
+
               {/* Palmarès Badges Header */}
-              <PlayerPalmaresBadges
-                palmares={palmares}
-                onClickPalmaresTab={() => setActiveTab("palmares")}
-              />
               {currentPlayer.XP !== null && (
                 <button
                   type="button"
@@ -787,8 +779,8 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
             {/* Macro Stats Strip */}
             <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-7 gap-2 pt-2">
               {macroStats.map((st) => (
-                <div 
-                  key={st.label} 
+                <div
+                  key={st.label}
                   className={`flex flex-col items-center justify-center p-2 rounded-xl bg-gradient-to-br ${st.color} border border-border/40 shadow-sm`}
                 >
                   <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap">{st.label}</span>
@@ -806,36 +798,36 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <div className="px-6 border-b border-border/60 bg-muted/20 shrink-0 overflow-x-auto">
           <TabsList className="bg-transparent h-12 p-0 gap-4 sm:gap-6 justify-start">
-            <TabsTrigger 
-              value="tutti" 
+            <TabsTrigger
+              value="tutti"
               className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
               <Activity className="h-4 w-4 mr-1.5 sm:mr-2" />
               Tutti gli Attributi
             </TabsTrigger>
-            <TabsTrigger 
-              value="ruoli" 
+            <TabsTrigger
+              value="ruoli"
               className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
               <Sparkles className="h-4 w-4 mr-1.5 sm:mr-2" />
               Ruoli & Tratti Speciali
             </TabsTrigger>
-            <TabsTrigger 
-              value="stats" 
+            <TabsTrigger
+              value="stats"
               className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
               <BarChart3 className="h-4 w-4 mr-1.5 sm:mr-2 text-blue-500" />
               Statistiche Stagionali
             </TabsTrigger>
-            <TabsTrigger 
-              value="xp" 
+            <TabsTrigger
+              value="xp"
               className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
               <TrendingUp className="h-4 w-4 mr-1.5 sm:mr-2 text-emerald-500" />
               Rendimento &amp; Grafico XP
             </TabsTrigger>
-            <TabsTrigger 
-              value="palmares" 
+            <TabsTrigger
+              value="palmares"
               className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
               <Trophy className="h-4 w-4 mr-1.5 sm:mr-2 text-amber-500" />
@@ -1072,7 +1064,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   </Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                  {detailedStats 
+                  {detailedStats
                     ? `${detailedStats.matches} presenze a referto • ${detailedStats.minuti}' minuti giocati`
                     : "Caricamento parametri in corso..."}
                 </p>
@@ -1084,22 +1076,20 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               <button
                 type="button"
                 onClick={() => setStatsScope("season")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  statsScope === "season" 
-                    ? "bg-primary text-primary-foreground shadow-xs" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statsScope === "season"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Stagione {xpSeason}
               </button>
               <button
                 type="button"
                 onClick={() => setStatsScope("career")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  statsScope === "career" 
-                    ? "bg-primary text-primary-foreground shadow-xs" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statsScope === "career"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Tutta la Carriera
               </button>
@@ -1118,7 +1108,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               </div>
               <div className="space-y-1">
                 <h4 className="text-base font-bold text-foreground">
-                  {statsScope === "season" 
+                  {statsScope === "season"
                     ? `Nessuna statistica registrata nella Stagione ${xpSeason}`
                     : "Nessuna presenza ufficiale registrata in carriera"}
                 </h4>
@@ -1141,59 +1131,59 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <span>Rendimento tra i Pali & Efficacia Difensiva</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <StatItemCard 
-                    label="Parate Totali" 
-                    value={detailedStats.para} 
+                  <StatItemCard
+                    label="Parate Totali"
+                    value={detailedStats.para}
                     subValue={`${detailedStats.paraP90} parate / 90'`}
-                    icon={Shield} 
-                    colorClass="text-emerald-600 dark:text-emerald-400" 
+                    icon={Shield}
+                    colorClass="text-emerald-600 dark:text-emerald-400"
                   />
-                  <StatItemCard 
-                    label="Gol Subiti" 
-                    value={detailedStats.gsub} 
+                  <StatItemCard
+                    label="Gol Subiti"
+                    value={detailedStats.gsub}
                     subValue={`${detailedStats.gsubP90} subiti / 90'`}
-                    icon={Target} 
-                    colorClass="text-rose-600 dark:text-rose-400" 
+                    icon={Target}
+                    colorClass="text-rose-600 dark:text-rose-400"
                   />
-                  <StatItemCard 
-                    label="% Parate Riuscite" 
-                    value={`${detailedStats.savePct}%`} 
+                  <StatItemCard
+                    label="% Parate Riuscite"
+                    value={`${detailedStats.savePct}%`}
                     subValue={`${detailedStats.para} su ${detailedStats.para + detailedStats.gsub} tiri subiti`}
-                    icon={TrendingUp} 
-                    colorClass={detailedStats.savePct >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"} 
+                    icon={TrendingUp}
+                    colorClass={detailedStats.savePct >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"}
                   />
-                  <StatItemCard 
-                    label="Porta Inviolata" 
-                    value={detailedStats.cleanSheets} 
+                  <StatItemCard
+                    label="Porta Inviolata"
+                    value={detailedStats.cleanSheets}
                     subValue={`Clean sheet (${Math.round((detailedStats.cleanSheets / detailedStats.matches) * 100)}% gare)`}
-                    icon={Award} 
-                    colorClass="text-blue-600 dark:text-blue-400" 
+                    icon={Award}
+                    colorClass="text-blue-600 dark:text-blue-400"
                   />
-                  <StatItemCard 
-                    label="Minuti per Gol Subito" 
-                    value={detailedStats.minPerGsub ? `${detailedStats.minPerGsub}'` : "-"} 
+                  <StatItemCard
+                    label="Minuti per Gol Subito"
+                    value={detailedStats.minPerGsub ? `${detailedStats.minPerGsub}'` : "-"}
                     subValue="Frequenza gol incassati"
-                    icon={Timer} 
+                    icon={Timer}
                   />
-                  <StatItemCard 
-                    label="Media Voto" 
-                    value={detailedStats.avgRating} 
+                  <StatItemCard
+                    label="Media Voto"
+                    value={detailedStats.avgRating}
                     subValue="Rendimento medio in campo"
-                    icon={Star} 
-                    colorClass="text-purple-600 dark:text-purple-400" 
+                    icon={Star}
+                    colorClass="text-purple-600 dark:text-purple-400"
                   />
-                  <StatItemCard 
-                    label="Miglior Partita" 
-                    value={detailedStats.bestRating ? Number(detailedStats.bestRating.voto).toFixed(1) : "-"} 
+                  <StatItemCard
+                    label="Miglior Partita"
+                    value={detailedStats.bestRating ? Number(detailedStats.bestRating.voto).toFixed(1) : "-"}
                     subValue={detailedStats.bestRating ? `Stag. ${detailedStats.bestRating.stag} - G. ${detailedStats.bestRating.week}` : "-"}
-                    icon={Sparkles} 
-                    colorClass="text-amber-500" 
+                    icon={Sparkles}
+                    colorClass="text-amber-500"
                   />
-                  <StatItemCard 
-                    label="Presenze & Minuti" 
-                    value={`${detailedStats.matches}`} 
+                  <StatItemCard
+                    label="Presenze & Minuti"
+                    value={`${detailedStats.matches}`}
                     subValue={`${detailedStats.minuti}' tot. (${detailedStats.avgMinPerMatch}'/gara)`}
-                    icon={Activity} 
+                    icon={Activity}
                   />
                 </div>
               </div>
@@ -1204,11 +1194,11 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <Compass className="h-3.5 w-3.5" />
                   <span>Distribuzione, Rinvii & Manovra dal Basso</span>
                 </div>
-                <AccuracyBar 
-                  label="Precisione Passaggi & Rinvii del Portiere" 
-                  success={detailedStats.passSi} 
-                  total={detailedStats.passTot} 
-                  percentage={detailedStats.passPct} 
+                <AccuracyBar
+                  label="Precisione Passaggi & Rinvii del Portiere"
+                  success={detailedStats.passSi}
+                  total={detailedStats.passTot}
+                  percentage={detailedStats.passPct}
                 />
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <StatItemCard label="Passaggi Riusciti" value={detailedStats.passSi} subValue={`${detailedStats.passP90} / 90'`} />
@@ -1268,58 +1258,58 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <span>Panoramica Generale & Rendimento Globale</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <StatItemCard 
-                    label="Gol Segnati" 
-                    value={detailedStats.gol} 
+                  <StatItemCard
+                    label="Gol Segnati"
+                    value={detailedStats.gol}
                     subValue={`${detailedStats.golP90} P90 ${detailedStats.minPerGol ? `• 1 ogni ${detailedStats.minPerGol}'` : ''}`}
-                    icon={Target} 
-                    colorClass="text-emerald-600 dark:text-emerald-400" 
+                    icon={Target}
+                    colorClass="text-emerald-600 dark:text-emerald-400"
                   />
-                  <StatItemCard 
-                    label="Assist Serviti" 
-                    value={detailedStats.asst} 
+                  <StatItemCard
+                    label="Assist Serviti"
+                    value={detailedStats.asst}
                     subValue={`${detailedStats.asstP90} P90 ${detailedStats.minPerAsst ? `• 1 ogni ${detailedStats.minPerAsst}'` : ''}`}
-                    icon={TrendingUp} 
-                    colorClass="text-blue-600 dark:text-blue-400" 
+                    icon={TrendingUp}
+                    colorClass="text-blue-600 dark:text-blue-400"
                   />
-                  <StatItemCard 
-                    label="Partecipazione ai Gol (G+A)" 
-                    value={detailedStats.goalContrib} 
+                  <StatItemCard
+                    label="Partecipazione ai Gol (G+A)"
+                    value={detailedStats.goalContrib}
                     subValue={`${detailedStats.goalContribP90} P90 ${detailedStats.minPerContrib ? `• 1 ogni ${detailedStats.minPerContrib}'` : ''}`}
-                    icon={Award} 
-                    colorClass="text-purple-600 dark:text-purple-400" 
+                    icon={Award}
+                    colorClass="text-purple-600 dark:text-purple-400"
                   />
-                  <StatItemCard 
-                    label="Media Voto" 
-                    value={detailedStats.avgRating} 
+                  <StatItemCard
+                    label="Media Voto"
+                    value={detailedStats.avgRating}
                     subValue="Rendimento medio gare"
-                    icon={Star} 
-                    colorClass="text-amber-500" 
+                    icon={Star}
+                    colorClass="text-amber-500"
                   />
-                  <StatItemCard 
-                    label="Miglior Partita" 
-                    value={detailedStats.bestRating ? Number(detailedStats.bestRating.voto).toFixed(1) : "-"} 
+                  <StatItemCard
+                    label="Miglior Partita"
+                    value={detailedStats.bestRating ? Number(detailedStats.bestRating.voto).toFixed(1) : "-"}
                     subValue={detailedStats.bestRating ? `Stag. ${detailedStats.bestRating.stag} - G. ${detailedStats.bestRating.week}` : "-"}
-                    icon={Sparkles} 
-                    colorClass="text-amber-500" 
+                    icon={Sparkles}
+                    colorClass="text-amber-500"
                   />
-                  <StatItemCard 
-                    label="Presenze Disputate" 
-                    value={detailedStats.matches} 
+                  <StatItemCard
+                    label="Presenze Disputate"
+                    value={detailedStats.matches}
                     subValue={`Media ${detailedStats.avgMinPerMatch}' a presenza`}
-                    icon={Activity} 
+                    icon={Activity}
                   />
-                  <StatItemCard 
-                    label="Minuti Totali" 
-                    value={`${detailedStats.minuti}'`} 
+                  <StatItemCard
+                    label="Minuti Totali"
+                    value={`${detailedStats.minuti}'`}
                     subValue="Tempo effettivo in campo"
-                    icon={Timer} 
+                    icon={Timer}
                   />
-                  <StatItemCard 
-                    label="Disciplina" 
-                    value={`${detailedStats.gialli}G / ${detailedStats.rossi}R`} 
+                  <StatItemCard
+                    label="Disciplina"
+                    value={`${detailedStats.gialli}G / ${detailedStats.rossi}R`}
                     subValue={`${detailedStats.falli} falli commessi`}
-                    colorClass={detailedStats.rossi ? "text-rose-500" : detailedStats.gialli ? "text-amber-500" : "text-muted-foreground"} 
+                    colorClass={detailedStats.rossi ? "text-rose-500" : detailedStats.gialli ? "text-amber-500" : "text-muted-foreground"}
                   />
                 </div>
               </div>
@@ -1330,42 +1320,42 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <Target className="h-3.5 w-3.5" />
                   <span>Attacco, Tiri & Precisione Balistica</span>
                 </div>
-                <AccuracyBar 
-                  label="Precisione Conclusioni Nello Specchio" 
-                  success={detailedStats.tiriIn} 
-                  total={detailedStats.tiriTot} 
-                  percentage={detailedStats.shotPct} 
+                <AccuracyBar
+                  label="Precisione Conclusioni Nello Specchio"
+                  success={detailedStats.tiriIn}
+                  total={detailedStats.tiriTot}
+                  percentage={detailedStats.shotPct}
                 />
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                  <StatItemCard 
-                    label="Tiri Totali" 
-                    value={detailedStats.tiriTot} 
+                  <StatItemCard
+                    label="Tiri Totali"
+                    value={detailedStats.tiriTot}
                     subValue={`${detailedStats.tiriP90} tiri / 90'`}
-                    colorClass="text-muted-foreground" 
+                    colorClass="text-muted-foreground"
                   />
-                  <StatItemCard 
-                    label="Tiri in Porta" 
-                    value={detailedStats.tiriIn} 
+                  <StatItemCard
+                    label="Tiri in Porta"
+                    value={detailedStats.tiriIn}
                     subValue={`${detailedStats.tiriInP90} nello specchio / 90'`}
-                    colorClass="text-foreground" 
+                    colorClass="text-foreground"
                   />
-                  <StatItemCard 
-                    label="Tiri Fuori / Respinti" 
-                    value={detailedStats.tiriOut} 
+                  <StatItemCard
+                    label="Tiri Fuori / Respinti"
+                    value={detailedStats.tiriOut}
                     subValue={`${100 - detailedStats.shotPct}% non a bersaglio`}
-                    colorClass="text-muted-foreground" 
+                    colorClass="text-muted-foreground"
                   />
-                  <StatItemCard 
-                    label="Conversione Tiri / Gol" 
-                    value={`${detailedStats.conversionPct}%`} 
+                  <StatItemCard
+                    label="Conversione Tiri / Gol"
+                    value={`${detailedStats.conversionPct}%`}
                     subValue="Efficienza realizzativa"
-                    colorClass={detailedStats.conversionPct >= 20 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"} 
+                    colorClass={detailedStats.conversionPct >= 20 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"}
                   />
-                  <StatItemCard 
-                    label="Frequenza Gol" 
-                    value={detailedStats.minPerGol ? `${detailedStats.minPerGol}'` : "-"} 
+                  <StatItemCard
+                    label="Frequenza Gol"
+                    value={detailedStats.minPerGol ? `${detailedStats.minPerGol}'` : "-"}
                     subValue="Minuti per 1 gol"
-                    colorClass="text-emerald-600 dark:text-emerald-400" 
+                    colorClass="text-emerald-600 dark:text-emerald-400"
                   />
                 </div>
               </div>
@@ -1377,23 +1367,23 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <span>Costruzione del Gioco, Passaggi & Dribbling</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <AccuracyBar 
-                    label="Precisione Passaggi" 
-                    success={detailedStats.passSi} 
-                    total={detailedStats.passTot} 
-                    percentage={detailedStats.passPct} 
+                  <AccuracyBar
+                    label="Precisione Passaggi"
+                    success={detailedStats.passSi}
+                    total={detailedStats.passTot}
+                    percentage={detailedStats.passPct}
                   />
-                  <AccuracyBar 
-                    label="Successo Dribbling" 
-                    success={detailedStats.dribSi} 
-                    total={detailedStats.dribTot} 
-                    percentage={detailedStats.dribPct} 
+                  <AccuracyBar
+                    label="Successo Dribbling"
+                    success={detailedStats.dribSi}
+                    total={detailedStats.dribTot}
+                    percentage={detailedStats.dribPct}
                   />
-                  <AccuracyBar 
-                    label="Precisione Cross" 
-                    success={detailedStats.crosSi} 
-                    total={detailedStats.crosTot} 
-                    percentage={detailedStats.crosPct} 
+                  <AccuracyBar
+                    label="Precisione Cross"
+                    success={detailedStats.crosSi}
+                    total={detailedStats.crosTot}
+                    percentage={detailedStats.crosPct}
                   />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -1412,31 +1402,31 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                   <Shield className="h-3.5 w-3.5" />
                   <span>Fase Difensiva & Contrasti</span>
                 </div>
-                <AccuracyBar 
-                  label="Percentuale Contrasti Vinti" 
-                  success={detailedStats.ctrsSi} 
-                  total={detailedStats.ctrsTot} 
-                  percentage={detailedStats.ctrsPct} 
+                <AccuracyBar
+                  label="Percentuale Contrasti Vinti"
+                  success={detailedStats.ctrsSi}
+                  total={detailedStats.ctrsTot}
+                  percentage={detailedStats.ctrsPct}
                 />
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <StatItemCard 
-                    label="Contrasti Vinti" 
-                    value={detailedStats.ctrsSi} 
+                  <StatItemCard
+                    label="Contrasti Vinti"
+                    value={detailedStats.ctrsSi}
                     subValue={`${detailedStats.ctrsP90} contrasti / 90'`}
-                    icon={Shield} 
-                    colorClass="text-blue-600 dark:text-blue-400" 
+                    icon={Shield}
+                    colorClass="text-blue-600 dark:text-blue-400"
                   />
-                  <StatItemCard 
-                    label="Contrasti Persi" 
-                    value={detailedStats.ctrsNo} 
+                  <StatItemCard
+                    label="Contrasti Persi"
+                    value={detailedStats.ctrsNo}
                     subValue={`${100 - detailedStats.ctrsPct}% superato`}
-                    colorClass="text-muted-foreground" 
+                    colorClass="text-muted-foreground"
                   />
-                  <StatItemCard 
-                    label="Autogol" 
-                    value={detailedStats.agol} 
+                  <StatItemCard
+                    label="Autogol"
+                    value={detailedStats.agol}
                     subValue={detailedStats.agol > 0 ? "Autoreti commesse" : "Nessuna autorete"}
-                    colorClass={detailedStats.agol > 0 ? "text-rose-600" : "text-muted-foreground"} 
+                    colorClass={detailedStats.agol > 0 ? "text-rose-600" : "text-muted-foreground"}
                   />
                 </div>
               </div>
@@ -1731,9 +1721,8 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
                         return (
                           <tr
                             key={m.week}
-                            className={`hover:bg-muted/30 transition-colors ${
-                              !isCounted ? "opacity-40" : ""
-                            }`}
+                            className={`hover:bg-muted/30 transition-colors ${!isCounted ? "opacity-40" : ""
+                              }`}
                           >
                             <td className="py-2 px-3 font-bold text-foreground">
                               Giornata #{m.week}

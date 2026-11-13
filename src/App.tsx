@@ -53,8 +53,9 @@ const App = () => (
                 <Route path="/squadre/statistiche" element={<StatisticheSquadre />} />
                 <Route path="/statistiche" element={<Statistiche />} />
                 <Route path="/comunicati" element={<Comunicati />} />
-                <Route path="/sala-stampa" element={<SalaStampa />} />
-                <Route path="/campionato/sala-stampa" element={<SalaStampa />} />
+                <Route path="/inbox" element={<SalaStampa />} />
+                <Route path="/sala-stampa" element={<Navigate to="/inbox" replace />} />
+                <Route path="/campionato/sala-stampa" element={<Navigate to="/inbox" replace />} />
                 <Route path="/giocatori/lista-giocatori" element={<ListaGiocatori />} />
                 <Route path="/giocatori/confronto-giocatori" element={<ConfrontoGiocatori />} />
                 <Route path="/calendario" element={<Calendario />} />

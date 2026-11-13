@@ -120,7 +120,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
           </div>
         </div>
 
-        <Link to="/sala-stampa" className="shrink-0">
+        <Link to="/inbox" className="shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -273,7 +273,7 @@ export const PressAndRumorsHomeCard: React.FC<PressAndRumorsHomeCardProps> = ({
             {/* Footer Widget con Link e Indicatori Pallini */}
             <div className="flex items-center justify-between pt-2 border-t border-border/50 shrink-0">
               <Link
-                to="/sala-stampa"
+                to="/inbox"
                 className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
               >
                 <span>Leggi nell'Inbox</span>

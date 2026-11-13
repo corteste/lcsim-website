@@ -31,6 +31,7 @@ import {
   UserCheck,
   ListOrdered,
   BookOpen,
+  Inbox,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -40,7 +41,7 @@ import { useAuth } from "@/context/AuthContext";
 import LoginDialog from "@/components/LoginDialog";
 import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
-import { NotificationsMenu } from "@/components/NotificationsMenu";
+import { useInboxUnreadCount } from "@/hooks/useInboxUnreadCount";
 import { GlobalAnnouncementBanner } from "@/components/GlobalAnnouncementBanner";
 import { FormationCountdown } from "@/components/FormationCountdown";
 import {
@@ -74,6 +75,7 @@ const Navbar = () => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const { user, logout, openLogin, isAdmin, effectiveTeam } = useAuth();
+  const inboxUnreadCount = useInboxUnreadCount();
 
   const handleLogout = () => {
     logout();
@@ -161,13 +163,6 @@ const Navbar = () => {
 
   // 5. SEZIONE MEDIA & NEWS
   const mediaItems: NavGroupItem[] = [
-    {
-      path: "/sala-stampa",
-      label: "Inbox Personale",
-      description: "Notizie ufficiali, rumor, interviste, anteprime e trattative",
-      icon: Newspaper,
-      colorClass: "text-amber-500",
-    },
     {
       path: "/comunicati",
       label: "Comunicati Ufficiali",
@@ -299,9 +294,11 @@ const Navbar = () => {
   const isDraftActive =
     location.pathname.startsWith("/draft") ||
     location.pathname.startsWith("/mercato");
+  const isInboxActive =
+    location.pathname === "/inbox" ||
+    location.pathname.startsWith("/inbox/");
   const isMediaActive =
     mediaItems.some((i) => location.pathname === i.path) ||
-    location.pathname.startsWith("/sala-stampa") ||
     location.pathname.startsWith("/comunicati") ||
     location.pathname.startsWith("/media") ||
     location.pathname === "/probabili-formazioni" ||
@@ -348,7 +345,27 @@ const Navbar = () => {
           {/* DESKTOP NAVIGATION (MACRO-AREE PROFESSIONALI RAGGRUPPATE)         */}
           {/* ================================================================= */}
           <div className="hidden lg:flex items-center gap-1 xl:gap-2">
-            
+
+            {/* 0. LINK DIRETTO: INBOX */}
+            <Link
+              to="/inbox"
+              className={`relative px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
+                isInboxActive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+              }`}
+            >
+              <Inbox className="h-4 w-4 text-amber-500" />
+              <span>Inbox</span>
+              {inboxUnreadCount > 0 && (
+                <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black leading-none shadow-xs">
+                  {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
+                </span>
+              )}
+            </Link>
+
+            <div className="h-5 w-px bg-border/70 mx-1.5 xl:mx-2.5" aria-hidden="true" />
+
             {/* 1. DROPDOWN: CAMPIONATO */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
@@ -611,9 +628,6 @@ const Navbar = () => {
               <FormationCountdown compact={true} />
             </Link>
 
-            {/* Centro Notifiche & Comunicazioni Realtime */}
-            <NotificationsMenu />
-
             {/* Theme Toggle Compatto a Icona Singola Rotante */}
             <Button
               variant="ghost"
@@ -824,6 +838,29 @@ const Navbar = () => {
                     <div className="pt-2 pb-1">
                       <Link to="/mia-squadra/tattica" onClick={() => setIsOpen(false)}>
                         <FormationCountdown compact={true} className="w-full justify-center py-1.5" />
+                      </Link>
+                    </div>
+
+                    {/* Link diretto: Inbox (Mobile) */}
+                    <div className="space-y-1 pb-2 border-b border-border/60">
+                      <Link
+                        to="/inbox"
+                        onClick={() => setIsOpen(false)}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                          isInboxActive
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                            : "text-foreground hover:bg-muted/50"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Inbox className="h-4 w-4 text-amber-500" />
+                          <span>Inbox</span>
+                        </span>
+                        {inboxUnreadCount > 0 && (
+                          <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-black leading-none">
+                            {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
+                          </span>
+                        )}
                       </Link>
                     </div>
 
