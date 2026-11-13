@@ -648,7 +648,7 @@ const ArchivioGiocatori = () => {
                     </TabsTrigger>
                     <TabsTrigger value="palmares" className="gap-1.5 font-bold text-xs sm:text-sm">
                       <Trophy className="h-4 w-4 text-amber-500" />
-                      Palmarès ({playerPalmares?.totalTrophiesCount ?? 0})
+                      Palmarès
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>

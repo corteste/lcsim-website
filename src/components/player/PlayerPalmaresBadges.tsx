@@ -14,11 +14,11 @@ export const PlayerPalmaresBadges: React.FC<PlayerPalmaresBadgesProps> = ({
   className = "",
   onClickPalmaresTab,
 }) => {
-  if (!palmares || (palmares.totalTrophiesCount === 0 && palmares.totwCount === 0)) {
+  if (!palmares || (palmares.totalTrophiesCount === 0 && palmares.totwCount === 0 && palmares.allStarCount === 0)) {
     return null;
   }
 
-  const { scudettiCount, supercoppeCount, individualAwardsCount, hallOfFame } = palmares;
+  const { scudettiCount, supercoppeCount, individualAwardsCount, allStarCount, hallOfFame } = palmares;
 
   return (
     <div
@@ -75,6 +75,17 @@ export const PlayerPalmaresBadges: React.FC<PlayerPalmaresBadgesProps> = ({
           <span>
             {individualAwardsCount === 1 ? "1 Titolo Ind." : `${individualAwardsCount} Titoli Ind.`}
           </span>
+        </Badge>
+      )}
+
+      {/* All-Star Badge */}
+      {allStarCount > 0 && (
+        <Badge
+          variant="outline"
+          className="bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30 text-xs font-bold px-2.5 py-0.5 shadow-sm flex items-center gap-1"
+        >
+          <Sparkles className="h-3 w-3 text-sky-500" />
+          <span>{allStarCount}x All-Star</span>
         </Badge>
       )}
     </div>

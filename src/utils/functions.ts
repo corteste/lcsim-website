@@ -2,6 +2,8 @@ import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 export const LCSIM_LOGO = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo.png`;
 export const LCSIM_LOGO_SMALL = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
+export const SCUDETTO_LOGO = `${SUPABASE_STORAGE_URL}/images/trophies/CMP.png`;
+export const SUPERCOPPA_LOGO = `${SUPABASE_STORAGE_URL}/images/trophies/SCP.png`;
 export const PLAYER_FALLBACK_IMAGE = `${SUPABASE_STORAGE_URL}/images/players/MConti.png`;
 
 export const getTeamLogo = (teamId: string | null | undefined) => {
