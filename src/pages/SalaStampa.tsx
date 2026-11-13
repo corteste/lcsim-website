@@ -38,6 +38,7 @@ import {
   MapPin,
   Calendar,
   CloudSun,
+  Megaphone,
 } from "lucide-react";
 import { getTeamLogo } from "@/utils/functions";
 import { supabase } from "@/supabaseClient";
@@ -58,6 +59,11 @@ import {
   checkIsMarketOpen,
 } from "@/services/aiJournalistService";
 import { submitTradePublicReply } from "@/services/tradesService";
+import {
+  markAnnouncementAsRead,
+  markAllAnnouncementsAsRead,
+  markNotificationIdReadLocally,
+} from "@/services/announcementsService";
 
 export default function SalaStampa() {
   const { user, isAdmin, effectiveTeam, availableTeams } = useAuth();
@@ -157,6 +163,11 @@ export default function SalaStampa() {
         { event: "*", schema: "public", table: "market_trades" },
         () => loadInbox()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "league_announcements" },
+        () => loadInbox()
+      )
       .subscribe();
 
     return () => {
@@ -165,6 +176,8 @@ export default function SalaStampa() {
   }, [effectiveTeam, isAdmin]);
 
   // Gestione Letto / Non Letto
+  const userKey = user?.id || user?.username || user?.team || undefined;
+
   const markAsRead = (id: string) => {
     setReadItemIds((prev) => {
       if (prev.has(id)) return prev;
@@ -174,6 +187,14 @@ export default function SalaStampa() {
       } catch {}
       return next;
     });
+
+    if (id.startsWith("league-")) {
+      const annId = id.slice("league-".length);
+      markNotificationIdReadLocally(`ann-${annId}`, userKey);
+      markAnnouncementAsRead(annId, userKey).then(() => {
+        window.dispatchEvent(new Event("lcsim-notifications-updated"));
+      });
+    }
   };
 
   const markAllAsRead = () => {
@@ -182,6 +203,17 @@ export default function SalaStampa() {
     try {
       localStorage.setItem("lcsim_fm24_inbox_read", JSON.stringify(Array.from(allIds)));
     } catch {}
+
+    const annIds = items
+      .filter((it) => it.category === "league" && it.announcementData?.id)
+      .map((it) => it.announcementData!.id);
+    if (annIds.length > 0) {
+      annIds.forEach((annId) => markNotificationIdReadLocally(`ann-${annId}`, userKey));
+      markAllAnnouncementsAsRead(annIds, userKey).then(() => {
+        window.dispatchEvent(new Event("lcsim-notifications-updated"));
+      });
+    }
+
     toast.success("Tutte le notifiche dell'Inbox sono state segnate come lette.");
   };
 
@@ -215,6 +247,7 @@ export default function SalaStampa() {
   const counts = useMemo(() => {
     const c = {
       all: items.length,
+      league: 0,
       trades: 0,
       press: 0,
       rumors: 0,
@@ -460,6 +493,7 @@ export default function SalaStampa() {
             <div className="flex flex-wrap gap-1.5 items-center">
               {[
                 { id: "all", label: "Tutte le Notizie", count: counts.all, icon: Inbox },
+                { id: "league", label: "Comunicazioni di Lega", count: counts.league, icon: Megaphone },
                 { id: "trades", label: "Trattative", count: counts.trades, icon: ArrowLeftRight },
                 { id: "press", label: "Sala Stampa", count: counts.press, icon: Mic2 },
                 { id: "rumors", label: "Voci di Mercato", count: counts.rumors, icon: Flame },
@@ -581,6 +615,10 @@ export default function SalaStampa() {
                               (e.target as HTMLElement).style.display = "none";
                             }}
                           />
+                        ) : item.category === "league" ? (
+                          <div className="h-7 w-7 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                            <Megaphone className="h-4 w-4" />
+                          </div>
                         ) : item.category === "rumors" ? (
                           <div className="h-7 w-7 rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                             <Flame className="h-4 w-4" />
@@ -760,6 +798,19 @@ export default function SalaStampa() {
                         <Link to="/calendario">
                           <Calendar className="h-3.5 w-3.5" />
                           <span>Calendario Completo</span>
+                        </Link>
+                      </Button>
+                    )}
+
+                    {selectedItem.announcementData && (
+                      <Button
+                        size="sm"
+                        asChild
+                        className="h-8 text-xs font-bold gap-1 bg-sky-600 hover:bg-sky-500 text-white shrink-0"
+                      >
+                        <Link to="/comunicati">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span>Vai ai Comunicati</span>
                         </Link>
                       </Button>
                     )}
@@ -1442,6 +1493,25 @@ export default function SalaStampa() {
                       <div className="pt-3 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
                         <span>Redazione Sportiva LCSIM • Notiziario Ufficiale</span>
                         <span className="font-mono">Turno {selectedItem.previewData.week}</span>
+                      </div>
+                    </article>
+                  )}
+
+                  {/* 5. COMUNICAZIONI DI LEGA (Admin / Commissione) */}
+                  {selectedItem.announcementData && (
+                    <article className="space-y-4">
+                      <div className="p-4 sm:p-5 rounded-xl bg-card border border-border/70 shadow-xs space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-bold text-sky-600 dark:text-sky-400">
+                          <Megaphone className="h-4 w-4 shrink-0" />
+                          <span>
+                            {selectedItem.announcementData.priority === "urgent"
+                              ? "Avviso Urgente della Direzione di Lega"
+                              : "Comunicazione Ufficiale della Direzione di Lega"}
+                          </span>
+                        </div>
+                        <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+                          {selectedItem.announcementData.content || "Nessun testo aggiuntivo."}
+                        </div>
                       </div>
                     </article>
                   )}

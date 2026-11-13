@@ -12,9 +12,11 @@ import {
   fetchCompletedTrades,
 } from "@/services/tradesService";
 import { fetchStandings } from "@/services/standingsService";
+import { fetchAnnouncements } from "@/services/announcementsService";
 import { EnrichedTrade } from "@/types/trades";
+import { LeagueAnnouncement } from "@/types/announcements";
 
-export type InboxCategory = "all" | "trades" | "press" | "rumors" | "preview";
+export type InboxCategory = "all" | "league" | "trades" | "press" | "rumors" | "preview";
 
 export interface MatchdayScheduleMatch {
   homeTeamId: string;
@@ -51,7 +53,7 @@ export interface MatchdayPreviewData {
 
 export interface InboxItem {
   id: string;
-  category: "trades" | "press" | "rumors" | "preview";
+  category: "league" | "trades" | "press" | "rumors" | "preview";
   title: string;
   snippet: string;
   senderName: string;
@@ -67,6 +69,7 @@ export interface InboxItem {
   rumorData?: MarketRumor;
   tradeData?: EnrichedTrade;
   previewData?: MatchdayPreviewData;
+  announcementData?: LeagueAnnouncement;
 }
 
 /**
@@ -93,6 +96,7 @@ export async function fetchInboxFeed(params: {
       scheduleRes,
       standingsList,
       teamsRes,
+      announcementsList,
     ] = await Promise.all([
       fetchPressConferences(undefined, season, true),
       teamId ? fetchPendingConferenceForTeam(teamId, season) : Promise.resolve(null),
@@ -119,6 +123,7 @@ export async function fetchInboxFeed(params: {
       supabase
         .from("an_team")
         .select("TEAM_ID, NAME, NAME_ABBR"),
+      fetchAnnouncements().catch(() => [] as LeagueAnnouncement[]),
     ]);
 
     // Unifica le trattative completate visibili a tutta la Lega con le trattative del club
@@ -126,6 +131,26 @@ export async function fetchInboxFeed(params: {
     completedTradesList.forEach((t) => tradesMap.set(t.id, t));
     userTradesList.forEach((t) => tradesMap.set(t.id, t));
     const tradesList = Array.from(tradesMap.values());
+
+    // 1b. Comunicazioni Ufficiali di Lega (Admin / Commissione)
+    announcementsList.forEach((ann) => {
+      const isUrgent = ann.priority === "urgent";
+      items.push({
+        id: `league-${ann.id}`,
+        category: "league",
+        title: ann.title,
+        snippet: ann.content || "Comunicato ufficiale della Direzione di Lega.",
+        senderName: ann.created_by || "Direzione di Lega",
+        senderRole: isUrgent ? "Avviso Urgente Lega" : "Comunicazione Ufficiale",
+        timestamp: ann.created_at,
+        priority: isUrgent ? "urgent" : "normal",
+        badgeText: "Comunicazioni di Lega",
+        badgeColor: isUrgent
+          ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30"
+          : "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
+        announcementData: ann,
+      });
+    });
 
     // 2. Intervista in attesa per la squadra dell'utente (Massima priorità)
     if (pendingPress) {
