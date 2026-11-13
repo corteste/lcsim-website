@@ -114,11 +114,25 @@ export function normalizeWikiKey(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+const SLUG_TITLE_OVERRIDES: Record<string, string> = {
+  "mar-s-attack": "Mar's Attack",
+  "average-pegio-driver": "Average Pegiò Driver",
+};
+
+const UPPERCASE_WORDS = new Set(["ac", "fc", "as", "lcsim"]);
+
 function formatTitleFromSlug(slug: string): string {
+  const override = SLUG_TITLE_OVERRIDES[slug.toLowerCase()];
+  if (override) return override;
+
   return slug
     .split("-")
     .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) =>
+      UPPERCASE_WORDS.has(part.toLowerCase())
+        ? part.toUpperCase()
+        : part.charAt(0).toUpperCase() + part.slice(1)
+    )
     .join(" ");
 }
 
