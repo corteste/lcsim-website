@@ -1797,3 +1797,13 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
     - Ordinamento per OVR/Stelle, Età, Nome, Ruolo e Gettoni Scouting spesi.
     - Disabilitazione contestuale dei filtri Squadra e Stato Mercato per la classe Rookie (contrassegnata con badge "Rookie Draft" / "Draft Pool").
   - **Dettagli Calciatore**: cliccando su una riga o una card si apre la modale ingrandita `PlayerDetails`, con rendering coerente di badge OVR a stelle/valore decifrato e dati anagrafici.
+
+---
+
+## 📌 85. Archivio / Albo d'Oro: Controllo Finale Stagione 4 (Finalista Perdente Errato)
+- **Stato**: 🟡 Da Verificare / In Backlog
+- **Priorità**: Alta (Integrità dati storici e palmarès)
+- **Moduli & Tabelle coinvolte**: `src/services/playerPalmaresService.ts`, `src/pages/ArchivioSquadre.tsx` / `ArchivioStatisticheSquadre.tsx`, `an_schedule`, `"AS_TEAM_STAT"`, eventuale tabella albo d'oro
+- **Descrizione & Obiettivi**:
+  - Verificare i dati storici della **Finale di Stagione 4**: il finalista perdente attualmente mostrato risulta errato.
+  - Controllare da cosa viene derivato il risultato della finale (tabellino partita su `"AS_TEAM_STAT"`, `an_schedule`, rigori/supplementari o mappatura manuale) e correggere il dato / la logica di calcolo affinché finalista perdente, albo d'oro e palmarès dei calciatori/squadre siano coerenti.
