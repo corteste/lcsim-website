@@ -33,7 +33,7 @@ const Classifica = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                LCSIM Ufficiale
+                LCSIM
               </span>
               <span className="text-xs text-muted-foreground font-semibold">
                 Stagione 11 • {matchdayLabel}
@@ -116,15 +116,15 @@ const Classifica = () => {
                         <TableRow
                           key={index}
                           className={`hover:bg-muted/50 transition-colors ${isQuarterFinals
-                              ? "border-l-4 border-l-emerald-500 bg-emerald-500/[0.02]"
-                              : "border-l-4 border-l-blue-500 bg-blue-500/[0.02]"
+                            ? "border-l-4 border-l-emerald-500 bg-emerald-500/[0.02]"
+                            : "border-l-4 border-l-blue-500 bg-blue-500/[0.02]"
                             }`}
                         >
                           <TableCell className="text-center font-mono font-bold">
                             <span
                               className={`inline-flex items-center justify-center h-6 w-6 rounded-md font-mono text-xs font-bold ${isQuarterFinals
-                                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                                  : "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                                : "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
                                 }`}
                             >
                               {index + 1}

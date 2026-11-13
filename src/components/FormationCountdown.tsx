@@ -39,12 +39,14 @@ interface FormationCountdownProps {
   onStatusChange?: (isExpired: boolean, deadline: LeagueDeadline | null) => void;
   className?: string;
   compact?: boolean;
+  bannerMode?: boolean;
 }
 
 export const FormationCountdown: React.FC<FormationCountdownProps> = ({
   onStatusChange,
   className = "",
   compact = false,
+  bannerMode = false,
 }) => {
   const { user } = useAuth();
   const isAdmin = user?.isAdmin || false;
@@ -213,20 +215,40 @@ export const FormationCountdown: React.FC<FormationCountdownProps> = ({
   });
 
   // =========================================================================
-  // VISTA COMPATTA (Per Navbar)
+  // VISTA COMPATTA (Per Banner / Navbar)
   // =========================================================================
   if (compact) {
     return (
       <div
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors shadow-sm ${
-          isClosed
-            ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
-            : isUrgent
-            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 animate-pulse"
-            : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-        } ${className}`}
+        className={
+          bannerMode
+            ? `h-full flex items-center gap-1.5 px-3 sm:px-3.5 text-xs font-bold bg-background text-foreground border-x-2 transition-colors ${
+                isClosed
+                  ? "border-rose-500/80"
+                  : isUrgent
+                  ? "border-amber-500/80 animate-pulse"
+                  : "border-emerald-500/70"
+              } ${className}`
+            : `flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors shadow-sm ${
+                isClosed
+                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
+                  : isUrgent
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 animate-pulse"
+                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              } ${className}`
+        }
       >
-        <Clock className="h-3.5 w-3.5 shrink-0" />
+        <Clock
+          className={`h-3.5 w-3.5 shrink-0 ${
+            bannerMode
+              ? isClosed
+                ? "text-rose-500"
+                : isUrgent
+                ? "text-amber-500"
+                : "text-emerald-500"
+              : ""
+          }`}
+        />
         <span>G{activeDeadline.week}:</span>
         {isClosed ? (
           <span className="uppercase tracking-wider text-[10px]">Chiuse</span>

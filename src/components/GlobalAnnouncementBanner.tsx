@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/supabaseClient";
 import { fetchAnnouncements } from "@/services/announcementsService";
 import { LeagueAnnouncement } from "@/types/announcements";
+import { FormationCountdown } from "@/components/FormationCountdown";
 
 let memoryGlobalBanner: LeagueAnnouncement | null = null;
 
@@ -84,12 +85,7 @@ export const GlobalAnnouncementBanner: React.FC = () => {
     };
   }, [activeBanner]);
 
-  if (!activeBanner) return null;
-
-  const isUrgent = activeBanner.priority === "urgent";
-  const fullText = activeBanner.content
-    ? `${activeBanner.title} — ${activeBanner.content}`
-    : activeBanner.title;
+  const isUrgent = activeBanner?.priority === "urgent";
 
   return (
     <div
@@ -99,69 +95,85 @@ export const GlobalAnnouncementBanner: React.FC = () => {
           : "bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-blue-500/15 border-amber-500/30 text-foreground"
       }`}
     >
-      <div className="container mx-auto px-4 py-2 flex items-center justify-between gap-3 text-xs">
-        {/* LATO SINISTRO: BADGE UFFICIALE (FISSO) */}
-        <Badge
-          variant="outline"
-          className={`shrink-0 text-[10px] font-black uppercase px-2 py-0.5 flex items-center gap-1 ${
-            isUrgent
-              ? "bg-rose-500 text-white border-rose-600 shadow-xs"
-              : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40"
-          }`}
+      <div className="container mx-auto px-4 flex items-stretch justify-between gap-3 text-xs min-h-[38px]">
+        {/* LATO SINISTRO: RETTANGOLO TIMER A TUTTA ALTEZZA */}
+        <Link
+          to="/mia-squadra/tattica"
+          className="shrink-0 flex items-stretch hover:opacity-90 transition-opacity"
+          title="Scadenza consegna formazioni per la Giornata di campionato"
         >
-          {isUrgent ? <AlertTriangle className="h-3 w-3" /> : <Megaphone className="h-3 w-3" />}
-          <span>{isUrgent ? "Avviso Urgente Lega" : "Comunicato Ufficiale"}</span>
-        </Badge>
+          <FormationCountdown compact={true} bannerMode={true} />
+        </Link>
 
-        {/* CENTRO: CONTENITORE MARQUEE / TESTO STATICO */}
-        <div ref={containerRef} className="flex-1 min-w-0 overflow-hidden relative">
-          {isOverflowing ? (
-            <div
-              className="animate-marquee-infinite py-0.5"
-              style={{ "--marquee-duration": `${animationDuration}s` } as React.CSSProperties}
+        {/* RESTO DEL BANNER: BADGE COMUNICATO UFFICIALE + MARQUEE + LEGGI */}
+        {activeBanner ? (
+          <div className="flex-1 min-w-0 py-2 flex items-center justify-between gap-3">
+            {/* BADGE UFFICIALE A DESTRA DEL TIMER */}
+            <Badge
+              variant="outline"
+              className={`shrink-0 text-[10px] font-black uppercase px-2 py-0.5 flex items-center gap-1 ${
+                isUrgent
+                  ? "bg-rose-500 text-white border-rose-600 shadow-xs"
+                  : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40"
+              }`}
             >
-              {/* Primo segmento di testo */}
-              <span className="font-bold text-foreground pr-16 inline-flex items-center">
-                <span>{activeBanner.title}</span>
-                {activeBanner.content && (
-                  <span className="font-normal text-muted-foreground ml-2">
-                    — {activeBanner.content}
-                  </span>
-                )}
-              </span>
+              {isUrgent ? <AlertTriangle className="h-3 w-3" /> : <Megaphone className="h-3 w-3" />}
+              <span>{isUrgent ? "Avviso Urgente Lega" : "Comunicato Ufficiale"}</span>
+            </Badge>
 
-              {/* Secondo segmento gemello per loop continuo senza scatti */}
-              <span className="font-bold text-foreground pr-16 inline-flex items-center" aria-hidden="true">
-                <span>{activeBanner.title}</span>
-                {activeBanner.content && (
-                  <span className="font-normal text-muted-foreground ml-2">
-                    — {activeBanner.content}
+            {/* CENTRO: CONTENITORE MARQUEE / TESTO STATICO */}
+            <div ref={containerRef} className="flex-1 min-w-0 overflow-hidden relative">
+              {isOverflowing ? (
+                <div
+                  className="animate-marquee-infinite py-0.5"
+                  style={{ "--marquee-duration": `${animationDuration}s` } as React.CSSProperties}
+                >
+                  {/* Primo segmento di testo */}
+                  <span className="font-bold text-foreground pr-16 inline-flex items-center">
+                    <span>{activeBanner.title}</span>
+                    {activeBanner.content && (
+                      <span className="font-normal text-muted-foreground ml-2">
+                        — {activeBanner.content}
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-            </div>
-          ) : (
-            <div ref={textRef} className="truncate font-bold text-foreground">
-              {activeBanner.title}
-              {activeBanner.content && (
-                <span className="font-normal text-muted-foreground hidden sm:inline ml-2">
-                  — {activeBanner.content}
-                </span>
+
+                  {/* Secondo segmento gemello per loop continuo senza scatti */}
+                  <span className="font-bold text-foreground pr-16 inline-flex items-center" aria-hidden="true">
+                    <span>{activeBanner.title}</span>
+                    {activeBanner.content && (
+                      <span className="font-normal text-muted-foreground ml-2">
+                        — {activeBanner.content}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ) : (
+                <div ref={textRef} className="truncate font-bold text-foreground">
+                  {activeBanner.title}
+                  {activeBanner.content && (
+                    <span className="font-normal text-muted-foreground hidden sm:inline ml-2">
+                      — {activeBanner.content}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* LATO DESTRO: LINK DETTAGLIO FISSO (SENZA TASTO CHIUDI) */}
-        <div className="shrink-0 flex items-center pl-1">
-          <Link
-            to="/comunicati"
-            className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5 whitespace-nowrap bg-background/50 px-2 py-1 rounded-md border border-border/50"
-          >
-            <span>Leggi</span>
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+            {/* LATO DESTRO: LINK DETTAGLIO FISSO (SENZA TASTO CHIUDI) */}
+            <div className="shrink-0 flex items-center pl-1">
+              <Link
+                to="/comunicati"
+                className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5 whitespace-nowrap bg-background/50 px-2 py-1 rounded-md border border-border/50"
+              >
+                <span>Leggi</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 py-2" />
+        )}
       </div>
     </div>
   );

@@ -313,7 +313,7 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 w-full border-b bg-card/90 backdrop-blur-md shadow-xs transition-colors">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
-          
+
           {/* ================================================================= */}
           {/* BRAND LOGO & LIVE BADGE                                           */}
           {/* ================================================================= */}
@@ -332,11 +332,11 @@ const Navbar = () => {
                   LCSIM
                 </span>
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-sm tracking-widest uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                  PRO
+                  Stagione 11
                 </span>
               </div>
               <p className="text-[10px] font-semibold leading-none text-muted-foreground hidden lg:block">
-                Lega Calcio Simulato • Serie A
+                Lega Calcio Simulato
               </p>
             </div>
           </Link>
@@ -349,11 +349,10 @@ const Navbar = () => {
             {/* 0. LINK DIRETTO: INBOX */}
             <Link
               to="/inbox"
-              className={`relative px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
-                isInboxActive
-                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
-                  : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-              }`}
+              className={`relative px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${isInboxActive
+                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                }`}
             >
               <Inbox className="h-4 w-4 text-amber-500" />
               <span>Inbox</span>
@@ -369,11 +368,10 @@ const Navbar = () => {
             {/* 1. DROPDOWN: CAMPIONATO */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
-                  isCampionatoActive
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-                }`}
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${isCampionatoActive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                  }`}
               >
                 <Trophy className="h-4 w-4 text-amber-500" />
                 <span>Campionato</span>
@@ -390,9 +388,8 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
-                        }`}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                          }`}
                       >
                         <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
@@ -410,11 +407,10 @@ const Navbar = () => {
             {/* 2. DROPDOWN: SQUADRE */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
-                  isSquadreActive
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-                }`}
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${isSquadreActive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                  }`}
               >
                 <Shield className="h-4 w-4 text-indigo-500" />
                 <span>Squadre</span>
@@ -431,9 +427,8 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
-                        }`}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                          }`}
                       >
                         <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
@@ -451,11 +446,10 @@ const Navbar = () => {
             {/* 3. DROPDOWN: CALCIATORI */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
-                  isCalciatoriActive
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-                }`}
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${isCalciatoriActive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                  }`}
               >
                 <Users className="h-4 w-4 text-cyan-500" />
                 <span>Calciatori</span>
@@ -472,9 +466,8 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
-                        }`}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                          }`}
                       >
                         <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
@@ -492,11 +485,10 @@ const Navbar = () => {
             {/* 4. DROPDOWN: DRAFT & MERCATO */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
-                  isDraftActive
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-                }`}
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${isDraftActive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                  }`}
               >
                 <Sparkles className="h-4 w-4 text-amber-500" />
                 <span>Draft &amp; Mercato</span>
@@ -513,9 +505,8 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
-                        }`}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                          }`}
                       >
                         <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
@@ -533,11 +524,10 @@ const Navbar = () => {
             {/* 5. DROPDOWN: MEDIA & NEWS */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
-                  isMediaActive
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-                }`}
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${isMediaActive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                  }`}
               >
                 <Newspaper className="h-4 w-4 text-amber-500" />
                 <span>Media &amp; News</span>
@@ -554,9 +544,8 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
-                        }`}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                          }`}
                       >
                         <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
@@ -574,11 +563,10 @@ const Navbar = () => {
             {/* 6. DROPDOWN: ARCHIVIO */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger
-                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${
-                  isArchivioActive
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-                }`}
+                className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 outline-hidden ${isArchivioActive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                  }`}
               >
                 <History className="h-4 w-4 text-purple-500" />
                 <span>Archivio</span>
@@ -595,9 +583,8 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                          isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
-                        }`}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                          }`}
                       >
                         <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                           <Icon className="h-4 w-4" />
@@ -618,15 +605,6 @@ const Navbar = () => {
           {/* RIGHT TOOLS: THEME TOGGLE (COMPACT) + USER PROFILE DROPDOWN       */}
           {/* ================================================================= */}
           <div className="flex items-center gap-2">
-            
-            {/* Widget Scadenza Consegna Formazioni */}
-            <Link
-              to="/mia-squadra/tattica"
-              className="hidden lg:block hover:opacity-90 transition-opacity"
-              title="Scadenza consegna formazioni per la Giornata di campionato"
-            >
-              <FormationCountdown compact={true} />
-            </Link>
 
             {/* Theme Toggle Compatto a Icona Singola Rotante */}
             <Button
@@ -646,11 +624,10 @@ const Navbar = () => {
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-2 outline-hidden border ${
-                      isMiaSquadraActive
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/25"
-                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 shadow-xs"
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-2 outline-hidden border ${isMiaSquadraActive
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/25"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 shadow-xs"
+                      }`}
                   >
                     {effectiveTeam ? (
                       <img
@@ -708,9 +685,8 @@ const Navbar = () => {
                         <DropdownMenuItem asChild>
                           <Link
                             to="/admin/automazioni"
-                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                              location.pathname === "/admin/automazioni" ? "bg-amber-500/15 font-bold text-amber-600 dark:text-amber-400" : "hover:bg-amber-500/10 text-foreground"
-                            }`}
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${location.pathname === "/admin/automazioni" ? "bg-amber-500/15 font-bold text-amber-600 dark:text-amber-400" : "hover:bg-amber-500/10 text-foreground"
+                              }`}
                           >
                             <div className="p-1.5 rounded-md bg-amber-500/15 text-amber-500 shrink-0">
                               <Cpu className="h-4 w-4" />
@@ -742,9 +718,8 @@ const Navbar = () => {
                         <DropdownMenuItem key={item.path} asChild>
                           <Link
                             to={item.path}
-                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${
-                              isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
-                            }`}
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${isCurrent ? "bg-muted font-bold text-foreground" : "hover:bg-muted/50"
+                              }`}
                           >
                             <div className={`p-1.5 rounded-md bg-muted/60 ${item.colorClass} shrink-0`}>
                               <Icon className="h-4 w-4" />
@@ -769,7 +744,7 @@ const Navbar = () => {
                       <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
                         <UserCheck className="h-4 w-4" />
                       </div>
-                      <span>Modifica Allenatore</span>
+                      <span>Modifica Informazioni Societarie</span>
                     </DropdownMenuItem>
                   )}
 
@@ -846,11 +821,10 @@ const Navbar = () => {
                       <Link
                         to="/inbox"
                         onClick={() => setIsOpen(false)}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                          isInboxActive
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                            : "text-foreground hover:bg-muted/50"
-                        }`}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${isInboxActive
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                          : "text-foreground hover:bg-muted/50"
+                          }`}
                       >
                         <span className="flex items-center gap-2.5">
                           <Inbox className="h-4 w-4 text-amber-500" />
@@ -874,11 +848,10 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                            location.pathname === item.path
-                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                              : "text-foreground hover:bg-muted/50"
-                          }`}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                            : "text-foreground hover:bg-muted/50"
+                            }`}
                         >
                           <item.icon className={`h-4 w-4 ${item.colorClass}`} />
                           <span>{item.label}</span>
@@ -896,11 +869,10 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                            location.pathname === item.path
-                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                              : "text-foreground hover:bg-muted/50"
-                          }`}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                            : "text-foreground hover:bg-muted/50"
+                            }`}
                         >
                           <item.icon className={`h-4 w-4 ${item.colorClass}`} />
                           <span>{item.label}</span>
@@ -918,11 +890,10 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                            location.pathname === item.path
-                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                              : "text-foreground hover:bg-muted/50"
-                          }`}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                            : "text-foreground hover:bg-muted/50"
+                            }`}
                         >
                           <item.icon className={`h-4 w-4 ${item.colorClass}`} />
                           <span>{item.label}</span>
@@ -940,11 +911,10 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                            location.pathname === item.path
-                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                              : "text-foreground hover:bg-muted/50"
-                          }`}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                            : "text-foreground hover:bg-muted/50"
+                            }`}
                         >
                           <item.icon className={`h-4 w-4 ${item.colorClass}`} />
                           <span>{item.label}</span>
@@ -962,11 +932,10 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                            location.pathname === item.path
-                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                              : "text-foreground hover:bg-muted/50"
-                          }`}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                            : "text-foreground hover:bg-muted/50"
+                            }`}
                         >
                           <item.icon className={`h-4 w-4 ${item.colorClass}`} />
                           <span>{item.label}</span>
@@ -984,11 +953,10 @@ const Navbar = () => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                            location.pathname === item.path
-                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                              : "text-foreground hover:bg-muted/50"
-                          }`}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                            : "text-foreground hover:bg-muted/50"
+                            }`}
                         >
                           <item.icon className={`h-4 w-4 ${item.colorClass}`} />
                           <span>{item.label}</span>
@@ -1020,11 +988,10 @@ const Navbar = () => {
                           <Link
                             to="/admin/automazioni"
                             onClick={() => setIsOpen(false)}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                              location.pathname === "/admin/automazioni"
-                                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 font-extrabold"
-                                : "text-foreground hover:bg-muted/50"
-                            }`}
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === "/admin/automazioni"
+                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 font-extrabold"
+                              : "text-foreground hover:bg-muted/50"
+                              }`}
                           >
                             <Cpu className="h-4 w-4 text-amber-500" />
                             <span>Automazioni Lega</span>
@@ -1040,11 +1007,10 @@ const Navbar = () => {
                               key={item.path}
                               to={item.path}
                               onClick={() => setIsOpen(false)}
-                              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-                                isCurrent
-                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                                  : "text-foreground hover:bg-muted/50"
-                              }`}
+                              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${isCurrent
+                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
+                                : "text-foreground hover:bg-muted/50"
+                                }`}
                             >
                               <item.icon className={`h-4 w-4 ${item.colorClass}`} />
                               <span>{item.label}</span>
