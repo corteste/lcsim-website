@@ -14,9 +14,26 @@ export interface PlayerTeamTrophy {
   notes?: string;
 }
 
+export type PlayerAwardType =
+  | "capocannoniere"
+  | "assistman"
+  | "golden_glove"
+  | "mvp"
+  | "finals_mvp"
+  | "miglior_portiere"
+  | "miglior_difensore"
+  | "miglior_centrocampista"
+  | "miglior_attaccante"
+  | "mip"
+  | "roty"
+  | "weekly_mvp"
+  | "all_star"
+  | "ring"
+  | "custom";
+
 export interface PlayerIndividualAward {
   id: string;
-  awardType: "capocannoniere" | "assistman" | "golden_glove" | "mvp" | "custom";
+  awardType: PlayerAwardType;
   title: string;
   season: number;
   seasonLabel: string;
@@ -39,6 +56,7 @@ export interface PlayerPalmares {
   individualAwards: PlayerIndividualAward[];
   hallOfFame: PlayerHallOfFame | null;
   totwCount: number;
+  allStarCount: number;
   totalTrophiesCount: number;
   scudettiCount: number;
   supercoppeCount: number;
@@ -114,21 +132,26 @@ export async function fetchPlayerPalmares(playerId: number): Promise<PlayerPalma
   // Ordina trofei di squadra per stagione crescente
   teamTrophies.sort((a, b) => a.season - b.season);
 
-  // 2. Risolvi Premi Individuali
-  const individualAwards: PlayerIndividualAward[] = rawAwards.map((a: any) => {
-    const meta = getHistoricalTeamMeta(a.team_id);
-    return {
-      id: a.id,
-      awardType: a.award_type,
-      title: a.award_title,
-      season: Number(a.season),
-      seasonLabel: `Stagione ${a.season}`,
-      teamId: a.team_id,
-      teamName: meta.fullName,
-      statValue: a.stat_value,
-      notes: a.notes,
-    };
-  });
+  // 2. Risolvi Premi Individuali & Conteggio All-Star
+  const allStarCount = rawAwards.filter((a: any) => a.award_type === "all_star").length;
+  const EXCLUDED_FROM_INDIVIDUAL_LIST = new Set(["all_star", "ring", "weekly_mvp"]);
+
+  const individualAwards: PlayerIndividualAward[] = rawAwards
+    .filter((a: any) => !EXCLUDED_FROM_INDIVIDUAL_LIST.has(a.award_type))
+    .map((a: any) => {
+      const meta = getHistoricalTeamMeta(a.team_id);
+      return {
+        id: a.id,
+        awardType: a.award_type,
+        title: a.award_title,
+        season: Number(a.season),
+        seasonLabel: `Stagione ${a.season}`,
+        teamId: a.team_id,
+        teamName: meta.fullName,
+        statValue: a.stat_value,
+        notes: a.notes,
+      };
+    });
 
   // 3. Hall of Fame
   const hallOfFame: PlayerHallOfFame | null = hofData
@@ -152,6 +175,7 @@ export async function fetchPlayerPalmares(playerId: number): Promise<PlayerPalma
     individualAwards,
     hallOfFame,
     totwCount: totwCount || 0,
+    allStarCount,
     totalTrophiesCount,
     scudettiCount,
     supercoppeCount,

@@ -15,7 +15,7 @@ import {
   Layers,
 } from "lucide-react";
 import { PlayerPalmares } from "@/services/playerPalmaresService";
-import { getTeamLogo, LCSIM_LOGO_SMALL } from "@/utils/functions";
+import { getTeamLogo, LCSIM_LOGO_SMALL, SCUDETTO_LOGO, SUPERCOPPA_LOGO } from "@/utils/functions";
 
 interface PlayerPalmaresTabProps {
   palmares: PlayerPalmares | null | undefined;
@@ -44,13 +44,14 @@ export const PlayerPalmaresTab: React.FC<PlayerPalmaresTabProps> = ({
     individualAwards,
     hallOfFame,
     totwCount,
+    allStarCount,
     scudettiCount,
     supercoppeCount,
     individualAwardsCount,
     totalTrophiesCount,
   } = palmares;
 
-  const hasAnyHonors = totalTrophiesCount > 0 || totwCount > 0;
+  const hasAnyHonors = totalTrophiesCount > 0 || totwCount > 0 || allStarCount > 0;
 
   if (!hasAnyHonors) {
     return (
@@ -69,11 +70,11 @@ export const PlayerPalmaresTab: React.FC<PlayerPalmaresTabProps> = ({
   return (
     <div className="space-y-6 p-1 sm:p-2">
       {/* Top Showcase Counter Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {/* Scudetti */}
         <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/30 flex items-center gap-3 shadow-sm">
           <div className="h-11 w-11 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
-            <Trophy className="h-6 w-6" />
+            <img src={SCUDETTO_LOGO} alt="Scudetto" className="h-7 w-7 object-contain" />
           </div>
           <div className="min-w-0">
             <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Scudetti</div>
@@ -84,7 +85,7 @@ export const PlayerPalmaresTab: React.FC<PlayerPalmaresTabProps> = ({
         {/* Supercoppe */}
         <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/30 flex items-center gap-3 shadow-sm">
           <div className="h-11 w-11 rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
-            <Shield className="h-6 w-6" />
+            <img src={SUPERCOPPA_LOGO} alt="Supercoppa" className="h-7 w-7 object-contain" />
           </div>
           <div className="min-w-0">
             <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Supercoppe</div>
@@ -100,6 +101,17 @@ export const PlayerPalmaresTab: React.FC<PlayerPalmaresTabProps> = ({
           <div className="min-w-0">
             <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Premi Ind.</div>
             <div className="text-2xl font-black text-foreground font-mono">{individualAwardsCount}</div>
+          </div>
+        </div>
+
+        {/* All-Star Game */}
+        <div className="p-3 rounded-2xl bg-gradient-to-br from-sky-500/10 via-sky-500/5 to-transparent border border-sky-500/30 flex items-center gap-3 shadow-sm">
+          <div className="h-11 w-11 rounded-xl bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-inner">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">All-Star</div>
+            <div className="text-2xl font-black text-foreground font-mono">{allStarCount}</div>
           </div>
         </div>
 
@@ -183,9 +195,9 @@ export const PlayerPalmaresTab: React.FC<PlayerPalmaresTabProps> = ({
                       }`}
                     >
                       {isScudetto ? (
-                        <Trophy className="h-6 w-6" />
+                        <img src={SCUDETTO_LOGO} alt="Scudetto" className="h-8 w-8 object-contain" />
                       ) : (
-                        <Shield className="h-6 w-6" />
+                        <img src={SUPERCOPPA_LOGO} alt="Supercoppa" className="h-8 w-8 object-contain" />
                       )}
                     </div>
 
@@ -234,16 +246,46 @@ export const PlayerPalmaresTab: React.FC<PlayerPalmaresTabProps> = ({
         <div className="flex items-center gap-2 border-b border-border/60 pb-2">
           <Award className="h-5 w-5 text-amber-500" />
           <h3 className="text-sm sm:text-base font-bold text-foreground">
-            Riconoscimenti & Premi Individuali ({individualAwards.length + (totwCount > 0 ? 1 : 0)})
+            Riconoscimenti & Premi Individuali ({individualAwards.length + (allStarCount > 0 ? 1 : 0) + (totwCount > 0 ? 1 : 0)})
           </h3>
         </div>
 
-        {individualAwards.length === 0 && totwCount === 0 ? (
+        {individualAwards.length === 0 && allStarCount === 0 && totwCount === 0 ? (
           <p className="text-xs text-muted-foreground italic py-2">
-            Nessun riconoscimento individuale o selezione TOTW registrata finora.
+            Nessun riconoscimento individuale, convocazione All-Star o selezione TOTW registrata finora.
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* All-Star Game Card (if applicable) */}
+            {allStarCount > 0 && (
+              <Card className="border border-sky-500/40 bg-gradient-to-br from-sky-500/10 via-sky-500/5 to-transparent transition-all hover:shadow-md">
+                <CardContent className="p-3.5 flex items-start gap-3">
+                  <div className="h-11 w-11 rounded-2xl bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0 shadow-sm">
+                    <Sparkles className="h-6 w-6 text-sky-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] font-bold px-1.5 py-0 bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-500/40"
+                      >
+                        Carriera
+                      </Badge>
+                      <span className="text-xs font-black text-sky-500 font-mono">
+                        {allStarCount} {allStarCount === 1 ? "presenza" : "presenze"}
+                      </span>
+                    </div>
+                    <div className="font-bold text-sm text-foreground leading-tight">
+                      All-Star Game
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      Convocato per {allStarCount} {allStarCount === 1 ? "edizione" : "edizioni"} dell'All-Star Game LCSIM.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* TOTW Card (if applicable) */}
             {totwCount > 0 && (
               <Card className="border border-purple-500/40 bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent transition-all hover:shadow-md">
@@ -276,37 +318,84 @@ export const PlayerPalmaresTab: React.FC<PlayerPalmaresTabProps> = ({
 
             {/* Individual Awards */}
             {individualAwards.map((aw) => {
-              const isCapocannoniere = aw.awardType === "capocannoniere";
-              const isAssistman = aw.awardType === "assistman";
-              const isGk = aw.awardType === "golden_glove";
-              const isMvp = aw.awardType === "mvp";
+              const AWARD_STYLES: Record<
+                string,
+                { icon: React.ReactNode; themeClass: string; badgeClass: string; iconBoxClass: string }
+              > = {
+                capocannoniere: {
+                  icon: <Target className="h-6 w-6" />,
+                  themeClass: "border-red-500/40 bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent",
+                  badgeClass: "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/40",
+                  iconBoxClass: "bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30",
+                },
+                assistman: {
+                  icon: <Sparkles className="h-6 w-6" />,
+                  themeClass: "border-cyan-500/40 bg-gradient-to-br from-cyan-500/10 via-cyan-500/5 to-transparent",
+                  badgeClass: "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/40",
+                  iconBoxClass: "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30",
+                },
+                golden_glove: {
+                  icon: <Shield className="h-6 w-6" />,
+                  themeClass: "border-yellow-500/40 bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-transparent",
+                  badgeClass: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/40",
+                  iconBoxClass: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30",
+                },
+                miglior_portiere: {
+                  icon: <Shield className="h-6 w-6" />,
+                  themeClass: "border-yellow-500/40 bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-transparent",
+                  badgeClass: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/40",
+                  iconBoxClass: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30",
+                },
+                miglior_difensore: {
+                  icon: <Shield className="h-6 w-6" />,
+                  themeClass: "border-blue-500/40 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent",
+                  badgeClass: "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/40",
+                  iconBoxClass: "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30",
+                },
+                miglior_centrocampista: {
+                  icon: <Layers className="h-6 w-6" />,
+                  themeClass: "border-teal-500/40 bg-gradient-to-br from-teal-500/10 via-teal-500/5 to-transparent",
+                  badgeClass: "bg-teal-500/20 text-teal-600 dark:text-teal-400 border-teal-500/40",
+                  iconBoxClass: "bg-teal-500/20 text-teal-600 dark:text-teal-400 border border-teal-500/30",
+                },
+                miglior_attaccante: {
+                  icon: <Flame className="h-6 w-6" />,
+                  themeClass: "border-orange-500/40 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent",
+                  badgeClass: "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/40",
+                  iconBoxClass: "bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30",
+                },
+                mvp: {
+                  icon: <Crown className="h-6 w-6" />,
+                  themeClass: "border-indigo-500/40 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent",
+                  badgeClass: "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/40",
+                  iconBoxClass: "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30",
+                },
+                finals_mvp: {
+                  icon: <Medal className="h-6 w-6" />,
+                  themeClass: "border-violet-500/40 bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent",
+                  badgeClass: "bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-500/40",
+                  iconBoxClass: "bg-violet-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/30",
+                },
+                mip: {
+                  icon: <Flame className="h-6 w-6" />,
+                  themeClass: "border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent",
+                  badgeClass: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40",
+                  iconBoxClass: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30",
+                },
+                roty: {
+                  icon: <Calendar className="h-6 w-6" />,
+                  themeClass: "border-lime-500/40 bg-gradient-to-br from-lime-500/10 via-lime-500/5 to-transparent",
+                  badgeClass: "bg-lime-500/20 text-lime-600 dark:text-lime-400 border-lime-500/40",
+                  iconBoxClass: "bg-lime-500/20 text-lime-600 dark:text-lime-400 border border-lime-500/30",
+                },
+              };
 
-              let icon = <Award className="h-6 w-6" />;
-              let themeClass = "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent";
-              let badgeClass = "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40";
-              let iconBoxClass = "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30";
-
-              if (isCapocannoniere) {
-                icon = <Target className="h-6 w-6" />;
-                themeClass = "border-red-500/40 bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent";
-                badgeClass = "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/40";
-                iconBoxClass = "bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30";
-              } else if (isAssistman) {
-                icon = <Sparkles className="h-6 w-6" />;
-                themeClass = "border-cyan-500/40 bg-gradient-to-br from-cyan-500/10 via-cyan-500/5 to-transparent";
-                badgeClass = "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/40";
-                iconBoxClass = "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30";
-              } else if (isGk) {
-                icon = <Shield className="h-6 w-6" />;
-                themeClass = "border-yellow-500/40 bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-transparent";
-                badgeClass = "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/40";
-                iconBoxClass = "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30";
-              } else if (isMvp) {
-                icon = <Medal className="h-6 w-6" />;
-                themeClass = "border-indigo-500/40 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent";
-                badgeClass = "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/40";
-                iconBoxClass = "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30";
-              }
+              const { icon, themeClass, badgeClass, iconBoxClass } = AWARD_STYLES[aw.awardType] ?? {
+                icon: <Award className="h-6 w-6" />,
+                themeClass: "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent",
+                badgeClass: "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40",
+                iconBoxClass: "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30",
+              };
 
               return (
                 <Card key={aw.id} className={`border transition-all hover:shadow-md ${themeClass}`}>

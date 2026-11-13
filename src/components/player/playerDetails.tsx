@@ -831,7 +831,7 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
             >
               <Trophy className="h-4 w-4 mr-1.5 sm:mr-2 text-amber-500" />
-              Palmarès ({palmares?.totalTrophiesCount ?? 0})
+              Palmarès
             </TabsTrigger>
           </TabsList>
         </div>
