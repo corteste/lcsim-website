@@ -32,12 +32,14 @@ import {
   ListOrdered,
   BookOpen,
   Inbox,
+  LayoutDashboard,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
+import { useHomeMode } from "@/hooks/use-home-mode";
 import LoginDialog from "@/components/LoginDialog";
 import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
@@ -76,6 +78,25 @@ const Navbar = () => {
   const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const { user, logout, openLogin, isAdmin, effectiveTeam } = useAuth();
   const inboxUnreadCount = useInboxUnreadCount();
+  const { homeMode, toggleHomeMode } = useHomeMode();
+  const isOffseasonHome = homeMode === "offseason";
+
+  const renderHomeToggleSwitch = () => (
+    <span
+      aria-hidden="true"
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors ${
+        isOffseasonHome
+          ? "bg-amber-500 border-amber-600/40"
+          : "bg-emerald-500 border-emerald-600/40"
+      }`}
+    >
+      <span
+        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+          isOffseasonHome ? "translate-x-[18px]" : "translate-x-0.5"
+        }`}
+      />
+    </span>
+  );
 
   const handleLogout = () => {
     logout();
@@ -748,6 +769,33 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   )}
 
+                  {/* Toggle Versione Home (Stagione / Offseason) */}
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      toggleHomeMode();
+                    }}
+                    role="switch"
+                    aria-checked={isOffseasonHome}
+                    className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-xs font-bold text-foreground hover:bg-muted/60 focus:bg-muted/60 cursor-pointer select-none"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={`p-1.5 rounded-md shrink-0 ${
+                          isOffseasonHome
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                            : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        }`}
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                      </div>
+                      <span className="truncate">
+                        {isOffseasonHome ? "Home: Offseason" : "Home: Stagione"}
+                      </span>
+                    </div>
+                    {renderHomeToggleSwitch()}
+                  </DropdownMenuItem>
+
                   {/* Tasto Cambia Password */}
                   <DropdownMenuItem
                     onClick={() => setIsChangePasswordOpen(true)}
@@ -1065,6 +1113,24 @@ const Navbar = () => {
                             <UserCheck className="h-3.5 w-3.5" /> Modifica Allenatore
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          role="switch"
+                          aria-checked={isOffseasonHome}
+                          onClick={toggleHomeMode}
+                          className="w-full h-8 text-xs font-bold border-border/80 justify-between px-3"
+                        >
+                          <span className="inline-flex items-center gap-1.5">
+                            <LayoutDashboard
+                              className={`h-3.5 w-3.5 ${
+                                isOffseasonHome ? "text-amber-500" : "text-emerald-500"
+                              }`}
+                            />
+                            {isOffseasonHome ? "Home: Offseason" : "Home: Stagione"}
+                          </span>
+                          {renderHomeToggleSwitch()}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
