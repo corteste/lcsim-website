@@ -19,3 +19,5 @@ Per la panoramica completa del gioco, delle entità e delle regole, fai sempre r
    - Effettuare **sempre** test approfonditi per validare la soluzione prima di considerarla completata, verificando l'integrità del codice, il funzionamento a runtime, la corretta gestione dei valori nulli/undefined e l'assenza di errori in console o nel build (`npm run build`).
 5. **Chiarimento & Modalità di Implementazione**:
    - Chiedere **sempre** preventivamente all'utente le modalità di implementazione per ogni richiesta o nuova funzionalità (ad es. scelte di layout/UI, posizionamento, suddivisione in pagine o tab, opzioni architetturali), presentando le possibili soluzioni e attendendo la sua decisione prima di procedere con la scrittura del codice.
+6. **Layout & Spazio Orizzontale delle Pagine**:
+   - Tutte le nuove pagine devono utilizzare il contenitore standard `<main className="container mx-auto px-4 py-8 ...">` senza aggiungere classi `max-w-*` più restrittive rispetto al `container` definito in `tailwind.config.ts` (`1700px` su `2xl`), così da occupare sempre lo stesso spazio orizzontale delle altre pagine del sito (es. `Classifica.tsx`, `ArchivioStagioni.tsx`).

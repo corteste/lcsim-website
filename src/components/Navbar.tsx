@@ -30,6 +30,7 @@ import {
   KeyRound,
   UserCheck,
   ListOrdered,
+  BookOpen,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
@@ -219,6 +220,13 @@ const Navbar = () => {
       description: "Albo dei primati e classifiche storiche (S1–S11)",
       icon: Trophy,
       colorClass: "text-emerald-500",
+    },
+    {
+      path: "/archivio/wiki",
+      label: "Wiki LCSIM",
+      description: "Enciclopedia storica delle stagioni e delle vicende di Lega",
+      icon: BookOpen,
+      colorClass: "text-sky-500",
     },
   ];
 

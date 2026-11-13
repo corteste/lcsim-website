@@ -21,6 +21,7 @@ import ArchivioStagioni from "./pages/ArchivioStagioni";
 import ArchivioStatisticheSquadre from "./pages/ArchivioStatisticheSquadre";
 import HallOfFame from "./pages/HallOfFame";
 import RecordAllTime from "./pages/RecordAllTime";
+import ArchivioWiki from "./pages/ArchivioWiki";
 import Draft from "./pages/Draft";
 import Trattative from "./pages/Trattative";
 import UfficialitaScambi from "./pages/UfficialitaScambi";
@@ -80,6 +81,8 @@ const App = () => (
                 <Route path="/archivio/giocatori" element={<ArchivioGiocatori />} />
                 <Route path="/archivio/hall-of-fame" element={<HallOfFame />} />
                 <Route path="/archivio/record" element={<RecordAllTime />} />
+                <Route path="/archivio/wiki" element={<ArchivioWiki />} />
+                <Route path="/archivio/wiki/:slug" element={<ArchivioWiki />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
