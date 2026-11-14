@@ -137,7 +137,7 @@ export const RookieListHomeCard: React.FC = () => {
             Nessun rookie disponibile al momento.
           </div>
         ) : (
-          <div className="space-y-2 max-h-[265px] overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-[265px] overflow-y-auto pr-1.5">
             {sortedAvailableRookies.map((rookie) => {
               const tokens = scoutingByRookie[Number(rookie.ID)] ?? 0;
               const showExactOvr = tokens >= 5 && rookie.OVR !== null && rookie.OVR !== undefined;
