@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowUpRight, Scissors, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getPlayers } from "@/hooks/use-players";
-import { getTeamCutPlayerIds, CUTS_MAX_ROSTER } from "@/services/cutsService";
+import { getTeamCutPlayerIds } from "@/services/cutsService";
 import {
   getNationalityFlag,
   getPlayerImage,
@@ -63,12 +63,8 @@ export const MyRosterHomeCard: React.FC = () => {
       });
   }, [allPlayers, teamId]);
 
-  const { activeCount, avgOvr, countsByDept } = useMemo(() => {
+  const countsByDept = useMemo(() => {
     const active = sortedRoster.filter((p) => !cutSet.has(Number(p.ID)));
-    const avg =
-      active.length > 0
-        ? Math.round(active.reduce((sum, p) => sum + (Number(p.OVR) || 0), 0) / active.length)
-        : 0;
     const dept = { POR: 0, DIF: 0, CEN: 0, ATT: 0 };
     for (const p of active) {
       if (p.Posiz === "POR") dept.POR += 1;
@@ -76,7 +72,7 @@ export const MyRosterHomeCard: React.FC = () => {
       else if (["CDC", "CC", "ED", "ES", "COC"].includes(p.Posiz)) dept.CEN += 1;
       else dept.ATT += 1;
     }
-    return { activeCount: active.length, avgOvr: avg, countsByDept: dept };
+    return dept;
   }, [sortedRoster, cutSet]);
 
   return (
@@ -93,14 +89,6 @@ export const MyRosterHomeCard: React.FC = () => {
                 <h2 className="font-bold text-base md:text-lg text-foreground truncate">
                   Il Mio Roster{effectiveTeamFullName ? ` • ${effectiveTeamFullName}` : ""}
                 </h2>
-                {teamId && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                  >
-                    {activeCount}/{CUTS_MAX_ROSTER} Attivi
-                  </Badge>
-                )}
                 {teamId && cutSet.size > 0 && (
                   <Badge
                     variant="outline"
@@ -113,7 +101,7 @@ export const MyRosterHomeCard: React.FC = () => {
               </div>
               <p className="text-xs text-muted-foreground">
                 {teamId
-                  ? `Panoramica rosa attuale • Media OVR ${avgOvr}`
+                  ? "Panoramica rosa attuale"
                   : "Accedi con la tua squadra per gestire il roster e i tagli offseason"}
               </p>
             </div>

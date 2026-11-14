@@ -37,6 +37,7 @@ import {
   Activity,
   Shirt,
   Sparkles,
+  Plus,
   Pencil,
   Trash2,
   Briefcase,
@@ -312,6 +313,7 @@ export interface SeasonCalendarBoardProps {
   allowAdminEdit?: boolean;
   selectedOffseasonId?: number | null;
   onSelectedOffseasonIdChange?: (id: number | null) => void;
+  onCreateEvent?: () => void;
   onEditEvent?: (ev: LeagueCalendarEvent) => void;
   onDeleteEvent?: (ev: LeagueCalendarEvent) => void;
   emptyMessage?: string;
@@ -326,6 +328,7 @@ export function SeasonCalendarBoard({
   allowAdminEdit = false,
   selectedOffseasonId: controlledOffseasonId,
   onSelectedOffseasonIdChange,
+  onCreateEvent,
   onEditEvent,
   onDeleteEvent,
   emptyMessage,
@@ -755,11 +758,11 @@ export function SeasonCalendarBoard({
                     </span>
                   </h3>
                   <div className="flex items-center gap-2">
-                    {isAdmin && (
+                    {isAdmin && onCreateEvent && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={openCreateEventModal}
+                        onClick={onCreateEvent}
                         className="h-7 px-2.5 text-xs font-bold gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400"
                       >
                         <Plus className="h-3.5 w-3.5" />

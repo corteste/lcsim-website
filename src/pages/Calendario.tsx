@@ -179,6 +179,7 @@ const Calendario = () => {
           allowAdminEdit={true}
           selectedOffseasonId={selectedOffseasonId}
           onSelectedOffseasonIdChange={setSelectedOffseasonId}
+          onCreateEvent={openCreateEventModal}
           onEditEvent={openEditEventModal}
           onDeleteEvent={handleDeleteEvent}
         />
