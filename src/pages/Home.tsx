@@ -10,11 +10,13 @@ import { OwnedPicksHomeCard } from "@/components/home/OwnedPicksHomeCard";
 import { MyRosterHomeCard } from "@/components/home/MyRosterHomeCard";
 import { RookieListHomeCard } from "@/components/home/RookieListHomeCard";
 import { useHomeMode } from "@/hooks/use-home-mode";
+import { useSchedule } from "@/context/ScheduleContext";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 
 const Home = () => {
   const { standings } = getStandings();
   const { homeMode } = useHomeMode();
+  const { season } = useSchedule();
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors">
@@ -40,7 +42,7 @@ const Home = () => {
                   Serie A • LCSIM
                 </span>
                 <span className="text-xs text-muted-foreground font-mono">
-                  Edizione 9
+                  Edizione {season}
                 </span>
                 {homeMode === "offseason" && (
                   <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-mono">

@@ -97,11 +97,6 @@ export const RookieListHomeCard: React.FC = () => {
       });
   }, [rookies, scoutingByRookie]);
 
-  const scoutedCount = useMemo(
-    () => sortedAvailableRookies.filter((r) => (scoutingByRookie[Number(r.ID)] ?? 0) > 0).length,
-    [sortedAvailableRookies, scoutingByRookie]
-  );
-
   return (
     <Card className="rounded-2xl border border-border/80 bg-card p-5 md:p-6 shadow-sm space-y-4 flex flex-col justify-between h-full">
       <div className="space-y-4">
@@ -112,19 +107,11 @@ export const RookieListHomeCard: React.FC = () => {
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="font-bold text-base text-foreground truncate">
-                  Classe Rookie
-                </h2>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 shrink-0"
-                >
-                  {sortedAvailableRookies.length}
-                </Badge>
-              </div>
+              <h2 className="font-bold text-base text-foreground truncate">
+                Classe Rookie
+              </h2>
               <p className="text-[11px] text-muted-foreground truncate">
-                Top prospetti per stelle{teamId ? ` • ${scoutedCount} osservati` : ""}
+                Top prospetti per stelle
               </p>
             </div>
           </div>
