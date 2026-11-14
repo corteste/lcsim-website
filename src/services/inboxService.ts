@@ -115,10 +115,11 @@ export async function fetchInboxFeed(params: {
         .maybeSingle(),
       supabase
         .from("an_schedule")
-        .select("id, week, stag, home, away, stadium, referee, weather, date, match_time, standings_processed")
+        .select("week, stag, home, away, stadium, referee, weather, date, match_time, standings_processed")
         .eq("stag", season)
         .order("week", { ascending: true })
-        .order("id", { ascending: true }),
+        .order("date", { ascending: true })
+        .order("match_time", { ascending: true }),
       fetchStandings(season).catch(() => []),
       supabase
         .from("an_team")
@@ -244,7 +245,21 @@ export async function fetchInboxFeed(params: {
 
     if (targetWeek) {
       const weekMatches = scheduleRows.filter((m) => m.week === targetWeek && m.home && m.away);
-      if (weekMatches.length > 0) {
+
+      // Verifica che manchino al massimo 5 giorni alla prima partita in programma per la giornata
+      const firstMatchDateMs = weekMatches.reduce<number | null>((earliest, m) => {
+        if (!m.date) return earliest;
+        const dateOnly = String(m.date).slice(0, 10);
+        const parsed = new Date(`${dateOnly}T00:00:00`).getTime();
+        if (Number.isNaN(parsed)) return earliest;
+        return earliest === null || parsed < earliest ? parsed : earliest;
+      }, null);
+
+      const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+      const isWithinPreviewWindow =
+        firstMatchDateMs !== null && Date.now() >= firstMatchDateMs - FIVE_DAYS_MS;
+
+      if (weekMatches.length > 0 && isWithinPreviewWindow) {
         const matchItems: MatchdayScheduleMatch[] = weekMatches.map((m) => {
           const homeInfo = standingMap.get(m.home);
           const awayInfo = standingMap.get(m.away);
