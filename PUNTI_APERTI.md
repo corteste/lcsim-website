@@ -1464,7 +1464,7 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 65. Pagina "Storia del Torneo" (Archivio) con Rendering Markdown & Gestione Contenuti
-- **Stato**: 🟡 Da Pianificare / In Backlog
+- **Stato**: 🟢 Completato (Archivio Wiki `/archivio/wiki`)
 - **Priorità**: Media
 - **Moduli previsti**: Nuova pagina `src/pages/StoriaTorneo.tsx` (`/archivio/storia`), `src/components/Navbar.tsx` (voce nel menu Archivio), `package.json` (`react-markdown`), eventuale file Markdown `src/content/storia-torneo.md` o tabella Supabase
 - **Descrizione & Obiettivi**:
@@ -1537,7 +1537,7 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 70. Homepage: Doppia Modalità Grafica (Offseason vs Stagione In Corso)
-- **Stato**: 🟡 Da Progettare / In Backlog (Segnalazione Admin #4)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Switch Stagione / Offseason in Navbar + layout dedicati in `Home.tsx`)
 - **Priorità**: Media
 - **Moduli previsti**: `src/pages/Home.tsx`, componenti hero e widget homepage
 - **Tabelle coinvolte**: `league_automation_state`, `an_league_events`, `an_schedule`

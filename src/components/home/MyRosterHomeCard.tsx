@@ -135,7 +135,7 @@ export const MyRosterHomeCard: React.FC = () => {
             Nessun giocatore attualmente a roster per {teamId}.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[265px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[265px] overflow-y-auto pr-1.5">
             {sortedRoster.map((player) => {
               const isCut = cutSet.has(Number(player.ID));
               const retiring = isRetiringSoon(player);
