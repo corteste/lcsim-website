@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { getStandings } from "@/hooks/use-standings";
+import { fetchSeasonSchedule } from "@/services/scheduleService";
+import { Schedule } from "@/types/schedule";
+import { SeasonCalendarBoard } from "@/components/schedule/SeasonCalendarBoard";
 import { Trophy, Flame, History, Award, Crown, Swords, Calendar } from "lucide-react";
 import { getTeamLogo, LCSIM_LOGO_SMALL } from "@/utils/functions";
 import { useSearchParams } from "react-router-dom";
@@ -188,7 +191,42 @@ const HISTORICAL_SEASONS: HistoricalSeasonMeta[] = [
 export default function ArchivioStagioni() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSeason = Number(searchParams.get("stag") || "10");
-  const currentTab = searchParams.get("tab") === "playoff" ? "playoff" : "regular";
+  const rawTab = searchParams.get("tab");
+  const currentTab =
+    rawTab === "playoff"
+      ? "playoff"
+      : rawTab === "calendario"
+      ? "calendario"
+      : "regular";
+
+  const [historicalSchedule, setHistoricalSchedule] = useState<Schedule[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setScheduleLoading(true);
+    fetchSeasonSchedule(selectedSeason)
+      .then((data) => {
+        if (!cancelled) {
+          setHistoricalSchedule(data || []);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching historical season schedule:", err);
+        if (!cancelled) {
+          setHistoricalSchedule([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setScheduleLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSeason]);
 
   const handleSeasonChange = (s: number) => {
     setSearchParams((prev) => {
@@ -323,9 +361,9 @@ export default function ArchivioStagioni() {
           </CardContent>
         </Card>
 
-        {/* Navigation Tabs (Regular Season / Playoff) */}
+        {/* Navigation Tabs (Regular Season / Playoff / Calendario & Risultati) */}
         <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="bg-muted/60 p-1 rounded-xl border border-border/60">
+          <TabsList className="bg-muted/60 p-1 rounded-xl border border-border/60 flex-wrap h-auto">
             <TabsTrigger
               value="regular"
               className="gap-2 px-4 py-2 font-bold text-xs data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg"
@@ -339,6 +377,13 @@ export default function ArchivioStagioni() {
             >
               <Flame className="h-4 w-4 text-amber-500" />
               <span>Fase Finale &amp; Playoff ({seasonMeta.label})</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="calendario"
+              className="gap-2 px-4 py-2 font-bold text-xs data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg"
+            >
+              <Calendar className="h-4 w-4 text-blue-500" />
+              <span>Calendario &amp; Risultati ({seasonMeta.label})</span>
             </TabsTrigger>
           </TabsList>
 
@@ -572,6 +617,18 @@ export default function ArchivioStagioni() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* TAB 3: CALENDARIO & RISULTATI STORICI */}
+          <TabsContent value="calendario" className="space-y-6 mt-0">
+            <SeasonCalendarBoard
+              season={selectedSeason}
+              schedule={historicalSchedule}
+              loading={scheduleLoading}
+              showOffseason={false}
+              allowAdminEdit={false}
+              emptyMessage={`Nessuna partita registrata in archivio per la ${seasonMeta.label}.`}
+            />
           </TabsContent>
         </Tabs>
       </main>
