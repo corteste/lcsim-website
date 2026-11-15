@@ -63,6 +63,8 @@ import {
   markAnnouncementAsRead,
   markAllAnnouncementsAsRead,
   markNotificationIdReadLocally,
+  markMultipleNotificationIdsReadLocally,
+  fetchUnifiedNotifications,
 } from "@/services/announcementsService";
 
 export default function SalaStampa() {
@@ -177,6 +179,34 @@ export default function SalaStampa() {
 
   // Gestione Letto / Non Letto
   const userKey = user?.id || user?.username || user?.team || undefined;
+  const badgeUserTeam = user?.team || undefined;
+
+  const syncUnifiedNotificationsAsRead = async (filterTradeId?: string) => {
+    try {
+      const unified = await fetchUnifiedNotifications({
+        userKey,
+        userTeam: badgeUserTeam,
+        isAdmin,
+      });
+      const toMark = unified
+        .filter((n) => n.isUnread && (!filterTradeId || n.tradeId === filterTradeId))
+        .map((n) => n.id);
+
+      if (toMark.length > 0) {
+        markMultipleNotificationIdsReadLocally(toMark, userKey);
+        window.dispatchEvent(new Event("lcsim-notifications-updated"));
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // Se tutte le voci presenti in Inbox risultano già lette, riallinea anche il contatore badge della Navbar
+  useEffect(() => {
+    if (!loading && items.length > 0 && items.every((it) => readItemIds.has(it.id))) {
+      syncUnifiedNotificationsAsRead();
+    }
+  }, [loading, items, readItemIds]);
 
   const markAsRead = (id: string) => {
     setReadItemIds((prev) => {
@@ -190,10 +220,13 @@ export default function SalaStampa() {
 
     if (id.startsWith("league-")) {
       const annId = id.slice("league-".length);
-      markNotificationIdReadLocally(`ann-${annId}`, userKey);
+      markNotificationIdReadLocally(`ann_${annId}`, userKey);
       markAnnouncementAsRead(annId, userKey).then(() => {
         window.dispatchEvent(new Event("lcsim-notifications-updated"));
       });
+    } else if (id.startsWith("trade-")) {
+      const tradeId = id.slice("trade-".length);
+      syncUnifiedNotificationsAsRead(tradeId);
     }
   };
 
@@ -208,12 +241,13 @@ export default function SalaStampa() {
       .filter((it) => it.category === "league" && it.announcementData?.id)
       .map((it) => it.announcementData!.id);
     if (annIds.length > 0) {
-      annIds.forEach((annId) => markNotificationIdReadLocally(`ann-${annId}`, userKey));
+      annIds.forEach((annId) => markNotificationIdReadLocally(`ann_${annId}`, userKey));
       markAllAnnouncementsAsRead(annIds, userKey).then(() => {
         window.dispatchEvent(new Event("lcsim-notifications-updated"));
       });
     }
 
+    syncUnifiedNotificationsAsRead();
     toast.success("Tutte le notifiche dell'Inbox sono state segnate come lette.");
   };
 
