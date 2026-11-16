@@ -158,7 +158,10 @@ export async function fetchInboxFeed(params: {
       items.push({
         id: `press_pending_${pendingPress.id}`,
         category: "press",
-        title: `🎤 Richiesta di Dichiarazione Ufficiale: Giornata ${pendingPress.matchday}`,
+        title:
+          pendingPress.matchday === 0
+            ? "🎤 Richiesta di Dichiarazione Ufficiale: Speciale Draft"
+            : `🎤 Richiesta di Dichiarazione Ufficiale: Giornata ${pendingPress.matchday}`,
         snippet: pendingPress.question,
         senderName: "Giornalista Ufficiale Lega LCSIM",
         senderRole: "Sala Stampa LCSIM",
@@ -186,12 +189,13 @@ export async function fetchInboxFeed(params: {
         title: `Dichiarazione Ufficiale: ${teamName} (${managerName})`,
         snippet,
         senderName: `${managerName} (${teamName})`,
-        senderRole: "Dichiarazione Post-Partita",
+        senderRole: conf.matchday === 0 ? "Dichiarazione Pre-Draft" : "Dichiarazione Post-Partita",
         senderTeamId: conf.team_id,
         timestamp: conf.answered_at || conf.created_at,
         matchday: conf.matchday,
         priority: "normal",
-        badgeText: `G${conf.matchday} • Sala Stampa`,
+        badgeText:
+          conf.matchday === 0 ? "Speciale Draft • Sala Stampa" : `G${conf.matchday} • Sala Stampa`,
         badgeColor: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
         pressData: conf,
       });
