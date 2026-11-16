@@ -298,16 +298,32 @@ export async function fetchInboxFeed(params: {
             Math.abs(m.homePoints - m.awayPoints) <= 3
         );
 
-        // 5.3 Match della squadra utente
+        // 5.3 Match della squadra utente & eventuale rivalità SKA-MAR
         const userMatch = teamId
           ? matchItems.find((m) => m.homeTeamId === teamId || m.awayTeamId === teamId)
           : null;
 
+        const karalisMarsMatch = matchItems.find(
+          (m) =>
+            (m.homeTeamId === "SKA" && m.awayTeamId === "MAR") ||
+            (m.homeTeamId === "MAR" && m.awayTeamId === "SKA")
+        );
+
         // 5.4 Costruzione spunti di analisi editoriale
         const talkingPoints: MatchdayTalkingPoint[] = [];
 
+        // Spunto Rivalità Accesa: Karalis (SKA) vs Mar's Attack (MAR)
+        if (karalisMarsMatch) {
+          const stadiumName = karalisMarsMatch.stadium || "lo stadio";
+          talkingPoints.push({
+            title: `🔥 Allerta Rivalità: ${karalisMarsMatch.homeTeamName} vs ${karalisMarsMatch.awayTeamName}`,
+            content: `Clima rovente in vista della sfida più sentita e tesa della Lega: tra ${karalisMarsMatch.homeTeamName} e ${karalisMarsMatch.awayTeamName} non è mai una gara qualunque. Alla vigilia si respira elettricità pura dentro e fuori ${stadiumName}, con le autorità in allerta per possibili tensioni e scontri tra le due tifoserie rivali e una battaglia senza esclusione di colpi sul rettangolo di gioco.`,
+            highlight: "Rivalità Infuocata",
+          });
+        }
+
         // Spunto 1: Big Match
-        if (bigMatch) {
+        if (bigMatch && bigMatch !== karalisMarsMatch) {
           const diffPt = Math.abs((bigMatch.homePoints ?? 0) - (bigMatch.awayPoints ?? 0));
           const homeRankStr = bigMatch.homeRank ? `#${bigMatch.homeRank}` : "";
           const awayRankStr = bigMatch.awayRank ? `#${bigMatch.awayRank}` : "";
@@ -353,14 +369,22 @@ export async function fetchInboxFeed(params: {
           });
         }
 
-        const headline = `Speciale Giornata ${targetWeek}: Analisi, Big Match e Spunti del Prossimo Turno`;
-        const leadParagraph = `Il campionato di Serie A LCSIM si prepara a vivere la sua ${targetWeek}ª giornata. Con ${matchItems.length} partite in programma, il turno offre incroci determinanti per le gerarchie della classifica e la lotta alle posizioni nobili.`;
+        const headline = karalisMarsMatch
+          ? `Speciale Giornata ${targetWeek}: Clima Rovente per ${karalisMarsMatch.homeTeamName}-${karalisMarsMatch.awayTeamName}`
+          : `Speciale Giornata ${targetWeek}: Analisi, Big Match e Spunti del Prossimo Turno`;
+        const leadParagraph = karalisMarsMatch
+          ? `Il campionato di Serie A LCSIM si prepara a vivere una ${targetWeek}ª giornata ad altissima tensione. Tutti gli occhi sono puntati sull'infuocato scontro tra ${karalisMarsMatch.homeTeamName} e ${karalisMarsMatch.awayTeamName}, una rivalità viscerale che accende gli animi tra sfottò, rischio di scontri tra tifoserie e una posta in palio pesantissima.`
+          : `Il campionato di Serie A LCSIM si prepara a vivere la sua ${targetWeek}ª giornata. Con ${matchItems.length} partite in programma, il turno offre incroci determinanti per le gerarchie della classifica e la lotta alle posizioni nobili.`;
 
         items.push({
           id: `preview_matchday_${targetWeek}`,
           category: "preview",
-          title: `🗞️ Speciale Giornata ${targetWeek}: Analisi del Turno e Spunti Tattici`,
-          snippet: `Riflettori puntati sul big match ${bigMatch.homeTeamName}-${bigMatch.awayTeamName} e i temi caldi del prossimo turno di campionato.`,
+          title: karalisMarsMatch
+            ? `🔥 Speciale Giornata ${targetWeek}: Alta Tensione per ${karalisMarsMatch.homeTeamName}-${karalisMarsMatch.awayTeamName}`
+            : `🗞️ Speciale Giornata ${targetWeek}: Analisi del Turno e Spunti Tattici`,
+          snippet: karalisMarsMatch
+            ? `Rivalità incandescente tra ${karalisMarsMatch.homeTeamName} e ${karalisMarsMatch.awayTeamName}: vigilia tesa, rischio scontri tra tifoserie e il programma completo della giornata.`
+            : `Riflettori puntati sul big match ${bigMatch.homeTeamName}-${bigMatch.awayTeamName} e i temi caldi del prossimo turno di campionato.`,
           senderName: "Redazione Sportiva LCSIM",
           senderRole: "Ufficio Stampa & Analisi",
           timestamp: new Date().toISOString(),
