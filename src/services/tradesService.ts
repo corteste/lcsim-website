@@ -692,6 +692,146 @@ export async function sendCounterProposal(payload: SendCounterProposalPayload): 
 }
 
 /**
+ * Verifica che tutti i calciatori e le scelte di una trattativa appartengano ancora
+ * alle rispettive squadre di origine prima dell'accettazione o dell'esecuzione.
+ */
+async function validateTradeAssetOwnership(trade: {
+  sender_team: string;
+  receiver_team: string;
+  offered_player_ids?: number[];
+  requested_player_ids?: number[];
+  offered_pick_numbers?: number[];
+  requested_pick_numbers?: number[];
+}): Promise<{ valid: boolean; error?: string }> {
+  const offeredPlayers = trade.offered_player_ids || [];
+  const requestedPlayers = trade.requested_player_ids || [];
+  const offeredPicks = trade.offered_pick_numbers || [];
+  const requestedPicks = trade.requested_pick_numbers || [];
+  const allPlayerIds = [...offeredPlayers, ...requestedPlayers];
+  const allPickNumbers = [...offeredPicks, ...requestedPicks];
+
+  if (allPlayerIds.length > 0) {
+    const { data: playersRows, error: pErr } = await supabase
+      .from(PLAYER_TABLE)
+      .select("ID, Nome, Cognome, Squadra")
+      .in("ID", allPlayerIds);
+
+    if (pErr) return { valid: false, error: pErr.message };
+
+    const playerMap = new Map((playersRows || []).map((p) => [Number(p.ID), p]));
+    for (const pid of offeredPlayers) {
+      const p = playerMap.get(Number(pid));
+      if (!p || p.Squadra !== trade.sender_team) {
+        return {
+          valid: false,
+          error: `Impossibile procedere: ${p ? `${p.Nome} ${p.Cognome}` : `calciatore #${pid}`} non appartiene più a ${trade.sender_team}.`,
+        };
+      }
+    }
+    for (const pid of requestedPlayers) {
+      const p = playerMap.get(Number(pid));
+      if (!p || p.Squadra !== trade.receiver_team) {
+        return {
+          valid: false,
+          error: `Impossibile procedere: ${p ? `${p.Nome} ${p.Cognome}` : `calciatore #${pid}`} non appartiene più a ${trade.receiver_team}.`,
+        };
+      }
+    }
+  }
+
+  if (allPickNumbers.length > 0) {
+    const { data: picksRows, error: dErr } = await supabase
+      .from(DRAFT_BOARD_TABLE)
+      .select("pick_overall, team_id")
+      .in("pick_overall", allPickNumbers);
+
+    if (dErr) return { valid: false, error: dErr.message };
+
+    const pickMap = new Map((picksRows || []).map((pk) => [Number(pk.pick_overall), pk.team_id]));
+    for (const pk of offeredPicks) {
+      if (pickMap.get(Number(pk)) !== trade.sender_team) {
+        return {
+          valid: false,
+          error: `Impossibile procedere: la scelta #${pk} non appartiene più a ${trade.sender_team}.`,
+        };
+      }
+    }
+    for (const pk of requestedPicks) {
+      if (pickMap.get(Number(pk)) !== trade.receiver_team) {
+        return {
+          valid: false,
+          error: `Impossibile procedere: la scelta #${pk} non appartiene più a ${trade.receiver_team}.`,
+        };
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Annulla automaticamente le altre trattative aperte ('pending' o 'pending_admin')
+ * che coinvolgono almeno uno degli stessi calciatori o scelte Draft.
+ */
+async function cancelConflictingTrades(
+  sourceTrade: {
+    id: string;
+    offered_player_ids?: number[];
+    requested_player_ids?: number[];
+    offered_pick_numbers?: number[];
+    requested_pick_numbers?: number[];
+  },
+  reason: string,
+  systemMessage: string
+): Promise<void> {
+  const playerSet = new Set([
+    ...(sourceTrade.offered_player_ids || []).map(Number),
+    ...(sourceTrade.requested_player_ids || []).map(Number),
+  ]);
+  const pickSet = new Set([
+    ...(sourceTrade.offered_pick_numbers || []).map(Number),
+    ...(sourceTrade.requested_pick_numbers || []).map(Number),
+  ]);
+
+  if (playerSet.size === 0 && pickSet.size === 0) return;
+
+  const { data: openTrades } = await supabase
+    .from(TRADES_TABLE)
+    .select("id, sender_team, offered_player_ids, requested_player_ids, offered_pick_numbers, requested_pick_numbers")
+    .neq("id", sourceTrade.id)
+    .in("status", ["pending", "pending_admin"]);
+
+  const conflicting = (openTrades || []).filter((t) => {
+    const tPlayers = [...(t.offered_player_ids || []), ...(t.requested_player_ids || [])].map(Number);
+    const tPicks = [...(t.offered_pick_numbers || []), ...(t.requested_pick_numbers || [])].map(Number);
+    return tPlayers.some((id) => playerSet.has(id)) || tPicks.some((pk) => pickSet.has(pk));
+  });
+
+  if (conflicting.length === 0) return;
+
+  const nowIso = new Date().toISOString();
+  await Promise.all(
+    conflicting.map(async (c) => {
+      await supabase
+        .from(TRADES_TABLE)
+        .update({
+          status: "cancelled",
+          rejection_reason: reason,
+          updated_at: nowIso,
+        })
+        .eq("id", c.id);
+
+      await supabase.from(MESSAGES_TABLE).insert({
+        trade_id: c.id,
+        sender_team: c.sender_team,
+        sender_name: "Sistema",
+        message: systemMessage,
+      });
+    })
+  );
+}
+
+/**
  * La squadra ricevente accetta la proposta: passa a 'pending_admin'.
  */
 export async function acceptTrade(tradeId: string, teamId: string): Promise<{ success: boolean; error?: string }> {
@@ -713,6 +853,16 @@ export async function acceptTrade(tradeId: string, teamId: string): Promise<{ su
 
     if (!tradeData) {
       return { success: false, error: "Trattativa non trovata." };
+    }
+
+    if (tradeData.status !== "pending") {
+      return { success: false, error: "Questa proposta non è più in attesa di risposta." };
+    }
+
+    // Verifica che tutti gli asset appartengano ancora ai rispettivi club
+    const ownershipCheck = await validateTradeAssetOwnership(tradeData);
+    if (!ownershipCheck.valid) {
+      return { success: false, error: ownershipCheck.error };
     }
 
     // Verifica vincoli portieri al momento dell'accettazione
@@ -769,6 +919,12 @@ export async function acceptTrade(tradeId: string, teamId: string): Promise<{ su
       sender_name: "Sistema",
       message: "✅ Proposta accettata da entrambe le società. Inviata all'Admin per l'approvazione ufficiale e registrazione in Serie A.",
     });
+
+    await cancelConflictingTrades(
+      tradeData,
+      "Annullata automaticamente: uno o più asset coinvolti sono stati impegnati in un altro accordo accettato.",
+      "⚠️ Trattativa annullata automaticamente: uno o più calciatori o scelte coinvolti fanno parte di un'altra proposta appena accettata."
+    );
 
     invalidateRostersAndTrades();
     return { success: true };
@@ -935,8 +1091,18 @@ export async function adminApproveTrade(
       return { success: true };
     }
 
+    // Se l'RPC ha rifiutato per validazione (es. asset già trasferito o stato non valido), non eseguire il fallback
+    if (!rpcError && rpcData && rpcData.success === false && rpcData.error) {
+      return { success: false, error: rpcData.error };
+    }
+
     // 2. Se l'RPC non esiste o fallisce per mancanza di migrazione SQL, fallback client-side
     console.warn("RPC rpc_execute_trade not available or failed, executing client-side trade execution fallback:", rpcError);
+
+    const ownershipCheck = await validateTradeAssetOwnership(trade);
+    if (!ownershipCheck.valid) {
+      return { success: false, error: ownershipCheck.error };
+    }
 
     const allTradedPlayerIds = [...trade.offered_player_ids, ...trade.requested_player_ids];
 
@@ -988,6 +1154,12 @@ export async function adminApproveTrade(
       .eq("id", trade.id);
 
     if (tErr) throw tErr;
+
+    await cancelConflictingTrades(
+      trade,
+      "Annullata automaticamente: uno o più asset sono stati ceduti in un altro scambio.",
+      "⚠️ Trattativa annullata automaticamente: uno o più calciatori/scelte coinvolti sono stati trasferiti in un altro scambio."
+    );
 
     // e-bis. Registra transazioni e aggiorna career seasons nell'archivio storico
     try {
