@@ -1801,7 +1801,7 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 85. Archivio / Albo d'Oro: Controllo Finale Stagione 4 (Finalista Perdente Errato)
-- **Stato**: 🟡 Da Verificare / In Backlog
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Finalista Stagione 4 corretta in `Average Pegiò Drivers` / `APD` in `ArchivioStagioni.tsx`)
 - **Priorità**: Alta (Integrità dati storici e palmarès)
 - **Moduli & Tabelle coinvolte**: `src/services/playerPalmaresService.ts`, `src/pages/ArchivioSquadre.tsx` / `ArchivioStatisticheSquadre.tsx`, `an_schedule`, `"AS_TEAM_STAT"`, eventuale tabella albo d'oro
 - **Descrizione & Obiettivi**:

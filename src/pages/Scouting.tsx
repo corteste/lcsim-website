@@ -655,7 +655,7 @@ const Scouting = () => {
                   className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg gap-2"
                 >
                   <Eye className="h-4 w-4" />
-                  Scheda Singolo Rookie &amp; Assegnazione Gettoni
+                  Rookie Scouting
                 </TabsTrigger>
                 <TabsTrigger
                   value="recap"
