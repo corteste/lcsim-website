@@ -65,6 +65,8 @@ import {
   markNotificationIdReadLocally,
   markMultipleNotificationIdsReadLocally,
   fetchUnifiedNotifications,
+  fetchUserReadItemIds,
+  markUserItemsAsReadInDb,
 } from "@/services/announcementsService";
 
 export default function SalaStampa() {
@@ -99,13 +101,48 @@ export default function SalaStampa() {
   });
 
   useEffect(() => {
+    let active = true;
+    let localSet = new Set<string>();
     try {
       const stored = localStorage.getItem(readStorageKey);
-      setReadItemIds(stored ? new Set(JSON.parse(stored)) : new Set());
+      localSet = stored ? new Set(JSON.parse(stored)) : new Set();
+      setReadItemIds(localSet);
     } catch {
       setReadItemIds(new Set());
     }
-  }, [readStorageKey]);
+
+    if (!userKey) return;
+
+    fetchUserReadItemIds(userKey).then((dbSet) => {
+      if (!active) return;
+      const missingInDb = Array.from(localSet).filter((id) => !dbSet.has(id));
+      if (missingInDb.length > 0) {
+        void markUserItemsAsReadInDb(missingInDb, userKey);
+      }
+
+      if (dbSet.size > 0) {
+        setReadItemIds((prev) => {
+          const merged = new Set(prev);
+          let changed = false;
+          dbSet.forEach((id) => {
+            if (!merged.has(id)) {
+              merged.add(id);
+              changed = true;
+            }
+          });
+          if (!changed) return prev;
+          try {
+            localStorage.setItem(readStorageKey, JSON.stringify(Array.from(merged)));
+          } catch {}
+          return merged;
+        });
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [readStorageKey, userKey]);
 
   // Stato Risposta Intervista Pending
   const [myAnswerText, setMyAnswerText] = useState("");
@@ -190,6 +227,22 @@ export default function SalaStampa() {
         { event: "*", schema: "public", table: "league_announcements" },
         () => loadInbox()
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "user_notification_reads" },
+        (payload: { new?: { user_key?: string; item_id?: string } }) => {
+          const row = payload?.new;
+          if (!row?.item_id || (userKey && row.user_key !== userKey)) return;
+          setReadItemIds((prev) => {
+            if (prev.has(row.item_id!)) return prev;
+            const next = new Set(prev).add(row.item_id!);
+            try {
+              localStorage.setItem(readStorageKey, JSON.stringify(Array.from(next)));
+            } catch {}
+            return next;
+          });
+        }
+      )
       .subscribe();
 
     const handleResetMobileSelection = () => {
@@ -245,6 +298,8 @@ export default function SalaStampa() {
       return next;
     });
 
+    void markUserItemsAsReadInDb([id], userKey);
+
     if (id.startsWith("league-")) {
       const annId = id.slice("league-".length);
       markNotificationIdReadLocally(`ann_${annId}`, userKey);
@@ -263,6 +318,7 @@ export default function SalaStampa() {
     try {
       localStorage.setItem(readStorageKey, JSON.stringify(Array.from(allIds)));
     } catch {}
+    void markUserItemsAsReadInDb(Array.from(allIds), userKey);
 
     const annIds = items
       .filter((it) => it.category === "league" && it.announcementData?.id)

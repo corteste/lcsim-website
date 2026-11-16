@@ -7,6 +7,7 @@ import {
 
 const ANNOUNCEMENTS_TABLE = "league_announcements";
 const READS_TABLE = "announcement_reads";
+const USER_NOTIFICATION_READS_TABLE = "user_notification_reads";
 
 const LOCAL_READ_ANNOUNCEMENTS_KEY = "lcsim_read_announcements";
 const LOCAL_DISMISSED_BANNERS_KEY = "lcsim_dismissed_banners";
@@ -45,11 +46,50 @@ export function dismissBannerLocally(announcementId: string) {
   saveLocalSet(LOCAL_DISMISSED_BANNERS_KEY, set);
 }
 
+/**
+ * Carica da Supabase tutti gli item_id letti dall'utente (Inbox + notifiche).
+ */
+export async function fetchUserReadItemIds(userKey?: string): Promise<Set<string>> {
+  if (!userKey) return new Set();
+  try {
+    const { data, error } = await supabase
+      .from(USER_NOTIFICATION_READS_TABLE)
+      .select("item_id")
+      .eq("user_key", userKey);
+
+    if (error || !data) return new Set();
+    return new Set(data.map((r: { item_id: string }) => r.item_id));
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * Salva su Supabase uno o più item_id come letti per l'utente corrente (sincronizzazione cross-device).
+ */
+export async function markUserItemsAsReadInDb(
+  itemIds: string[],
+  userKey?: string
+): Promise<void> {
+  if (!userKey || itemIds.length === 0) return;
+  try {
+    const uniqueIds = Array.from(new Set(itemIds.filter(Boolean)));
+    if (uniqueIds.length === 0) return;
+    const rows = uniqueIds.map((item_id) => ({ user_key: userKey, item_id }));
+    await supabase
+      .from(USER_NOTIFICATION_READS_TABLE)
+      .upsert(rows, { onConflict: "user_key,item_id", ignoreDuplicates: true });
+  } catch {
+    /* ignore */
+  }
+}
+
 export function markNotificationIdReadLocally(notifId: string, userKey?: string) {
   const scopedKey = getScopedKey(LOCAL_READ_NOTIFICATIONS_KEY, userKey);
   const set = getLocalSet(scopedKey);
   set.add(notifId);
   saveLocalSet(scopedKey, set);
+  void markUserItemsAsReadInDb([notifId], userKey);
 }
 
 export function markMultipleNotificationIdsReadLocally(notifIds: string[], userKey?: string) {
@@ -57,6 +97,7 @@ export function markMultipleNotificationIdsReadLocally(notifIds: string[], userK
   const set = getLocalSet(scopedKey);
   notifIds.forEach((id) => set.add(id));
   saveLocalSet(scopedKey, set);
+  void markUserItemsAsReadInDb(notifIds, userKey);
 }
 
 /**
@@ -275,14 +316,18 @@ export async function fetchUnifiedNotifications(params: {
   const scopedReadNotifs = getLocalSet(getScopedKey(LOCAL_READ_NOTIFICATIONS_KEY, userKey));
   const scopedDeletedNotifs = getLocalSet(getScopedKey(LOCAL_DELETED_NOTIFICATIONS_KEY, userKey));
 
-  const isDeleted = (id: string) => scopedDeletedNotifs.has(id);
-  const isRead = (id: string) => scopedReadNotifs.has(id);
-
   const notifications: AppNotification[] = [];
 
   try {
-    // 1. Comunicati Lega
-    const announcements = await fetchAnnouncements(userKey);
+    // 1. Comunicati Lega + stato lettura cross-device da Supabase in parallelo
+    const [announcements, dbReadItems] = await Promise.all([
+      fetchAnnouncements(userKey),
+      fetchUserReadItemIds(userKey),
+    ]);
+
+    const isDeleted = (id: string) => scopedDeletedNotifs.has(id);
+    const isRead = (id: string) => scopedReadNotifs.has(id) || dbReadItems.has(id);
+
     announcements.slice(0, 15).forEach((ann) => {
       const notifId = `ann_${ann.id}`;
       if (isDeleted(notifId)) return;
