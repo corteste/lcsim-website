@@ -40,6 +40,11 @@ import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import { fetchPlayerPalmares } from "@/services/playerPalmaresService";
 import { PlayerPalmaresTab } from "@/components/player/PlayerPalmaresTab";
 import { PlayerPalmaresBadges } from "@/components/player/PlayerPalmaresBadges";
+import { SerieBStatsPanel } from "@/components/player/SerieBStatsPanel";
+import {
+  fetchSerieBPlayerMatches,
+  isSerieBTeamId,
+} from "@/services/serieBStatsService";
 
 interface PlayerDetailsProps {
   currentPlayer: Player;
@@ -423,6 +428,16 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
     staleTime: 5 * 60 * 1000,
     enabled: Boolean(currentPlayer?.ID),
   });
+
+  const { data: serieBMatches = [], isLoading: serieBLoading } = useQuery({
+    queryKey: ["player_serie_b_stats", currentPlayer.ID],
+    queryFn: () => fetchSerieBPlayerMatches(currentPlayer.ID),
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(currentPlayer?.ID),
+  });
+
+  const showSerieBTab =
+    isSerieBTeamId(currentPlayer?.Squadra) || serieBMatches.length > 0;
 
   const formatConfig = useMemo(() => getSeasonFormatConfig(xpSeason), [xpSeason]);
 
@@ -819,6 +834,15 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
               <BarChart3 className="h-4 w-4 mr-1.5 sm:mr-2 text-blue-500" />
               Statistiche Stagionali
             </TabsTrigger>
+            {showSerieBTab && (
+              <TabsTrigger
+                value="serie-b"
+                className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
+              >
+                <BarChart3 className="h-4 w-4 mr-1.5 sm:mr-2 text-amber-500" />
+                Statistiche Serie B
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="xp"
               className="h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold text-xs sm:text-sm px-2 transition-colors shrink-0"
@@ -1775,6 +1799,17 @@ const PlayerDetails = ({ currentPlayer, onClose, defaultTab = "tutti", initialSt
         <TabsContent value="palmares" className="flex-1 overflow-y-auto p-3.5 sm:p-5 m-0 focus-visible:outline-none">
           <PlayerPalmaresTab palmares={palmares} isLoading={palmaresLoading} />
         </TabsContent>
+
+        {/* Tab 6: Statistiche Serie B (LCSIM 2) */}
+        {showSerieBTab && (
+          <TabsContent value="serie-b" className="flex-1 overflow-y-auto p-4 sm:p-6 m-0 focus-visible:outline-none">
+            <SerieBStatsPanel
+              matches={serieBMatches}
+              loading={serieBLoading}
+              isGoalkeeper={(currentPlayer.Posiz || "").toUpperCase() === "POR"}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* MODALE DETTAGLIO XP PARTITA PER PARTITA */}

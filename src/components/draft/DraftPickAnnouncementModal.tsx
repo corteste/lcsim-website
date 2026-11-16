@@ -15,13 +15,19 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getPlayerImage, getRoleColor, getValueColor } from "@/utils/functions";
+import { getPlayerImage, getRoleColor, getValueColor, getTeamSocialBg } from "@/utils/functions";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
 import { Player } from "@/types/player";
 import {
   fetchRookieCombine,
   buildMetricsFromCombine,
 } from "@/services/rookieCombineService";
+import { SerieBStatsPanel } from "@/components/player/SerieBStatsPanel";
+import {
+  fetchSerieBPlayerMatches,
+  SerieBMatchStat,
+} from "@/services/serieBStatsService";
+import { calcOverall } from "@/utils/playerOvrCalculator";
 
 export interface CombineMetric {
   id: string;
@@ -125,7 +131,7 @@ export const buildCombineMetrics = (
 export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProps> = ({
   pickData,
   onClose,
-  autoCloseDuration = 12000,
+  autoCloseDuration = 30000,
 }) => {
   const [progress, setProgress] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
@@ -135,21 +141,35 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
   const [internalAthleticIndex, setInternalAthleticIndex] = useState<number | null>(
     pickData?.athleticIndex ?? null
   );
+  const [serieBMatches, setSerieBMatches] = useState<SerieBMatchStat[]>([]);
+  const [serieBLoading, setSerieBLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!pickData?.rookie?.ID) {
       setInternalMetrics(null);
       setInternalAthleticIndex(null);
-      return;
-    }
-
-    if (pickData.combineMetrics && pickData.combineMetrics.length === 5) {
-      setInternalMetrics(pickData.combineMetrics);
-      setInternalAthleticIndex(pickData.athleticIndex ?? null);
+      setSerieBMatches([]);
       return;
     }
 
     let isSubscribed = true;
+    setSerieBLoading(true);
+    fetchSerieBPlayerMatches(Number(pickData.rookie.ID))
+      .then((rows) => {
+        if (isSubscribed) setSerieBMatches(rows);
+      })
+      .finally(() => {
+        if (isSubscribed) setSerieBLoading(false);
+      });
+
+    if (pickData.combineMetrics && pickData.combineMetrics.length === 5) {
+      setInternalMetrics(pickData.combineMetrics);
+      setInternalAthleticIndex(pickData.athleticIndex ?? null);
+      return () => {
+        isSubscribed = false;
+      };
+    }
+
     fetchRookieCombine(Number(pickData.rookie.ID)).then((res) => {
       if (!isSubscribed) return;
       if (res) {
@@ -244,11 +264,32 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
   const displayAbbr = teamAbbr || teamId;
   const displayTeamName = teamName || displayAbbr;
 
-  const secondaryPositions = [
-    rookie.PreferredPosition2,
-    rookie.PreferredPosition3,
-    rookie.PreferredPosition4,
-  ].filter((p): p is string => Boolean(p && p.trim() && p !== "-" && p !== "NONE"));
+  const uniqueSecondaryPositions = Array.from(
+    new Set(
+      [
+        rookie.PreferredPosition2,
+        rookie.PreferredPosition3,
+        rookie.PreferredPosition4,
+      ]
+        .map((p) => (p || "").trim().toUpperCase())
+        .filter(
+          (p) =>
+            Boolean(p) &&
+            p !== "-" &&
+            p !== "NONE" &&
+            p !== (rookie.Posiz || "").trim().toUpperCase()
+        )
+    )
+  );
+
+  const secondaryPositions =
+    uniqueSecondaryPositions.length > 1
+      ? [
+          ...uniqueSecondaryPositions.sort(
+            (a, b) => calcOverall(b, rookie, 0) - calcOverall(a, rookie, 0)
+          ),
+        ].slice(0, 1)
+      : uniqueSecondaryPositions;
 
   const rolesPlus = [rookie.Role1, rookie.Role2, rookie.Role3].filter(
     (rl): rl is string => Boolean(rl && rl.trim() && rl !== "-" && rl !== "Nessuno")
@@ -274,6 +315,19 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
     return "bg-orange-500";
   };
 
+  const getCombineBarColor = (score: number) => {
+    if (!score || score <= 0) return "bg-muted-foreground/30";
+    if (score >= 85) return "bg-emerald-500";
+    if (score >= 70) return "bg-green-500";
+    if (score >= 50) return "bg-amber-500";
+    if (score >= 30) return "bg-orange-500";
+    return "bg-rose-500";
+  };
+
+  const teamGradient = getTeamSocialBg(
+    (teamId || displayAbbr || "").toUpperCase()
+  );
+
   return (
     <div
       role="dialog"
@@ -282,28 +336,30 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl rounded-2xl bg-card border border-primary/30 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col my-auto"
+        className={`relative w-full max-w-2xl rounded-2xl p-[2.5px] ${teamGradient} shadow-2xl animate-in zoom-in-95 duration-200 my-auto`}
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
+        <div className="w-full rounded-[14px] bg-card overflow-hidden flex flex-col">
         {/* Intestazione Scelta */}
-        <div className="relative px-4 sm:px-5 py-3 bg-gradient-to-r from-primary/15 via-muted/50 to-primary/15 border-b border-border flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-500 animate-pulse shrink-0" />
-            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-foreground">
+        <div className={`relative px-4 sm:px-5 py-3 ${teamGradient} border-b border-white/15 flex items-center justify-between gap-2`}>
+          <div className="absolute inset-0 bg-black/25 pointer-events-none" />
+          <div className="relative flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-300 animate-pulse shrink-0 drop-shadow-sm" />
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white drop-shadow-sm">
               Scelta Ufficiale al Draft!
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-[11px] font-bold bg-background/80">
+          <div className="relative flex items-center gap-2">
+            <Badge variant="outline" className="text-[11px] font-bold bg-black/45 text-white border-white/25 backdrop-blur-xs">
               Pick #{pickOverall} • Round {round}
             </Badge>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground -mr-1"
+              className="h-7 w-7 rounded-full text-white/80 hover:text-white hover:bg-white/15 -mr-1"
               onClick={onClose}
             >
               <X className="h-4 w-4" />
@@ -428,14 +484,12 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
                     <span className="text-muted-foreground text-[10px]">Skill</span>
                     <span className="font-mono font-bold text-amber-500 flex items-center gap-0.5">
                       {rookie.MABI ?? "—"}
-                      <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
                     </span>
                   </div>
                   <div className="flex items-center justify-between bg-background/70 px-2.5 py-1 rounded-lg border border-border/50">
                     <span className="text-muted-foreground text-[10px]">P. Deb.</span>
                     <span className="font-mono font-bold text-amber-500 flex items-center gap-0.5">
                       {rookie.PiedeDebole ?? "—"}
-                      <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
                     </span>
                   </div>
                 </div>
@@ -602,7 +656,7 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
 
                     <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                        className={`h-full ${getCombineBarColor(barWidth)} rounded-full transition-all duration-500`}
                         style={{ width: `${barWidth}%` }}
                       />
                     </div>
@@ -611,6 +665,16 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
               })}
             </div>
           </div>
+
+          {/* SEZIONE DEDICATA: STATISTICHE SERIE B (LCSIM 2) */}
+          {(serieBLoading || serieBMatches.length > 0) && (
+            <SerieBStatsPanel
+              matches={serieBMatches}
+              loading={serieBLoading}
+              isGoalkeeper={(rookie.Posiz || "").toUpperCase() === "POR"}
+              compact
+            />
+          )}
         </div>
 
         {/* Footer con Barra di Auto-chiusura, indicatore Pausa e pulsante Chiudi */}
@@ -641,6 +705,7 @@ export const DraftPickAnnouncementModal: React.FC<DraftPickAnnouncementModalProp
             }`}
             style={{ width: `${progress}%` }}
           />
+        </div>
         </div>
       </div>
     </div>
