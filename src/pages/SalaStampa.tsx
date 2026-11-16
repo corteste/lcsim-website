@@ -68,8 +68,18 @@ import {
 } from "@/services/announcementsService";
 
 export default function SalaStampa() {
-  const { user, isAdmin, effectiveTeam, availableTeams } = useAuth();
+  const { user, isAdmin, effectiveTeam } = useAuth();
   const navigate = useNavigate();
+
+  const userKey = user?.id || user?.username || user?.team || undefined;
+  const readStorageKey = userKey
+    ? `lcsim_fm24_inbox_read_${userKey}`
+    : "lcsim_fm24_inbox_read_guest";
+
+  // L'Admin nella Inbox vede sempre e solo la Inbox neutrale di Lega (senza impersonare club)
+  const activeInboxTeamId = isAdmin
+    ? undefined
+    : user?.team || effectiveTeam || undefined;
 
   // Stato Feed & Notizie
   const [items, setItems] = useState<InboxItem[]>([]);
@@ -81,12 +91,21 @@ export default function SalaStampa() {
   const [searchQuery, setSearchQuery] = useState("");
   const [readItemIds, setReadItemIds] = useState<Set<string>>(() => {
     try {
-      const stored = localStorage.getItem("lcsim_fm24_inbox_read");
+      const stored = localStorage.getItem(readStorageKey);
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch {
       return new Set();
     }
   });
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(readStorageKey);
+      setReadItemIds(stored ? new Set(JSON.parse(stored)) : new Set());
+    } catch {
+      setReadItemIds(new Set());
+    }
+  }, [readStorageKey]);
 
   // Stato Risposta Intervista Pending
   const [myAnswerText, setMyAnswerText] = useState("");
@@ -111,7 +130,7 @@ export default function SalaStampa() {
       maybeTriggerRandomRumor();
       const [feed, marketStatus] = await Promise.all([
         fetchInboxFeed({
-          teamId: effectiveTeam,
+          teamId: activeInboxTeamId,
           isAdmin,
           season: 11,
         }),
@@ -184,10 +203,9 @@ export default function SalaStampa() {
       supabase.removeChannel(channel);
       window.removeEventListener("lcsim-inbox-reset", handleResetMobileSelection);
     };
-  }, [effectiveTeam, isAdmin]);
+  }, [activeInboxTeamId, isAdmin]);
 
-  // Gestione Letto / Non Letto
-  const userKey = user?.id || user?.username || user?.team || undefined;
+  // Gestione Letto / Non Letto (isolata per singolo userKey)
   const badgeUserTeam = user?.team || undefined;
 
   const syncUnifiedNotificationsAsRead = async (filterTradeId?: string) => {
@@ -222,7 +240,7 @@ export default function SalaStampa() {
       if (prev.has(id)) return prev;
       const next = new Set(prev).add(id);
       try {
-        localStorage.setItem("lcsim_fm24_inbox_read", JSON.stringify(Array.from(next)));
+        localStorage.setItem(readStorageKey, JSON.stringify(Array.from(next)));
       } catch {}
       return next;
     });
@@ -243,7 +261,7 @@ export default function SalaStampa() {
     const allIds = new Set(items.map((it) => it.id));
     setReadItemIds(allIds);
     try {
-      localStorage.setItem("lcsim_fm24_inbox_read", JSON.stringify(Array.from(allIds)));
+      localStorage.setItem(readStorageKey, JSON.stringify(Array.from(allIds)));
     } catch {}
 
     const annIds = items
@@ -515,7 +533,7 @@ export default function SalaStampa() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -1084,7 +1102,7 @@ export default function SalaStampa() {
                             )}
 
                             {/* Form per inviare una replica */}
-                            {effectiveTeam && (
+                            {!isAdmin && effectiveTeam && (
                               <div className="p-3.5 rounded-xl bg-card border border-border/70 space-y-2">
                                 <label className="text-[11px] font-bold text-muted-foreground block">
                                   Replica come Presidente del {effectiveTeam}:
