@@ -1830,7 +1830,7 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 87. App Smartphone / Esperienza Mobile (PWA vs Wrapper Nativo Capacitor)
-- **Stato**: 🟡 Da Decidere / In Backlog
+- **Stato**: 🟢 Completato & Integrato (`manifest.webmanifest`, Service Worker `public/sw.js`, icone PWA, Bottom Bar mobile + Drawer nativi `MobileBottomNav`, Notifiche Push Inbox & Reminder Scadenza Formazioni -24h)
 - **Priorità**: Media (Accessibilità da smartphone per i manager)
 - **Moduli & File coinvolti**: `index.html`, `package.json`, `vite.config.ts`, `public/manifest.webmanifest` & icone app, eventuale Bottom Navigation mobile, Supabase Edge Functions per Web Push / FCM
 - **Soluzioni Valutate (decisione aperta tra Opzione 1 e Opzione 2)**:

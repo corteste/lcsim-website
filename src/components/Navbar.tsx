@@ -21,7 +21,6 @@ import {
   LogOut,
   ShieldCheck,
   ChevronDown,
-  Menu,
   ArrowLeftRight,
   Megaphone,
   Cpu,
@@ -45,7 +44,7 @@ import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal";
 import { EditCoachModal } from "@/components/team/EditCoachModal";
 import { useInboxUnreadCount } from "@/hooks/useInboxUnreadCount";
 import { GlobalAnnouncementBanner } from "@/components/GlobalAnnouncementBanner";
-import { FormationCountdown } from "@/components/FormationCountdown";
+import { MobileBottomNav, NavGroupItem } from "@/components/MobileBottomNav";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,27 +52,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-
-interface NavGroupItem {
-  path: string;
-  label: string;
-  description: string;
-  icon: any;
-  colorClass: string;
-}
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const [isOpen, setIsOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const { user, logout, openLogin, isAdmin, effectiveTeam } = useAuth();
@@ -331,6 +314,7 @@ const Navbar = () => {
     location.pathname.startsWith("/amministrazione");
 
   return (
+    <>
     <nav className="sticky top-0 z-50 w-full border-b bg-card/90 backdrop-blur-md shadow-xs transition-colors">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
@@ -623,9 +607,28 @@ const Navbar = () => {
           </div>
 
           {/* ================================================================= */}
-          {/* RIGHT TOOLS: THEME TOGGLE (COMPACT) + USER PROFILE DROPDOWN       */}
+          {/* RIGHT TOOLS: MOBILE INBOX + THEME TOGGLE + USER PROFILE DROPDOWN  */}
           {/* ================================================================= */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+
+            {/* Pulsante Diretto Inbox su Mobile al posto della vecchia campanella */}
+            <Link
+              to="/inbox"
+              className={`relative flex lg:hidden items-center gap-1.5 px-2.5 h-9 rounded-xl text-xs font-bold border transition-all ${
+                isInboxActive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-xs"
+                  : "bg-muted/40 text-foreground/90 border-border/70 hover:bg-muted"
+              }`}
+              title="Inbox & Notifiche"
+            >
+              <Inbox className="h-4 w-4 text-amber-500" />
+              <span className="hidden sm:inline">Inbox</span>
+              {inboxUnreadCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black leading-none shadow-xs">
+                  {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
+                </span>
+              )}
+            </Link>
 
             {/* Theme Toggle Compatto a Icona Singola Rotante */}
             <Button
@@ -645,7 +648,7 @@ const Navbar = () => {
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-2 outline-hidden border ${isMiaSquadraActive
+                    className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-1.5 sm:gap-2 outline-hidden border ${isMiaSquadraActive
                       ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/25"
                       : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 shadow-xs"
                       }`}
@@ -664,7 +667,12 @@ const Navbar = () => {
                     ) : (
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                     )}
-                    <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
+                    <span className="hidden sm:inline">
+                      {isAdmin ? "Amministrazione" : "La Mia Squadra"}
+                    </span>
+                    <span className="sm:hidden font-mono">
+                      {effectiveTeam || (isAdmin ? "Admin" : user.name)}
+                    </span>
                     <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -830,335 +838,6 @@ const Navbar = () => {
               </Button>
             )}
 
-            {/* ================================================================= */}
-            {/* MOBILE HAMBURGER MENU (SHEET CASSETTO)                            */}
-            {/* ================================================================= */}
-            <div className="flex lg:hidden">
-              <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] sm:w-[360px] p-0 flex flex-col justify-between bg-card">
-                  <div className="overflow-y-auto p-5 space-y-4">
-                    <SheetHeader className="text-left pb-3 border-b border-border/70">
-                      <SheetTitle className="flex items-center gap-2 text-base font-black">
-                        <img
-                          src={`${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`}
-                          alt="LCSIM Logo"
-                          className="h-6 w-6 object-contain"
-                        />
-                        <span>Navigazione LCSIM</span>
-                      </SheetTitle>
-                    </SheetHeader>
-
-                    {/* Widget Scadenza Consegna Formazioni Mobile */}
-                    <div className="pt-2 pb-1">
-                      <Link to="/mia-squadra/tattica" onClick={() => setIsOpen(false)}>
-                        <FormationCountdown compact={true} className="w-full justify-center py-1.5" />
-                      </Link>
-                    </div>
-
-                    {/* Link diretto: Inbox (Mobile) */}
-                    <div className="space-y-1 pb-2 border-b border-border/60">
-                      <Link
-                        to="/inbox"
-                        onClick={() => setIsOpen(false)}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${isInboxActive
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                          : "text-foreground hover:bg-muted/50"
-                          }`}
-                      >
-                        <span className="flex items-center gap-2.5">
-                          <Inbox className="h-4 w-4 text-amber-500" />
-                          <span>Inbox</span>
-                        </span>
-                        {inboxUnreadCount > 0 && (
-                          <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-black leading-none">
-                            {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
-                          </span>
-                        )}
-                      </Link>
-                    </div>
-
-                    {/* Gruppo: Campionato */}
-                    <div className="space-y-1">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
-                        <Trophy className="h-3 w-3 text-amber-500" /> Campionato
-                      </div>
-                      {campionatoItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                            : "text-foreground hover:bg-muted/50"
-                            }`}
-                        >
-                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Gruppo: Squadre */}
-                    <div className="space-y-1 pt-2 border-t border-border/60">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
-                        <Shield className="h-3 w-3 text-indigo-500" /> Squadre
-                      </div>
-                      {squadreItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                            : "text-foreground hover:bg-muted/50"
-                            }`}
-                        >
-                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Gruppo: Calciatori */}
-                    <div className="space-y-1 pt-2 border-t border-border/60">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
-                        <Users className="h-3 w-3 text-cyan-500" /> Calciatori
-                      </div>
-                      {calciatoriItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                            : "text-foreground hover:bg-muted/50"
-                            }`}
-                        >
-                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Gruppo: Draft & Mercato */}
-                    <div className="space-y-1 pt-2 border-t border-border/60">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
-                        <Sparkles className="h-3 w-3 text-amber-500" /> Draft &amp; Mercato
-                      </div>
-                      {draftItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                            : "text-foreground hover:bg-muted/50"
-                            }`}
-                        >
-                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Gruppo: Media & News */}
-                    <div className="space-y-1 pt-2 border-t border-border/60">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
-                        <Newspaper className="h-3 w-3 text-amber-500" /> Media &amp; News
-                      </div>
-                      {mediaItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                            : "text-foreground hover:bg-muted/50"
-                            }`}
-                        >
-                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Gruppo: Archivio */}
-                    <div className="space-y-1 pt-2 border-t border-border/60">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1 flex items-center gap-1.5">
-                        <History className="h-3 w-3 text-purple-500" /> Archivio
-                      </div>
-                      {archivioItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === item.path
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                            : "text-foreground hover:bg-muted/50"
-                            }`}
-                        >
-                          <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Gruppo: La Mia Squadra (Solo utenti autenticati) */}
-                    {user && (
-                      <div className="space-y-1 pt-2 border-t border-border/60">
-                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 px-2 py-1 flex items-center gap-1.5 font-mono">
-                          {effectiveTeam ? (
-                            <img
-                              src={`${SUPABASE_STORAGE_URL}/images/teams/${effectiveTeam}_Logo.png`}
-                              alt={effectiveTeam}
-                              className="h-3.5 w-3.5 object-contain shrink-0"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
-                              }}
-                            />
-                          ) : isAdmin ? (
-                            <ShieldCheck className="h-3.5 w-3.5 text-amber-500" />
-                          ) : (
-                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                          )}
-                          <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
-                        </div>
-                        {isAdmin && (
-                          <Link
-                            to="/admin/automazioni"
-                            onClick={() => setIsOpen(false)}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === "/admin/automazioni"
-                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 font-extrabold"
-                              : "text-foreground hover:bg-muted/50"
-                              }`}
-                          >
-                            <Cpu className="h-4 w-4 text-amber-500" />
-                            <span>Automazioni Lega</span>
-                          </Link>
-                        )}
-                        {miaSquadraItems.map((item) => {
-                          const currentFull = `${location.pathname}${location.search}`;
-                          const isCurrent = item.path.includes("?")
-                            ? currentFull === item.path
-                            : location.pathname === item.path && !location.search.includes("tab=autopick");
-                          return (
-                            <Link
-                              key={item.path}
-                              to={item.path}
-                              onClick={() => setIsOpen(false)}
-                              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${isCurrent
-                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold"
-                                : "text-foreground hover:bg-muted/50"
-                                }`}
-                            >
-                              <item.icon className={`h-4 w-4 ${item.colorClass}`} />
-                              <span>{item.label}</span>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Footer Mobile Sheet */}
-                  <div className="p-4 border-t border-border/70 bg-muted/20">
-                    {user ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {user.team && (
-                              <img
-                                src={`${SUPABASE_STORAGE_URL}/images/teams/${user.team}_Logo.png`}
-                                alt={user.team}
-                                className="h-5 w-5 object-contain"
-                              />
-                            )}
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold truncate">{user.name}</div>
-                              <div className="text-[10px] text-muted-foreground font-mono">{user.team || (isAdmin ? "Admin di Lega" : "")}</div>
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setIsOpen(false);
-                              handleLogout();
-                            }}
-                            className="h-8 text-xs text-rose-600 hover:bg-rose-500/10"
-                          >
-                            <LogOut className="h-3.5 w-3.5 mr-1" /> Esci
-                          </Button>
-                        </div>
-                        {user?.team && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setIsOpen(false);
-                              setIsEditCoachOpen(true);
-                            }}
-                            className="w-full h-8 text-xs font-bold border-border/80 gap-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                          >
-                            <UserCheck className="h-3.5 w-3.5" /> Modifica Allenatore
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          role="switch"
-                          aria-checked={isOffseasonHome}
-                          onClick={toggleHomeMode}
-                          className="w-full h-8 text-xs font-bold border-border/80 justify-between px-3"
-                        >
-                          <span className="inline-flex items-center gap-1.5">
-                            <LayoutDashboard
-                              className={`h-3.5 w-3.5 ${
-                                isOffseasonHome ? "text-amber-500" : "text-emerald-500"
-                              }`}
-                            />
-                            {isOffseasonHome ? "Home: Offseason" : "Home: Stagione"}
-                          </span>
-                          {renderHomeToggleSwitch()}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setIsOpen(false);
-                            setIsChangePasswordOpen(true);
-                          }}
-                          className="w-full h-8 text-xs font-bold border-border/80 gap-1.5"
-                        >
-                          <KeyRound className="h-3.5 w-3.5 text-primary" /> Cambia Password
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        className="w-full text-xs font-bold h-9 bg-emerald-600 hover:bg-emerald-500 text-white"
-                        onClick={() => {
-                          setIsOpen(false);
-                          openLogin("login");
-                        }}
-                      >
-                        <LogIn className="h-3.5 w-3.5 mr-1.5" /> Accedi a LCSIM
-                      </Button>
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-
           </div>
         </div>
       </div>
@@ -1177,6 +856,36 @@ const Navbar = () => {
         />
       )}
     </nav>
+
+    {/* NAVIGAZIONE MOBILE STILE APP NATIVA (Bottom Bar + Bottom Sheets) */}
+    <MobileBottomNav
+      user={user}
+      isAdmin={isAdmin}
+      effectiveTeam={effectiveTeam}
+      inboxUnreadCount={inboxUnreadCount}
+      isCampionatoActive={isCampionatoActive}
+      isSquadreActive={isSquadreActive}
+      isCalciatoriActive={isCalciatoriActive}
+      isDraftActive={isDraftActive}
+      isMediaActive={isMediaActive}
+      isArchivioActive={isArchivioActive}
+      isMiaSquadraActive={isMiaSquadraActive}
+      isInboxActive={isInboxActive}
+      campionatoItems={campionatoItems}
+      squadreItems={squadreItems}
+      calciatoriItems={calciatoriItems}
+      draftItems={draftItems}
+      mediaItems={mediaItems}
+      archivioItems={archivioItems}
+      miaSquadraItems={miaSquadraItems}
+      isOffseasonHome={isOffseasonHome}
+      toggleHomeMode={toggleHomeMode}
+      onOpenLogin={() => openLogin("login")}
+      onLogout={handleLogout}
+      onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+      onOpenEditCoach={() => setIsEditCoachOpen(true)}
+    />
+    </>
   );
 };
 

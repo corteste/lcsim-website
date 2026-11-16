@@ -10,3 +10,4 @@ export const ROOKIE_COMBINE_TABLE = "rookie_combine_results";
 export const PLAYER_MARKET_TABLE = "as_player_market";
 export const MAX_SCOUTING_TOKENS = 60;
 export const SUPABASE_STORAGE_URL = "https://hzenyasrargpsbuaxmxl.supabase.co/storage/v1/object/public/game-templates";
+export const VAPID_PUBLIC_KEY = "BBgz5M3yltLNyymRcWMRLlq2quSFQcNm2lK-wuwo9VV3NAICRwzbYnh8vaSLeLPAAOublJozCxc7VXELqTHDYL4";
