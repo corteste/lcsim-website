@@ -1807,3 +1807,22 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 - **Descrizione & Obiettivi**:
   - Verificare i dati storici della **Finale di Stagione 4**: il finalista perdente attualmente mostrato risulta errato.
   - Controllare da cosa viene derivato il risultato della finale (tabellino partita su `"AS_TEAM_STAT"`, `an_schedule`, rigori/supplementari o mappatura manuale) e correggere il dato / la logica di calcolo affinché finalista perdente, albo d'oro e palmarès dei calciatori/squadre siano coerenti.
+
+---
+
+## 📌 86. Integrazione Video Partite YouTube (Premiere, Match Center & Videoteca Storica)
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Media (Coinvolgimento live, anti-spoiler e archivio video partite)
+- **Moduli & Tabelle coinvolte**: `an_schedule` (nuova colonna `youtube_url` / `youtube_video_id`), `src/components/schedule/SeasonCalendarBoard.tsx`, `src/pages/Calendario.tsx`, `src/pages/ArchivioStagioni.tsx`, `src/components/home/NextOpponentCard.tsx`, `src/pages/FoglioCommento.tsx`, pannello Admin in `/admin/automazioni`
+- **Descrizione & Obiettivi**:
+  1. **Database & Gestione Admin**:
+     - Aggiungere `youtube_url` (o `youtube_video_id`) su `an_schedule` per collegare ogni incontro al rispettivo video YouTube (supporto a *YouTube Premiere* programmate all'orario `date + match_time`).
+     - Interfaccia Admin compatta per giornata per incollare/modificare rapidamente i link YouTube delle partite della settimana.
+  2. **Timing Automatico & Player Integrato**:
+     - **Pre-partita**: badge con orario della Premiere, countdown e link promemoria su YouTube.
+     - **All'ora della partita (Live / Premiere)**: badge animato `🔴 IN ONDA ORA` su `/calendario` e nel box *Prossimo Incontro* in Homepage (`NextOpponentCard`).
+     - **Match Center**: nuovo tab **"Video Partita"** con player YouTube embed (`<iframe>`) affiancato a formazioni, statistiche e pagelle.
+  3. **Protezione Anti-Spoiler**:
+     - Oscuramento opzionale/automatico di risultato e tabellino durante la messa in onda (o fino al click su *"Mostra Risultato"*), per evitare spoiler a chi guarda la partita dal sito.
+  4. **Videoteca Storica**:
+     - Disponibilità on-demand di tutte le partite concluse anche in `/archivio/stagioni` (tab *Calendario & Risultati*) e accesso rapido da `/campionato/foglio-commento`.
