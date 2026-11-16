@@ -424,10 +424,18 @@ export async function generatePressQuestionsForMatchday(
       const teamStarPlayer = (playersByTeam.get(team.TEAM_ID) || [])[0];
       const starPlayerText = teamStarPlayer ? `${teamStarPlayer.Nome} ${teamStarPlayer.Cognome} (${teamStarPlayer.Posiz})` : 'i suoi uomini chiave';
 
-      const contextSummary = `Giornata ${matchday}. ${team.NAME} (${rankText}). Prossima sfida vs ${oppText}. Stella: ${starPlayerText}.`;
+      const isKaralisMarsRivalry =
+        (team.TEAM_ID === 'SKA' && opponentId === 'MAR') ||
+        (team.TEAM_ID === 'MAR' && opponentId === 'SKA');
+
+      const contextSummary = `Giornata ${matchday}. ${team.NAME} (${rankText}). Prossima sfida vs ${oppText}. Stella: ${starPlayerText}.${isKaralisMarsRivalry ? ' [RIVALITÀ ACCESA SKA-MAR]' : ''}`;
 
       // Prompt unico e fortemente differenziato
       let question: string | null = null;
+      const rivalryInstructions = isKaralisMarsRivalry
+        ? `\n- ATTENZIONE RIVALITÀ ESTREMA (KARALIS vs MAR'S ATTACK): questa è una delle sfide più sentite e infuocate dell'intera lega. Usa TONI MOLTO ACCESI, provocatori e drammatici: fai riferimento esplicito al clima rovente della vigilia, alle possibili tensioni o scontri tra le due tifoserie fuori e dentro lo stadio, alle scintille in campo e alla pressione estrema di una partita in cui nessuno può permettersi di perdere.`
+        : '';
+
       const geminiPrompt = `Sei un giornalista sportivo di spicco della Lega LCSIM.
 Fai UNA SOLA domanda giornalistica ORIGINALE, pungente e su misura per il Presidente ${presidentName} del "${team.NAME}".
 Contesto:
@@ -441,7 +449,7 @@ Contesto:
 Istruzioni speciali per differenziare le domande tra i manager:
 - Rivolgiti sempre al Presidente chiamandolo "Presidente ${presidentName}, ...".
 - NON fare domande standard o generiche tipo "quali sono i vostri obiettivi?".
-- Alterna temi diversi per ciascun presidente: ambizioni stagionali, fiducia nello staff tecnico guidato da ${coachName}, pressione psicologica della piazza, rivalità con ${oppText}, dipendenza dai gol di ${starPlayerText}, turnover, mercato e futuro della franchigia.
+- Alterna temi diversi per ciascun presidente: ambizioni stagionali, fiducia nello staff tecnico guidato da ${coachName}, pressione psicologica della piazza, rivalità con ${oppText}, dipendenza dai gol di ${starPlayerText}, turnover, mercato e futuro della franchigia.${rivalryInstructions}
 - Rispondi ESCLUSIVAMENTE con il testo della domanda tra virgolette, senza frasi di contorno.`;
 
       const aiText = await callGeminiApi(geminiPrompt);
@@ -457,7 +465,8 @@ Istruzioni speciali per differenziare le domande tra i manager:
           rankText,
           oppText,
           starPlayerText,
-          coachName
+          coachName,
+          isKaralisMarsRivalry
         );
       }
 
@@ -496,8 +505,17 @@ function generateDifferentiatedProceduralPressQuestion(
   rankText: string,
   oppText: string,
   starPlayerText: string,
-  coachName: string
+  coachName: string,
+  isKaralisMarsRivalry = false
 ): string {
+  if (isKaralisMarsRivalry) {
+    const rivalryAngles = [
+      `Presidente ${presidentName}, contro ${oppText} non è mai una partita normale: l'aria è già irrespirabile e si temono scintille e possibili scontri tra le due tifoserie fuori dallo stadio. Si sente di lanciare un appello o la tensione fa parte di questa guerra sportiva?`,
+      `Presidente ${presidentName}, la rivalità tra ${teamName} e ${oppText} è ormai una polveriera annunciata: tra cori infuocati, allerta ordine pubblico per eventuali contatti tra tifoserie e duelli durissimi in campo, ha chiesto a mister ${coachName} e a ${starPlayerText} di non fare prigionieri?`,
+      `Presidente ${presidentName}, la vigilia di ${teamName} contro ${oppText} è segnata da provocazioni continue sui social e dal rischio concreto di scontri sugli spalti. Come si prepara una gara così ad alta tensione senza far saltare i nervi alla squadra?`,
+    ];
+    return rivalryAngles[teamIndex % rivalryAngles.length];
+  }
   const angles = [
     // 0: Pressione e ambizioni
     `Presidente ${presidentName}, il ${teamName} viaggia ${rankText}. La sfida con ${oppText} è considerata da tutti la prova del nove per capire se potete puntare al titolo: avverte la pressione dello spogliatoio?`,
