@@ -614,6 +614,7 @@ const Navbar = () => {
             {/* Pulsante Diretto Inbox su Mobile al posto della vecchia campanella */}
             <Link
               to="/inbox"
+              onClick={() => window.dispatchEvent(new Event("lcsim-inbox-reset"))}
               className={`relative flex lg:hidden items-center gap-1.5 px-2.5 h-9 rounded-xl text-xs font-bold border transition-all ${
                 isInboxActive
                   ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-xs"
@@ -643,12 +644,13 @@ const Navbar = () => {
               <span className="sr-only">Cambia Tema</span>
             </Button>
 
-            {/* Sezione La Mia Squadra / Amministrazione (Unificata con Profilo e Logout) */}
+            {/* Sezione La Mia Squadra / Amministrazione (Solo Desktop - su Mobile è nella Bottom Bar) */}
+            <div className="hidden lg:block">
             {user ? (
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-1.5 sm:gap-2 outline-hidden border ${isMiaSquadraActive
+                    className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center gap-2 outline-hidden border ${isMiaSquadraActive
                       ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/25"
                       : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 shadow-xs"
                       }`}
@@ -667,12 +669,7 @@ const Navbar = () => {
                     ) : (
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                     )}
-                    <span className="hidden sm:inline">
-                      {isAdmin ? "Amministrazione" : "La Mia Squadra"}
-                    </span>
-                    <span className="sm:hidden font-mono">
-                      {effectiveTeam || (isAdmin ? "Admin" : user.name)}
-                    </span>
+                    <span>{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
                     <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -837,6 +834,7 @@ const Navbar = () => {
                 <LogIn className="h-3.5 w-3.5 text-emerald-500" /> Accedi
               </Button>
             )}
+            </div>
 
           </div>
         </div>

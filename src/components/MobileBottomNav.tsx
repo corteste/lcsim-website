@@ -197,7 +197,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {/* BOTTOM NAVIGATION BAR FISSA MOBILE (< lg) */}
       <nav
         aria-label="Navigazione app mobile"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/80 bg-card/95 backdrop-blur-lg shadow-[0_-6px_24px_rgba(0,0,0,0.22)] pb-[env(safe-area-inset-bottom,0px)]"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full border-t border-border/80 bg-card/95 backdrop-blur-lg shadow-[0_-6px_24px_rgba(0,0,0,0.22)] pb-[env(safe-area-inset-bottom,0px)]"
       >
         <div className="grid grid-cols-5 h-16 max-w-xl mx-auto px-1">
           {/* 1. HOME */}
@@ -266,7 +266,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           {/* 4. INBOX */}
           <Link
             to="/inbox"
-            onClick={() => setActiveSheet(null)}
+            onClick={() => {
+              setActiveSheet(null);
+              window.dispatchEvent(new Event("lcsim-inbox-reset"));
+            }}
             className={`relative flex flex-col items-center justify-center gap-1 rounded-xl transition-colors ${
               isInboxActive
                 ? "text-emerald-600 dark:text-emerald-400 font-extrabold"

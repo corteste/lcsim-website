@@ -121,10 +121,11 @@ export default function SalaStampa() {
       setItems(feed);
       setIsMarketOpen(marketStatus);
 
-      // Seleziona la prima notizia di default su desktop
+      // Seleziona la prima notizia di default solo su desktop; su mobile apre sulla lista notizie
+      const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
       setSelectedItemId((prev) => {
         if (prev && feed.some((it) => it.id === prev)) return prev;
-        return feed[0]?.id || null;
+        return isDesktop ? feed[0]?.id || null : null;
       });
     } catch (err) {
       console.error("Errore caricamento Inbox FM24:", err);
@@ -172,8 +173,16 @@ export default function SalaStampa() {
       )
       .subscribe();
 
+    const handleResetMobileSelection = () => {
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
+        setSelectedItemId(null);
+      }
+    };
+    window.addEventListener("lcsim-inbox-reset", handleResetMobileSelection);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener("lcsim-inbox-reset", handleResetMobileSelection);
     };
   }, [effectiveTeam, isAdmin]);
 
@@ -254,6 +263,9 @@ export default function SalaStampa() {
   const handleSelectItem = (id: string) => {
     setSelectedItemId(id);
     markAsRead(id);
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   // Notizia Selezionata
@@ -276,6 +288,27 @@ export default function SalaStampa() {
       return true;
     });
   }, [items, selectedCategory, searchQuery]);
+
+  const currentFilteredIndex = useMemo(() => {
+    if (!selectedItemId) return -1;
+    return filteredItems.findIndex((it) => it.id === selectedItemId);
+  }, [filteredItems, selectedItemId]);
+
+  const hasPrevItem = currentFilteredIndex > 0;
+  const hasNextItem =
+    currentFilteredIndex >= 0 && currentFilteredIndex < filteredItems.length - 1;
+
+  const handlePrevItem = () => {
+    if (hasPrevItem) {
+      handleSelectItem(filteredItems[currentFilteredIndex - 1].id);
+    }
+  };
+
+  const handleNextItem = () => {
+    if (hasNextItem) {
+      handleSelectItem(filteredItems[currentFilteredIndex + 1].id);
+    }
+  };
 
   // Conteggi per categoria
   const counts = useMemo(() => {
@@ -457,26 +490,26 @@ export default function SalaStampa() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip bg-background text-foreground flex flex-col">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-6 sm:py-8 flex-1 flex flex-col space-y-4">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 flex-1 flex flex-col space-y-4 min-w-0">
         {/* ========================================================================= */}
         {/* TOP COMMAND BAR (FM24 STYLE HEADER & CONTROLS)                            */}
         {/* ========================================================================= */}
-        <div className="p-3 sm:p-4 rounded-2xl border border-border/80 bg-card/95 shadow-sm space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+        <div className="p-3 sm:p-4 rounded-2xl border border-border/80 bg-card/95 shadow-sm space-y-3 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs">
                 <Inbox className="h-5 w-5 text-emerald-500" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg sm:text-xl font-black text-foreground tracking-tight flex items-center gap-2">
                     Inbox Personale
                   </h1>
                 </div>
-                <p className="text-[11px] text-muted-foreground truncate">
+                <p className="text-[11px] text-muted-foreground sm:truncate">
                   Comunicazioni ufficiali, interviste, gossip di mercato e report tattici unificati.
                 </p>
               </div>
@@ -539,7 +572,12 @@ export default function SalaStampa() {
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => setSelectedCategory(tab.id as InboxCategory)}
+                    onClick={() => {
+                      setSelectedCategory(tab.id as InboxCategory);
+                      if (typeof window !== "undefined" && window.innerWidth < 768) {
+                        setSelectedItemId(null);
+                      }
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                       isActive
                         ? "bg-foreground text-background shadow-xs font-black"
@@ -576,12 +614,12 @@ export default function SalaStampa() {
         {/* ========================================================================= */}
         {/* SPLIT SCREEN INBOX FM24 (COLONNA SINISTRA FEED + COLONNA DESTRA DETTAGLIO) */}
         {/* ========================================================================= */}
-        <div className="flex-1 min-h-[580px] grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
+        <div className="flex-1 md:min-h-[580px] grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch min-w-0">
           {/* ------------------------------------------------------------- */}
           {/* COLONNA SINISTRA: ELENCO NOTIZIE (40% desktop, full su mobile)*/}
           {/* ------------------------------------------------------------- */}
           <div
-            className={`md:col-span-5 lg:col-span-4 rounded-2xl border border-border/80 bg-card overflow-hidden flex flex-col shadow-sm ${
+            className={`md:col-span-5 lg:col-span-4 min-w-0 rounded-2xl border border-border/80 bg-card overflow-hidden flex flex-col shadow-sm ${
               selectedItemId && "hidden md:flex"
             }`}
           >
@@ -594,7 +632,7 @@ export default function SalaStampa() {
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-border/50 max-h-[calc(100vh-250px)]">
+            <div className="flex-1 md:overflow-y-auto divide-y divide-border/50 md:max-h-[calc(100vh-250px)]">
               {loading ? (
                 <div className="p-8 text-center text-xs text-muted-foreground italic space-y-2">
                   <RefreshCw className="h-5 w-5 animate-spin mx-auto text-emerald-500" />
@@ -723,16 +761,16 @@ export default function SalaStampa() {
           {/* COLONNA DESTRA: DETTAGLIO NOTIZIA SELEZIONATA (60-65% desktop) */}
           {/* ------------------------------------------------------------- */}
           <div
-            className={`md:col-span-7 lg:col-span-8 rounded-2xl border border-border/80 bg-card overflow-hidden flex flex-col shadow-sm ${
+            className={`md:col-span-7 lg:col-span-8 min-w-0 rounded-2xl border border-border/80 bg-card overflow-hidden flex flex-col shadow-sm ${
               !selectedItemId && "hidden md:flex"
             }`}
           >
             {selectedItem ? (
-              <div className="flex-1 flex flex-col min-h-0 overflow-y-auto max-h-[calc(100vh-250px)]">
+              <div className="flex-1 flex flex-col min-h-0 md:overflow-y-auto md:max-h-[calc(100vh-250px)] min-w-0">
                 {/* Header Pannello Dettaglio */}
-                <div className="p-4 sm:p-6 border-b border-border/60 bg-muted/20 space-y-3 shrink-0">
-                  {/* Mobile Back Button */}
-                  <div className="md:hidden flex items-center gap-2 mb-2">
+                <div className="p-4 sm:p-6 border-b border-border/60 bg-muted/20 space-y-3 shrink-0 min-w-0">
+                  {/* Mobile Back & Prev/Next Bar */}
+                  <div className="md:hidden flex items-center justify-between gap-2 pb-1 border-b border-border/40">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -742,6 +780,34 @@ export default function SalaStampa() {
                       <ArrowLeft className="h-4 w-4" />
                       <span>Torna alla lista</span>
                     </Button>
+
+                    {currentFilteredIndex >= 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] font-mono text-muted-foreground mr-1">
+                          {currentFilteredIndex + 1}/{filteredItems.length}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handlePrevItem}
+                          disabled={!hasPrevItem}
+                          className="h-8 w-8 rounded-lg"
+                          title="Notizia precedente"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handleNextItem}
+                          disabled={!hasNextItem}
+                          className="h-8 w-8 rounded-lg"
+                          title="Notizia successiva"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -779,12 +845,12 @@ export default function SalaStampa() {
                     </div>
                   </div>
 
-                  <h2 className="text-lg sm:text-2xl font-black text-foreground tracking-tight leading-snug">
+                  <h2 className="text-lg sm:text-2xl font-black text-foreground tracking-tight leading-snug break-words">
                     {selectedItem.title}
                   </h2>
 
                   {/* Scheda Mittente */}
-                  <div className="p-3 rounded-xl bg-card border border-border/70 flex items-center justify-between gap-3 shadow-xs">
+                  <div className="p-3 rounded-xl bg-card border border-border/70 flex flex-wrap items-center justify-between gap-2.5 shadow-xs">
                     <div className="flex items-center gap-3 min-w-0">
                       {selectedItem.senderTeamId ? (
                         <img
