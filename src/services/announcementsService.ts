@@ -50,11 +50,6 @@ export function markNotificationIdReadLocally(notifId: string, userKey?: string)
   const set = getLocalSet(scopedKey);
   set.add(notifId);
   saveLocalSet(scopedKey, set);
-
-  // Salva anche nella chiave globale per sicurezza
-  const globalSet = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
-  globalSet.add(notifId);
-  saveLocalSet(LOCAL_READ_NOTIFICATIONS_KEY, globalSet);
 }
 
 export function markMultipleNotificationIdsReadLocally(notifIds: string[], userKey?: string) {
@@ -62,10 +57,6 @@ export function markMultipleNotificationIdsReadLocally(notifIds: string[], userK
   const set = getLocalSet(scopedKey);
   notifIds.forEach((id) => set.add(id));
   saveLocalSet(scopedKey, set);
-
-  const globalSet = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
-  notifIds.forEach((id) => globalSet.add(id));
-  saveLocalSet(LOCAL_READ_NOTIFICATIONS_KEY, globalSet);
 }
 
 /**
@@ -76,10 +67,6 @@ export function deleteNotificationLocally(notifId: string, userKey?: string) {
   const set = getLocalSet(scopedKey);
   set.add(notifId);
   saveLocalSet(scopedKey, set);
-
-  const globalSet = getLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY);
-  globalSet.add(notifId);
-  saveLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY, globalSet);
 }
 
 /**
@@ -90,10 +77,6 @@ export function deleteMultipleNotificationsLocally(notifIds: string[], userKey?:
   const set = getLocalSet(scopedKey);
   notifIds.forEach((id) => set.add(id));
   saveLocalSet(scopedKey, set);
-
-  const globalSet = getLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY);
-  notifIds.forEach((id) => globalSet.add(id));
-  saveLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY, globalSet);
 }
 
 /**
@@ -113,7 +96,6 @@ export async function fetchAnnouncements(userKey?: string): Promise<LeagueAnnoun
     }
 
     const scopedReadSet = getLocalSet(getScopedKey(LOCAL_READ_ANNOUNCEMENTS_KEY, userKey));
-    const globalReadSet = getLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY);
     const dbReadSet = new Set<string>();
 
     if (userKey) {
@@ -136,10 +118,7 @@ export async function fetchAnnouncements(userKey?: string): Promise<LeagueAnnoun
       author_name: item.author_name || "Commissione Lega LCSIM",
       created_at: item.created_at,
       expires_at: item.expires_at,
-      is_read:
-        dbReadSet.has(item.id) ||
-        scopedReadSet.has(item.id) ||
-        globalReadSet.has(item.id),
+      is_read: dbReadSet.has(item.id) || scopedReadSet.has(item.id),
     }));
   } catch (err) {
     console.error("fetchAnnouncements exception:", err);
@@ -158,10 +137,6 @@ export async function markAnnouncementAsRead(
   const scopedSet = getLocalSet(scopedKey);
   scopedSet.add(announcementId);
   saveLocalSet(scopedKey, scopedSet);
-
-  const localSet = getLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY);
-  localSet.add(announcementId);
-  saveLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY, localSet);
 
   markNotificationIdReadLocally(`ann_${announcementId}`, userKey);
 
@@ -194,10 +169,6 @@ export async function markAllAnnouncementsAsRead(
   const scopedSet = getLocalSet(scopedKey);
   announcementIds.forEach((id) => scopedSet.add(id));
   saveLocalSet(scopedKey, scopedSet);
-
-  const localSet = getLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY);
-  announcementIds.forEach((id) => localSet.add(id));
-  saveLocalSet(LOCAL_READ_ANNOUNCEMENTS_KEY, localSet);
 
   markMultipleNotificationIdsReadLocally(
     announcementIds.map((id) => `ann_${id}`),
@@ -302,12 +273,10 @@ export async function fetchUnifiedNotifications(params: {
 }): Promise<AppNotification[]> {
   const { userKey, userTeam, isAdmin } = params;
   const scopedReadNotifs = getLocalSet(getScopedKey(LOCAL_READ_NOTIFICATIONS_KEY, userKey));
-  const globalReadNotifs = getLocalSet(LOCAL_READ_NOTIFICATIONS_KEY);
   const scopedDeletedNotifs = getLocalSet(getScopedKey(LOCAL_DELETED_NOTIFICATIONS_KEY, userKey));
-  const globalDeletedNotifs = getLocalSet(LOCAL_DELETED_NOTIFICATIONS_KEY);
 
-  const isDeleted = (id: string) => scopedDeletedNotifs.has(id) || globalDeletedNotifs.has(id);
-  const isRead = (id: string) => scopedReadNotifs.has(id) || globalReadNotifs.has(id);
+  const isDeleted = (id: string) => scopedDeletedNotifs.has(id);
+  const isRead = (id: string) => scopedReadNotifs.has(id);
 
   const notifications: AppNotification[] = [];
 
