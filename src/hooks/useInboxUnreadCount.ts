@@ -196,6 +196,15 @@ export function useInboxUnreadCount(): number {
           }
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_notification_reads" },
+        (payload: { new?: { user_key?: string } }) => {
+          if (!userKey || !payload?.new?.user_key || payload.new.user_key === userKey) {
+            loadNotifications();
+          }
+        }
+      )
       .subscribe();
 
     const handleSync = () => loadNotifications();
@@ -205,7 +214,7 @@ export function useInboxUnreadCount(): number {
       supabase.removeChannel(channel);
       window.removeEventListener("lcsim-notifications-updated", handleSync);
     };
-  }, [loadNotifications, userTeam, isAdmin]);
+  }, [loadNotifications, userKey, userTeam, isAdmin]);
 
   return notifications.filter((n) => n.isUnread).length;
 }
