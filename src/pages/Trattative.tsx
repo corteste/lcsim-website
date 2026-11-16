@@ -33,6 +33,7 @@ import { EnrichedTrade, TRADE_STATUS_CONFIG } from "@/types/trades";
 import { getMarketState } from "@/services/marketStateService";
 import { NewTradeModal } from "@/components/trades/NewTradeModal";
 import { TradeDetailsModal } from "@/components/trades/TradeDetailsModal";
+import { TradeRejectDialog } from "@/components/trades/TradeRejectDialog";
 import { Link, useSearchParams } from "react-router-dom";
 import { TeamMarketNeedsCard } from "@/components/trades/TeamMarketNeedsCard";
 import { toast } from "sonner";
@@ -55,6 +56,7 @@ export default function Trattative() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<EnrichedTrade | null>(null);
   const [counterOfferSource, setCounterOfferSource] = useState<EnrichedTrade | null>(null);
+  const [quickRejectTrade, setQuickRejectTrade] = useState<EnrichedTrade | null>(null);
   const [searchParams] = useSearchParams();
   const recipientParam = searchParams.get("recipient") || "";
   const [initialRecipient, setInitialRecipient] = useState<string>(recipientParam);
@@ -171,16 +173,19 @@ export default function Trattative() {
     }
   };
 
-  const handleQuickReject = async (trade: EnrichedTrade) => {
-    const reason = window.prompt("Motivazione del rifiuto della Lega:");
-    if (reason === null) return;
+  const handleQuickReject = (trade: EnrichedTrade) => {
+    setQuickRejectTrade(trade);
+  };
 
+  const handleConfirmQuickReject = async (reason: string) => {
+    if (!quickRejectTrade) return;
     setActionLoading(true);
     const adminUser = user?.name || user?.username || "Admin Lega";
-    const res = await adminRejectTrade(trade.id, adminUser, reason);
+    const res = await adminRejectTrade(quickRejectTrade.id, adminUser, reason);
     setActionLoading(false);
 
     if (res.success) {
+      setQuickRejectTrade(null);
       toast.info("Scambio respinto dalla Lega.");
       loadData();
     } else {
@@ -710,6 +715,23 @@ export default function Trattative() {
         onTradeUpdated={loadData}
         onOpenCounterOffer={handleOpenCounterOffer}
         isMarketOpen={isMarketOpen}
+      />
+
+      {/* QUICK ADMIN REJECT MODAL */}
+      <TradeRejectDialog
+        open={quickRejectTrade !== null}
+        onOpenChange={(next) => {
+          if (!next) setQuickRejectTrade(null);
+        }}
+        title={
+          quickRejectTrade
+            ? `Respingi Scambio (${quickRejectTrade.sender_team} ↔ ${quickRejectTrade.receiver_team})`
+            : "Respingi Scambio dalla Lega"
+        }
+        description="Inserisci la motivazione ufficiale della Lega (opzionale) visibile a entrambi i club."
+        confirmLabel="Respingi Scambio"
+        loading={actionLoading}
+        onConfirm={handleConfirmQuickReject}
       />
     </div>
   );

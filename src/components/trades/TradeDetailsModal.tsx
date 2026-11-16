@@ -40,6 +40,7 @@ import {
 import { EnrichedTrade, TRADE_STATUS_CONFIG } from "@/types/trades";
 import { toast } from "sonner";
 import { SUPABASE_STORAGE_URL } from "@/constants/App";
+import { TradeRejectDialog } from "@/components/trades/TradeRejectDialog";
 
 interface TradeDetailsModalProps {
   open: boolean;
@@ -65,6 +66,7 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
   const [sendingMsg, setSendingMsg] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [gkValidationNotice, setGkValidationNotice] = useState<string | null>(null);
+  const [rejectDialogMode, setRejectDialogMode] = useState<"manager" | "admin" | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -165,14 +167,16 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
     }
   };
 
-  const handleReject = async () => {
-    const reason = window.prompt("Motivazione del rifiuto (opzionale):");
-    if (reason === null) return; // User cancelled prompt
+  const handleReject = () => {
+    setRejectDialogMode("manager");
+  };
 
+  const handleConfirmManagerReject = async (reason: string) => {
     setActionLoading(true);
     const res = await rejectTrade(trade.id, currentTeam, reason);
     setActionLoading(false);
     if (res.success) {
+      setRejectDialogMode(null);
       toast.info("Proposta di scambio rifiutata.");
       onTradeUpdated();
       onOpenChange(false);
@@ -212,15 +216,17 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
     }
   };
 
-  const handleAdminReject = async () => {
-    const reason = window.prompt("Motivazione del rifiuto della Lega:");
-    if (reason === null) return;
+  const handleAdminReject = () => {
+    setRejectDialogMode("admin");
+  };
 
+  const handleConfirmAdminReject = async (reason: string) => {
     setActionLoading(true);
     const adminUser = user?.name || user?.username || "Admin Lega";
     const res = await adminRejectTrade(trade.id, adminUser, reason);
     setActionLoading(false);
     if (res.success) {
+      setRejectDialogMode(null);
       toast.info("Scambio respinto dalla Lega.");
       onTradeUpdated();
       onOpenChange(false);
@@ -568,6 +574,28 @@ export const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({
           </div>
         </div>
       </DialogContent>
+
+      <TradeRejectDialog
+        open={rejectDialogMode !== null}
+        onOpenChange={(next) => {
+          if (!next) setRejectDialogMode(null);
+        }}
+        title={
+          rejectDialogMode === "admin"
+            ? "Respingi Scambio dalla Lega"
+            : "Rifiuta Proposta di Scambio"
+        }
+        description={
+          rejectDialogMode === "admin"
+            ? "Inserisci la motivazione ufficiale della Lega (opzionale) visibile a entrambi i club."
+            : "Inserisci una motivazione opzionale del rifiuto (verrà mostrata nella scheda della trattativa)."
+        }
+        confirmLabel={rejectDialogMode === "admin" ? "Respingi Scambio" : "Conferma Rifiuto"}
+        loading={actionLoading}
+        onConfirm={
+          rejectDialogMode === "admin" ? handleConfirmAdminReject : handleConfirmManagerReject
+        }
+      />
     </Dialog>
   );
 };
