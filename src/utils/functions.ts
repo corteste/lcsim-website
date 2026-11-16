@@ -316,3 +316,38 @@ export const isRetiringSoon = (
   const age = Number(player.Età);
   return age === 34;
 };
+
+/**
+ * Restituisce la classe gradiente Tailwind dei colori sociali di una squadra (usata in /squadre e nei popup).
+ */
+export const getTeamSocialBg = (team: string): string => {
+  switch ((team || "").trim().toUpperCase()) {
+    case "APD":
+      return "bg-gradient-to-br from-[#27272a] via-[#c93b7b] to-[#d9a316]";
+    case "ASK":
+    case "SKA":
+      return "bg-gradient-to-br from-[#109868] via-[#0d8259] to-[#e2e8f0]";
+    case "ACF":
+      return "bg-gradient-to-br from-[#149e6e] via-[#0d7a55] to-[#27272a]";
+    case "PFC":
+      return "bg-gradient-to-br from-[#ea580c] via-[#c2410c] to-[#27272a]";
+    case "MAR":
+      return "bg-gradient-to-br from-[#cf3434] via-[#9e2a3b] to-[#2b59c3]";
+    case "ACD":
+      return "bg-gradient-to-br from-[#d93838] via-[#b82828] to-[#e2e8f0]";
+    case "ALV":
+      return "bg-gradient-to-br from-[#1992d4] via-[#1778b5] to-[#e87524]";
+    case "OLD":
+      return "bg-gradient-to-br from-[#356de0] via-[#2b56b8] to-[#db3e6b]";
+    case "VFC":
+      return "bg-gradient-to-br from-[#d9a316] via-[#b8860b] to-[#27272a]";
+    case "RMB":
+      return "bg-gradient-to-br from-[#cc2929] via-[#991f1f] to-[#27272a]";
+    case "COS":
+      return "bg-gradient-to-br from-[#7c4dff] via-[#5e35b1] to-[#12a4bd]";
+    case "EUR":
+      return "bg-gradient-to-br from-[#234dc9] via-[#1e40a3] to-[#e0b422]";
+    default:
+      return "bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900";
+  }
+};

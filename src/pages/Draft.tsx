@@ -58,6 +58,11 @@ import { getStandings } from "@/hooks/use-standings";
 import { getPlayerImage, getRoleColor, getValueColor } from "@/utils/functions";
 import { Player } from "@/types/player";
 import PlayerDetails from "@/components/player/playerDetails";
+import { SerieBStatsPanel } from "@/components/player/SerieBStatsPanel";
+import {
+  fetchSerieBPlayerMatches,
+  SerieBMatchStat,
+} from "@/services/serieBStatsService";
 import {
   SCOUTING_DEPARTMENTS,
   isDepartmentUnlocked,
@@ -152,6 +157,27 @@ const Draft = () => {
   const [rookies, setRookies] = useState<Player[]>([]);
   const [scoutingByRookie, setScoutingByRookie] = useState<Record<number, number>>({});
   const [inspectedRookie, setInspectedRookie] = useState<Player | null>(null);
+  const [inspectedRookieSerieBStats, setInspectedRookieSerieBStats] = useState<SerieBMatchStat[]>([]);
+  const [inspectedRookieSerieBLoading, setInspectedRookieSerieBLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!inspectedRookie?.ID) {
+      setInspectedRookieSerieBStats([]);
+      return;
+    }
+    let active = true;
+    setInspectedRookieSerieBLoading(true);
+    fetchSerieBPlayerMatches(inspectedRookie.ID)
+      .then((rows) => {
+        if (active) setInspectedRookieSerieBStats(rows);
+      })
+      .finally(() => {
+        if (active) setInspectedRookieSerieBLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [inspectedRookie?.ID]);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -2548,6 +2574,7 @@ const Draft = () => {
       <DraftPickAnnouncementModal
         pickData={announcementPick}
         onClose={() => setAnnouncementPick(null)}
+        autoCloseDuration={30000}
       />
 
       {/* MODAL DETTAGLIO COMPLETO CALCIATORE SVINCOLATO (Punto 40) */}
@@ -2622,6 +2649,14 @@ const Draft = () => {
                 </DialogHeader>
 
                 <div className="space-y-3 py-2">
+                  {(inspectedRookieSerieBLoading || inspectedRookieSerieBStats.length > 0) && (
+                    <SerieBStatsPanel
+                      matches={inspectedRookieSerieBStats}
+                      loading={inspectedRookieSerieBLoading}
+                      isGoalkeeper={(inspectedRookie.Posiz || "").toUpperCase() === "POR"}
+                      compact
+                    />
+                  )}
                   {tokens === 0 ? (
                     <div className="p-4 rounded-xl bg-muted/40 border border-dashed border-border text-center space-y-2">
                       <p className="text-xs text-muted-foreground">
