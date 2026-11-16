@@ -428,15 +428,31 @@ export async function generatePressQuestionsForMatchday(
         (team.TEAM_ID === 'SKA' && opponentId === 'MAR') ||
         (team.TEAM_ID === 'MAR' && opponentId === 'SKA');
 
-      const contextSummary = `Giornata ${matchday}. ${team.NAME} (${rankText}). Prossima sfida vs ${oppText}. Stella: ${starPlayerText}.${isKaralisMarsRivalry ? ' [RIVALITÀ ACCESA SKA-MAR]' : ''}`;
+      const isDraftMode = matchday === 0;
+      const contextSummary = isDraftMode
+        ? `Speciale Draft Stagione ${season}. ${team.NAME}. Stella in rosa: ${starPlayerText}.`
+        : `Giornata ${matchday}. ${team.NAME} (${rankText}). Prossima sfida vs ${oppText}. Stella: ${starPlayerText}.${isKaralisMarsRivalry ? ' [RIVALITÀ ACCESA SKA-MAR]' : ''}`;
 
       // Prompt unico e fortemente differenziato
       let question: string | null = null;
-      const rivalryInstructions = isKaralisMarsRivalry
+      const rivalryInstructions = !isDraftMode && isKaralisMarsRivalry
         ? `\n- ATTENZIONE RIVALITÀ ESTREMA (KARALIS vs MAR'S ATTACK): questa è una delle sfide più sentite e infuocate dell'intera lega. Usa TONI MOLTO ACCESI, provocatori e drammatici: fai riferimento esplicito al clima rovente della vigilia, alle possibili tensioni o scontri tra le due tifoserie fuori e dentro lo stadio, alle scintille in campo e alla pressione estrema di una partita in cui nessuno può permettersi di perdere.`
         : '';
 
-      const geminiPrompt = `Sei un giornalista sportivo di spicco della Lega LCSIM.
+      const geminiPrompt = isDraftMode
+        ? `Sei un giornalista sportivo di spicco della Lega LCSIM.
+Fai UNA SOLA domanda giornalistica ORIGINALE, pungente e su misura per il Presidente ${presidentName} del "${team.NAME}" in vista del prossimo DRAFT della Stagione ${season}.
+Contesto:
+- Prossimo evento ufficiale: Draft Rookie Stagione ${season}
+- Allenatore in panchina: ${coachName}
+- Calciatore faro della rosa: ${starPlayerText}
+- Indice squadra nel turno: ${i + 1} di 12
+
+Istruzioni speciali:
+- Rivolgiti sempre al Presidente chiamandolo "Presidente ${presidentName}, ...".
+- Concentra la domanda su strategia al Draft, scouting dei rookie, possibili scambi di scelte dell'ultim'ora o reparti da rinforzare intorno a ${starPlayerText}.
+- Rispondi ESCLUSIVAMENTE con il testo della domanda tra virgolette, senza frasi di contorno.`
+        : `Sei un giornalista sportivo di spicco della Lega LCSIM.
 Fai UNA SOLA domanda giornalistica ORIGINALE, pungente e su misura per il Presidente ${presidentName} del "${team.NAME}".
 Contesto:
 - Turno di Serie A: Giornata ${matchday}
@@ -466,7 +482,8 @@ Istruzioni speciali per differenziare le domande tra i manager:
           oppText,
           starPlayerText,
           coachName,
-          isKaralisMarsRivalry
+          isKaralisMarsRivalry,
+          isDraftMode
         );
       }
 
@@ -506,8 +523,18 @@ function generateDifferentiatedProceduralPressQuestion(
   oppText: string,
   starPlayerText: string,
   coachName: string,
-  isKaralisMarsRivalry = false
+  isKaralisMarsRivalry = false,
+  isDraftMode = false
 ): string {
+  if (isDraftMode) {
+    const draftAngles = [
+      `Presidente ${presidentName}, il Draft della Stagione 11 è alle porte: per il ${teamName} punterete sul miglior talento assoluto disponibile o su un ruolo preciso da affiancare a ${starPlayerText}?`,
+      `Presidente ${presidentName}, i tifosi del ${teamName} sognano un colpo da prima pagina nella notte del Draft: c'è già un prospetto in cima alla vostra graduatoria o state valutando scambi per salire di posizione?`,
+      `Presidente ${presidentName}, con mister ${coachName} avete già tracciato l'identikit del rookie ideale per il ${teamName}? Quanto peserà lo scouting rispetto al potenziale grezzo nelle vostre scelte?`,
+      `Presidente ${presidentName}, la notte del Draft può cambiare gli equilibri della Serie A: il ${teamName} userà tutte le proprie scelte o è pronto a sacrificarne qualcuna sul mercato per un giocatore già pronto?`,
+    ];
+    return draftAngles[teamIndex % draftAngles.length];
+  }
   if (isKaralisMarsRivalry) {
     const rivalryAngles = [
       `Presidente ${presidentName}, contro ${oppText} non è mai una partita normale: l'aria è già irrespirabile e si temono scintille e possibili scontri tra le due tifoserie fuori dallo stadio. Si sente di lanciare un appello o la tensione fa parte di questa guerra sportiva?`,
