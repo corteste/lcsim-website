@@ -1826,3 +1826,20 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
      - Oscuramento opzionale/automatico di risultato e tabellino durante la messa in onda (o fino al click su *"Mostra Risultato"*), per evitare spoiler a chi guarda la partita dal sito.
   4. **Videoteca Storica**:
      - Disponibilità on-demand di tutte le partite concluse anche in `/archivio/stagioni` (tab *Calendario & Risultati*) e accesso rapido da `/campionato/foglio-commento`.
+
+---
+
+## 📌 87. App Smartphone / Esperienza Mobile (PWA vs Wrapper Nativo Capacitor)
+- **Stato**: 🟡 Da Decidere / In Backlog
+- **Priorità**: Media (Accessibilità da smartphone per i manager)
+- **Moduli & File coinvolti**: `index.html`, `package.json`, `vite.config.ts`, `public/manifest.webmanifest` & icone app, eventuale Bottom Navigation mobile, Supabase Edge Functions per Web Push / FCM
+- **Soluzioni Valutate (decisione aperta tra Opzione 1 e Opzione 2)**:
+  1. **Opzione 1 (Consigliata — PWA / Progressive Web App + Ottimizzazione Mobile-First)**:
+     - Integrazione `vite-plugin-pwa` + `manifest.webmanifest` + icone LCSIM + Service Worker su build React/Vite esistente.
+     - Installabile su Android (Chrome) e iOS (Safari *Aggiungi a schermata Home*) a schermo intero, senza costi di store (`€0`) e con aggiornamenti istantanei ad ogni push su `main`.
+     - Supporta Web Push su Android e iOS 16.4+ tramite Supabase Edge Functions (offerte scambi, turno Draft, scadenza formazioni).
+     - Da affiancare a una Bottom Bar mobile per accesso rapido alle sezioni principali e rifiniture responsive (es. fix `#74`, `viewport-fit=cover`).
+  2. **Opzione 2 (Capacitor — Wrapper Nativo per Store / `.apk`)**:
+     - Impacchettamento della build React/Vite in app nativa Android (`.apk`/`.aab`) e iOS (`.ipa`), mantenendo il codice web condiviso.
+     - Permette distribuzione su Google Play Store (`$25` una tantum) / distribuzione diretta `.apk` Android e notifiche push native FCM/APNs.
+     - Vincoli per iOS: richiede Mac con Xcode, account Apple Developer (`$99/anno`) e approvazione App Store.
