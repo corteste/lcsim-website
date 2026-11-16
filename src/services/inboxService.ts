@@ -432,6 +432,10 @@ export async function fetchInboxFeed(params: {
         tradeTitle = `❌ Scambio Declinato: ${trade.sender_team} ↔ ${trade.receiver_team}`;
         tradeBadge = "Non Concluso";
         tradeColor = "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30";
+      } else if (trade.status === "cancelled") {
+        tradeTitle = `🚫 Scambio Annullato: ${trade.sender_team} ↔ ${trade.receiver_team}`;
+        tradeBadge = "Annullato";
+        tradeColor = "bg-muted text-muted-foreground border-border/60";
       }
 
       const formatAssetSnippet = (
@@ -454,7 +458,15 @@ export async function fetchInboxFeed(params: {
 
       const offeredSnippet = formatAssetSnippet(trade.offered_players, trade.offered_picks);
       const requestedSnippet = formatAssetSnippet(trade.requested_players, trade.requested_picks);
-      const snippet = `Offerti: ${offeredSnippet} ➔ Richiesti: ${requestedSnippet}`;
+      const baseSnippet = `Offerti: ${offeredSnippet} ➔ Richiesti: ${requestedSnippet}`;
+      const rejectReason = trade.rejection_reason?.trim();
+      const snippet =
+        rejectReason &&
+        (trade.status === "rejected" ||
+          trade.status === "admin_rejected" ||
+          trade.status === "cancelled")
+          ? `${baseSnippet} • Motivo: "${rejectReason}"`
+          : baseSnippet;
 
       items.push({
         id: `trade_${trade.id}`,
