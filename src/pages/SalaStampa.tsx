@@ -1116,12 +1116,13 @@ export default function SalaStampa() {
                                     className="text-xs bg-muted/20 rounded-xl"
                                   />
                                   <Button
-                                    size="sm"
+                                    size="icon"
                                     onClick={() => handleReplySubmit(selectedItem.pressData!.id)}
                                     disabled={isSubmittingReply || !replyDraft.trim()}
-                                    className="h-auto px-3 text-xs font-bold self-end bg-blue-600 hover:bg-blue-500 text-white rounded-xl"
+                                    className="h-10 w-10 shrink-0 self-end bg-blue-600 hover:bg-blue-500 text-white rounded-xl"
+                                    title="Invia replica"
                                   >
-                                    <Send className="h-3.5 w-3.5" />
+                                    <Send className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </div>
@@ -1413,12 +1414,13 @@ export default function SalaStampa() {
                                   className="text-xs bg-muted/20 rounded-xl"
                                 />
                                 <Button
-                                  size="sm"
+                                  size="icon"
                                   onClick={() => handleTradeReplySubmit(selectedItem.tradeData!.id)}
                                   disabled={isSubmittingTradeReply || !tradeReplyDraft.trim()}
-                                  className="h-auto px-3 text-xs font-bold self-end bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl"
+                                  className="h-10 w-10 shrink-0 self-end bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl"
+                                  title="Invia commento"
                                 >
-                                  <Send className="h-3.5 w-3.5" />
+                                  <Send className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
