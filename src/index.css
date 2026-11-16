@@ -212,3 +212,12 @@ html .right-scroll-bar-position {
 *::-webkit-scrollbar-thumb:hover {
   background-color: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* ==========================================================================
+   Mobile Native Bottom Navigation Bar Clearance (< lg = 1024px)
+   ========================================================================== */
+@media (max-width: 1023px) {
+  body {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+}
