@@ -889,11 +889,11 @@ export async function generateRandomMarketRumors(
 
       const credibilityBadge = journalisticBadges[Math.floor(Math.random() * journalisticBadges.length)];
       const sourceList = [
-        'Gianluca Di LCSIM',
-        'Fabrizio Romano LCSIM Edition',
+        'Il Gazzettino',
+        'Mario Mazo - Qui Per Voi',
         'Gazzetta del Manager',
         'Insider LCSIM TV',
-        'Sky Sport LCSIM',
+        'Ground Sport LCSIM',
         'Tuttomercato LCSIM',
         'Corriere del Fantamercato'
       ];
