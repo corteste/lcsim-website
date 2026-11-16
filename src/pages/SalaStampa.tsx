@@ -233,8 +233,8 @@ export default function SalaStampa() {
       markAnnouncementAsRead(annId, userKey).then(() => {
         window.dispatchEvent(new Event("lcsim-notifications-updated"));
       });
-    } else if (id.startsWith("trade-")) {
-      const tradeId = id.slice("trade-".length);
+    } else if (id.startsWith("trade_")) {
+      const tradeId = id.slice("trade_".length);
       syncUnifiedNotificationsAsRead(tradeId);
     }
   };
@@ -1306,6 +1306,21 @@ export default function SalaStampa() {
                         <div className="p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs text-muted-foreground space-y-1">
                           <span className="font-bold text-foreground block">Note & Messaggi:</span>
                           <p>{selectedItem.tradeData.notes}</p>
+                        </div>
+                      )}
+
+                      {selectedItem.tradeData.rejection_reason && (
+                        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs space-y-1">
+                          <span className="font-bold text-rose-600 dark:text-rose-400 block">
+                            {selectedItem.tradeData.status === "admin_rejected"
+                              ? "Motivazione del Rifiuto (Lega):"
+                              : selectedItem.tradeData.status === "cancelled"
+                              ? "Motivazione Annullamento:"
+                              : `Messaggio di Rifiuto (${selectedItem.tradeData.receiver_team_name || selectedItem.tradeData.receiver_team}):`}
+                          </span>
+                          <p className="text-foreground/90 whitespace-pre-line">
+                            {selectedItem.tradeData.rejection_reason}
+                          </p>
                         </div>
                       )}
 
