@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -86,6 +85,17 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
   // Search filters
   const [mySearch, setMySearch] = useState("");
   const [targetSearch, setTargetSearch] = useState("");
+  const [mobileStep, setMobileStep] = useState<"select_team" | "select_assets">(
+    counterOfferTrade || initialTargetTeam ? "select_assets" : "select_team"
+  );
+
+  useEffect(() => {
+    if (open) {
+      setMobileStep(
+        counterOfferTrade || initialTargetTeam ? "select_assets" : "select_team"
+      );
+    }
+  }, [open, counterOfferTrade, initialTargetTeam]);
 
   // Teams to propose trade to (exclude own team)
   const otherTeams = useMemo(() => {
@@ -299,26 +309,49 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[96vw] max-h-[92vh] p-0 flex flex-col gap-0 overflow-hidden bg-card border-border/80 shadow-2xl">
+      <DialogContent className="max-w-5xl w-[96vw] h-[90vh] md:h-auto max-h-[92vh] p-0 flex flex-col gap-0 overflow-hidden bg-card border-border/80 shadow-2xl">
         {/* Header */}
-        <div className="p-5 border-b border-border/70 bg-gradient-to-r from-muted/50 via-background to-muted/50 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center border border-blue-500/20">
+        <div className="p-4 sm:p-5 border-b border-border/70 bg-gradient-to-r from-muted/50 via-background to-muted/50 flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center border border-blue-500/20 shrink-0">
                 <ArrowLeftRight className="h-5 w-5" />
               </div>
-              <div>
-                <DialogTitle className="text-lg font-black tracking-tight">
+              <div className="min-w-0">
+                <DialogTitle className="text-base sm:text-lg font-black tracking-tight truncate">
                   {counterOfferTrade ? "Formula una Controproposta" : "Nuova Proposta di Scambio"}
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground">
-                  Trattativa privata tra manager. Rimarrà segreta alle altre squadre finché non approvata dalla Lega.
+                <DialogDescription className="text-xs text-muted-foreground line-clamp-1">
+                  {mobileStep === "select_team"
+                    ? "Scegli la squadra a cui inviare la proposta di scambio."
+                    : "Trattativa privata tra manager. Rimarrà segreta alle altre squadre finché non approvata dalla Lega."}
                 </DialogDescription>
               </div>
             </div>
 
-            {/* Target Team Selector */}
-            <div className="flex items-center gap-2">
+            {/* Mobile Step 2: pulsante rapido per tornare alla scelta squadra */}
+            {mobileStep === "select_assets" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setMobileStep("select_team")}
+                className="flex md:hidden h-8 px-2.5 text-xs font-bold shrink-0 gap-1.5"
+              >
+                {targetTeam && (
+                  <img
+                    src={`${SUPABASE_STORAGE_URL}/images/teams/${targetTeam}_Logo.png`}
+                    alt={targetTeam}
+                    className="h-4 w-4 object-contain"
+                    onError={(e) => ((e.target as HTMLElement).style.display = "none")}
+                  />
+                )}
+                <span>Cambia</span>
+              </Button>
+            )}
+
+            {/* Target Team Selector (Desktop only) */}
+            <div className="hidden md:flex items-center gap-2">
               <span className="text-xs font-bold text-muted-foreground hidden sm:inline">Società Destinataria:</span>
               <Select value={targetTeam} onValueChange={setTargetTeam}>
                 <SelectTrigger className="w-[190px] h-9 text-xs font-bold bg-background">
@@ -343,8 +376,8 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
             </div>
           </div>
 
-          {/* PARITY HUD BAR */}
-          <div className="mt-2 p-2.5 rounded-xl border bg-muted/30 flex flex-wrap items-center justify-between gap-3 text-xs">
+          {/* PARITY HUD BAR (nascosta su mobile durante lo step 1) */}
+          <div className={`${mobileStep === "select_team" ? "hidden md:flex" : "flex"} mt-2 p-2.5 rounded-xl border bg-muted/30 flex-wrap items-center justify-between gap-3 text-xs`}>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground font-semibold">Offerti da te:</span>
@@ -381,10 +414,73 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
           </div>
         </div>
 
+        {/* MOBILE STEP 1: FULLSCREEN PARTNER TEAM SELECTOR */}
+        {mobileStep === "select_team" && (
+          <div className="flex md:hidden flex-col flex-1 min-h-0 overflow-hidden bg-background">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-2">
+              {otherTeams.map((t) => {
+                const isSelected = targetTeam === t.team_id;
+                return (
+                  <button
+                    key={t.team_id}
+                    type="button"
+                    onClick={() => setTargetTeam(t.team_id)}
+                    className={`w-full p-3.5 rounded-xl border text-left flex items-center justify-between gap-3 transition-all ${
+                      isSelected
+                        ? "bg-blue-500/15 border-blue-500 shadow-sm ring-2 ring-blue-500/30"
+                        : "bg-card border-border/70 hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={`${SUPABASE_STORAGE_URL}/images/teams/${t.team_id}_Logo.png`}
+                        alt={t.team_id}
+                        className="h-10 w-10 object-contain shrink-0"
+                        onError={(e) => ((e.target as HTMLElement).style.display = "none")}
+                      />
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-foreground truncate">
+                          {t.name}
+                        </div>
+                        <div className="text-xs font-mono text-muted-foreground">
+                          {t.team_id}
+                        </div>
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="p-4 border-t border-border/70 bg-muted/20 flex items-center gap-2 shrink-0">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="h-11 px-4 text-xs"
+              >
+                Annulla
+              </Button>
+              <Button
+                type="button"
+                disabled={!targetTeam}
+                onClick={() => setMobileStep("select_assets")}
+                className="flex-1 h-11 text-sm font-black bg-blue-600 hover:bg-blue-500 text-white"
+              >
+                {targetTeam ? `Conferma ${targetTeam} e Scegli Asset` : "Seleziona una squadra"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Two-Column Grid: My Team vs Target Team */}
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border flex-1 min-h-[380px] overflow-hidden">
+        <div className={`${mobileStep === "select_team" ? "hidden md:grid" : "grid"} grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border flex-1 min-h-0 overflow-y-auto md:overflow-hidden`}>
           {/* LATO SINISTRO: I TUOI ASSET OFFERTI */}
-          <div className="flex flex-col h-full p-4 overflow-hidden bg-background">
+          <div className="flex flex-col md:h-full p-4 md:overflow-hidden bg-background">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 {currentTeam && (
@@ -426,7 +522,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
 
               {/* Tab Giocatori */}
               <TabsContent value="players" className="flex-1 m-0 overflow-hidden">
-                <ScrollArea className="h-[280px] pr-2">
+                <div className="h-[280px] overflow-y-auto overscroll-contain pr-2">
                   <div className="space-y-1.5">
                     {filteredMyPlayers.map((player) => {
                       const isSelected = selectedOfferedPlayerIds.includes(player.ID);
@@ -473,12 +569,12 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                       );
                     })}
                   </div>
-                </ScrollArea>
+                </div>
               </TabsContent>
 
               {/* Tab Scelte Draft */}
               <TabsContent value="picks" className="flex-1 m-0 overflow-hidden">
-                <ScrollArea className="h-[280px] pr-2">
+                <div className="h-[280px] overflow-y-auto overscroll-contain pr-2">
                   {myPicks.length === 0 ? (
                     <div className="p-8 text-center text-xs text-muted-foreground">
                       Nessuna scelta del Draft in tuo possesso.
@@ -522,13 +618,13 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                       })}
                     </div>
                   )}
-                </ScrollArea>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
 
           {/* LATO DESTRO: ASSET RICHIESTI ALLA SQUADRA PARTNER */}
-          <div className="flex flex-col h-full p-4 overflow-hidden bg-background">
+          <div className="flex flex-col md:h-full p-4 md:overflow-hidden bg-background">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 {targetTeam ? (
@@ -587,7 +683,7 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
 
                 {/* Tab Giocatori Target */}
                 <TabsContent value="players" className="flex-1 m-0 overflow-hidden">
-                  <ScrollArea className="h-[280px] pr-2">
+                  <div className="h-[280px] overflow-y-auto overscroll-contain pr-2">
                     <div className="space-y-1.5">
                       {filteredTargetPlayers.map((player) => {
                         const isSelected = selectedRequestedPlayerIds.includes(player.ID);
@@ -634,12 +730,12 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                         );
                       })}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </TabsContent>
 
                 {/* Tab Scelte Target */}
                 <TabsContent value="picks" className="flex-1 m-0 overflow-hidden">
-                  <ScrollArea className="h-[280px] pr-2">
+                  <div className="h-[280px] overflow-y-auto overscroll-contain pr-2">
                     {targetPicks.length === 0 ? (
                       <div className="p-8 text-center text-xs text-muted-foreground">
                         Nessuna scelta del Draft disponibile per questo club.
@@ -683,55 +779,57 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                         })}
                       </div>
                     )}
-                  </ScrollArea>
+                  </div>
                 </TabsContent>
               </Tabs>
             )}
           </div>
         </div>
 
-        {/* Footer: Note & Submit */}
-        {!isMarketOpen && !isAdmin && (
-          <div className="px-4 py-2.5 bg-rose-500/10 border-t border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>Calciomercato Chiuso dalla Lega: l'invio di nuove proposte di scambio è al momento sospeso.</span>
-          </div>
-        )}
-        {targetTeam && !isGkRuleValid && (
-          <div className="px-4 py-2 bg-amber-500/15 border-t border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-            <span>⛔ Vincolo Portieri: {gkError}</span>
-          </div>
-        )}
-        <div className="p-4 border-t border-border/70 bg-muted/20 flex flex-col sm:flex-row items-center gap-3">
-          <div className="flex-1 w-full">
-            <Input
-              placeholder="Messaggio o motivazione per il manager avversario (opzionale)..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="h-9 text-xs"
-            />
-          </div>
+        {/* Footer: Note & Submit (nascosto su mobile durante lo step 1) */}
+        <div className={mobileStep === "select_team" ? "hidden md:block" : "block"}>
+          {!isMarketOpen && !isAdmin && (
+            <div className="px-4 py-2.5 bg-rose-500/10 border-t border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Calciomercato Chiuso dalla Lega: l'invio di nuove proposte di scambio è al momento sospeso.</span>
+            </div>
+          )}
+          {targetTeam && !isGkRuleValid && (
+            <div className="px-4 py-2 bg-amber-500/15 border-t border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>⛔ Vincolo Portieri: {gkError}</span>
+            </div>
+          )}
+          <div className="p-4 border-t border-border/70 bg-muted/20 flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex-1 w-full">
+              <Input
+                placeholder="Messaggio o motivazione per il manager avversario (opzionale)..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="h-9 text-xs"
+              />
+            </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="text-xs"
-            >
-              Annulla
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!isParityValid || !targetTeam || submitting || (!isMarketOpen && !isAdmin) || !isGkRuleValid}
-              onClick={handleSendProposal}
-              className="text-xs font-black bg-blue-600 hover:bg-blue-500 text-white px-5"
-            >
-              {submitting ? "Invio in corso..." : "Invia Proposta Ufficiale"}
-            </Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="text-xs"
+              >
+                Annulla
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!isParityValid || !targetTeam || submitting || (!isMarketOpen && !isAdmin) || !isGkRuleValid}
+                onClick={handleSendProposal}
+                className="text-xs font-black bg-blue-600 hover:bg-blue-500 text-white px-5"
+              >
+                {submitting ? "Invio in corso..." : "Invia Proposta Ufficiale"}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
