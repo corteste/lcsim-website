@@ -545,7 +545,7 @@ export function SeasonCalendarBoard({
           </div>
 
           {/* Multi-row Stage & Matchday Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2.5">
             {/* 1. OFFSEASON MILESTONES BEFORE GIORNATA 1 */}
             {offseasonEvents.map((ev) => {
               const isSelected = selectedOffseasonId === ev.id;
@@ -558,18 +558,32 @@ export function SeasonCalendarBoard({
                   key={`offs-${ev.id}`}
                   type="button"
                   onClick={() => setSelectedOffseasonId(ev.id)}
-                  className={`group flex flex-col items-start px-3.5 py-2 rounded-xl border text-left transition-all duration-200 cursor-pointer min-w-[142px] ${
+                  className={`group w-full h-full min-h-[68px] flex flex-col justify-between px-3 py-2.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
                     isSelected
                       ? "bg-amber-600 text-white border-amber-500 shadow-md ring-2 ring-amber-500/30 scale-[1.02]"
                       : "bg-amber-500/5 border-amber-500/30 text-foreground hover:bg-amber-500/15 hover:border-amber-500/50"
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full gap-1.5 mb-1">
-                    <span className="font-extrabold text-xs tracking-tight truncate max-w-[120px]">
-                      {ev.evento}
+                  <div className="flex items-center justify-between w-full gap-2 mb-1.5">
+                    <span
+                      className={`text-[10px] font-mono truncate ${
+                        isSelected
+                          ? "text-amber-100"
+                          : isPast
+                          ? "text-muted-foreground"
+                          : "text-amber-600/90 dark:text-amber-400/90 font-semibold"
+                      }`}
+                    >
+                      {ev.event_date
+                        ? new Date(ev.event_date).toLocaleDateString("it-IT", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "Da definire"}
                     </span>
                     <span
-                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase shrink-0 ${
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase shrink-0 leading-none ${
                         isSelected
                           ? "bg-white/20 text-white"
                           : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
@@ -579,30 +593,14 @@ export function SeasonCalendarBoard({
                     </span>
                   </div>
                   <span
-                    className={`text-[10px] font-mono ${
-                      isSelected
-                        ? "text-amber-100"
-                        : isPast
-                        ? "text-muted-foreground"
-                        : "text-amber-600/90 dark:text-amber-400/90 font-semibold"
-                    }`}
+                    className="font-extrabold text-xs sm:text-sm tracking-tight truncate w-full"
+                    title={ev.evento}
                   >
-                    {ev.event_date
-                      ? new Date(ev.event_date).toLocaleDateString("it-IT", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "Data da definire"}
+                    {ev.evento}
                   </span>
                 </button>
               );
             })}
-
-            {/* Divider between Offseason and Regular Season */}
-            {offseasonEvents.length > 0 && schedule.length > 0 && (
-              <div className="hidden sm:block h-9 w-[2px] bg-border/80 mx-0.5 rounded-full" />
-            )}
 
             {/* 2. CHAMPIONSHIP ROUNDS (GIORNATA 1..N) */}
             {schedule.map((round) => {
@@ -621,18 +619,27 @@ export function SeasonCalendarBoard({
                     setSelectedOffseasonId(null);
                     setActiveWeek(round.week);
                   }}
-                  className={`group flex flex-col items-start px-3.5 py-2 rounded-xl border text-left transition-all duration-200 cursor-pointer min-w-[130px] ${
+                  className={`group w-full h-full min-h-[68px] flex flex-col justify-between px-3 py-2.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
                     isSelected
                       ? "bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500/30 scale-[1.02]"
                       : "bg-card border-border/80 text-foreground hover:bg-muted/60 hover:border-border"
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="font-extrabold text-xs tracking-tight">
-                      Giornata {round.week}
+                  <div className="flex items-center justify-between w-full gap-2 mb-1.5">
+                    <span
+                      className={`text-[10px] font-mono truncate ${
+                        isSelected ? "text-emerald-100" : "text-muted-foreground"
+                      }`}
+                    >
+                      {round.matches[0]?.date
+                        ? new Date(round.matches[0].date).toLocaleDateString(
+                            "it-IT",
+                            { day: "2-digit", month: "short", year: "numeric" }
+                          )
+                        : "Da definire"}
                     </span>
                     <span
-                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase ${
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase shrink-0 leading-none ${
                         isPlayed
                           ? isSelected
                             ? "bg-white/20 text-white"
@@ -645,17 +652,8 @@ export function SeasonCalendarBoard({
                       {isPlayed ? "Conclusa" : "In programma"}
                     </span>
                   </div>
-                  <span
-                    className={`text-[10px] font-mono ${
-                      isSelected ? "text-emerald-100" : "text-muted-foreground"
-                    }`}
-                  >
-                    {round.matches[0]?.date
-                      ? new Date(round.matches[0].date).toLocaleDateString(
-                          "it-IT",
-                          { day: "2-digit", month: "short", year: "numeric" }
-                        )
-                      : "Da definire"}
+                  <span className="font-extrabold text-xs sm:text-sm tracking-tight truncate w-full">
+                    Giornata {round.week}
                   </span>
                 </button>
               );
