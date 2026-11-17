@@ -299,6 +299,7 @@ export default function SalaStampa() {
     });
 
     void markUserItemsAsReadInDb([id], userKey);
+    window.dispatchEvent(new Event("lcsim-notifications-updated"));
 
     if (id.startsWith("league-")) {
       const annId = id.slice("league-".length);
@@ -319,6 +320,7 @@ export default function SalaStampa() {
       localStorage.setItem(readStorageKey, JSON.stringify(Array.from(allIds)));
     } catch {}
     void markUserItemsAsReadInDb(Array.from(allIds), userKey);
+    window.dispatchEvent(new Event("lcsim-notifications-updated"));
 
     const annIds = items
       .filter((it) => it.category === "league" && it.announcementData?.id)
