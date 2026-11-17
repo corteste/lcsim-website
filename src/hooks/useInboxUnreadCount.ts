@@ -2,33 +2,82 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/supabaseClient";
-import { fetchUnifiedNotifications } from "@/services/announcementsService";
-import { AppNotification } from "@/types/announcements";
+import {
+  fetchUnifiedNotifications,
+  fetchUserReadItemIds,
+} from "@/services/announcementsService";
+import { fetchInboxFeed } from "@/services/inboxService";
 import {
   checkAndNotifyFormationDeadline,
   registerPwaServiceWorker,
   showNativePwaNotification,
 } from "@/services/pwaNotificationService";
 
-let memoryNotifications: AppNotification[] = [];
+let memoryUnreadCount = 0;
+
+function getInboxLocalReadSet(userKey?: string): Set<string> {
+  try {
+    const key = userKey
+      ? `lcsim_fm24_inbox_read_${userKey}`
+      : "lcsim_fm24_inbox_read_guest";
+    const raw = localStorage.getItem(key);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
 
 export function useInboxUnreadCount(): number {
-  const { user, isAdmin } = useAuth();
-  const [notifications, setNotifications] = useState<AppNotification[]>(
-    () => memoryNotifications
+  const { user, isAdmin, effectiveTeam } = useAuth();
+  const [unreadCount, setUnreadCount] = useState<number>(
+    () => memoryUnreadCount
   );
 
   const userKey = user?.id || user?.username || user?.team || undefined;
-  const userTeam = user?.team || undefined;
+  const userTeam = isAdmin ? undefined : user?.team || effectiveTeam || undefined;
 
   const loadNotifications = useCallback(async () => {
-    const items = await fetchUnifiedNotifications({
-      userKey,
-      userTeam,
-      isAdmin,
-    });
-    memoryNotifications = items;
-    setNotifications(items);
+    try {
+      const [unifiedItems, inboxFeed, dbReadIds] = await Promise.all([
+        fetchUnifiedNotifications({
+          userKey,
+          userTeam,
+          isAdmin,
+        }),
+        fetchInboxFeed({
+          teamId: userTeam,
+          isAdmin,
+          season: 11,
+        }),
+        fetchUserReadItemIds(userKey),
+      ]);
+
+      const localInboxRead = getInboxLocalReadSet(userKey);
+      const isInboxItemRead = (id: string) =>
+        localInboxRead.has(id) || dbReadIds.has(id);
+
+      const unreadInboxCount = inboxFeed.filter(
+        (it) => !isInboxItemRead(it.id)
+      ).length;
+
+      const inboxIds = new Set(inboxFeed.map((it) => it.id));
+      const extraUnifiedUnreadCount = unifiedItems.filter((n) => {
+        if (!n.isUnread) return false;
+        if (n.announcementId && inboxIds.has(`league-${n.announcementId}`)) {
+          return false;
+        }
+        if (n.tradeId && inboxIds.has(`trade_${n.tradeId}`)) {
+          return false;
+        }
+        return true;
+      }).length;
+
+      const total = unreadInboxCount + extraUnifiedUnreadCount;
+      memoryUnreadCount = total;
+      setUnreadCount(total);
+    } catch (err) {
+      console.error("useInboxUnreadCount error:", err);
+    }
   }, [userKey, userTeam, isAdmin]);
 
   useEffect(() => {
@@ -143,6 +192,7 @@ export function useInboxUnreadCount(): number {
           eventType?: string;
           new?: { id?: number; team_id?: string; status?: string; question?: string; matchday?: number };
         }) => {
+          loadNotifications();
           const pc = payload?.new;
           if (!pc) return;
           if (payload.eventType === "INSERT" && userTeam && pc.team_id === userTeam && pc.status === "PENDING") {
@@ -166,6 +216,7 @@ export function useInboxUnreadCount(): number {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "league_market_rumors" },
         (payload: { new?: { id?: number; headline?: string; source_label?: string } }) => {
+          loadNotifications();
           const rumor = payload?.new;
           if (rumor?.headline) {
             showNativePwaNotification({
@@ -216,5 +267,5 @@ export function useInboxUnreadCount(): number {
     };
   }, [loadNotifications, userKey, userTeam, isAdmin]);
 
-  return notifications.filter((n) => n.isUnread).length;
+  return unreadCount;
 }
