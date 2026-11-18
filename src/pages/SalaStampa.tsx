@@ -6,6 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Inbox,
   Newspaper,
   Mic2,
@@ -630,61 +637,100 @@ export default function SalaStampa() {
             </div>
           </div>
 
-          {/* Filtri Categoria a Pillole + Search Box */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 pt-2 border-t border-border/50">
-            {/* Pillole Categoria */}
-            <div className="flex flex-wrap gap-1.5 items-center">
-              {[
-                { id: "all", label: "Tutte le Notizie", count: counts.all, icon: Inbox },
-                { id: "league", label: "Comunicazioni di Lega", count: counts.league, icon: Megaphone },
-                { id: "trades", label: "Trattative", count: counts.trades, icon: ArrowLeftRight },
-                { id: "press", label: "Sala Stampa", count: counts.press, icon: Mic2 },
-                { id: "rumors", label: "Voci di Mercato", count: counts.rumors, icon: Flame },
-                { id: "preview", label: "Match Preview", count: counts.preview, icon: Swords },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isActive = selectedCategory === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategory(tab.id as InboxCategory);
+          {/* Filtri Categoria: Dropdown su Mobile, Pillole su Desktop + Search Box */}
+          {(() => {
+            const categoryTabs = [
+              { id: "all", label: "Tutte le Notizie", count: counts.all, icon: Inbox },
+              { id: "league", label: "Comunicazioni di Lega", count: counts.league, icon: Megaphone },
+              { id: "trades", label: "Trattative", count: counts.trades, icon: ArrowLeftRight },
+              { id: "press", label: "Sala Stampa", count: counts.press, icon: Mic2 },
+              { id: "rumors", label: "Voci di Mercato", count: counts.rumors, icon: Flame },
+              { id: "preview", label: "Match Preview", count: counts.preview, icon: Swords },
+            ];
+
+            return (
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 pt-2 border-t border-border/50">
+                {/* Dropdown Categoria (solo Mobile) */}
+                <div className="block md:hidden w-full">
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={(val) => {
+                      setSelectedCategory(val as InboxCategory);
                       if (typeof window !== "undefined" && window.innerWidth < 768) {
                         setSelectedItemId(null);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                      isActive
-                        ? "bg-foreground text-background shadow-xs font-black"
-                        : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                    }`}
                   >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span>{tab.label}</span>
-                    <span
-                      className={`text-[10px] font-mono px-1 rounded ${
-                        isActive ? "bg-background text-foreground" : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {tab.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                    <SelectTrigger className="w-full h-9 text-xs font-bold bg-background rounded-xl">
+                      <SelectValue placeholder="Filtra categoria..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryTabs.map((tab) => {
+                        const Icon = tab.icon;
+                        return (
+                          <SelectItem key={tab.id} value={tab.id} className="text-xs font-semibold">
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-3.5 w-3.5 shrink-0" />
+                              <span>{tab.label}</span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-muted text-muted-foreground">
+                                {tab.count}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* Ricerca Rapida */}
-            <div className="relative w-full md:w-64">
-              <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
-                placeholder="Cerca nella inbox..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs bg-muted/20 border-border/60 rounded-xl"
-              />
-            </div>
-          </div>
+                {/* Pillole Categoria (solo Desktop) */}
+                <div className="hidden md:flex flex-wrap gap-1.5 items-center">
+                  {categoryTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = selectedCategory === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(tab.id as InboxCategory);
+                          if (typeof window !== "undefined" && window.innerWidth < 768) {
+                            setSelectedItemId(null);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                          isActive
+                            ? "bg-foreground text-background shadow-xs font-black"
+                            : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        <span>{tab.label}</span>
+                        <span
+                          className={`text-[10px] font-mono px-1 rounded ${
+                            isActive ? "bg-background text-foreground" : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {tab.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Ricerca Rapida */}
+                <div className="relative w-full md:w-64">
+                  <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    placeholder="Cerca nella inbox..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-8 pl-8 text-xs bg-muted/20 border-border/60 rounded-xl"
+                  />
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ========================================================================= */}
