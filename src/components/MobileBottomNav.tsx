@@ -369,11 +369,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 )}
                 <span className="truncate">{isAdmin ? "Amministrazione" : "La Mia Squadra"}</span>
               </span>
-              {user && (
-                <Badge variant="outline" className="text-[10px] font-mono font-bold shrink-0">
-                  {user.team || (isAdmin ? "LEGA" : user.name)}
-                </Badge>
-              )}
             </DrawerTitle>
             <DrawerDescription className="text-xs">
               {user?.name ? `Gestione ${isAdmin ? "Lega LCSIM" : user.teamFullName || user.name}` : ""}
