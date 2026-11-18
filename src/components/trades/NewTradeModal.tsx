@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { isRetiringSoon } from "@/utils/functions";
+import { isRetiringSoon, getRoleColor, getPlayerImage } from "@/utils/functions";
 import { RetiringBadge } from "@/components/player/RetiringBadge";
 import {
   Dialog,
@@ -88,12 +88,14 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
   const [mobileStep, setMobileStep] = useState<"select_team" | "select_assets">(
     counterOfferTrade || initialTargetTeam ? "select_assets" : "select_team"
   );
+  const [mobileAssetTab, setMobileAssetTab] = useState<"players" | "picks">("players");
 
   useEffect(() => {
     if (open) {
       setMobileStep(
         counterOfferTrade || initialTargetTeam ? "select_assets" : "select_team"
       );
+      setMobileAssetTab("players");
     }
   }, [open, counterOfferTrade, initialTargetTeam]);
 
@@ -307,6 +309,62 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
     }
   };
 
+  const renderMobilePlayerCard = (
+    player: TradePlayerAsset,
+    isSelected: boolean,
+    onToggle: () => void,
+    accent: "blue" | "emerald"
+  ) => {
+    const marketOpt = MARKET_STATUS_OPTIONS.find((m) => m.code === player.marketStatus);
+    const selectedClass =
+      accent === "blue"
+        ? "bg-blue-500/15 border-blue-500 shadow-xs ring-1 ring-blue-500/30"
+        : "bg-emerald-500/15 border-emerald-500 shadow-xs ring-1 ring-emerald-500/30";
+
+    return (
+      <button
+        key={player.ID}
+        type="button"
+        onClick={onToggle}
+        className={`w-full p-1.5 rounded-xl border text-left flex items-center gap-2 transition-all ${
+          isSelected ? selectedClass : "bg-card/60 border-border/60"
+        }`}
+      >
+        <div className="h-8 w-8 rounded-full bg-muted/60 border border-border/60 overflow-hidden shrink-0">
+          <img
+            src={getPlayerImage(player.ID)}
+            alt={player.Cognome}
+            className="h-full w-full object-cover object-top"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = `${SUPABASE_STORAGE_URL}/images/players/default.png`;
+            }}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-bold text-[11px] leading-tight truncate">
+            {player.Nome ? `${player.Nome.charAt(0)}. ` : ""}
+            {player.Cognome}
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono mt-0.5">
+            <span
+              className={`px-1 py-0 rounded text-[9px] font-black border leading-tight ${getRoleColor(
+                player.Posiz
+              )}`}
+            >
+              {player.Posiz}
+            </span>
+            <span className="font-bold text-foreground">{player.OVR}</span>
+            {marketOpt && (
+              <span className={`px-1 rounded text-[8px] font-bold ${marketOpt.color}`}>
+                {marketOpt.code.toUpperCase()}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl w-[96vw] h-[90vh] md:h-auto max-h-[92vh] p-0 flex flex-col gap-0 overflow-hidden bg-card border-border/80 shadow-2xl">
@@ -376,8 +434,8 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
             </div>
           </div>
 
-          {/* PARITY HUD BAR (nascosta su mobile durante lo step 1) */}
-          <div className={`${mobileStep === "select_team" ? "hidden md:flex" : "flex"} mt-2 p-2.5 rounded-xl border bg-muted/30 flex-wrap items-center justify-between gap-3 text-xs`}>
+          {/* PARITY HUD BAR (Desktop) */}
+          <div className="hidden md:flex mt-2 p-2.5 rounded-xl border bg-muted/30 flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground font-semibold">Offerti da te:</span>
@@ -420,7 +478,9 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
             <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-2">
               {otherTeams.map((t) => {
                 const isSelected = targetTeam === t.team_id;
-                return (
+
+
+    return (
                   <button
                     key={t.team_id}
                     type="button"
@@ -477,8 +537,219 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
           </div>
         )}
 
-        {/* Two-Column Grid: My Team vs Target Team */}
-        <div className={`${mobileStep === "select_team" ? "hidden md:grid" : "grid"} grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border flex-1 min-h-0 overflow-y-auto md:overflow-hidden`}>
+        {/* MOBILE STEP 2: SIDE-BY-SIDE 2-COLUMN ASSET PICKER */}
+        {mobileStep === "select_assets" && (
+          <div className="flex md:hidden flex-col flex-1 min-h-0 overflow-hidden bg-background">
+            {/* Barra Squadre + Contatori + Selettore Unico Rosa/Scelte */}
+            <div className="px-3 py-2 border-b border-border/70 bg-muted/20 space-y-2 shrink-0">
+              <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl bg-card border border-border/70">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  {currentTeam && (
+                    <img
+                      src={`${SUPABASE_STORAGE_URL}/images/teams/${currentTeam}_Logo.png`}
+                      alt={currentTeam}
+                      className="h-5 w-5 object-contain shrink-0"
+                    />
+                  )}
+                  <span className="text-xs font-black text-blue-500 truncate">
+                    {currentTeam}
+                  </span>
+                  <Badge variant="outline" className="font-mono font-black text-[10px] px-1.5 py-0 h-4 bg-blue-500/10 text-blue-500 border-blue-500/30">
+                    {totalOffered}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  {totalOffered === 0 && totalRequested === 0 ? (
+                    <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  ) : isParityValid ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <span className="text-[10px] font-mono font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                      ±{Math.abs(totalOffered - totalRequested)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-1.5 min-w-0 flex-1">
+                  <Badge variant="outline" className="font-mono font-black text-[10px] px-1.5 py-0 h-4 bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+                    {totalRequested}
+                  </Badge>
+                  <span className="text-xs font-black text-emerald-500 truncate">
+                    {targetTeam}
+                  </span>
+                  {targetTeam && (
+                    <img
+                      src={`${SUPABASE_STORAGE_URL}/images/teams/${targetTeam}_Logo.png`}
+                      alt={targetTeam}
+                      className="h-5 w-5 object-contain shrink-0"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Unico Selettore Rosa | Scelte */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-muted">
+                <button
+                  type="button"
+                  onClick={() => setMobileAssetTab("players")}
+                  className={`h-7 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                    mobileAssetTab === "players"
+                      ? "bg-background text-foreground shadow-xs"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  <span>Rosa</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileAssetTab("picks")}
+                  className={`h-7 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                    mobileAssetTab === "picks"
+                      ? "bg-background text-foreground shadow-xs"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Scelte</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Due Colonne Affiancate a Scorrimento Indipendente */}
+            <div className="grid grid-cols-2 divide-x divide-border flex-1 min-h-0 overflow-hidden">
+              {/* Colonna Sinistra: Tuoi Asset */}
+              <div className="flex flex-col h-full min-h-0 overflow-hidden">
+                {mobileAssetTab === "players" && (
+                  <div className="p-2 pb-1 shrink-0">
+                    <div className="relative">
+                      <Search className="h-3 w-3 absolute left-2 top-2 text-muted-foreground" />
+                      <Input
+                        placeholder={`Cerca ${currentTeam}...`}
+                        value={mySearch}
+                        onChange={(e) => setMySearch(e.target.value)}
+                        className="h-7 pl-6 pr-2 text-[11px]"
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 space-y-1.5">
+                  {mobileAssetTab === "players" ? (
+                    filteredMyPlayers.map((player) =>
+                      renderMobilePlayerCard(
+                        player,
+                        selectedOfferedPlayerIds.includes(player.ID),
+                        () => toggleOfferedPlayer(player.ID),
+                        "blue"
+                      )
+                    )
+                  ) : myPicks.length === 0 ? (
+                    <div className="p-4 text-center text-[11px] text-muted-foreground">
+                      Nessuna scelta
+                    </div>
+                  ) : (
+                    myPicks.map((pick) => {
+                      const isSelected = selectedOfferedPickNums.includes(pick.pick_overall);
+
+
+    return (
+                        <button
+                          key={pick.pick_overall}
+                          type="button"
+                          onClick={() => toggleOfferedPick(pick.pick_overall)}
+                          className={`w-full p-2 rounded-lg border text-left flex items-center gap-1.5 transition-all ${
+                            isSelected
+                              ? "bg-blue-500/15 border-blue-500 shadow-xs ring-1 ring-blue-500/30"
+                              : "bg-card/60 border-border/60"
+                          }`}
+                        >
+                          <Badge variant="outline" className="font-mono font-bold text-[10px] px-1 h-5 shrink-0">
+                            #{pick.pick_overall}
+                          </Badge>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-[11px] leading-tight truncate">
+                              R{pick.round} · S{pick.pick_in_round}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono truncate">
+                              Orig: {pick.original_team_id}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Colonna Destra: Asset Controparte */}
+              <div className="flex flex-col h-full min-h-0 overflow-hidden">
+                {mobileAssetTab === "players" && (
+                  <div className="p-2 pb-1 shrink-0">
+                    <div className="relative">
+                      <Search className="h-3 w-3 absolute left-2 top-2 text-muted-foreground" />
+                      <Input
+                        placeholder={`Cerca ${targetTeam}...`}
+                        value={targetSearch}
+                        onChange={(e) => setTargetSearch(e.target.value)}
+                        className="h-7 pl-6 pr-2 text-[11px]"
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 space-y-1.5">
+                  {mobileAssetTab === "players" ? (
+                    filteredTargetPlayers.map((player) =>
+                      renderMobilePlayerCard(
+                        player,
+                        selectedRequestedPlayerIds.includes(player.ID),
+                        () => toggleRequestedPlayer(player.ID),
+                        "emerald"
+                      )
+                    )
+                  ) : targetPicks.length === 0 ? (
+                    <div className="p-4 text-center text-[11px] text-muted-foreground">
+                      Nessuna scelta
+                    </div>
+                  ) : (
+                    targetPicks.map((pick) => {
+                      const isSelected = selectedRequestedPickNums.includes(pick.pick_overall);
+
+
+    return (
+                        <button
+                          key={pick.pick_overall}
+                          type="button"
+                          onClick={() => toggleRequestedPick(pick.pick_overall)}
+                          className={`w-full p-2 rounded-lg border text-left flex items-center gap-1.5 transition-all ${
+                            isSelected
+                              ? "bg-emerald-500/15 border-emerald-500 shadow-xs ring-1 ring-emerald-500/30"
+                              : "bg-card/60 border-border/60"
+                          }`}
+                        >
+                          <Badge variant="outline" className="font-mono font-bold text-[10px] px-1 h-5 shrink-0">
+                            #{pick.pick_overall}
+                          </Badge>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-[11px] leading-tight truncate">
+                              R{pick.round} · S{pick.pick_in_round}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono truncate">
+                              Orig: {pick.original_team_id}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Two-Column Grid: My Team vs Target Team (Desktop) */}
+        <div className="hidden md:grid md:grid-cols-2 md:divide-x divide-border flex-1 min-h-0 overflow-hidden">
           {/* LATO SINISTRO: I TUOI ASSET OFFERTI */}
           <div className="flex flex-col md:h-full p-4 md:overflow-hidden bg-background">
             <div className="flex items-center justify-between mb-2">
@@ -527,7 +798,9 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                     {filteredMyPlayers.map((player) => {
                       const isSelected = selectedOfferedPlayerIds.includes(player.ID);
                       const marketOpt = MARKET_STATUS_OPTIONS.find((m) => m.code === player.marketStatus);
-                      return (
+
+
+    return (
                         <div
                           key={player.ID}
                           onClick={() => toggleOfferedPlayer(player.ID)}
@@ -583,7 +856,9 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                     <div className="space-y-1.5">
                       {myPicks.map((pick) => {
                         const isSelected = selectedOfferedPickNums.includes(pick.pick_overall);
-                        return (
+
+
+    return (
                           <div
                             key={pick.pick_overall}
                             onClick={() => toggleOfferedPick(pick.pick_overall)}
@@ -688,7 +963,9 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                       {filteredTargetPlayers.map((player) => {
                         const isSelected = selectedRequestedPlayerIds.includes(player.ID);
                         const marketOpt = MARKET_STATUS_OPTIONS.find((m) => m.code === player.marketStatus);
-                        return (
+
+
+    return (
                           <div
                             key={player.ID}
                             onClick={() => toggleRequestedPlayer(player.ID)}
@@ -744,7 +1021,9 @@ export const NewTradeModal: React.FC<NewTradeModalProps> = ({
                       <div className="space-y-1.5">
                         {targetPicks.map((pick) => {
                           const isSelected = selectedRequestedPickNums.includes(pick.pick_overall);
-                          return (
+
+
+    return (
                             <div
                               key={pick.pick_overall}
                               onClick={() => toggleRequestedPick(pick.pick_overall)}
