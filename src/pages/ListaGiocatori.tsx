@@ -22,6 +22,8 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   RotateCcw,
   Sparkles,
   Shield,
@@ -221,6 +223,16 @@ const ListaGiocatori = () => {
 
   // Modale Dettagli Giocatore
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
+  // Pannello filtri avanzati collassabile su mobile
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState<boolean>(false);
+
+  const activeAdvancedFiltersCount = [
+    roleFilter !== "all",
+    subRoleFilter !== "all",
+    teamFilter !== "all",
+    marketFilter !== "all",
+  ].filter(Boolean).length;
 
   // Mappa delle squadre per lookup rapido
   const teamsMap = useMemo(() => {
@@ -445,88 +457,81 @@ const ListaGiocatori = () => {
     <div className="min-h-screen bg-background text-foreground transition-colors">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-6 sm:py-8 space-y-6">
+      <main className="container mx-auto px-4 py-4 sm:py-8 space-y-4 sm:space-y-6">
         {/* ========================================================================= */}
-        {/* 1. HERO COMMAND HEADER (BROADCAST / TELEMETRIA)                            */}
+        {/* 1. HERO COMMAND HEADER (COMPACT)                                          */}
         {/* ========================================================================= */}
         <Card className="overflow-hidden border border-border/80 shadow-lg bg-card">
-          <div className="p-6 bg-gradient-to-r from-emerald-500/[0.08] via-card to-blue-500/[0.08] backdrop-blur-md">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border-2 border-border/80 flex items-center justify-center shadow-md shrink-0">
-                  <Users className="h-8 w-8 text-emerald-500" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-mono font-bold"
-                    >
-                      Database Ufficiale LCSIM
-                    </Badge>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      Stagione 2026/2027
-                    </span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 mt-0.5">
-                    Lista Calciatori
-                  </h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    Consulta, filtra ed esplora tutti i calciatori della LCSIM e dell'archivio di lega.
-                  </p>
-                </div>
+          <div className="p-3.5 sm:p-6 bg-gradient-to-r from-emerald-500/[0.08] via-card to-blue-500/[0.08] backdrop-blur-md">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="h-11 w-11 sm:h-16 sm:w-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border-2 border-border/80 flex items-center justify-center shadow-md shrink-0">
+                <Users className="h-5 w-5 sm:h-8 sm:w-8 text-emerald-500" />
               </div>
-
-              {/* Telemetria Cards */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm min-w-[95px]">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    LCSIM
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] sm:text-xs font-mono font-bold"
+                  >
+                    Database Ufficiale LCSIM
+                  </Badge>
+                  <span className="text-[11px] sm:text-xs text-muted-foreground font-mono">
+                    Stagione 2026/2027
                   </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                    {countsByScope.lcsim}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground block">atleti attivi</span>
                 </div>
-
-                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm min-w-[95px]">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Media OVR
-                  </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-foreground">
-                    {avgSerieAOvr}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground block">LCSIM</span>
-                </div>
-
-                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm min-w-[95px]">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Svincolati
-                  </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-amber-500">
-                    {countsByScope.svincolati}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground block">liberi / arch.</span>
-                </div>
-
-                <div className="px-3 py-2 rounded-xl bg-card border border-border/80 text-center shadow-sm min-w-[95px]">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Totali DB
-                  </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-blue-500">
-                    {countsByScope.total}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground block">nel database</span>
-                </div>
+                <h1 className="text-xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 mt-0.5">
+                  Lista Calciatori
+                </h1>
+                <p className="hidden sm:block text-sm text-muted-foreground mt-0.5">
+                  Consulta, filtra ed esplora tutti i calciatori della LCSIM e dell'archivio di lega.
+                </p>
               </div>
             </div>
           </div>
         </Card>
 
         {/* ========================================================================= */}
-        {/* 2. TAB RAPIDI DI AMBITO (SERIE A | TUTTI | SVINCOLATI | SERIE B)          */}
+        {/* 2. TAB RAPIDI DI AMBITO: DROPDOWN SU MOBILE, PILLOLE SU DESKTOP           */}
         {/* ========================================================================= */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-3">
+        <div className="block md:hidden">
+          <Select
+            value={scopeTab}
+            onValueChange={(val) => {
+              const nextScope = val as ScopeTab;
+              setScopeTab(nextScope);
+              if (nextScope === "ROOKIES") {
+                setTeamFilter("all");
+                setMarketFilter("all");
+              }
+            }}
+          >
+            <SelectTrigger className="w-full h-10 text-xs font-bold bg-card border-border/80 rounded-xl shadow-sm">
+              <SelectValue placeholder="Seleziona categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="LCSIM" className="text-xs font-semibold">
+                LCSIM ({countsByScope.lcsim})
+              </SelectItem>
+              <SelectItem value="ALL" className="text-xs font-semibold">
+                Tutti i Giocatori ({countsByScope.total})
+              </SelectItem>
+              <SelectItem value="SVINCOLATI" className="text-xs font-semibold">
+                Svincolati ({countsByScope.svincolati})
+              </SelectItem>
+              <SelectItem value="RITIRATI" className="text-xs font-semibold">
+                Ritirati ({countsByScope.ritirati})
+              </SelectItem>
+              <SelectItem value="SERIE_B" className="text-xs font-semibold">
+                LCSIM 2 ({countsByScope.serieB})
+              </SelectItem>
+              <SelectItem value="ROOKIES" className="text-xs font-semibold">
+                Rookie ({countsByScope.rookies})
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="hidden md:flex flex-wrap items-center gap-2 border-b border-border/70 pb-3">
           <button
             type="button"
             onClick={() => setScopeTab("LCSIM")}
@@ -671,11 +676,11 @@ const ListaGiocatori = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* 3. BARRA FILTRI INTEGRATA SEMPRE VISIBILE (RICERCA, RUOLI, SQUADRE, VISTE) */}
+        {/* 3. BARRA FILTRI INTEGRATA (COLLASSABILE SU MOBILE, SEMPRE VISIBILE SU MD+)*/}
         {/* ========================================================================= */}
-        <Card className="border border-border/80 bg-card/95 shadow-sm p-4 space-y-3.5">
-          {/* Riga 1: Ricerca Testuale + Selettore Vista + Reset */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <Card className="border border-border/80 bg-card/95 shadow-sm p-3 sm:p-4 space-y-2.5 sm:space-y-3.5">
+          {/* Riga 1: Ricerca Testuale + Bottone Filtri Mobile + Selettore Vista + Reset */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
             {/* Search Input con icona e clear button */}
             <div className="relative flex-1">
               <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
@@ -683,7 +688,7 @@ const ListaGiocatori = () => {
                 placeholder="Cerca per nome, cognome, squadra, posizione o numero maglia..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-9 h-10 text-xs sm:text-sm bg-muted/20 border-border/70 rounded-xl"
+                className="pl-9 pr-9 h-9 sm:h-10 text-xs sm:text-sm bg-muted/20 border-border/70 rounded-xl"
               />
               {searchQuery && (
                 <button
@@ -696,52 +701,79 @@ const ListaGiocatori = () => {
               )}
             </div>
 
-            {/* Toggle Switch Vista: Tabella vs Griglia Card */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center p-1 bg-muted/40 rounded-xl border border-border/70">
-                <Button
-                  size="sm"
-                  variant={viewMode === "table" ? "default" : "ghost"}
-                  onClick={() => setViewMode("table")}
-                  className={`h-8 px-3 rounded-lg text-xs font-bold gap-1.5 ${
-                    viewMode === "table" ? "shadow-sm" : "text-muted-foreground"
-                  }`}
-                  title="Visualizzazione a Tabella Densa"
-                >
-                  <List className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Tabella</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  onClick={() => setViewMode("grid")}
-                  className={`h-8 px-3 rounded-lg text-xs font-bold gap-1.5 ${
-                    viewMode === "grid" ? "shadow-sm" : "text-muted-foreground"
-                  }`}
-                  title="Visualizzazione a Griglia Card (FUT Style)"
-                >
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Griglia</span>
-                </Button>
-              </div>
+            {/* Controlli: Filtri (solo mobile) + Toggle Switch Vista + Reset */}
+            <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+              <Button
+                type="button"
+                size="sm"
+                variant={mobileFiltersOpen || activeAdvancedFiltersCount > 0 ? "secondary" : "outline"}
+                onClick={() => setMobileFiltersOpen((prev) => !prev)}
+                className="md:hidden h-9 px-3 rounded-xl text-xs font-bold gap-1.5 border-border/70"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                <span>Filtri</span>
+                {activeAdvancedFiltersCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-600 text-white">
+                    {activeAdvancedFiltersCount}
+                  </span>
+                )}
+                {mobileFiltersOpen ? (
+                  <ChevronUp className="h-3.5 w-3.5 opacity-70" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                )}
+              </Button>
 
-              {/* Bottone Reset Filtri */}
-              {hasActiveFilters && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleResetFilters}
-                  className="h-10 text-xs font-semibold text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/10 rounded-xl gap-1.5"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Azzera</span>
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center p-1 bg-muted/40 rounded-xl border border-border/70">
+                  <Button
+                    size="sm"
+                    variant={viewMode === "table" ? "default" : "ghost"}
+                    onClick={() => setViewMode("table")}
+                    className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-lg text-xs font-bold gap-1.5 ${
+                      viewMode === "table" ? "shadow-sm" : "text-muted-foreground"
+                    }`}
+                    title="Visualizzazione a Tabella Densa"
+                  >
+                    <List className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Tabella</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    onClick={() => setViewMode("grid")}
+                    className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-lg text-xs font-bold gap-1.5 ${
+                      viewMode === "grid" ? "shadow-sm" : "text-muted-foreground"
+                    }`}
+                    title="Visualizzazione a Griglia Card (FUT Style)"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Griglia</span>
+                  </Button>
+                </div>
+
+                {/* Bottone Reset Filtri */}
+                {hasActiveFilters && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleResetFilters}
+                    className="h-9 sm:h-10 text-xs font-semibold text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/10 rounded-xl gap-1.5"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Azzera</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Riga 2: Tendine Posizione, Ruolo, Squadra, Mercato e Ordinamento */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center pt-1 border-t border-border/50">
+          <div
+            className={`${
+              mobileFiltersOpen ? "grid" : "hidden"
+            } md:grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-3 items-center pt-2 border-t border-border/50`}
+          >
             {/* Tendina Posizione (Generica o Specifica) */}
             <div className="md:col-span-3">
               <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -1064,7 +1096,7 @@ const ListaGiocatori = () => {
 
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-extrabold text-foreground group-hover:text-primary transition-colors text-xs sm:text-sm truncate">
+                                  <span className="font-extrabold text-foreground group-hover:text-primary transition-colors text-xs sm:text-sm whitespace-normal leading-tight">
                                     {player.Nome} {player.Cognome}
                                   </span>
                                   {player.Nazionalità && (
@@ -1330,7 +1362,7 @@ const ListaGiocatori = () => {
 
                         {/* Nome & Squadra */}
                         <div className="w-full min-w-0">
-                          <h3 className="font-extrabold text-foreground text-base truncate group-hover:text-primary transition-colors">
+                          <h3 className="font-extrabold text-foreground text-base whitespace-normal leading-tight group-hover:text-primary transition-colors">
                             {player.Nome} {player.Cognome}
                           </h3>
                           <div className="text-xs text-muted-foreground truncate mt-0.5">
