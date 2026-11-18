@@ -464,29 +464,29 @@ const Statistiche = () => {
     <div className="min-h-screen bg-background text-foreground transition-colors">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <main className="container mx-auto px-4 py-4 sm:py-8 space-y-4 sm:space-y-8">
         {/* BROADCAST HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border/80">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 sm:gap-4 pb-3 sm:pb-4 border-b border-border/80">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2 flex-wrap">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 sm:px-2.5 rounded-full border border-emerald-500/20">
                 LCSIM Ufficiale • Serie A
               </span>
-              <span className="text-xs text-muted-foreground font-semibold">
-                Rendimento Individuale • Stagione 11 (In corso)
+              <span className="text-[11px] sm:text-xs text-muted-foreground font-semibold">
+                Stagione 11 (In corso)
               </span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-2 sm:gap-3">
+              <BarChart3 className="h-5 w-5 sm:h-8 sm:w-8 text-emerald-600 dark:text-emerald-400 shrink-0" />
               Statistiche Giocatori
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="hidden sm:block text-sm text-muted-foreground mt-1">
               Leaderboard complete, statistiche avanzate di rendimento sul campo e classifiche individuali.
             </p>
           </div>
 
           <div className="flex items-center gap-3 self-start md:self-auto">
-            <div className="px-3.5 py-1.5 rounded-xl border border-border/80 bg-card text-xs flex items-center gap-2 shadow-sm">
+            <div className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-xl border border-border/80 bg-card text-[11px] sm:text-xs flex items-center gap-1.5 sm:gap-2 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-muted-foreground">Aggiornato alla Giornata:</span>
               <span className="font-semibold text-foreground font-mono">
@@ -497,31 +497,31 @@ const Statistiche = () => {
         </div>
 
         {/* TABS SWITCHER: STATS LEADERBOARD VS TOTW */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/80 pb-3">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 border-b border-border/80 pb-2.5 sm:pb-3">
           <Button
             variant={currentTab === "stats" ? "default" : "outline"}
             size="sm"
             onClick={() => setSearchParams({})}
-            className={`gap-2 font-bold text-xs sm:text-sm ${
+            className={`gap-1.5 sm:gap-2 font-bold text-[11px] sm:text-sm px-2 sm:px-3 ${
               currentTab === "stats" ? "shadow-sm" : ""
             }`}
           >
-            <BarChart3 className="h-4 w-4" />
-            Classifiche Statistiche
+            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">Classifiche Statistiche</span>
           </Button>
 
           <Button
             variant={currentTab === "totw" ? "default" : "outline"}
             size="sm"
             onClick={() => setSearchParams({ tab: "totw" })}
-            className={`gap-2 font-bold text-xs sm:text-sm ${
+            className={`gap-1.5 sm:gap-2 font-bold text-[11px] sm:text-sm px-2 sm:px-3 ${
               currentTab === "totw"
                 ? "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-sm"
                 : "text-amber-500 hover:text-amber-600 border-amber-500/30"
             }`}
           >
-            <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-            Top 11 di Giornata (TOTW)
+            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-amber-400 text-amber-500 shrink-0" />
+            <span className="truncate">Top 11 (TOTW)</span>
           </Button>
         </div>
 
@@ -530,47 +530,47 @@ const Statistiche = () => {
         ) : (
           <>
         {/* TELEMETRY KPI SUMMARY WIDGETS */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Gol Segnati in Lega
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-3.5">
+          <Card className="border border-border/80 bg-card shadow-sm p-2 sm:p-3.5 text-center">
+            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground block leading-tight">
+              Gol Lega
             </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-rose-600 dark:text-rose-400">
+            <span className="text-sm sm:text-2xl font-black font-mono text-rose-600 dark:text-rose-400">
               {leagueSummary.totalGoals}
             </span>
           </Card>
 
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Assist Vincenti
+          <Card className="border border-border/80 bg-card shadow-sm p-2 sm:p-3.5 text-center">
+            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground block leading-tight">
+              Assist
             </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-blue-600 dark:text-blue-400">
+            <span className="text-sm sm:text-2xl font-black font-mono text-blue-600 dark:text-blue-400">
               {leagueSummary.totalAssists}
             </span>
           </Card>
 
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Giocatori a Referto
+          <Card className="border border-border/80 bg-card shadow-sm p-2 sm:p-3.5 text-center">
+            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground block leading-tight">
+              A Referto
             </span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
+            <span className="text-sm sm:text-2xl font-black font-mono text-foreground">
               {leagueSummary.totalPlayers}
             </span>
           </Card>
 
-          <Card className="border border-border/80 bg-card shadow-sm p-3.5 text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Categoria Attiva
+          <Card className="border border-border/80 bg-card shadow-sm p-2 sm:p-3.5 text-center min-w-0">
+            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground block leading-tight">
+              Categoria
             </span>
-            <span className="text-sm sm:text-base font-black font-mono text-emerald-600 dark:text-emerald-400 truncate block mt-1">
+            <span className="text-[11px] sm:text-base font-black font-mono text-emerald-600 dark:text-emerald-400 truncate block mt-0.5 sm:mt-1">
               {activeCategory.label}
             </span>
           </Card>
         </div>
 
-        {/* CATEGORY SELECTOR PILLS BAR */}
+        {/* CATEGORY SELECTOR: DROPDOWN ON MOBILE, GRID PILLS ON DESKTOP */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="hidden md:flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Classifiche Speciali:
             </span>
@@ -579,7 +579,25 @@ const Statistiche = () => {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          <div className="block md:hidden">
+            <Select
+              value={statType}
+              onValueChange={(val) => handleCategoryChange(val as StatCategory)}
+            >
+              <SelectTrigger className="w-full h-10 text-xs font-bold bg-card border-border/80 rounded-xl shadow-sm">
+                <SelectValue placeholder="Seleziona classifica" />
+              </SelectTrigger>
+              <SelectContent>
+                {STAT_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id} className="text-xs font-semibold">
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="hidden md:grid md:grid-cols-4 lg:grid-cols-8 gap-2">
             {STAT_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isSelected = statType === cat.id;
@@ -619,7 +637,7 @@ const Statistiche = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-end">
               {/* 2ND PLACE (SILVER) - Left on Desktop */}
               {(() => {
                 const player = podiumPlayers[1];
@@ -627,66 +645,68 @@ const Statistiche = () => {
                 return (
                   <Card
                     onClick={() => handleSelectPlayer(player)}
-                    className="order-2 md:order-1 border-2 border-slate-300/60 dark:border-slate-600/60 bg-gradient-to-b from-card to-slate-500/5 hover:border-slate-400 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden p-4 group"
+                    className="order-2 md:order-1 border-2 border-slate-300/60 dark:border-slate-600/60 bg-gradient-to-b from-card to-slate-500/5 hover:border-slate-400 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden p-2.5 md:p-4 group"
                   >
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      {/* Rank Medal */}
-                      <span className="px-3 py-0.5 rounded-full text-xs font-black bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 shadow-xs flex items-center gap-1">
-                        🥈 2° Posto
-                      </span>
+                    <div className="flex flex-row md:flex-col items-center justify-between md:justify-start text-left md:text-center gap-2.5 md:gap-0 md:space-y-3">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 md:flex-col md:items-center md:gap-3 md:flex-initial">
+                        {/* Rank Medal */}
+                        <span className="px-2 py-0.5 md:px-3 rounded-full text-[10px] md:text-xs font-black bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 shadow-xs flex items-center gap-1 shrink-0">
+                          🥈 <span className="hidden md:inline">2° Posto</span><span className="md:hidden">2°</span>
+                        </span>
 
-                      {/* Avatar */}
-                      <div className="relative">
-                        <Avatar className="h-16 w-16 border-2 border-slate-300 dark:border-slate-600 shadow-md group-hover:scale-105 transition-transform">
-                          <AvatarImage
-                            src={getPlayerImage(player.ID)}
-                            alt={`${player.Nome} ${player.Cognome}`}
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                          <Avatar className="h-11 w-11 md:h-16 md:w-16 border-2 border-slate-300 dark:border-slate-600 shadow-md group-hover:scale-105 transition-transform">
+                            <AvatarImage
+                              src={getPlayerImage(player.ID)}
+                              alt={`${player.Nome} ${player.Cognome}`}
+                            />
+                            <AvatarFallback className="font-bold text-xs md:text-base">
+                              {player.Nome?.[0]}
+                              {player.Cognome?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <img
+                            src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
+                            alt={player.Squadra}
+                            className="absolute -bottom-1 -right-1 h-4 w-4 md:h-6 md:w-6 object-contain drop-shadow"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
+                            }}
                           />
-                          <AvatarFallback className="font-bold">
-                            {player.Nome?.[0]}
-                            {player.Cognome?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <img
-                          src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
-                          alt={player.Squadra}
-                          className="absolute -bottom-1 -right-1 h-6 w-6 object-contain drop-shadow"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
-                          }}
-                        />
-                      </div>
+                        </div>
 
-                      {/* Info */}
-                      <div>
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
-                              player.Posiz
-                            )}`}
-                          >
-                            {player.Posiz}
-                          </Badge>
-                          <span className="font-extrabold text-foreground text-sm group-hover:text-emerald-600 transition-colors">
-                            {player.Nome} {player.Cognome}
+                        {/* Info */}
+                        <div className="min-w-0 flex-1 md:flex-initial">
+                          <div className="flex items-center md:justify-center gap-1.5 flex-wrap">
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
+                                player.Posiz
+                              )}`}
+                            >
+                              {player.Posiz}
+                            </Badge>
+                            <span className="font-extrabold text-foreground text-xs md:text-sm group-hover:text-emerald-600 transition-colors leading-tight">
+                              {player.Nome} {player.Cognome}
+                            </span>
+                          </div>
+                          <span className="text-[11px] md:text-xs text-muted-foreground block mt-0.5 font-medium truncate">
+                            {getTeamName(player.Squadra)}
                           </span>
                         </div>
-                        <span className="text-xs text-muted-foreground block mt-0.5 font-medium">
-                          {getTeamName(player.Squadra)}
-                        </span>
                       </div>
 
                       {/* Stat Value */}
-                      <div className="pt-2 border-t border-border/60 w-full">
-                        <span className="text-2xl font-black font-mono text-foreground block">
+                      <div className="text-right shrink-0 md:text-center md:pt-2 md:border-t md:border-border/60 md:w-full">
+                        <span className="text-xl md:text-2xl font-black font-mono text-foreground block leading-none md:leading-normal">
                           {stat.value}
                         </span>
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                        <span className="text-[9px] md:text-[10px] uppercase font-bold text-muted-foreground block mt-0.5 md:mt-0">
                           {stat.label}
                         </span>
-                        <span className="text-[11px] text-muted-foreground mt-0.5 block font-mono">
+                        <span className="hidden md:block text-[11px] text-muted-foreground mt-0.5 font-mono">
                           {stat.context}
                         </span>
                       </div>
@@ -702,66 +722,68 @@ const Statistiche = () => {
                 return (
                   <Card
                     onClick={() => handleSelectPlayer(player)}
-                    className="order-1 md:order-2 border-2 border-amber-500/70 bg-gradient-to-b from-card via-amber-500/5 to-amber-500/15 hover:border-amber-400 hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden p-5 group md:-translate-y-2 ring-2 ring-amber-500/20"
+                    className="order-1 md:order-2 border-2 border-amber-500/70 bg-gradient-to-b from-card via-amber-500/5 to-amber-500/15 hover:border-amber-400 hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden p-2.5 md:p-5 group md:-translate-y-2 ring-2 ring-amber-500/20"
                   >
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      {/* Rank Medal */}
-                      <span className="px-3.5 py-0.5 rounded-full text-xs font-black bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-md flex items-center gap-1 uppercase tracking-wider">
-                        👑 1° Posto • Leader
-                      </span>
+                    <div className="flex flex-row md:flex-col items-center justify-between md:justify-start text-left md:text-center gap-2.5 md:gap-0 md:space-y-3">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 md:flex-col md:items-center md:gap-3 md:flex-initial">
+                        {/* Rank Medal */}
+                        <span className="px-2 py-0.5 md:px-3.5 rounded-full text-[10px] md:text-xs font-black bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-md flex items-center gap-1 uppercase tracking-wider shrink-0">
+                          👑 <span className="hidden md:inline">1° Posto • Leader</span><span className="md:hidden">1°</span>
+                        </span>
 
-                      {/* Avatar */}
-                      <div className="relative">
-                        <Avatar className="h-20 w-20 border-3 border-amber-400 shadow-xl group-hover:scale-105 transition-transform">
-                          <AvatarImage
-                            src={getPlayerImage(player.ID)}
-                            alt={`${player.Nome} ${player.Cognome}`}
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                          <Avatar className="h-12 w-12 md:h-20 md:w-20 border-2 md:border-3 border-amber-400 shadow-xl group-hover:scale-105 transition-transform">
+                            <AvatarImage
+                              src={getPlayerImage(player.ID)}
+                              alt={`${player.Nome} ${player.Cognome}`}
+                            />
+                            <AvatarFallback className="font-bold text-sm md:text-lg">
+                              {player.Nome?.[0]}
+                              {player.Cognome?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <img
+                            src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
+                            alt={player.Squadra}
+                            className="absolute -bottom-1 -right-1 h-5 w-5 md:h-7 md:w-7 object-contain drop-shadow"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
+                            }}
                           />
-                          <AvatarFallback className="font-bold text-lg">
-                            {player.Nome?.[0]}
-                            {player.Cognome?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <img
-                          src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
-                          alt={player.Squadra}
-                          className="absolute -bottom-1 -right-1 h-7 w-7 object-contain drop-shadow"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
-                          }}
-                        />
-                      </div>
+                        </div>
 
-                      {/* Info */}
-                      <div>
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
-                              player.Posiz
-                            )}`}
-                          >
-                            {player.Posiz}
-                          </Badge>
-                          <span className="font-black text-foreground text-base group-hover:text-amber-500 transition-colors">
-                            {player.Nome} {player.Cognome}
+                        {/* Info */}
+                        <div className="min-w-0 flex-1 md:flex-initial">
+                          <div className="flex items-center md:justify-center gap-1.5 flex-wrap">
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
+                                player.Posiz
+                              )}`}
+                            >
+                              {player.Posiz}
+                            </Badge>
+                            <span className="font-black text-foreground text-xs md:text-base group-hover:text-amber-500 transition-colors leading-tight">
+                              {player.Nome} {player.Cognome}
+                            </span>
+                          </div>
+                          <span className="text-[11px] md:text-xs text-muted-foreground block mt-0.5 font-bold truncate">
+                            {getTeamName(player.Squadra)}
                           </span>
                         </div>
-                        <span className="text-xs text-muted-foreground block mt-0.5 font-bold">
-                          {getTeamName(player.Squadra)}
-                        </span>
                       </div>
 
                       {/* Stat Value */}
-                      <div className="pt-2 border-t border-amber-500/30 w-full">
-                        <span className="text-3xl font-black font-mono text-amber-500 block drop-shadow-xs">
+                      <div className="text-right shrink-0 md:text-center md:pt-2 md:border-t md:border-amber-500/30 md:w-full">
+                        <span className="text-2xl md:text-3xl font-black font-mono text-amber-500 block drop-shadow-xs leading-none md:leading-normal">
                           {stat.value}
                         </span>
-                        <span className="text-[11px] uppercase font-black tracking-wider text-muted-foreground block">
+                        <span className="text-[9px] md:text-[11px] uppercase font-black tracking-wider text-muted-foreground block mt-0.5 md:mt-0">
                           {stat.label}
                         </span>
-                        <span className="text-[11px] text-muted-foreground mt-0.5 block font-mono font-medium">
+                        <span className="hidden md:block text-[11px] text-muted-foreground mt-0.5 font-mono font-medium">
                           {stat.context}
                         </span>
                       </div>
@@ -777,66 +799,68 @@ const Statistiche = () => {
                 return (
                   <Card
                     onClick={() => handleSelectPlayer(player)}
-                    className="order-3 md:order-3 border-2 border-amber-700/40 bg-gradient-to-b from-card to-amber-900/5 hover:border-amber-600 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden p-4 group"
+                    className="order-3 md:order-3 border-2 border-amber-700/40 bg-gradient-to-b from-card to-amber-900/5 hover:border-amber-600 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden p-2.5 md:p-4 group"
                   >
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      {/* Rank Medal */}
-                      <span className="px-3 py-0.5 rounded-full text-xs font-black bg-amber-800/20 text-amber-700 dark:text-amber-400 border border-amber-700/30 shadow-xs flex items-center gap-1">
-                        🥉 3° Posto
-                      </span>
+                    <div className="flex flex-row md:flex-col items-center justify-between md:justify-start text-left md:text-center gap-2.5 md:gap-0 md:space-y-3">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 md:flex-col md:items-center md:gap-3 md:flex-initial">
+                        {/* Rank Medal */}
+                        <span className="px-2 py-0.5 md:px-3 rounded-full text-[10px] md:text-xs font-black bg-amber-800/20 text-amber-700 dark:text-amber-400 border border-amber-700/30 shadow-xs flex items-center gap-1 shrink-0">
+                          🥉 <span className="hidden md:inline">3° Posto</span><span className="md:hidden">3°</span>
+                        </span>
 
-                      {/* Avatar */}
-                      <div className="relative">
-                        <Avatar className="h-16 w-16 border-2 border-amber-700/40 shadow-md group-hover:scale-105 transition-transform">
-                          <AvatarImage
-                            src={getPlayerImage(player.ID)}
-                            alt={`${player.Nome} ${player.Cognome}`}
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                          <Avatar className="h-11 w-11 md:h-16 md:w-16 border-2 border-amber-700/40 shadow-md group-hover:scale-105 transition-transform">
+                            <AvatarImage
+                              src={getPlayerImage(player.ID)}
+                              alt={`${player.Nome} ${player.Cognome}`}
+                            />
+                            <AvatarFallback className="font-bold text-xs md:text-base">
+                              {player.Nome?.[0]}
+                              {player.Cognome?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <img
+                            src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
+                            alt={player.Squadra}
+                            className="absolute -bottom-1 -right-1 h-4 w-4 md:h-6 md:w-6 object-contain drop-shadow"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
+                            }}
                           />
-                          <AvatarFallback className="font-bold">
-                            {player.Nome?.[0]}
-                            {player.Cognome?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <img
-                          src={`${SUPABASE_STORAGE_URL}/images/teams/${player.Squadra}_Logo.png`}
-                          alt={player.Squadra}
-                          className="absolute -bottom-1 -right-1 h-6 w-6 object-contain drop-shadow"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              `${SUPABASE_STORAGE_URL}/images/LCSIM_Logo_SMALL.png`;
-                          }}
-                        />
-                      </div>
+                        </div>
 
-                      {/* Info */}
-                      <div>
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
-                              player.Posiz
-                            )}`}
-                          >
-                            {player.Posiz}
-                          </Badge>
-                          <span className="font-extrabold text-foreground text-sm group-hover:text-emerald-600 transition-colors">
-                            {player.Nome} {player.Cognome}
+                        {/* Info */}
+                        <div className="min-w-0 flex-1 md:flex-initial">
+                          <div className="flex items-center md:justify-center gap-1.5 flex-wrap">
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0 ${getRoleColor(
+                                player.Posiz
+                              )}`}
+                            >
+                              {player.Posiz}
+                            </Badge>
+                            <span className="font-extrabold text-foreground text-xs md:text-sm group-hover:text-emerald-600 transition-colors leading-tight">
+                              {player.Nome} {player.Cognome}
+                            </span>
+                          </div>
+                          <span className="text-[11px] md:text-xs text-muted-foreground block mt-0.5 font-medium truncate">
+                            {getTeamName(player.Squadra)}
                           </span>
                         </div>
-                        <span className="text-xs text-muted-foreground block mt-0.5 font-medium">
-                          {getTeamName(player.Squadra)}
-                        </span>
                       </div>
 
                       {/* Stat Value */}
-                      <div className="pt-2 border-t border-border/60 w-full">
-                        <span className="text-2xl font-black font-mono text-foreground block">
+                      <div className="text-right shrink-0 md:text-center md:pt-2 md:border-t md:border-border/60 md:w-full">
+                        <span className="text-xl md:text-2xl font-black font-mono text-foreground block leading-none md:leading-normal">
                           {stat.value}
                         </span>
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                        <span className="text-[9px] md:text-[10px] uppercase font-bold text-muted-foreground block mt-0.5 md:mt-0">
                           {stat.label}
                         </span>
-                        <span className="text-[11px] text-muted-foreground mt-0.5 block font-mono">
+                        <span className="hidden md:block text-[11px] text-muted-foreground mt-0.5 font-mono">
                           {stat.context}
                         </span>
                       </div>
