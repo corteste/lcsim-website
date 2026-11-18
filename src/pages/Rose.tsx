@@ -14,6 +14,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -499,94 +506,93 @@ const Rose = () => {
               <div className={`absolute inset-0 opacity-20 dark:opacity-30 pointer-events-none ${getTeamSocialBg(currentTeam.TEAM_ID)}`} />
               <div className="absolute inset-0 bg-gradient-to-t from-background/30 dark:from-black/40 via-transparent to-transparent pointer-events-none" />
 
-              <div className="relative z-10 p-5 sm:p-6">
-                <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+              <div className="relative z-10 p-3.5 sm:p-6">
+                <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 sm:gap-6">
                   {/* Left Identity Section: Big Logo + Details */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 min-w-0">
+                  <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 sm:gap-x-6 sm:gap-y-2.5 min-w-0">
                     {/* Big Crest Box matching small card style */}
-                    <div className="relative shrink-0 flex items-center justify-center p-3 rounded-2xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 shadow-inner self-start sm:self-center">
+                    <div className="relative shrink-0 flex items-center justify-center p-1.5 sm:p-3 rounded-xl sm:rounded-2xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 shadow-inner sm:row-span-3 self-center">
                       <img
                         src={getTeamLogo(currentTeam.TEAM_ID)}
                         alt={`${currentTeam.NAME} Logo`}
-                        className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-2xl"
+                        className="h-12 w-12 sm:h-24 sm:w-24 object-contain drop-shadow-2xl"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = LCSIM_LOGO_SMALL;
                         }}
                       />
                     </div>
 
-                    <div className="space-y-2.5 min-w-0">
-                      {/* Club Name */}
-                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight drop-shadow-xs truncate">
-                        {currentTeam.NAME}
-                      </h2>
+                    {/* Club Name */}
+                    <h2 className="text-xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight drop-shadow-xs truncate col-start-2 row-start-1 self-center">
+                      {currentTeam.NAME}
+                    </h2>
 
-                      {/* Club Key Figures & Info: Presidente, Manager, Stadio */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                        <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-border/60 dark:border-white/15 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
-                              Presidente
-                            </span>
-                            {(isAdmin || user?.team === currentTeam.TEAM_ID) && (
-                              <button
-                                type="button"
-                                onClick={() => setIsEditCoachOpen(true)}
-                                className="text-muted-foreground hover:text-emerald-500 p-0.5 rounded transition-colors"
-                                title="Modifica Staff (Allenatore e Presidente)"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                          <strong className="text-foreground font-extrabold truncate block text-xs">
-                            {presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}
-                          </strong>
-                        </div>
-
-                        <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-border/60 dark:border-white/15 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
-                              Allenatore
-                            </span>
-                            {(isAdmin || user?.team === currentTeam.TEAM_ID) && (
-                              <button
-                                type="button"
-                                onClick={() => setIsEditCoachOpen(true)}
-                                className="text-muted-foreground hover:text-emerald-500 p-0.5 rounded transition-colors"
-                                title="Modifica Allenatore"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                          <strong className="text-foreground font-extrabold truncate block text-xs">
-                            {currentTeam.MANAGER || "Da Assegnare"}
-                          </strong>
-                        </div>
-
-                        <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-3.5 py-2 rounded-xl border border-border/60 dark:border-white/15 text-xs">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight">
-                            Stadio
+                    {/* Club Key Figures & Info: Presidente, Manager, Stadio */}
+                    <div className="col-span-2 sm:col-span-1 sm:col-start-2 grid grid-cols-3 gap-1.5 sm:gap-2 pt-0.5 sm:pt-1">
+                      <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-2 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border border-border/60 dark:border-white/15 text-xs min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight truncate">
+                            Presidente
                           </span>
-                          <strong className="text-foreground font-extrabold truncate block text-xs">
-                            {stadiumMap[currentTeam.TEAM_ID] || TEAM_STADIUMS[currentTeam.TEAM_ID] || "Stadio Ufficiale"}
-                          </strong>
+                          {(isAdmin || user?.team === currentTeam.TEAM_ID) && (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditCoachOpen(true)}
+                              className="text-muted-foreground hover:text-emerald-500 p-0.5 rounded transition-colors shrink-0"
+                              title="Modifica Staff (Allenatore e Presidente)"
+                            >
+                              <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            </button>
+                          )}
                         </div>
+                        <strong className="text-foreground font-extrabold truncate block text-[11px] sm:text-xs">
+                          {presidentMap[currentTeam.TEAM_ID] || "In attesa di nomina"}
+                        </strong>
                       </div>
 
-                      {/* Palmares and Team Anthem */}
-                      <div className="flex items-center gap-2 pt-1 flex-wrap">
+                      <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-2 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border border-border/60 dark:border-white/15 text-xs min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight truncate">
+                            Allenatore
+                          </span>
+                          {(isAdmin || user?.team === currentTeam.TEAM_ID) && (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditCoachOpen(true)}
+                              className="text-muted-foreground hover:text-emerald-500 p-0.5 rounded transition-colors shrink-0"
+                              title="Modifica Allenatore"
+                            >
+                              <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            </button>
+                          )}
+                        </div>
+                        <strong className="text-foreground font-extrabold truncate block text-[11px] sm:text-xs">
+                          {currentTeam.MANAGER || "Da Assegnare"}
+                        </strong>
+                      </div>
+
+                      <div className="bg-muted/40 dark:bg-black/25 backdrop-blur-md px-2 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl border border-border/60 dark:border-white/15 text-xs min-w-0">
+                        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/70 font-semibold block leading-tight truncate">
+                          Stadio
+                        </span>
+                        <strong className="text-foreground font-extrabold truncate block text-[11px] sm:text-xs">
+                          {stadiumMap[currentTeam.TEAM_ID] || TEAM_STADIUMS[currentTeam.TEAM_ID] || "Stadio Ufficiale"}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Palmares and Team Anthem */}
+                    <div className="col-span-2 sm:col-span-1 sm:col-start-2 flex items-center gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
                         {currentTeam.scudetto > 0 && (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-300 bg-background/80 dark:bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-lg border border-amber-500/30 dark:border-amber-400/30 shadow-2xs">
-                            <Trophy className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />
+                          <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-amber-600 dark:text-amber-300 bg-background/80 dark:bg-black/30 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border border-amber-500/30 dark:border-amber-400/30 shadow-2xs">
+                            <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500 dark:text-amber-400" />
                             {currentTeam.scudetto}{" "}
                             {currentTeam.scudetto === 1 ? "Scudetto" : "Scudetti"}
                           </span>
                         )}
                         {currentTeam.supercoppa > 0 && (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-300 bg-background/80 dark:bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-lg border border-blue-500/30 dark:border-blue-400/30 shadow-2xs">
-                            <ShieldCheck className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
+                          <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-300 bg-background/80 dark:bg-black/30 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border border-blue-500/30 dark:border-blue-400/30 shadow-2xs">
+                            <ShieldCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-500 dark:text-blue-400" />
                             {currentTeam.supercoppa}{" "}
                             {currentTeam.supercoppa === 1 ? "Supercoppa" : "Supercoppe"}
                           </span>
@@ -597,7 +603,7 @@ const Rose = () => {
                           <button
                             type="button"
                             onClick={handleToggleAnthem}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 border cursor-pointer select-none shadow-sm ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-200 border cursor-pointer select-none shadow-sm ${
                               isPlayingAnthem
                                 ? "bg-emerald-500 text-white border-emerald-400 shadow-emerald-500/20"
                                 : "bg-muted/50 dark:bg-black/25 hover:bg-muted/80 dark:hover:bg-black/40 text-foreground dark:text-white border-border/70 dark:border-white/20"
@@ -615,7 +621,7 @@ const Rose = () => {
                           >
                             {isPlayingAnthem ? (
                               <>
-                                <Pause className="h-3.5 w-3.5 shrink-0 fill-current" />
+                                <Pause className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 fill-current" />
                                 <span>Inno in Riproduzione</span>
                                 <span className="flex items-center gap-0.5 ml-1">
                                   <span className="w-1 h-2.5 bg-white rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -625,7 +631,7 @@ const Rose = () => {
                               </>
                               ) : (
                                 <>
-                                  <Volume2 className="h-3.5 w-3.5 shrink-0 text-foreground dark:text-white" />
+                                  <Volume2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-foreground dark:text-white" />
                                   <span>Inno Ufficiale</span>
                                 </>
                               )}
@@ -636,28 +642,29 @@ const Rose = () => {
                           <button
                             type="button"
                             onClick={() => handleSelectClubTab("profile")}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 border cursor-pointer select-none shadow-sm bg-muted/50 dark:bg-black/25 hover:bg-muted/80 dark:hover:bg-black/40 text-foreground dark:text-white border-border/70 dark:border-white/20"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-200 border cursor-pointer select-none shadow-sm bg-muted/50 dark:bg-black/25 hover:bg-muted/80 dark:hover:bg-black/40 text-foreground dark:text-white border-border/70 dark:border-white/20"
                             title="Apri Profilo Club, Palmarès e Stadio"
                           >
-                            <Trophy className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                            <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500 shrink-0" />
                             <span>Profilo &amp; Palmarès</span>
                           </button>
-                        </div>
-                      </div>
                     </div>
+                  </div>
 
-                    {/* Center: Divise (Jerseys) positioned between Stadio & KPIs */}
+                  {/* Jerseys & Telemetry KPIs */}
+                  <div className="flex flex-wrap items-center justify-between sm:justify-start xl:justify-end gap-2 sm:gap-4 xl:gap-6 shrink-0">
+                    {/* Divise (Jerseys) */}
                     {currentJerseys.length > 0 && (
-                      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 py-1 self-center">
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                         {currentJerseys.map((j) => (
                           <button
                             key={j.type}
                             type="button"
                             onClick={() => setSelectedJersey(j)}
-                            className="group relative flex flex-col items-center p-2 rounded-2xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 hover:border-foreground/20 dark:hover:border-white/30 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md shrink-0"
+                            className="group relative flex flex-col items-center p-1 sm:p-2 rounded-xl sm:rounded-2xl bg-muted/40 dark:bg-black/25 hover:bg-muted/70 dark:hover:bg-black/45 border border-border/70 dark:border-white/15 hover:border-foreground/20 dark:hover:border-white/30 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md shrink-0"
                             title={`Visualizza ${j.fullLabel} - Clicca per ingrandire`}
                           >
-                            <div className="h-18 w-18 sm:h-20 sm:w-20 2xl:h-24 2xl:w-24 flex items-center justify-center p-1 overflow-hidden">
+                            <div className="h-11 w-11 sm:h-20 sm:w-20 2xl:h-24 2xl:w-24 flex items-center justify-center p-0.5 sm:p-1 overflow-hidden">
                               <img
                                 src={j.url}
                                 alt={`${currentTeam.NAME} - ${j.label}`}
@@ -665,33 +672,33 @@ const Rose = () => {
                                 loading="lazy"
                               />
                             </div>
-                            
                           </button>
                         ))}
                       </div>
                     )}
 
                     {/* Right Telemetry KPI: OVR Medio & Età Media */}
-                    <div className="flex items-center sm:self-center gap-2.5 sm:gap-3 shrink-0">
-                      <div className="px-4 py-2.5 rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[90px]">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
+                    <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                      <div className="px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[64px] sm:min-w-[90px]">
+                        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
                           OVR Medio
                         </span>
-                        <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                        <span className="text-base sm:text-2xl font-black font-mono text-foreground">
                           {avgOvr}
                         </span>
                       </div>
 
-                      <div className="px-4 py-2.5 rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[90px]">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
+                      <div className="px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl bg-muted/40 dark:bg-black/25 backdrop-blur-md border border-border/60 dark:border-white/20 text-center shadow-xs min-w-[64px] sm:min-w-[90px]">
+                        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-white/70 block">
                           Età Media
                         </span>
-                        <span className="text-xl sm:text-2xl font-black font-mono text-foreground">
-                          {avgAge} <span className="text-xs font-normal text-muted-foreground dark:text-white/70">a</span>
+                        <span className="text-base sm:text-2xl font-black font-mono text-foreground">
+                          {avgAge} <span className="text-[10px] sm:text-xs font-normal text-muted-foreground dark:text-white/70">a</span>
                         </span>
                       </div>
                     </div>
                   </div>
+                </div>
 
                   {/* Expanded Club History Drawer inside the Header */}
                   <ClubHistoryExpandedDrawer
@@ -760,8 +767,30 @@ const Rose = () => {
         {/* CONTROLS & FILTERS BAR */}
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* ROLE FILTER PILLS BAR */}
-            <div className="flex flex-wrap gap-1.5">
+            {/* ROLE FILTER: DROPDOWN ON MOBILE, PILLS ON DESKTOP */}
+            <div className="block md:hidden w-full">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-full h-9 text-xs font-bold bg-card border-border">
+                  <SelectValue placeholder="Filtra per ruolo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_GROUPS.map((g) => {
+                    const count =
+                      g.id === "ALL"
+                        ? rawPlayers.length
+                        : rawPlayers.filter((p) => g.roles.includes(p.Posiz)).length;
+
+                    return (
+                      <SelectItem key={g.id} value={g.id} className="text-xs font-semibold">
+                        {g.label} ({count})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="hidden md:flex flex-wrap gap-1.5">
               {ROLE_GROUPS.map((g) => {
                 const count =
                   g.id === "ALL"
