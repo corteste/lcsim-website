@@ -370,6 +370,7 @@ export async function fetchSeasonSchedule(stag: number): Promise<Schedule[]> {
       match_time: (gen as any)?.match_time ?? match.match_time ?? "21:00",
       unlock_at: (gen as any)?.unlock_at ?? match.unlock_at ?? null,
       is_neutral: (gen as any)?.is_neutral ?? false,
+      youtube_url: (gen as any)?.youtube_url ?? null,
       home_player_stats: sortPlayersByRole(homePlayerStats, match.home_minuti),
       away_player_stats: sortPlayersByRole(awayPlayerStats, match.away_minuti),
     };

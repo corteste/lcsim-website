@@ -1754,6 +1754,29 @@ export default function SalaStampa() {
                       </div>
                     </article>
                   )}
+
+                  {/* 6. PROMEMORIA AUTOMATICO DI LEGA (es. 5 ore prima dell'inizio giornata) */}
+                  {!selectedItem.announcementData && selectedItem.bodyText && (
+                    <article className="space-y-4">
+                      <div className="p-4 sm:p-5 rounded-xl bg-card border border-rose-500/30 shadow-xs space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400">
+                          <Clock className="h-4 w-4 shrink-0" />
+                          <span>Promemoria Ufficiale di Giornata</span>
+                        </div>
+                        <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+                          {selectedItem.bodyText}
+                        </div>
+                        <div className="pt-1">
+                          <Button size="sm" asChild className="h-8 text-xs font-bold gap-1.5">
+                            <Link to="/calendario">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>Vai al Calendario</span>
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </article>
+                  )}
                 </div>
               </div>
             ) : (

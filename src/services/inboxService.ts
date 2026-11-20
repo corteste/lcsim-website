@@ -70,6 +70,7 @@ export interface InboxItem {
   tradeData?: EnrichedTrade;
   previewData?: MatchdayPreviewData;
   announcementData?: LeagueAnnouncement;
+  bodyText?: string;
 }
 
 /**
@@ -262,6 +263,59 @@ export async function fetchInboxFeed(params: {
       const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
       const isWithinPreviewWindow =
         firstMatchDateMs !== null && Date.now() >= firstMatchDateMs - FIVE_DAYS_MS;
+
+      // Reminder dinamico: compare dalle 5 ore precedenti al calcio d'inizio della prima partita della giornata
+      const firstMatchExact = weekMatches.reduce<{ ms: number; dateOnly: string; timeStr: string } | null>(
+        (earliest, m) => {
+          if (!m.date) return earliest;
+          const dateOnly = String(m.date).slice(0, 10);
+          const timeStr = m.match_time ? String(m.match_time).slice(0, 5) : "21:00";
+          const parsed = new Date(`${dateOnly}T${timeStr}:00`).getTime();
+          if (Number.isNaN(parsed)) return earliest;
+          return earliest === null || parsed < earliest.ms
+            ? { ms: parsed, dateOnly, timeStr }
+            : earliest;
+        },
+        null
+      );
+
+      const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
+      const nowMs = Date.now();
+      if (
+        firstMatchExact &&
+        nowMs >= firstMatchExact.ms - FIVE_HOURS_MS &&
+        nowMs < firstMatchExact.ms
+      ) {
+        const diffMin = Math.max(1, Math.round((firstMatchExact.ms - nowMs) / 60000));
+        const remHours = Math.floor(diffMin / 60);
+        const remMins = diffMin % 60;
+        const remainingLabel =
+          remHours > 0
+            ? remMins > 0
+              ? `${remHours}h ${remMins}m`
+              : `${remHours}h`
+            : `${remMins}m`;
+        const dateFormatted = new Date(`${firstMatchExact.dateOnly}T00:00:00`).toLocaleDateString(
+          "it-IT",
+          { weekday: "long", day: "numeric", month: "long" }
+        );
+
+        items.push({
+          id: `matchday_reminder_s${season}_g${targetWeek}`,
+          category: "league",
+          title: `⏰ Promemoria Giornata ${targetWeek}: Inizio tra ${remainingLabel}`,
+          snippet: `La Giornata ${targetWeek} della Serie A LCSIM inizia alle ${firstMatchExact.timeStr} (${dateFormatted}).`,
+          senderName: "Direzione di Lega LCSIM",
+          senderRole: "Promemoria Giornata",
+          timestamp: new Date(firstMatchExact.ms - FIVE_HOURS_MS).toISOString(),
+          matchday: targetWeek,
+          priority: "urgent",
+          badgeText: `Tra ${remainingLabel}`,
+          badgeColor:
+            "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 font-bold",
+          bodyText: `La Giornata ${targetWeek} della Serie A LCSIM prenderà il via ${dateFormatted} alle ore ${firstMatchExact.timeStr}.\n\nConsulta il programma completo degli incontri, gli orari ufficiali e gli eventuali collegamenti YouTube nella sezione Calendario.`,
+        });
+      }
 
       if (weekMatches.length > 0 && isWithinPreviewWindow) {
         const matchItems: MatchdayScheduleMatch[] = weekMatches.map((m) => {

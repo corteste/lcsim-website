@@ -25,6 +25,8 @@ export interface SheetMatch {
   referee?: string;
   weather?: string;
   date?: string;
+  matchTime?: string | null;
+  youtubeUrl?: string | null;
   isPlayed: boolean;
   homeScore?: number;
   awayScore?: number;
@@ -180,18 +182,31 @@ export async function fetchWeekMatches(stag: number, week: number): Promise<Shee
       teamMap.set(t.TEAM_ID, { name: t.NAME, abbr: t.NAME_ABBR || t.TEAM_ID });
     });
 
-    // 2. Partite da view_team_stats o an_schedule
-    const { data: viewStats } = await supabase
-      .from("view_team_stats")
-      .select("home, away, home_gol, away_gol, home_minuti, home_team, away_team, date, stadium, weather, referee")
-      .eq("stag", stag)
-      .eq("week", week);
+    // 2. Partite da view_team_stats e an_schedule
+    const [{ data: viewStats }, { data: scheduleData }] = await Promise.all([
+      supabase
+        .from("view_team_stats")
+        .select("home, away, home_gol, away_gol, home_minuti, home_team, away_team, date, stadium, weather, referee")
+        .eq("stag", stag)
+        .eq("week", week),
+      supabase
+        .from("an_schedule")
+        .select("*")
+        .eq("stag", stag)
+        .eq("week", week),
+    ]);
+
+    const schedByKey = new Map<string, any>();
+    (scheduleData || []).forEach((s: any) => {
+      schedByKey.set(`${s.home}::${s.away}`, s);
+    });
 
     if (viewStats && viewStats.length > 0) {
       return viewStats.map((m) => {
         const homeInfo = teamMap.get(m.home) || { name: m.home_team || m.home, abbr: m.home };
         const awayInfo = teamMap.get(m.away) || { name: m.away_team || m.away, abbr: m.away };
         const isPlayed = m.home_minuti !== null && Number(m.home_minuti) > 0;
+        const sched = schedByKey.get(`${m.home}::${m.away}`);
 
         return {
           id: `${stag}-${week}-${m.home}-${m.away}`,
@@ -207,6 +222,8 @@ export async function fetchWeekMatches(stag: number, week: number): Promise<Shee
           referee: m.referee,
           weather: m.weather,
           date: m.date,
+          matchTime: sched?.match_time ? String(sched.match_time).slice(0, 5) : "21:00",
+          youtubeUrl: sched?.youtube_url ?? null,
           isPlayed,
           homeScore: isPlayed ? Number(m.home_gol) : undefined,
           awayScore: isPlayed ? Number(m.away_gol) : undefined,
@@ -215,14 +232,8 @@ export async function fetchWeekMatches(stag: number, week: number): Promise<Shee
     }
 
     // 3. Fallback su an_schedule
-    const { data: scheduleData } = await supabase
-      .from("an_schedule")
-      .select("home, away, stadium, referee, weather, date, standings_processed")
-      .eq("stag", stag)
-      .eq("week", week);
-
     if (scheduleData && scheduleData.length > 0) {
-      return scheduleData.map((m) => {
+      return scheduleData.map((m: any) => {
         const homeInfo = teamMap.get(m.home) || { name: m.home, abbr: m.home };
         const awayInfo = teamMap.get(m.away) || { name: m.away, abbr: m.away };
 
@@ -240,6 +251,8 @@ export async function fetchWeekMatches(stag: number, week: number): Promise<Shee
           referee: m.referee,
           weather: m.weather,
           date: m.date,
+          matchTime: m.match_time ? String(m.match_time).slice(0, 5) : "21:00",
+          youtubeUrl: m.youtube_url ?? null,
           isPlayed: Boolean(m.standings_processed),
         };
       });

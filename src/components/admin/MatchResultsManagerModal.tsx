@@ -61,6 +61,7 @@ import {
   fetchAdminSeasonSchedule,
   fetchAdminMatchReport,
   saveAdminMatchReport,
+  saveAdminMatchYoutubeUrl,
   updateAdminMatchSchedule,
   processMatchScreenshots,
   exportMatchReportToCSV,
@@ -297,6 +298,16 @@ export function MatchResultsManagerModal({
       const res = await saveAdminMatchReport(report, adminName, forceUnlockNow);
       if (!res.success) {
         throw new Error(res.error || "Salvataggio non riuscito");
+      }
+
+      if (report.schedule.youtube_url !== undefined) {
+        await saveAdminMatchYoutubeUrl(
+          report.schedule.stag,
+          report.schedule.week,
+          report.schedule.home,
+          report.schedule.away,
+          report.schedule.youtube_url || ""
+        );
       }
 
       if (res.is_unlocked_now) {
@@ -790,6 +801,58 @@ export function MatchResultsManagerModal({
                         placeholder="Arbitro..."
                       />
                     </div>
+                  </div>
+
+                  {/* Link YouTube Partita (#86) */}
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">
+                        Link Video YouTube (Premiere / Replica)
+                      </label>
+                      <Input
+                        value={report.schedule.youtube_url || ""}
+                        onChange={(e) =>
+                          setReport((prev) =>
+                            prev
+                              ? { ...prev, schedule: { ...prev.schedule, youtube_url: e.target.value } }
+                              : prev
+                          )
+                        }
+                        className="h-8 text-xs font-mono"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={savingReport}
+                      onClick={async () => {
+                        if (!report) return;
+                        setSavingReport(true);
+                        try {
+                          const res = await saveAdminMatchYoutubeUrl(
+                            report.schedule.stag,
+                            report.schedule.week,
+                            report.schedule.home,
+                            report.schedule.away,
+                            report.schedule.youtube_url || ""
+                          );
+                          if (!res.success) throw new Error(res.error);
+                          toast.success("Link YouTube salvato!");
+                          await loadSeasonSchedule(selectedSeason, selectedMatchKey);
+                          await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+                        } catch (err: any) {
+                          toast.error(err.message || "Errore salvataggio YouTube");
+                        } finally {
+                          setSavingReport(false);
+                        }
+                      }}
+                      className="h-8 text-[11px] font-bold gap-1.5 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 shrink-0"
+                    >
+                      <Save className="h-3 w-3" />
+                      Salva Video
+                    </Button>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 pt-0.5">

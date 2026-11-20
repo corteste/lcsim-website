@@ -99,6 +99,7 @@ export type MatchStats = {
   match_time?: string;
   unlock_at?: string | null;
   is_neutral?: boolean;
+  youtube_url?: string | null;
   home_temporec?: number | null;
   home_xg?: number | null;
   home_interc?: number | null;

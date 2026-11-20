@@ -1591,7 +1591,7 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 74. Trattative di Mercato Mobile: Fix Riquadro Statistiche Calciatore
-- **Stato**: 🟡 Da Pianificare / In Backlog (Segnalazione Admin #14 - Bug UI Mobile)
+- **Stato**: 🟢 Completato & Rilasciato in Produzione (Segnalazione Admin #14 - Risolto)
 - **Priorità**: Alta (Usabilità da smartphone)
 - **Moduli coinvolti**: `src/pages/TrattativeMercato.tsx`, modale/drawer del dettaglio calciatore negli scambi
 - **Descrizione & Obiettivi**:
@@ -1811,7 +1811,7 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 ---
 
 ## 📌 86. Integrazione Video Partite YouTube (Premiere, Match Center & Videoteca Storica)
-- **Stato**: 🟡 Da Progettare / In Backlog
+- **Stato**: 🟢 Completato & Integrato (`an_schedule.youtube_url`, RPC Admin singola/batch, `MatchYoutubeManagerCard` in `/admin/automazioni` + `MatchResultsManagerModal`, tab *Video Partita* in `SeasonCalendarBoard`, badge *IN ONDA ORA* / *Premiere* in `NextOpponentCard` e `FoglioCommento`)
 - **Priorità**: Media (Coinvolgimento live, anti-spoiler e archivio video partite)
 - **Moduli & Tabelle coinvolte**: `an_schedule` (nuova colonna `youtube_url` / `youtube_video_id`), `src/components/schedule/SeasonCalendarBoard.tsx`, `src/pages/Calendario.tsx`, `src/pages/ArchivioStagioni.tsx`, `src/components/home/NextOpponentCard.tsx`, `src/pages/FoglioCommento.tsx`, pannello Admin in `/admin/automazioni`
 - **Descrizione & Obiettivi**:
@@ -1858,3 +1858,17 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
 - **Possibili Interventi Futuri**:
   1. Recuperare e importare retroattivamente i valori `CROS_SI` / `CROS_TOT` per S10 e `B-11` se disponibili nei referti originali, **oppure**
   2. Gestire in UI il caso di dato non rilevato (`NULL` / assenza cross nella stagione) mostrando `N/D` invece di `0 / 0` (e correggendo anche il sottotitolo `"100% non riusciti"` in `playerDetails.tsx` quando `crosTot === 0`).
+
+---
+
+## 📌 89. Aggiornamento Automatico Record Storici: Squadra Stagionale, Capitani e Palmarès
+- **Stato**: 🟡 Da Progettare / In Backlog
+- **Priorità**: Media (Automazione continua statistiche `/archivio/record` dalla S11 in poi)
+- **Moduli & Tabelle coinvolte**: `rpc_admin_save_match_report`, `as_player_stat`, `an_player_career_seasons`, `an_captain_leaderboards`, `team_lineup_snapshots`, `an_team_tactic`, `team_trophies`, `player_awards`, `view_player_season_summary`, `view_player_career_summary`
+- **Descrizione & Interventi Previsti**:
+  1. **Classifiche "per Squadra" (`TEAM_ID` & `an_player_career_seasons`)**:
+     - Aggiornare `rpc_admin_save_match_report` affinché salvi `"TEAM_ID"` su `as_player_stat` (oggi omesso nell'`INSERT` di `20261101_schedule_is_neutral.sql`) ed esegua l'`UPSERT` automatico su `an_player_career_seasons` (`player_id`, `stagione`, `team_id`, `franchise_id`) per i calciatori scesi in campo, evitando che i record di *Marcatori per Squadra* e *Presenze per Squadra* finiscano sotto `N/D`.
+  2. **Capitani Storici (`presenze_capitano`)**:
+     - Rilevare automaticamente il capitano di giornata dallo snapshot formazione (`team_lineup_snapshots.tactical_settings->'setPieces'->>'capitano'`, con fallback su `an_team_tactic` / selettore Admin nel modale referto) verificando `MINUTI > 0`, aggiornando `an_player_career_seasons.presenze_capitano` e sommando in `view_player_career_summary` i dati S1–S10 (`an_captain_leaderboards`) con quelli delle stagioni successive.
+  3. **Palmarès & Trofei (`team_trophies` & `player_awards`)**:
+     - Automatizzare a fine stagione (es. bottone/RPC Admin di chiusura stagione) il calcolo e l'inserimento di **Scudetti**, **Capocannoniere**, **Assist-man**, **Guanto d'Oro** e **MVP** dalle classifiche e statistiche stagionali ufficiali, affiancato da un form rapido per **Supercoppa** / premi playoff.

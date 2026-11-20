@@ -14,6 +14,8 @@ export interface OpponentMatchInfo {
   opponentTeamAbbr: string;
   stadium: string;
   date?: string;
+  matchTime?: string | null;
+  youtubeUrl?: string | null;
   weather?: string;
   referee?: string;
 }
@@ -113,7 +115,7 @@ export async function findNextOpponentMatch(myTeamId: string): Promise<OpponentM
     const [scheduleDetailsRes, opponentTeamRes] = await Promise.all([
       supabase
         .from("an_schedule")
-        .select("stadium, referee, weather, date")
+        .select("*")
         .eq("stag", nextMatch.stag)
         .eq("week", nextMatch.week)
         .eq("home", nextMatch.home)
@@ -126,7 +128,7 @@ export async function findNextOpponentMatch(myTeamId: string): Promise<OpponentM
         .maybeSingle(),
     ]);
 
-    const scheduleDetails = scheduleDetailsRes.data;
+    const scheduleDetails = scheduleDetailsRes.data as any;
     const opponentTeam = opponentTeamRes.data;
 
     return {
@@ -139,6 +141,8 @@ export async function findNextOpponentMatch(myTeamId: string): Promise<OpponentM
       opponentTeamAbbr: opponentTeam?.NAME_ABBR || opponentTeamId,
       stadium: scheduleDetails?.stadium || "Stadio Comunale",
       date: scheduleDetails?.date || undefined,
+      matchTime: scheduleDetails?.match_time ? String(scheduleDetails.match_time).slice(0, 5) : "21:00",
+      youtubeUrl: scheduleDetails?.youtube_url ?? null,
       weather: scheduleDetails?.weather || undefined,
       referee: scheduleDetails?.referee || undefined,
     };
