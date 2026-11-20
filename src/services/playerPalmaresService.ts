@@ -63,6 +63,103 @@ export interface PlayerPalmares {
   individualAwardsCount: number;
 }
 
+const EXCLUDED_FROM_INDIVIDUAL_LIST = new Set(["all_star", "ring", "weekly_mvp"]);
+
+export interface PlayerPalmaresLeaderboardRow {
+  playerId: number;
+  scudettiCount: number;
+  supercoppeCount: number;
+  teamTrophiesCount: number;
+  individualAwardsCount: number;
+  totalCount: number;
+}
+
+async function fetchAllPaginated(table: string, selectCols: string): Promise<any[]> {
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+  const rows: any[] = [];
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(selectCols)
+      .range(offset, offset + PAGE_SIZE - 1);
+    if (error) throw error;
+    const batch = data || [];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return rows;
+}
+
+/**
+ * Calcola per tutti i calciatori la somma totale di trofei di squadra (Scudetti + Supercoppe)
+ * e premi individuali ufficiali vinti in carriera (esclusi Hall of Fame, All-Star, Ring e TOTW).
+ */
+export async function fetchAllPlayersPalmaresLeaderboard(): Promise<PlayerPalmaresLeaderboardRow[]> {
+  const [playerSeasons, allTeamTrophies, rawAwards] = await Promise.all([
+    fetchAllPaginated("an_player_career_seasons", "player_id, stagione, team_id, franchise_id"),
+    supabase.from("team_trophies").select("season_number, team_id, trophy_type").then((res) => {
+      if (res.error) throw res.error;
+      return res.data || [];
+    }),
+    fetchAllPaginated("player_awards", "player_id, award_type"),
+  ]);
+
+  const byPlayer = new Map<number, PlayerPalmaresLeaderboardRow>();
+  const ensure = (pid: number) => {
+    let cur = byPlayer.get(pid);
+    if (!cur) {
+      cur = {
+        playerId: pid,
+        scudettiCount: 0,
+        supercoppeCount: 0,
+        teamTrophiesCount: 0,
+        individualAwardsCount: 0,
+        totalCount: 0,
+      };
+      byPlayer.set(pid, cur);
+    }
+    return cur;
+  };
+
+  for (const cs of playerSeasons) {
+    const pid = Number(cs.player_id);
+    const sNum = Number(cs.stagione);
+    if (!pid || !sNum) continue;
+
+    for (const tt of allTeamTrophies) {
+      if (
+        Number(tt.season_number) === sNum &&
+        (tt.team_id === cs.team_id || tt.team_id === cs.franchise_id)
+      ) {
+        const cur = ensure(pid);
+        if (tt.trophy_type === "scudetto") cur.scudettiCount += 1;
+        else cur.supercoppeCount += 1;
+        cur.teamTrophiesCount += 1;
+        cur.totalCount += 1;
+      }
+    }
+  }
+
+  for (const aw of rawAwards) {
+    const pid = Number(aw.player_id);
+    if (!pid || EXCLUDED_FROM_INDIVIDUAL_LIST.has(aw.award_type)) continue;
+    const cur = ensure(pid);
+    cur.individualAwardsCount += 1;
+    cur.totalCount += 1;
+  }
+
+  return Array.from(byPlayer.values())
+    .filter((r) => r.totalCount > 0)
+    .sort(
+      (a, b) =>
+        b.totalCount - a.totalCount ||
+        b.scudettiCount - a.scudettiCount ||
+        b.individualAwardsCount - a.individualAwardsCount
+    );
+}
+
 /**
  * Recupera l'intero Palmarès del calciatore:
  * 1. Trofei di Squadra (Scudetti e Supercoppe incrociando an_player_career_seasons e team_trophies)
@@ -134,7 +231,6 @@ export async function fetchPlayerPalmares(playerId: number): Promise<PlayerPalma
 
   // 2. Risolvi Premi Individuali & Conteggio All-Star
   const allStarCount = rawAwards.filter((a: any) => a.award_type === "all_star").length;
-  const EXCLUDED_FROM_INDIVIDUAL_LIST = new Set(["all_star", "ring", "weekly_mvp"]);
 
   const individualAwards: PlayerIndividualAward[] = rawAwards
     .filter((a: any) => !EXCLUDED_FROM_INDIVIDUAL_LIST.has(a.award_type))

@@ -476,7 +476,7 @@ export async function fetchAllPlayersCareerSummary(): Promise<PlayerCareerSummar
   }));
 }
 
-export interface PlayerTeamGoalsSummary {
+export type PlayerTeamCareerSummary = {
   player_id: number;
   team_id: string;
   gol: number;
@@ -487,13 +487,15 @@ export interface PlayerTeamGoalsSummary {
   first_stag: number;
   last_stag: number;
   stagioni_giocate: number;
-}
+};
+
+export type PlayerTeamGoalsSummary = PlayerTeamCareerSummary;
 
 /**
  * Aggrega le statistiche per ogni coppia (player_id, team_id) su tutta la storia LCSIM
- * a partire da view_player_season_summary, restituendo i record con almeno 1 gol.
+ * a partire da view_player_season_summary (tutte le coppie con almeno 1 presenza).
  */
-export async function fetchAllPlayersTeamGoalsSummary(): Promise<PlayerTeamGoalsSummary[]> {
+export async function fetchAllPlayersTeamCareerSummary(): Promise<PlayerTeamCareerSummary[]> {
   const PAGE_SIZE = 1000;
   let offset = 0;
   const allRows: any[] = [];
@@ -506,7 +508,7 @@ export async function fetchAllPlayersTeamGoalsSummary(): Promise<PlayerTeamGoals
       .range(offset, offset + PAGE_SIZE - 1);
 
     if (error) {
-      console.error("Error fetching view_player_season_summary for team goals:", error);
+      console.error("Error fetching view_player_season_summary for team career stats:", error);
       throw error;
     }
 
@@ -516,7 +518,7 @@ export async function fetchAllPlayersTeamGoalsSummary(): Promise<PlayerTeamGoals
     offset += PAGE_SIZE;
   }
 
-  const grouped = new Map<string, PlayerTeamGoalsSummary & { _seasons: Set<number> }>();
+  const grouped = new Map<string, PlayerTeamCareerSummary & { _seasons: Set<number> }>();
 
   for (const row of allRows) {
     const playerId = Number(row.player_id);
@@ -561,10 +563,177 @@ export async function fetchAllPlayersTeamGoalsSummary(): Promise<PlayerTeamGoals
     }
   }
 
-  return Array.from(grouped.values())
+  return Array.from(grouped.values()).map(({ _seasons, ...rest }) => rest);
+}
+
+export interface GoalkeeperUnbeatenStreakSummary {
+  player_id: number;
+  best_streak: number;
+  streak_span: string;
+}
+
+/**
+ * Calcola per ciascun portiere (POR) la striscia record di partite intere consecutive
+ * senza subire gol (GSUB === 0 e MINUTI >= 45) in ordine cronologico (STAG, WEEK).
+ */
+export async function fetchAllGoalkeepersUnbeatenStreakSummary(
+  porPlayerIds: number[]
+): Promise<GoalkeeperUnbeatenStreakSummary[]> {
+  if (!porPlayerIds || porPlayerIds.length === 0) return [];
+
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+  const allRows: any[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("as_player_stat")
+      .select("STAG, WEEK, ID, MINUTI, GSUB")
+      .in("ID", porPlayerIds)
+      .gt("MINUTI", 0)
+      .order("STAG", { ascending: true })
+      .order("WEEK", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Error fetching as_player_stat for GK unbeaten streak:", error);
+      throw error;
+    }
+
+    const batch = data || [];
+    allRows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+
+  const byPlayer = new Map<number, any[]>();
+  for (const row of allRows) {
+    const pid = Number(row.ID);
+    if (!pid) continue;
+    if (!byPlayer.has(pid)) byPlayer.set(pid, []);
+    byPlayer.get(pid)!.push(row);
+  }
+
+  const results: GoalkeeperUnbeatenStreakSummary[] = [];
+
+  for (const [playerId, matches] of byPlayer.entries()) {
+    matches.sort((a, b) => Number(a.STAG) - Number(b.STAG) || Number(a.WEEK) - Number(b.WEEK));
+    let cur = 0;
+    let curStart: any = null;
+    let best = 0;
+    let bestStart: any = null;
+    let bestEnd: any = null;
+
+    for (const m of matches) {
+      const min = Number(m.MINUTI ?? 0);
+      const gsub = Number(m.GSUB ?? 0);
+      if (gsub === 0 && min >= 45) {
+        if (cur === 0) curStart = m;
+        cur += 1;
+        if (cur > best) {
+          best = cur;
+          bestStart = curStart;
+          bestEnd = m;
+        }
+      } else if (gsub > 0) {
+        cur = 0;
+        curStart = null;
+      }
+    }
+
+    if (best > 0 && bestStart && bestEnd) {
+      const startLabel = `S${bestStart.STAG} G${bestStart.WEEK}`;
+      const endLabel = `S${bestEnd.STAG} G${bestEnd.WEEK}`;
+      results.push({
+        player_id: playerId,
+        best_streak: best,
+        streak_span: startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`,
+      });
+    }
+  }
+
+  return results.sort((a, b) => b.best_streak - a.best_streak);
+}
+
+export async function fetchAllPlayersTeamGoalsSummary(): Promise<PlayerTeamGoalsSummary[]> {
+  const rows = await fetchAllPlayersTeamCareerSummary();
+  return rows
     .filter((entry) => entry.gol > 0)
-    .map(({ _seasons, ...rest }) => rest)
     .sort((a, b) => b.gol - a.gol || a.presenze - b.presenze || a.minuti - b.minuti);
+}
+
+export interface PlayerMultiGoalSummary {
+  player_id: number;
+  doppiette: number;
+  triplette: number;
+  poker: number;
+  totale: number;
+  max_gol_match: number;
+}
+
+/**
+ * Aggrega da as_player_stat le partite ufficiali con 2+ gol per ciascun calciatore:
+ * - doppiette: partite con esattamente 2 gol
+ * - triplette: partite con 3 o più gol (include eventuali poker/manite)
+ * - poker: partite con 4+ gol (per dettaglio)
+ * - totale: totale partite multi-gol (2+ gol)
+ */
+export async function fetchAllPlayersMultiGoalSummary(): Promise<PlayerMultiGoalSummary[]> {
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+  const allRows: any[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("as_player_stat")
+      .select("ID, GOL")
+      .gte("GOL", 2)
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Error fetching as_player_stat for multi-goal summary:", error);
+      throw error;
+    }
+
+    const batch = data || [];
+    allRows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+
+  const grouped = new Map<number, PlayerMultiGoalSummary>();
+
+  for (const row of allRows) {
+    const playerId = Number(row.ID);
+    const gol = Number(row.GOL ?? 0);
+    if (!playerId || gol < 2) continue;
+
+    let cur = grouped.get(playerId);
+    if (!cur) {
+      cur = {
+        player_id: playerId,
+        doppiette: 0,
+        triplette: 0,
+        poker: 0,
+        totale: 0,
+        max_gol_match: 0,
+      };
+      grouped.set(playerId, cur);
+    }
+
+    if (gol === 2) cur.doppiette += 1;
+    else cur.triplette += 1;
+    if (gol >= 4) cur.poker += 1;
+    cur.totale += 1;
+    if (gol > cur.max_gol_match) cur.max_gol_match = gol;
+  }
+
+  return Array.from(grouped.values()).sort(
+    (a, b) =>
+      b.totale - a.totale ||
+      b.triplette - a.triplette ||
+      b.max_gol_match - a.max_gol_match
+  );
 }
 
 export async function fetchPlayerArchiveDetail(playerId: number): Promise<{
