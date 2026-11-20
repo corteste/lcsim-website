@@ -18,6 +18,7 @@ export type ScheduleGeneral = {
     unlock_at?: string | null;
     standings_processed?: boolean;
     is_neutral?: boolean;
+    youtube_url?: string | null;
 };
 
 export interface LeagueCalendarEvent {

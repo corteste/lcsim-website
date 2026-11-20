@@ -219,6 +219,7 @@ export interface AdminScheduleMatchSummary {
   unlock_at: string | null;
   standings_processed: boolean;
   is_neutral?: boolean;
+  youtube_url?: string | null;
   has_stats: boolean;
   is_unlocked: boolean;
   home_gol: number | null;
@@ -406,6 +407,7 @@ export async function fetchAdminSeasonSchedule(stag: number): Promise<AdminSched
       unlock_at: row.unlock_at || null,
       standings_processed: Boolean(row.standings_processed),
       is_neutral: Boolean(row.is_neutral),
+      youtube_url: row.youtube_url || "",
       has_stats: hasStats,
       is_unlocked: isUnlocked,
       home_gol: homeGol,
@@ -832,6 +834,44 @@ export async function updateAdminMatchSchedule(
       unlock_at: data?.unlock_at,
       is_unlocked_now: data?.is_unlocked_now,
     };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function saveAdminMatchYoutubeUrl(
+  stag: number,
+  week: number,
+  home: string,
+  away: string,
+  youtubeUrl: string
+): Promise<{ success: boolean; youtube_url?: string | null; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc("rpc_admin_set_match_youtube_url", {
+      p_stag: stag,
+      p_week: week,
+      p_home: home,
+      p_away: away,
+      p_youtube_url: youtubeUrl || "",
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || "Errore salvataggio link YouTube");
+    return { success: true, youtube_url: data?.youtube_url ?? null };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function batchSaveAdminMatchYoutubeUrls(
+  items: Array<{ stag: number; week: number; home: string; away: string; youtube_url: string }>
+): Promise<{ success: boolean; updated_count?: number; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc("rpc_admin_batch_set_match_youtube_urls", {
+      p_items: items,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || "Errore salvataggio batch link YouTube");
+    return { success: true, updated_count: data?.updated_count ?? 0 };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

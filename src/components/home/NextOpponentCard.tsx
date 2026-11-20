@@ -13,7 +13,10 @@ import {
   Layers,
   Activity,
   ShieldAlert,
+  Play,
 } from "lucide-react";
+import { MatchVideoStatusBadge } from "@/components/schedule/MatchVideoBadge";
+import { getYouTubeWatchUrl } from "@/utils/youtube";
 import { useAuth } from "@/context/AuthContext";
 import {
   findNextOpponentMatch,
@@ -108,6 +111,12 @@ export const NextOpponentCard: React.FC = () => {
               <Badge variant="outline" className="text-[10px] font-mono">
                 {matchInfo.isHome ? "Partita in Casa" : "Partita in Trasferta"}
               </Badge>
+              <MatchVideoStatusBadge
+                youtubeUrl={matchInfo.youtubeUrl}
+                date={matchInfo.date}
+                matchTime={matchInfo.matchTime}
+                compact
+              />
             </div>
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -206,18 +215,38 @@ export const NextOpponentCard: React.FC = () => {
               </div>
             )}
 
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate("/prossimo-avversario");
-              }}
-              className="h-9 px-3.5 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md group-hover:scale-[1.02] transition-transform"
-            >
-              <Layers className="h-3.5 w-3.5" />
-              <span>Report Completo Avversaria</span>
-              <ChevronRight className="h-4 w-4 ml-0.5" />
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {getYouTubeWatchUrl(matchInfo.youtubeUrl) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  asChild
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-9 px-3 text-xs font-bold gap-1.5 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-xl"
+                >
+                  <a
+                    href={getYouTubeWatchUrl(matchInfo.youtubeUrl)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    <span>Video YouTube</span>
+                  </a>
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/prossimo-avversario");
+                }}
+                className="h-9 px-3.5 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md group-hover:scale-[1.02] transition-transform"
+              >
+                <Layers className="h-3.5 w-3.5" />
+                <span>Report Completo Avversaria</span>
+                <ChevronRight className="h-4 w-4 ml-0.5" />
+              </Button>
+            </div>
           </div>
         </div>
       </Card>

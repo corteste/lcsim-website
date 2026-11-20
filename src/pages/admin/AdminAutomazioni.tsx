@@ -43,6 +43,7 @@ import { AgingModal } from "@/components/admin/AgingModal";
 import { MatchResultsManagerModal } from "@/components/admin/MatchResultsManagerModal";
 import { PerformanceDecayModal } from "@/components/admin/PerformanceDecayModal";
 import { ScheduleGeneratorModal } from "@/components/admin/ScheduleGeneratorModal";
+import { MatchYoutubeManagerCard } from "@/components/admin/MatchYoutubeManagerCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCutsComplianceReport, executeOfficialCutsRpc } from "@/services/cutsService";
 import { generatePressQuestionsForMatchday, generateRandomMarketRumors } from "@/services/aiJournalistService";
@@ -656,6 +657,9 @@ export default function AdminAutomazioni() {
               </span>
             </div>
           </Card>
+
+          {/* 0C. GESTIONE VIDEO YOUTUBE PARTITE PER GIORNATA (#86) */}
+          <MatchYoutubeManagerCard />
 
           {/* 1. EXPORT MASTER TABLE */}
           <Card className="border-emerald-500/30 bg-gradient-to-br from-card via-card/95 to-emerald-500/5 shadow-lg relative overflow-hidden flex flex-col justify-between">

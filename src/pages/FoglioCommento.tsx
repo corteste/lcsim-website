@@ -11,6 +11,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  MatchVideoStatusBadge,
+  MatchVideoEmbed,
+} from "@/components/schedule/MatchVideoBadge";
+import { extractYouTubeVideoId } from "@/utils/youtube";
+import {
   Tv,
   Calendar,
   MapPin,
@@ -82,6 +93,7 @@ export const FoglioCommento: React.FC = () => {
   // 2. Partite della giornata selezionata
   const [matches, setMatches] = useState<SheetMatch[]>([]);
   const [selectedMatchIndex, setSelectedMatchIndex] = useState<number>(0);
+  const [videoModalOpen, setVideoModalOpen] = useState<boolean>(false);
 
   // 3. Info scadenza / blocco
   const [deadlineInfo, setDeadlineInfo] = useState<DeadlineInfo>({
@@ -599,9 +611,52 @@ export const FoglioCommento: React.FC = () => {
                         {currentMatch.weather}
                       </span>
                     )}
+                    {extractYouTubeVideoId(currentMatch.youtubeUrl) && (
+                      <div className="flex items-center gap-2">
+                        <MatchVideoStatusBadge
+                          youtubeUrl={currentMatch.youtubeUrl}
+                          date={currentMatch.date}
+                          matchTime={currentMatch.matchTime}
+                          isPlayed={currentMatch.isPlayed}
+                          compact
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setVideoModalOpen(true)}
+                          className="h-7 px-2.5 text-[11px] font-bold gap-1 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                        >
+                          <Tv className="h-3 w-3" />
+                          <span>Video Partita</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {currentMatch && (
+              <Dialog open={videoModalOpen} onOpenChange={setVideoModalOpen}>
+                <DialogContent className="max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-base font-black">
+                      <Tv className="h-4 w-4 text-red-500" />
+                      <span>
+                        {currentMatch.homeTeamName} vs {currentMatch.awayTeamName}
+                      </span>
+                    </DialogTitle>
+                  </DialogHeader>
+                  <MatchVideoEmbed
+                    youtubeUrl={currentMatch.youtubeUrl}
+                    title={`${currentMatch.homeTeamName} vs ${currentMatch.awayTeamName}`}
+                    date={currentMatch.date}
+                    matchTime={currentMatch.matchTime}
+                    isPlayed={currentMatch.isPlayed}
+                  />
+                </DialogContent>
+              </Dialog>
             )}
 
             {/* Layout a 2 Colonne Affiancate: Squadra Casa vs Squadra Trasferta */}

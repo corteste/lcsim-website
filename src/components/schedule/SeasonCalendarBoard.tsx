@@ -46,7 +46,13 @@ import {
   Flame,
   CheckCircle2,
   Clock,
+  Tv,
 } from "lucide-react";
+import {
+  MatchVideoStatusBadge,
+  MatchVideoEmbed,
+} from "@/components/schedule/MatchVideoBadge";
+import { extractYouTubeVideoId } from "@/utils/youtube";
 import {
   PLAYER_EXTRA_STAT_CATEGORIES,
   KNOWN_PLAYER_EXTRA_KEYS,
@@ -363,7 +369,7 @@ export function SeasonCalendarBoard({
   } | null>(null);
 
   // Active sub-tab inside the match detail modal
-  const [modalTab, setModalTab] = useState<"lineup" | "stats" | "players">(
+  const [modalTab, setModalTab] = useState<"lineup" | "stats" | "players" | "video">(
     "lineup"
   );
 
@@ -991,6 +997,13 @@ export function SeasonCalendarBoard({
                       </div>
 
                       <div className="flex items-center gap-3">
+                        <MatchVideoStatusBadge
+                          youtubeUrl={match.youtube_url}
+                          date={match.date}
+                          matchTime={match.match_time}
+                          isPlayed={Boolean(isPlayed)}
+                          compact
+                        />
                         {match.weather && (
                           <span className="flex items-center gap-1 font-medium">
                             {getWeatherIcon(match.weather)} {match.weather}
@@ -1334,6 +1347,16 @@ export function SeasonCalendarBoard({
                   >
                     <Users className="h-3.5 w-3.5" />
                     <span>Pagelle &amp; Giocatori</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="video"
+                    className="flex-1 data-[state=active]:bg-red-600 data-[state=active]:text-white font-bold text-xs gap-1.5"
+                  >
+                    <Tv className="h-3.5 w-3.5" />
+                    <span>Video Partita</span>
+                    {extractYouTubeVideoId(selected.match.youtube_url) && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500 data-[state=active]:bg-white" />
+                    )}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -2300,6 +2323,17 @@ export function SeasonCalendarBoard({
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* TAB 4: VIDEO PARTITA (YOUTUBE EMBED) */}
+              {modalTab === "video" && (
+                <MatchVideoEmbed
+                  youtubeUrl={selected.match.youtube_url}
+                  title={`${selected.match.home_team} vs ${selected.match.away_team}`}
+                  date={selected.match.date}
+                  matchTime={selected.match.match_time}
+                  isPlayed={selected.match.home_minuti > 0}
+                />
               )}
             </div>
           </div>
