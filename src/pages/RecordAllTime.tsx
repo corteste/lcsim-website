@@ -19,7 +19,9 @@ import {
   Target,
   Flame,
   Clock,
+  CalendarDays,
   Shield,
+  ShieldCheck,
   Award,
   Users,
   ChevronRight,
@@ -43,9 +45,11 @@ type LeaderboardCategory =
   | "assist"
   | "ga"
   | "presenze"
+  | "minutaggio"
   | "capitano"
   | "media_voto"
-  | "portieri";
+  | "clean_sheet"
+  | "parate";
 
 interface EnrichedTeamGoalsRow extends PlayerTeamGoalsSummary {
   nome: string;
@@ -64,7 +68,7 @@ const LEADERBOARD_CATEGORIES: Array<{
 }> = [
   {
     id: "gol",
-    label: "Marcatori All-Time",
+    label: "Marcatori",
     subtitle: "Classifica perpetua dei bomber nella storia LCSIM (S1–S11)",
     unit: "Gol",
     icon: Trophy,
@@ -80,7 +84,7 @@ const LEADERBOARD_CATEGORIES: Array<{
   },
   {
     id: "assist",
-    label: "Assist-man All-Time",
+    label: "Assist-man",
     subtitle: "I migliori rifinitori di sempre per passaggi vincenti",
     unit: "Assist",
     icon: Target,
@@ -88,7 +92,7 @@ const LEADERBOARD_CATEGORIES: Array<{
   },
   {
     id: "ga",
-    label: "Partecipazione Gol (G+A)",
+    label: "Partecipazione Goal",
     subtitle: "Somma di reti segnate e assist forniti in carriera",
     unit: "G+A",
     icon: Flame,
@@ -96,11 +100,19 @@ const LEADERBOARD_CATEGORIES: Array<{
   },
   {
     id: "presenze",
-    label: "Presenze & Minutaggio",
+    label: "Presenze",
     subtitle: "I fedelissimi con il maggior numero di gare disputate",
     unit: "Pres",
-    icon: Clock,
+    icon: CalendarDays,
     colorClass: "text-purple-500",
+  },
+  {
+    id: "minutaggio",
+    label: "Minutaggio",
+    subtitle: "Gli stacanovisti con il maggior numero di minuti giocati in campo",
+    unit: "Min",
+    icon: Clock,
+    colorClass: "text-indigo-500",
   },
   {
     id: "capitano",
@@ -119,12 +131,20 @@ const LEADERBOARD_CATEGORIES: Array<{
     colorClass: "text-yellow-500",
   },
   {
-    id: "portieri",
-    label: "Clean Sheet & Parate",
-    subtitle: "I portieri più impenetrabili per porte inviolate e interventi",
+    id: "clean_sheet",
+    label: "Clean Sheet",
+    subtitle: "I portieri più impenetrabili per porte inviolate in carriera",
     unit: "CS",
-    icon: Shield,
+    icon: ShieldCheck,
     colorClass: "text-cyan-500",
+  },
+  {
+    id: "parate",
+    label: "Parate",
+    subtitle: "I numeri 1 con il maggior numero di interventi decisivi in carriera",
+    unit: "Par",
+    icon: Shield,
+    colorClass: "text-sky-500",
   },
 ];
 
@@ -217,6 +237,11 @@ const RecordAllTime = () => {
           .filter((p) => p.presenze > 0)
           .sort((a, b) => b.presenze - a.presenze || b.minuti - a.minuti)
           .slice(0, 20);
+      case "minutaggio":
+        return list
+          .filter((p) => p.minuti > 0)
+          .sort((a, b) => b.minuti - a.minuti || b.presenze - a.presenze)
+          .slice(0, 20);
       case "capitano":
         return list
           .filter((p) => p.presenze_capitano > 0)
@@ -227,10 +252,15 @@ const RecordAllTime = () => {
           .filter((p) => p.presenze >= 20 && p.media_voto !== null)
           .sort((a, b) => (b.media_voto ?? 0) - (a.media_voto ?? 0) || b.presenze - a.presenze)
           .slice(0, 20);
-      case "portieri":
+      case "clean_sheet":
         return list
-          .filter((p) => p.posiz === "POR" && p.presenze > 0)
-          .sort((a, b) => b.clean_sheets - a.clean_sheets || b.parate - a.parate)
+          .filter((p) => p.posiz === "POR" && p.clean_sheets > 0)
+          .sort((a, b) => b.clean_sheets - a.clean_sheets || a.gol_subiti - b.gol_subiti || a.presenze - b.presenze)
+          .slice(0, 20);
+      case "parate":
+        return list
+          .filter((p) => p.posiz === "POR" && p.parate > 0)
+          .sort((a, b) => b.parate - a.parate || a.presenze - b.presenze)
           .slice(0, 20);
       default:
         return [];
@@ -247,12 +277,18 @@ const RecordAllTime = () => {
         return p.gol + p.assist;
       case "presenze":
         return p.presenze;
+      case "minutaggio":
+        return p.minuti.toLocaleString("it-IT");
       case "capitano":
         return p.presenze_capitano;
       case "media_voto":
         return p.media_voto ? p.media_voto.toFixed(2) : "—";
-      case "portieri":
+      case "clean_sheet":
         return p.clean_sheets;
+      case "parate":
+        return p.parate;
+      default:
+        return "—";
     }
   };
 
@@ -265,13 +301,25 @@ const RecordAllTime = () => {
       case "ga":
         return `${p.gol} Gol + ${p.assist} Assist in ${p.presenze} pres`;
       case "presenze":
-        return `${p.minuti.toLocaleString()}' min • ${p.titolare} da titolare (${p.stagioni_giocate} stag.)`;
+        return `${p.titolare} da titolare • ${p.minuti.toLocaleString("it-IT")}' min (${p.stagioni_giocate} stag.)`;
+      case "minutaggio":
+        return `${p.presenze} pres • ${Math.round(p.minuti / Math.max(1, p.presenze))}'/partita (${p.stagioni_giocate} stag.)`;
       case "capitano":
         return `Fascia in campo • ${p.presenze} presenze totali`;
       case "media_voto":
         return `${p.presenze} presenze • ${p.motm}x MOTM`;
-      case "portieri":
-        return `${p.parate} parate • ${p.gol_subiti} gol subiti in ${p.presenze} pres`;
+      case "clean_sheet": {
+        const csPct = p.presenze > 0 ? Math.round((p.clean_sheets / p.presenze) * 100) : 0;
+        return `${csPct}% porte inviolate • ${p.gol_subiti} gol subiti in ${p.presenze} pres`;
+      }
+      case "parate": {
+        const shotsAgainst = p.parate + p.gol_subiti;
+        const savePct = shotsAgainst > 0 ? Math.round((p.parate / shotsAgainst) * 100) : 0;
+        const perMatch = (p.parate / Math.max(1, p.presenze)).toFixed(2);
+        return `${perMatch} parate/gara • ${savePct}% parate in ${p.presenze} pres`;
+      }
+      default:
+        return "";
     }
   };
 
@@ -297,29 +345,75 @@ const RecordAllTime = () => {
           </div>
         </div>
 
-        {/* Category Selector Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          {LEADERBOARD_CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
-            const isActive = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap border transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-primary text-primary-foreground border-primary shadow-md"
-                    : "bg-card hover:bg-muted/60 text-foreground border-border/70"
-                }`}
-              >
-                <Icon className={`h-4 w-4 ${isActive ? "text-primary-foreground" : cat.colorClass}`} />
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
+        {/* Category Selector: Dropdown on mobile/tablet */}
+        <div className="lg:hidden">
+          <Select
+            value={activeCategory}
+            onValueChange={(val) => setActiveCategory(val as LeaderboardCategory)}
+          >
+            <SelectTrigger className="w-full h-11 text-sm font-bold bg-card border-border/80 rounded-xl shadow-xs">
+              <SelectValue placeholder="Seleziona classifica" />
+            </SelectTrigger>
+            <SelectContent>
+              {LEADERBOARD_CATEGORIES.map((cat) => {
+                const Icon = cat.icon;
+                return (
+                  <SelectItem key={cat.id} value={cat.id} className="text-xs sm:text-sm font-semibold">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-4 w-4 ${cat.colorClass}`} />
+                      <span>{cat.label}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
         </div>
 
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* Desktop Left Sidebar */}
+          <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-24">
+            <Card className="border-border/80 shadow-md overflow-hidden">
+              <CardHeader className="py-3.5 px-4 bg-muted/30 border-b border-border/60">
+                <CardTitle className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+                  Classifiche
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 space-y-1">
+                {LEADERBOARD_CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const isActive = activeCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setActiveCategory(cat.id)}
+                      className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-lg text-left text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-foreground hover:bg-muted/70"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <Icon
+                          className={`h-4 w-4 shrink-0 ${
+                            isActive ? "text-primary-foreground" : cat.colorClass
+                          }`}
+                        />
+                        <span className="truncate">{cat.label}</span>
+                      </span>
+                      {isActive && (
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary-foreground" />
+                      )}
+                    </button>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </aside>
+
+          {/* Main Content Column */}
+          <div className="flex-1 min-w-0 w-full space-y-6">
         {isLoadingActive ? (
           <Card className="p-16 text-center text-muted-foreground">
             Caricamento classifiche All-Time...
@@ -370,11 +464,11 @@ const RecordAllTime = () => {
                       onClick={() => navigate(`/archivio/giocatori?player=${r.player_id}`)}
                       className={`cursor-pointer hover:shadow-lg transition-all ${rankColors[idx]}`}
                     >
-                      <CardContent className="p-5 flex items-center gap-4">
+                      <CardContent className="p-4 xl:p-5 flex items-center gap-3.5 xl:gap-4">
                         <img
                           src={getPlayerImage(r.player_id)}
                           alt={`${r.nome} ${r.cognome}`}
-                          className="h-20 w-20 rounded-2xl object-cover border-2 border-border shrink-0 shadow-md"
+                          className="h-16 w-16 xl:h-20 xl:w-20 rounded-2xl object-cover border-2 border-border shrink-0 shadow-md"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = "/placeholder.svg";
                           }}
@@ -399,7 +493,7 @@ const RecordAllTime = () => {
                               <HistoricalTeamBadge teamCode={r.team_id} showFranchiseHint={false} />
                             </div>
                             <span className="text-xs font-semibold text-muted-foreground truncate">
-                              {meta.fullName} ({meta.code})
+                              {meta.fullName}
                             </span>
                           </div>
                           <div className="mt-2 flex items-baseline gap-2">
@@ -552,11 +646,11 @@ const RecordAllTime = () => {
                       onClick={() => navigate(`/archivio/giocatori?player=${p.player_id}`)}
                       className={`cursor-pointer hover:shadow-lg transition-all ${rankColors[idx]}`}
                     >
-                      <CardContent className="p-5 flex items-center gap-4">
+                      <CardContent className="p-4 xl:p-5 flex items-center gap-3.5 xl:gap-4">
                         <img
                           src={getPlayerImage(p.player_id)}
                           alt={`${p.nome} ${p.cognome}`}
-                          className="h-20 w-20 rounded-2xl object-cover border-2 border-border shrink-0 shadow-md"
+                          className="h-16 w-16 xl:h-20 xl:w-20 rounded-2xl object-cover border-2 border-border shrink-0 shadow-md"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = "/placeholder.svg";
                           }}
@@ -573,9 +667,22 @@ const RecordAllTime = () => {
                           <h3 className="text-lg font-black text-foreground truncate mt-1">
                             {p.nome} {p.cognome}
                           </h3>
-                          <p className="text-[11px] text-muted-foreground truncate">
-                            {distinctTeams.join(" ➔ ")}
-                          </p>
+                          <div
+                            className="flex items-center gap-1 flex-wrap mt-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {distinctTeams.length > 0 ? (
+                              distinctTeams.map((t) => (
+                                <HistoricalTeamBadge
+                                  key={t}
+                                  teamCode={t}
+                                  showFranchiseHint={false}
+                                />
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </div>
                           <div className="mt-2 flex items-baseline gap-2">
                             <span className="text-2xl font-black text-primary">
                               {getMetricValue(p)}
@@ -703,6 +810,8 @@ const RecordAllTime = () => {
             </Card>
           </>
         )}
+          </div>
+        </div>
       </main>
     </div>
   );
