@@ -476,6 +476,97 @@ export async function fetchAllPlayersCareerSummary(): Promise<PlayerCareerSummar
   }));
 }
 
+export interface PlayerTeamGoalsSummary {
+  player_id: number;
+  team_id: string;
+  gol: number;
+  assist: number;
+  presenze: number;
+  titolare: number;
+  minuti: number;
+  first_stag: number;
+  last_stag: number;
+  stagioni_giocate: number;
+}
+
+/**
+ * Aggrega le statistiche per ogni coppia (player_id, team_id) su tutta la storia LCSIM
+ * a partire da view_player_season_summary, restituendo i record con almeno 1 gol.
+ */
+export async function fetchAllPlayersTeamGoalsSummary(): Promise<PlayerTeamGoalsSummary[]> {
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+  const allRows: any[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("view_player_season_summary")
+      .select("player_id, stagione, team_id, presenze, titolare, minuti, gol, assist")
+      .gt("presenze", 0)
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Error fetching view_player_season_summary for team goals:", error);
+      throw error;
+    }
+
+    const batch = data || [];
+    allRows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+
+  const grouped = new Map<string, PlayerTeamGoalsSummary & { _seasons: Set<number> }>();
+
+  for (const row of allRows) {
+    const playerId = Number(row.player_id);
+    const teamId = typeof row.team_id === "string" ? row.team_id.trim() : "";
+    const stag = Number(row.stagione ?? 0);
+    if (!playerId || !teamId || teamId === "N/D" || teamId === "/") continue;
+
+    const key = `${playerId}::${teamId}`;
+    const existing = grouped.get(key);
+    const gol = Number(row.gol ?? 0);
+    const assist = Number(row.assist ?? 0);
+    const presenze = Number(row.presenze ?? 0);
+    const titolare = Number(row.titolare ?? 0);
+    const minuti = Number(row.minuti ?? 0);
+
+    if (!existing) {
+      grouped.set(key, {
+        player_id: playerId,
+        team_id: teamId,
+        gol,
+        assist,
+        presenze,
+        titolare,
+        minuti,
+        first_stag: stag,
+        last_stag: stag,
+        stagioni_giocate: stag > 0 ? 1 : 0,
+        _seasons: stag > 0 ? new Set([stag]) : new Set(),
+      });
+    } else {
+      existing.gol += gol;
+      existing.assist += assist;
+      existing.presenze += presenze;
+      existing.titolare += titolare;
+      existing.minuti += minuti;
+      if (stag > 0) {
+        existing._seasons.add(stag);
+        existing.stagioni_giocate = existing._seasons.size;
+        if (existing.first_stag === 0 || stag < existing.first_stag) existing.first_stag = stag;
+        if (stag > existing.last_stag) existing.last_stag = stag;
+      }
+    }
+  }
+
+  return Array.from(grouped.values())
+    .filter((entry) => entry.gol > 0)
+    .map(({ _seasons, ...rest }) => rest)
+    .sort((a, b) => b.gol - a.gol || a.presenze - b.presenze || a.minuti - b.minuti);
+}
+
 export async function fetchPlayerArchiveDetail(playerId: number): Promise<{
   seasons: PlayerSeasonSummary[];
   transactions: PlayerTransaction[];

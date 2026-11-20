@@ -1843,3 +1843,18 @@ Evoluzione del Banner Globale in Cima al Sito (sotto la Navbar):
      - Impacchettamento della build React/Vite in app nativa Android (`.apk`/`.aab`) e iOS (`.ipa`), mantenendo il codice web condiviso.
      - Permette distribuzione su Google Play Store (`$25` una tantum) / distribuzione diretta `.apk` Android e notifiche push native FCM/APNs.
      - Vincoli per iOS: richiede Mac con Xcode, account Apple Developer (`$99/anno`) e approvazione App Store.
+
+---
+
+## 📌 88. Statistiche Cross Mancanti per Stagione 10 e Rookie / Serie B (`B-11`)
+- **Stato**: 🔴 Aperto / Da Valutare (Dati mancanti nei tabellini sorgente)
+- **Priorità**: Bassa-Media (Completezza statistica e chiarezza UI)
+- **Moduli & Tabelle coinvolte**: `as_player_stat`, `as_team_stat`, `as_serie_b_player_stat`, `src/components/player/playerDetails.tsx`, `src/components/player/SerieBStatsPanel.tsx`, `src/pages/ArchivioGiocatori.tsx`, `src/pages/ArchivioStatisticheSquadre.tsx`
+- **Evidenze Rilevate (Verifica DB)**:
+  - **Codice di lettura corretto**: viste (`view_player_stats`, `view_player_season_summary`, `view_player_career_summary`), Edge Function (`rest-read-an-player-stats`) e componenti frontend leggono correttamente `CROS_SI` e `CROS_TOT`.
+  - **Stagioni 1–9**: dati cross regolarmente popolati su `as_player_stat` e `as_team_stat` (es. S9: 394 righe giocatore su 1.678 con `CROS_TOT > 0`, 114 giocatori su 179; 119/120 righe squadra).
+  - **Stagione 10**: tutte le **1.573 righe** di `as_player_stat` (Giornate 1–13) e tutte le **120 righe** di `as_team_stat` hanno `CROS_SI = NULL` e `CROS_TOT = NULL` (dato non presente nel CSV/export utilizzato per S10). Poiché la scheda calciatore (`PlayerDetails`) si apre di default sull'ultima stagione disputata (`Stagione 10`), i cross risultano `0 / 0` per tutti finché non si passa a *"Tutta la Carriera"*.
+  - **Rookie / Serie B (`B-11`)**: tutte le **780 righe** di `as_serie_b_player_stat` hanno `CROS_SI = 0` e `CROS_TOT = 0` (mentre passaggi, dribbling e contrasti sono valorizzati).
+- **Possibili Interventi Futuri**:
+  1. Recuperare e importare retroattivamente i valori `CROS_SI` / `CROS_TOT` per S10 e `B-11` se disponibili nei referti originali, **oppure**
+  2. Gestire in UI il caso di dato non rilevato (`NULL` / assenza cross nella stagione) mostrando `N/D` invece di `0 / 0` (e correggendo anche il sottotitolo `"100% non riusciti"` in `playerDetails.tsx` quando `crosTot === 0`).
