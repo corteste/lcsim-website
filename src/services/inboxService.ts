@@ -3,6 +3,7 @@ import {
   fetchPressConferences,
   fetchPendingConferenceForTeam,
   fetchMarketRumors,
+  checkIsMarketOpen,
   PressConference,
   MarketRumor,
 } from "@/services/aiJournalistService";
@@ -51,6 +52,18 @@ export interface MatchdayPreviewData {
   matches: MatchdayScheduleMatch[];
 }
 
+export interface WeeklyTradeRecapData {
+  season: number;
+  weekStartDate: string; // YYYY-MM-DD
+  weekEndDate: string;   // YYYY-MM-DD
+  periodLabel: string;   // es. "17 nov – 23 nov"
+  totalTrades: number;
+  totalPlayersMoved: number;
+  totalPicksMoved: number;
+  involvedTeamCount: number;
+  trades: EnrichedTrade[];
+}
+
 export interface InboxItem {
   id: string;
   category: "league" | "trades" | "press" | "rumors" | "preview";
@@ -68,9 +81,168 @@ export interface InboxItem {
   pressData?: PressConference;
   rumorData?: MarketRumor;
   tradeData?: EnrichedTrade;
+  weeklyTradeRecapData?: WeeklyTradeRecapData;
   previewData?: MatchdayPreviewData;
   announcementData?: LeagueAnnouncement;
   bodyText?: string;
+}
+
+// Data di partenza della cadenza settimanale del recap trattative (ogni 7 giorni a partire da oggi)
+export const WEEKLY_TRADE_RECAP_START_DATE = "2026-11-23";
+
+function toLocalIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function addCalendarDays(base: Date, days: number): Date {
+  const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatShortItalianDate(date: Date): string {
+  return date.toLocaleDateString("it-IT", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+/**
+ * Genera i messaggi di recap settimanale delle trattative concluse (ogni 7 giorni
+ * a partire da WEEKLY_TRADE_RECAP_START_DATE), esclusivamente quando il mercato è aperto
+ * e solo per le settimane in cui è stato ufficializzato almeno uno scambio.
+ */
+export function buildWeeklyTradeRecapItems(params: {
+  completedTrades: EnrichedTrade[];
+  isMarketOpen: boolean;
+  season: number;
+  now?: Date;
+  anchorDateStr?: string;
+}): InboxItem[] {
+  const {
+    completedTrades,
+    isMarketOpen,
+    season,
+    now = new Date(),
+    anchorDateStr = WEEKLY_TRADE_RECAP_START_DATE,
+  } = params;
+
+  if (!isMarketOpen || !completedTrades || completedTrades.length === 0) {
+    return [];
+  }
+
+  const [anchorY, anchorM, anchorD] = anchorDateStr.split("-").map(Number);
+  if (!anchorY || !anchorM || !anchorD) return [];
+
+  const anchorDate = new Date(anchorY, anchorM - 1, anchorD, 0, 0, 0, 0);
+  const nowMs = now.getTime();
+  if (nowMs < anchorDate.getTime()) {
+    return [];
+  }
+
+  const recapItems: InboxItem[] = [];
+
+  for (let edition = 0; edition < 60; edition++) {
+    const recapDay = addCalendarDays(anchorDate, edition * 7);
+    if (recapDay.getTime() > nowMs) break;
+
+    const windowStart = addCalendarDays(recapDay, -6); // inclusivo (00:00:00)
+    const windowEndExclusive = addCalendarDays(recapDay, 1); // esclusivo (00:00:00 giorno successivo)
+    const windowStartMs = windowStart.getTime();
+    const windowEndMs = windowEndExclusive.getTime();
+
+    const weekTrades = completedTrades
+      .filter((t) => {
+        if (!t || t.status !== "completed") return false;
+        const rawTs = t.completed_at || t.updated_at || t.created_at;
+        if (!rawTs) return false;
+        const ms = new Date(rawTs).getTime();
+        if (Number.isNaN(ms)) return false;
+        return ms >= windowStartMs && ms < windowEndMs;
+      })
+      .sort((a, b) => {
+        const aMs = new Date(a.completed_at || a.updated_at || a.created_at).getTime();
+        const bMs = new Date(b.completed_at || b.updated_at || b.created_at).getTime();
+        return bMs - aMs;
+      });
+
+    if (weekTrades.length === 0) continue;
+
+    let totalPlayersMoved = 0;
+    let totalPicksMoved = 0;
+    const involvedTeams = new Set<string>();
+
+    weekTrades.forEach((t) => {
+      totalPlayersMoved +=
+        (t.offered_players?.length ?? t.offered_player_ids?.length ?? 0) +
+        (t.requested_players?.length ?? t.requested_player_ids?.length ?? 0);
+      totalPicksMoved +=
+        (t.offered_picks?.length ?? t.offered_pick_numbers?.length ?? 0) +
+        (t.requested_picks?.length ?? t.requested_pick_numbers?.length ?? 0);
+      if (t.sender_team) involvedTeams.add(t.sender_team);
+      if (t.receiver_team) involvedTeams.add(t.receiver_team);
+    });
+
+    const weekStartIso = toLocalIsoDate(windowStart);
+    const weekEndIso = toLocalIsoDate(recapDay);
+    const periodLabel = `${formatShortItalianDate(windowStart)} – ${formatShortItalianDate(recapDay)}`;
+
+    const tradeLabel =
+      weekTrades.length === 1 ? "1 scambio ufficiale" : `${weekTrades.length} scambi ufficiali`;
+    const assetParts: string[] = [];
+    if (totalPlayersMoved > 0) {
+      assetParts.push(
+        totalPlayersMoved === 1 ? "1 calciatore" : `${totalPlayersMoved} calciatori`
+      );
+    }
+    if (totalPicksMoved > 0) {
+      assetParts.push(
+        totalPicksMoved === 1 ? "1 scelta Draft" : `${totalPicksMoved} scelte Draft`
+      );
+    }
+    const assetSummary = assetParts.length > 0 ? ` • ${assetParts.join(" e ")}` : "";
+    const snippet = `${tradeLabel}${assetSummary} tra ${involvedTeams.size} club.`;
+
+    const latestTradeMs = new Date(
+      weekTrades[0].completed_at || weekTrades[0].updated_at || weekTrades[0].created_at
+    ).getTime();
+    const recapMorningMs = recapDay.getTime() + 9 * 60 * 60 * 1000;
+    const candidateMs = Math.max(
+      recapMorningMs,
+      Number.isNaN(latestTradeMs) ? recapMorningMs : latestTradeMs + 1000
+    );
+    const timestampMs = Math.min(nowMs, windowEndMs - 1000, candidateMs);
+
+    recapItems.push({
+      id: `market_weekly_recap_s${season}_${weekEndIso}`,
+      category: "trades",
+      title: `📊 Recap Settimanale Mercato (${periodLabel})`,
+      snippet,
+      senderName: "Osservatorio Mercato LCSIM",
+      senderRole: "Bollettino Settimanale Trattative",
+      timestamp: new Date(timestampMs).toISOString(),
+      priority: "normal",
+      badgeText: "Recap Settimanale",
+      badgeColor:
+        "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
+      weeklyTradeRecapData: {
+        season,
+        weekStartDate: weekStartIso,
+        weekEndDate: weekEndIso,
+        periodLabel,
+        totalTrades: weekTrades.length,
+        totalPlayersMoved,
+        totalPicksMoved,
+        involvedTeamCount: involvedTeams.size,
+        trades: weekTrades,
+      },
+    });
+  }
+
+  return recapItems;
 }
 
 /**
@@ -98,6 +270,7 @@ export async function fetchInboxFeed(params: {
       standingsList,
       teamsRes,
       announcementsList,
+      isMarketOpen,
     ] = await Promise.all([
       fetchPressConferences(undefined, season, true),
       teamId ? fetchPendingConferenceForTeam(teamId, season) : Promise.resolve(null),
@@ -126,6 +299,7 @@ export async function fetchInboxFeed(params: {
         .from("an_team")
         .select("TEAM_ID, NAME, NAME_ABBR"),
       fetchAnnouncements().catch(() => [] as LeagueAnnouncement[]),
+      checkIsMarketOpen().catch(() => false),
     ]);
 
     // Unifica le trattative completate visibili a tutta la Lega con le trattative del club
@@ -541,6 +715,14 @@ export async function fetchInboxFeed(params: {
         tradeData: trade,
       });
     });
+
+    // 6b. Recap settimanale delle trattative concluse (ogni 7 giorni dal 23/11/2026, solo a mercato aperto)
+    const weeklyRecaps = buildWeeklyTradeRecapItems({
+      completedTrades: completedTradesList,
+      isMarketOpen,
+      season,
+    });
+    weeklyRecaps.forEach((recap) => items.push(recap));
 
     // 7. Ordinamento cronologico ponderato per priorità:
     // Urgenti sempre in cima, poi in ordine di data decrescente

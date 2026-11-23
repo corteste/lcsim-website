@@ -821,6 +821,10 @@ export default function SalaStampa() {
                           <div className="h-7 w-7 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                             <Swords className="h-4 w-4" />
                           </div>
+                        ) : item.weeklyTradeRecapData ? (
+                          <div className="h-7 w-7 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                            <ArrowLeftRight className="h-4 w-4" />
+                          </div>
                         ) : (
                           <div className="h-7 w-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                             <Mic2 className="h-4 w-4" />
@@ -1532,6 +1536,244 @@ export default function SalaStampa() {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {/* ========================================================= */}
+                  {/* TIPO 3-BIS: RECAP SETTIMANALE TRATTATIVE CONCLUSE         */}
+                  {/* ========================================================= */}
+                  {selectedItem.weeklyTradeRecapData && (
+                    <article className="space-y-5">
+                      {/* Intestazione Bollettino Mercato */}
+                      <div className="space-y-2 pb-4 border-b border-border/60">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className="bg-indigo-600 text-white font-black text-xs px-2.5 py-0.5">
+                            RECAP SETTIMANALE MERCATO
+                          </Badge>
+                          <span className="text-xs font-mono text-muted-foreground">
+                            {selectedItem.weeklyTradeRecapData.periodLabel} • Stagione{" "}
+                            {selectedItem.weeklyTradeRecapData.season}
+                          </span>
+                        </div>
+                        <p className="text-sm text-foreground/90 leading-relaxed">
+                          Riepilogo ufficiale di tutti gli scambi approvati e conclusi in Serie A LCSIM
+                          nell&apos;ultima settimana di mercato ({selectedItem.weeklyTradeRecapData.periodLabel}).
+                        </p>
+                      </div>
+
+                      {/* KPI Riepilogativi */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/25">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                            Scambi Conclusi
+                          </p>
+                          <p className="text-xl font-black font-mono text-foreground mt-0.5">
+                            {selectedItem.weeklyTradeRecapData.totalTrades}
+                          </p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                            Calciatori
+                          </p>
+                          <p className="text-xl font-black font-mono text-foreground mt-0.5">
+                            {selectedItem.weeklyTradeRecapData.totalPlayersMoved}
+                          </p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                            Scelte Draft
+                          </p>
+                          <p className="text-xl font-black font-mono text-foreground mt-0.5">
+                            {selectedItem.weeklyTradeRecapData.totalPicksMoved}
+                          </p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-muted/40 border border-border/70">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Club Coinvolti
+                          </p>
+                          <p className="text-xl font-black font-mono text-foreground mt-0.5">
+                            {selectedItem.weeklyTradeRecapData.involvedTeamCount}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Elenco Scambi Conclusi nella Settimana */}
+                      <div className="space-y-3">
+                        <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                          <ArrowLeftRight className="h-3.5 w-3.5 text-indigo-500" />
+                          Operazioni Ufficializzate ({selectedItem.weeklyTradeRecapData.trades.length})
+                        </h3>
+
+                        <div className="space-y-3">
+                          {selectedItem.weeklyTradeRecapData.trades.map((tr) => {
+                            const offeredPlayers = tr.offered_players || [];
+                            const offeredPicks = tr.offered_picks || [];
+                            const requestedPlayers = tr.requested_players || [];
+                            const requestedPicks = tr.requested_picks || [];
+                            const tradeItemId = `trade_${tr.id}`;
+                            const hasTradeInFeed = items.some((it) => it.id === tradeItemId);
+                            const completedDateStr = new Date(
+                              tr.completed_at || tr.updated_at || tr.created_at
+                            ).toLocaleDateString("it-IT", {
+                              weekday: "short",
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+
+                            return (
+                              <div
+                                key={tr.id}
+                                className="p-3.5 sm:p-4 rounded-xl bg-muted/20 border border-border/70 space-y-3"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <img
+                                        src={getTeamLogo(tr.sender_team)}
+                                        alt={tr.sender_team}
+                                        className="h-5 w-5 object-contain shrink-0"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = "none";
+                                        }}
+                                      />
+                                      <span className="text-xs sm:text-sm font-black text-foreground truncate">
+                                        {tr.sender_team_name || tr.sender_team}
+                                      </span>
+                                    </div>
+                                    <ArrowLeftRight className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <img
+                                        src={getTeamLogo(tr.receiver_team)}
+                                        alt={tr.receiver_team}
+                                        className="h-5 w-5 object-contain shrink-0"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = "none";
+                                        }}
+                                      />
+                                      <span className="text-xs sm:text-sm font-black text-foreground truncate">
+                                        {tr.receiver_team_name || tr.receiver_team}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-mono text-muted-foreground">
+                                      {completedDateStr}
+                                    </span>
+                                    {hasTradeInFeed && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleSelectItem(tradeItemId)}
+                                        className="h-6 px-2 text-[10px] font-bold gap-1 rounded-md"
+                                      >
+                                        <span>Dettagli</span>
+                                        <ArrowRight className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  {/* Flusso Sender -> Receiver */}
+                                  <div className="p-2.5 rounded-lg bg-card/80 border border-border/50 space-y-1.5">
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                                      {tr.sender_team} ➔ {tr.receiver_team}
+                                    </p>
+                                    <div className="space-y-1">
+                                      {offeredPlayers.map((p) => (
+                                        <div
+                                          key={p.ID}
+                                          className="flex items-center justify-between gap-2 text-xs font-mono"
+                                        >
+                                          <span className="font-bold text-foreground truncate">
+                                            {p.Cognome} {p.Nome}
+                                          </span>
+                                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0">
+                                            {p.Posiz} • {p.OVR}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                      {offeredPicks.map((pk) => (
+                                        <div
+                                          key={pk.pick_overall}
+                                          className="flex items-center justify-between gap-2 text-xs font-mono text-amber-600 dark:text-amber-400"
+                                        >
+                                          <span className="font-bold truncate">
+                                            Scelta #{pk.pick_overall}
+                                          </span>
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] px-1.5 py-0 shrink-0 border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                                          >
+                                            Giro {pk.round} (#{pk.pick_in_round})
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                      {offeredPlayers.length === 0 && offeredPicks.length === 0 && (
+                                        <span className="text-[11px] italic text-muted-foreground">
+                                          Nessun asset
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Flusso Receiver -> Sender */}
+                                  <div className="p-2.5 rounded-lg bg-card/80 border border-border/50 space-y-1.5">
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                                      {tr.receiver_team} ➔ {tr.sender_team}
+                                    </p>
+                                    <div className="space-y-1">
+                                      {requestedPlayers.map((p) => (
+                                        <div
+                                          key={p.ID}
+                                          className="flex items-center justify-between gap-2 text-xs font-mono"
+                                        >
+                                          <span className="font-bold text-foreground truncate">
+                                            {p.Cognome} {p.Nome}
+                                          </span>
+                                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0">
+                                            {p.Posiz} • {p.OVR}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                      {requestedPicks.map((pk) => (
+                                        <div
+                                          key={pk.pick_overall}
+                                          className="flex items-center justify-between gap-2 text-xs font-mono text-amber-600 dark:text-amber-400"
+                                        >
+                                          <span className="font-bold truncate">
+                                            Scelta #{pk.pick_overall}
+                                          </span>
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] px-1.5 py-0 shrink-0 border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                                          >
+                                            Giro {pk.round} (#{pk.pick_in_round})
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                      {requestedPlayers.length === 0 && requestedPicks.length === 0 && (
+                                        <span className="text-[11px] italic text-muted-foreground">
+                                          Nessun asset
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Firma Bollettino */}
+                      <div className="pt-3 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>Osservatorio Mercato LCSIM • Recap settimanale ogni 7 giorni a mercato aperto</span>
+                        <span className="font-mono">{selectedItem.weeklyTradeRecapData.periodLabel}</span>
+                      </div>
+                    </article>
                   )}
 
                   {/* ========================================================= */}
